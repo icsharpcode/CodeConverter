@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.Shared
 {
     internal class VisualBasicCompiler : ICompiler
     {
-        private static readonly Lazy<VisualBasicCompilation> LazyVisualBasicCompilation = new Lazy<VisualBasicCompilation>(CreateVisualBasicCompilation);
+        private static readonly Lazy<VisualBasicCompilation> LazyVisualBasicCompilation = new(CreateVisualBasicCompilation);
         private readonly string _rootNamespace;
 
         // ReSharper disable once UnusedMember.Global - Used via generics
@@ -52,6 +52,10 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static VisualBasicCompilationOptions CreateCompilationOptions(string rootNamespace = null)
         {
+            // Caution: The simplifier won't always remove imports unused by the code
+            // Known cases are unresolved usings and overload resolution across namespaces (e.g. System.Data.Where
+            // and System.Linq.Where)
+
             var compilationOptions = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithGlobalImports(GlobalImport.Parse(
                     "System",
@@ -77,6 +81,6 @@ namespace ICSharpCode.CodeConverter.Shared
             return compilationOptions;
         }
 
-        public static VisualBasicParseOptions ParseOptions { get; } = new VisualBasicParseOptions(LanguageVersion.Latest);
+        public static VisualBasicParseOptions ParseOptions { get; } = new(LanguageVersion.Latest);
     }
 }

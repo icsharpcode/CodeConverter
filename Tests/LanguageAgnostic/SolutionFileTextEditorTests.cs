@@ -251,7 +251,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
                 fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
-            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
+            var convertedProjFile = await GetConvertedCodeAsync(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -289,7 +289,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
                 fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
-            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
+            var convertedProjFile = await GetConvertedCodeAsync(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -327,7 +327,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
                 fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
-            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
+            var convertedProjFile = await GetConvertedCodeAsync(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -365,7 +365,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
                 fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
-            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
+            var convertedProjFile = await GetConvertedCodeAsync(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -408,7 +408,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
                 fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
-            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
+            var convertedProjFile = await GetConvertedCodeAsync(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new []
@@ -453,7 +453,7 @@ namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic
                 fileSystem: _fsMock.Object, solutionContents: solutionProjectReference);
 
             //Act
-            var convertedProjFile = await GetConvertedCode(slnConverter, referencingProject);
+            var convertedProjFile = await GetConvertedCodeAsync(slnConverter, referencingProject);
 
             //Assert
             var expectedProjFile = GetProjectProjectReference(new[]
@@ -572,10 +572,12 @@ EndProject";
             return project;
         }
 
-        private static async Task<string> GetConvertedCode(SolutionConverter slnConverter, Project referencingProject)
+        private static async Task<string> GetConvertedCodeAsync(SolutionConverter slnConverter, Project referencingProject)
         {
-            return (await slnConverter.Convert().SingleAsync(result => result.SourcePathOrNull == referencingProject.FilePath))
-                           .ConvertedCode;
+            var conversionResult = await slnConverter.Convert()
+               .SingleAsync(result => result.SourcePathOrNull == referencingProject.FilePath);
+
+            return conversionResult.ConvertedCode;
         }
     }
 }
