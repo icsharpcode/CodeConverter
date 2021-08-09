@@ -82,5 +82,14 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return str.Normalize(NormalizationForm.FormKD);
         }
+
+        public static string GetAttributeIdentifier(this string attributeTypeName)
+        {
+            const string attribute = nameof(Attribute);
+
+            return !attributeTypeName.EndsWith(attribute)
+                ? attributeTypeName
+                : attributeTypeName.Replace(attribute, null);
+        }
     }
 }

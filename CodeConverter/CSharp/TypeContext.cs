@@ -11,7 +11,6 @@ namespace ICSharpCode.CodeConverter.CSharp
         public MethodsWithHandles MethodsWithHandles => _contextStack.Peek().Methods;
 
         public HoistedNodeState HoistedState { get; internal set; } = new HoistedNodeState();
-        public IEnumerable<IAssemblySymbol> AssembliesBeingConverted { get; internal set; }
 
         public void Push(MethodsWithHandles methodWithHandles, AdditionalInitializers additionalInitializers)
         {

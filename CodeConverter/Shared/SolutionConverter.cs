@@ -90,16 +90,14 @@ namespace ICSharpCode.CodeConverter.Shared
 
         private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjects()
         {
-            var assemblies = _projectsToConvert.Select(t => t.GetCompilationAsync(_cancellationToken));
-            var assembliesBeingConverted = (await Task.WhenAll(assemblies)).Select(t => t.Assembly).ToList();
-            return _projectsToConvert.ToAsyncEnumerable().SelectMany(project => ConvertProject(project, assembliesBeingConverted));
+            return _projectsToConvert.ToAsyncEnumerable().SelectMany(ConvertProject);
         }
 
-        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project, IEnumerable<IAssemblySymbol> assembliesBeingConverted)
+        private IAsyncEnumerable<ConversionResult> ConvertProject(Project project)
         {
             var replacements = _projectReferenceReplacements.ToArray();
             _progress.Report(new ConversionProgress($"Converting {project.Name}..."));
-            return ProjectConversion.ConvertProject(project, _languageConversion, _textReplacementConverter, _progress, assembliesBeingConverted, _cancellationToken, replacements);
+            return ProjectConversion.ConvertProject(project, _languageConversion, _textReplacementConverter, _progress, _cancellationToken, replacements);
         }
 
         private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)

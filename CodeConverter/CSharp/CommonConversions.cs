@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
@@ -272,7 +273,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (id.SyntaxTree == _semanticModel.SyntaxTree) {
                 var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
-                    text = WithDeclarationName(id, idSymbol, text, _typeContext.AssembliesBeingConverted);
+                    text = WithDeclarationName(id, idSymbol, text);
                     var normalizedText = text.WithHalfWidthLatinCharacters();
                     if (idSymbol.IsConstructor() && isAttribute) {
                         text = idSymbol.ContainingType.Name;
@@ -305,41 +306,39 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// <seealso cref="DeclarationNodeVisitor.WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
         /// <seealso cref="CommonConversions.WithDeclarationNameCasing(TypeSyntax, ITypeSymbol)"/>
         /// </summary>
-        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text, IEnumerable<IAssemblySymbol> assembliesBeingConverted)
+        private static string WithDeclarationName(SyntaxToken id, ISymbol idSymbol, string text)
         {
-            //This also covers the case when the name is different (in VB you can have method X implements IFoo.Y), but doesn't resolve any resulting name clashes
-            var assemblyIdentities = assembliesBeingConverted.Select(t => t.Identity);
-            ISymbol baseSymbol = default;
-            var containingType = idSymbol.ContainingType;
+            //This only renames references to interface member implementations for casing differences.
+            //Interface member renaming is covered by emitting explicit interface implementations with a delegating
+            //proxy property
+            var baseClassSymbol = GetBaseSymbol(idSymbol, s => s.ContainingType.IsClassType());
+            var baseSymbol = GetBaseSymbol(baseClassSymbol, s => true);
 
-            if (idSymbol.IsKind(SymbolKind.Method) || idSymbol.IsKind(SymbolKind.Property)) 
-            {
-                var possibleSymbols = idSymbol.FollowProperty(s => s.BaseMember());
-                foreach (var possibleSymbol in possibleSymbols)
-                {
-                    if (!assemblyIdentities.Contains(possibleSymbol.ContainingAssembly.Identity) && possibleSymbol.ContainingType.Equals(containingType)) 
-                    {
-                        baseSymbol = possibleSymbol;
-                        break;
-                    }
+            var isCasingDiffOnly = StringComparer.Ordinal.Equals(text, baseClassSymbol.Name) !=
+                                   StringComparer.OrdinalIgnoreCase.Equals(text, baseClassSymbol.Name);
+            var isInterfaceImplRef =
+                baseSymbol.ContainingType.IsInterfaceType() && !(id.Parent is VBSyntax.StatementSyntax);
+            var isDeclaration = isInterfaceImplRef || baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
 
-                    baseSymbol = possibleSymbol;
-                }
-            } 
-            else 
-            {
-                baseSymbol = idSymbol;
+            var isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
+                            baseSymbol.IsPartialMethodImplementation();
+
+            if (isInterfaceImplRef && isCasingDiffOnly) {
+                return baseClassSymbol.Name;
             }
 
-            bool isDeclaration = baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
-            bool isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
-                             baseSymbol.IsPartialMethodImplementation();
-            if (isPartial || !isDeclaration)
-            {
+            if ((isPartial || !isDeclaration)) {
                 text = baseSymbol.Name;
             }
 
             return text;
+        }
+
+        private static ISymbol GetBaseSymbol(ISymbol symbol, Func<ISymbol, bool> selector)
+        {
+            return symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Property)
+                ? (symbol.FollowProperty(s => s.BaseMember()).LastOrDefault(selector)) ?? symbol
+                : symbol;
         }
 
         public static SyntaxToken CsEscapedIdentifier(string text)
@@ -703,6 +702,29 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
+        }
+
+        public CSSyntax.NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol,
+            bool allowGlobalPrefix = true)
+        {
+            switch (symbol) {
+                case ITypeSymbol ts:
+                    var nameSyntax = (CSSyntax.NameSyntax)CsSyntaxGenerator.TypeExpression(ts);
+                    if (allowGlobalPrefix)
+                        return nameSyntax;
+                    var globalNameNode = nameSyntax.DescendantNodes()
+                       .OfType<Microsoft.CodeAnalysis.CSharp.Syntax.GlobalStatementSyntax>().FirstOrDefault();
+                    if (globalNameNode != null)
+                        nameSyntax = nameSyntax.ReplaceNodes(
+                            (globalNameNode.Parent as CSSyntax.QualifiedNameSyntax).Yield(),
+                            (orig, rewrite) => orig.Right);
+                    return nameSyntax;
+                case INamespaceSymbol ns:
+                    return SyntaxFactory.ParseName(ns.GetFullMetadataName());
+                default:
+                    throw new NotImplementedException(
+                        $"Fully qualified name for {symbol.GetType().FullName} not implemented");
+            }
         }
 
         public async Task<string> GetClassificationLastTokenAsync(VBSyntax.SimpleImportsClauseSyntax clause)

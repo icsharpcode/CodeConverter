@@ -305,6 +305,36 @@ public partial class OptionalRefIssue91
         }
 
         [Fact]
+        public async Task ExplicitInterfaceImplementationOptionalRefParametersAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+  Function ExplicitFunc(Optional ByRef str2 As String = """") As Integer
+End Interface
+
+Public Class Foo
+  Implements IFoo
+
+  Private Function ExplicitFunc(Optional ByRef str As String = """") As Integer Implements IFoo.ExplicitFunc
+    Return 5
+  End Function
+End Class", @"using System.Runtime.InteropServices;
+
+public partial interface IFoo
+{
+    int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str2);
+}
+
+public partial class Foo : IFoo
+{
+    int IFoo.ExplicitFunc(ref string str)
+    {
+        return 5;
+    }
+}");
+        }
+
+        [Fact]
         public async Task RefArgumentPropertyInitializerAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1

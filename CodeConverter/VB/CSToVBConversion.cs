@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -23,14 +22,11 @@ namespace ICSharpCode.CodeConverter.VB
 
         private CSToVBProjectContentsConverter _csToVbProjectContentsConverter;
         public ConversionOptions ConversionOptions { get; set; }
-        private IProgress<ConversionProgress> _progress;
         private CancellationToken _cancellationToken;
 
         public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project,
-            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
-            CancellationToken cancellationToken)
+            IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
-            _progress = progress;
             _cancellationToken = cancellationToken;
             _csToVbProjectContentsConverter = new CSToVBProjectContentsConverter(ConversionOptions, progress, cancellationToken);
             await _csToVbProjectContentsConverter.InitializeSourceAsync(project);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Compilation _vbCompilation;
         private readonly SemanticModel _semanticModel;
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
-        private readonly TypeContext _typeContext;
+        private readonly TypeContext _typeContext = new TypeContext();
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
@@ -50,13 +51,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         internal HoistedNodeState AdditionalLocals => _typeContext.HoistedState;
 
         public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
-            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator,
-            IEnumerable<IAssemblySymbol> assembliesBeingConverted)
+            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator)
         {
             _vbCompilation = compilation;
             _semanticModel = semanticModel;
             _csSyntaxGenerator = csSyntaxGenerator;
-            _typeContext = new TypeContext {AssembliesBeingConverted = assembliesBeingConverted};
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
@@ -689,33 +688,33 @@ namespace ICSharpCode.CodeConverter.CSharp
             var propSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node) as IPropertySymbol;
             var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, propSymbol);
             bool hasImplementation = !node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.MustOverrideKeyword)) && node.GetAncestor<VBSyntax.InterfaceBlockSyntax>() == null;
-            var explicitInterfaceSpecifier = propSymbol.DeclaredAccessibility == Accessibility.Private && propSymbol.ExplicitInterfaceImplementations.Any() ?
-                SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.IdentifierName(propSymbol.ExplicitInterfaceImplementations.First().ContainingType.Name))
+
+            var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
+            var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
+            var additionalDeclarations = new List<MemberDeclarationSyntax>();
+
+            var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(propSymbol) || IsRenamedInterfaceMember(propSymbol, directlyConvertedCsIdentifier, csIdentifier)
+                ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(propSymbol.ExplicitInterfaceImplementations.First().ContainingType))
                 : null;
-            var shouldConvertToMethods = await ShouldConvertAsParameterizedPropertyAsync(node);
 
+            var isExplicitInterfaceImplementation = explicitInterfaceSpecifier != null;
 
-            var initializer = await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor);
-            VBSyntax.TypeSyntax vbType;
-            switch (node.AsClause) {
-                case VBSyntax.SimpleAsClauseSyntax c:
-                    vbType = c.Type;
-                    break;
-                case VBSyntax.AsNewClauseSyntax c:
-                    initializer = SyntaxFactory.EqualsValueClause(await c.NewExpression.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor));
-                    vbType = VBasic.SyntaxExtensions.Type(c.NewExpression);
-                    break;
-                case null:
-                    vbType = null;
-                    break;
-                default:
-                    throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
-            }
+            var additionalInterfaceImplements = explicitInterfaceSpecifier != null
+                ? propSymbol.ExplicitInterfaceImplementations.Skip(1)
+                : ImmutableArray<IPropertySymbol>.Empty;
+
+            var originalModifiers = modifiers;
+            var filteredModifiers = modifiers.RemoveOnly(m => m.IsCsMemberVisibility());
+            var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };
+
+            var shouldConvertToMethods = ShouldConvertAsParameterizedProperty(node);
+
+            var (initializer, vbType) = await GetVbReturnTypeAsync(node);
 
             var rawType = await vbType.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor)
-                ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ObjectKeyword));
+                          ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.ObjectKeyword));
 
-            AccessorListSyntax accessors = null;
+            AccessorListSyntax accessors;
             if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
                 if (shouldConvertToMethods) {
                     if (accessedThroughMyClass) {
@@ -725,7 +724,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var methodDeclarationSyntaxs = await propertyBlock.Accessors.SelectAsync(async a =>
                         await a.AcceptAsync<MethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, a == propertyBlock.Accessors.First() ? SourceTriviaMapKind.All : SourceTriviaMapKind.None));
                     var accessorMethods = methodDeclarationSyntaxs.Select(WithMergedModifiers).ToArray();
-                    _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).ToArray());
+
+                    accessorMethods.Do(method => AddRemainingInterfaceDeclarations(method, explicitInterfaceSpecifier, attributes,
+                        filteredModifiers, additionalInterfaceImplements, additionalDeclarations));
+
+                    _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).Concat(additionalDeclarations).ToArray());
+
                     return accessorMethods[0];
                 }
 
@@ -737,20 +741,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ));
             } else if (shouldConvertToMethods && propSymbol.ContainingType.IsInterfaceType()) {
                 var methodDeclarationSyntaxs = new List<MemberDeclarationSyntax>();
+
                 if (propSymbol.GetMethod != null) {
                     methodDeclarationSyntaxs.Add(await CreateMethodDeclarationSyntaxAsync(node.ParameterList, GetMethodId(node), false));
                 }
+
                 if (propSymbol.SetMethod != null) {
                     var setMethod = await CreateMethodDeclarationSyntaxAsync(node.ParameterList, SetMethodId(node), true);
-                    setMethod = AddValueSetParameter(propSymbol, setMethod, rawType);
+                    setMethod = AddValueSetParameter(propSymbol, setMethod, rawType, explicitInterfaceSpecifier);
                     methodDeclarationSyntaxs.Add(setMethod);
                 }
+
                 _additionalDeclarations.Add(node, methodDeclarationSyntaxs.Skip(1).ToArray());
+
                 return methodDeclarationSyntaxs[0];
             } else {
-                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, hasImplementation, propSymbol.DeclaredAccessibility);
+                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, hasImplementation, propSymbol.DeclaredAccessibility, isExplicitInterfaceImplementation);
             }
-
 
             if (isIndexer) {
                 if (accessedThroughMyClass) {
@@ -768,32 +775,45 @@ namespace ICSharpCode.CodeConverter.CSharp
                     parameterList,
                     accessors
                 );
-            } else {
-                var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
-
-                if (accessedThroughMyClass) {
-
-                    var realModifiers = modifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
-                    string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, realModifiers, rawType);
-                    modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VirtualKeyword)));
-                    csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
-                } else if (explicitInterfaceSpecifier != null) {
-                    modifiers = modifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
-                }
-
-                var semicolonToken = SyntaxFactory.Token(initializer == null ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.None : Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
-                return SyntaxFactory.PropertyDeclaration(
-                    attributes,
-                    modifiers,
-                    rawType,
-                    explicitInterfaceSpecifier,
-                    csIdentifier, accessors,
-                    null,
-                    initializer,
-                    semicolonToken);
             }
 
-            MemberDeclarationSyntax WithMergedModifiers(MethodDeclarationSyntax member)
+            var accessorList = GetDelegatingAccessorList(explicitInterfaceSpecifier, csIdentifier, accessors);
+            var interfaceDeclParams = new PropertyDeclarationParameters(attributes, filteredModifiers, rawType, accessorList);
+
+            AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations, interfaceMemberIdentifiers, interfaceDeclParams);
+
+            var renamedInterfaceImplDeclParams = new PropertyDeclarationParameters(attributes, originalModifiers,
+                rawType, accessorList, directlyConvertedCsIdentifier);
+
+            AddInterfaceMemberDeclaration(interfaceMemberIdentifiers, propSymbol, additionalDeclarations, renamedInterfaceImplDeclParams);
+
+            if (accessedThroughMyClass) {
+
+                var realModifiers = modifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
+                string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, realModifiers, rawType);
+                modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VirtualKeyword)));
+                csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
+            } else if (explicitInterfaceSpecifier != null) {
+                modifiers = filteredModifiers;
+            }
+
+            if (additionalDeclarations.Any()) {
+                var declNode = (VBSyntax.StatementSyntax)node.FirstAncestorOrSelf<VBSyntax.PropertyBlockSyntax>() ?? node;
+                _additionalDeclarations.Add(declNode, additionalDeclarations.ToArray());
+            }
+
+            var semicolonToken = SyntaxFactory.Token(initializer == null ? Microsoft.CodeAnalysis.CSharp.SyntaxKind.None : Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
+            return SyntaxFactory.PropertyDeclaration(
+                attributes,
+                modifiers,
+                rawType,
+                explicitInterfaceSpecifier,
+                csIdentifier, accessors,
+                null,
+                initializer,
+                semicolonToken);
+
+            MethodDeclarationSyntax WithMergedModifiers(MethodDeclarationSyntax member)
             {
                 SyntaxTokenList originalModifiers = member.GetModifiers();
                 var hasVisibility = originalModifiers.Any(m => m.IsCsVisibility(false, false));
@@ -815,6 +835,76 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .WithSemicolonToken(SyntaxFactory.Token(CSSyntaxKind.SemicolonToken));
                 return methodDeclarationSyntax;
             }
+        }
+
+        private void AddRemainingInterfaceDeclarations(MethodDeclarationSyntax method,
+            ExplicitInterfaceSpecifierSyntax explicitInterfaceSpecifier, SyntaxList<AttributeListSyntax> attributes,
+            SyntaxTokenList filteredModifiers, IEnumerable<IPropertySymbol> additionalInterfaceImplements,
+            ICollection<MemberDeclarationSyntax> additionalDeclarations)
+        {
+            var identifier = method.Identifier;
+            var clause = GetDelegatingClause(explicitInterfaceSpecifier, identifier,
+                method.ParameterList, false);
+
+            var interfaceMethodDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers,
+                method.ReturnType, method.TypeParameterList,
+                method.ParameterList, method.ConstraintClauses, clause,
+                identifier);
+
+            AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations,
+                interfaceMethodDeclParams);
+        }
+
+        private async Task<(EqualsValueClauseSyntax Initializer, VBSyntax.TypeSyntax VbType)> GetVbReturnTypeAsync(VBSyntax.PropertyStatementSyntax node)
+        {
+            var initializer = await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor);
+            VBSyntax.TypeSyntax vbType;
+            switch (node.AsClause)
+            {
+                case VBSyntax.SimpleAsClauseSyntax c:
+                    vbType = c.Type;
+                    break;
+                case VBSyntax.AsNewClauseSyntax c:
+                    initializer = SyntaxFactory.EqualsValueClause(
+                            await c.NewExpression.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor));
+                    vbType = VBasic.SyntaxExtensions.Type(c.NewExpression);
+                    break;
+                case null:
+                    vbType = null;
+                    break;
+                default:
+                    throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
+            }
+
+            return (initializer, vbType);
+        }
+
+        private static AccessorListSyntax GetDelegatingAccessorList(
+            ExplicitInterfaceSpecifierSyntax explicitInterfaceSpecifier,
+            SyntaxToken csIdentifier, AccessorListSyntax accessors)
+        {
+            if(explicitInterfaceSpecifier == null) return null;
+
+            var getArrowClause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier, null, false);
+            var setArrowClause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier, null, true);
+
+            var getSetDict = new Dictionary<CSSyntaxKind, ArrowExpressionClauseSyntax> {
+                {CSSyntaxKind.GetAccessorDeclaration, getArrowClause},
+                {CSSyntaxKind.SetAccessorDeclaration, setArrowClause}
+            };
+
+            var delegatingAccessors = accessors.Accessors.Select(a => {
+                var attributes = a.AttributeLists;
+                var modifiers = a.Modifiers;
+
+                var delegatingAccessor = SyntaxFactory.AccessorDeclaration(a.Kind(),
+                    attributes, modifiers, getSetDict[a.Kind()]).WithSemicolonToken(SemicolonToken);
+
+                return delegatingAccessor;
+            });
+
+            var delegatingAccessorList = new SyntaxList<AccessorDeclarationSyntax>(delegatingAccessors);
+            return SyntaxFactory.AccessorList(delegatingAccessorList);
         }
 
         private string AddRealPropertyDelegatingToMyClassVersion(VBSyntax.PropertyStatementSyntax node, SyntaxToken csIdentifier,
@@ -843,13 +933,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             return csIndentifierName;
         }
 
-        private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly, bool hasImplementation, Accessibility declaredAccessibility)
+        private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly,
+            bool hasImplementation, Accessibility declaredAccessibility,
+            bool isExplicitInterfaceImplementation)
         {
             AccessorListSyntax accessors;
             var getAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
             var setAccessor = SyntaxFactory.AccessorDeclaration(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
+
             if (isWriteOnly && declaredAccessibility != Accessibility.Private)
             {
                 getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
@@ -860,20 +953,16 @@ namespace ICSharpCode.CodeConverter.CSharp
                 setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
             }
 
-            if (!hasImplementation && isReadonly)
-            {
-                accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor}));
-            }
-            else if (!hasImplementation && isWriteOnly)
-            {
-                accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {setAccessor}));
-            }
-            else
-            {
-                // In VB, there's a backing field which can always be read and written to even on ReadOnly/WriteOnly properties.
-                // Our conversion will rewrite usages of that field to use the property accessors which therefore must exist and be private at minimum.
-                accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}));
-            }
+            var isReadOnlyInterface = (!hasImplementation || isExplicitInterfaceImplementation) && isReadonly;
+            var isWriteOnlyInterface = (!hasImplementation || isExplicitInterfaceImplementation) && isWriteOnly;
+
+            accessors = isReadOnlyInterface switch {
+                true => SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor})),
+                _ => isWriteOnlyInterface switch {
+                    true => SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {setAccessor})),
+                    _ => SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getAccessor, setAccessor}))
+                }
+            };
 
             return accessors;
         }
@@ -885,7 +974,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
         {
-            Microsoft.CodeAnalysis.CSharp.SyntaxKind blockKind;
+            CSSyntaxKind blockKind;
             bool isIterator = node.IsIterator();
             var ancestoryPropertyBlock = node.GetAncestor<VBSyntax.PropertyBlockSyntax>();
             var containingPropertyStmt = ancestoryPropertyBlock?.PropertyStatement;
@@ -894,11 +983,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
             var attributes = await CommonConversions.ConvertAttributesAsync(node.AccessorStatement.AttributeLists);
             var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
-            string potentialMethodId;
             var declaredPropSymbol = containingPropertyStmt != null ? _semanticModel.GetDeclaredSymbol(containingPropertyStmt) : null;
-            var explicitInterfaceSpecifier = declaredPropSymbol is { } propSymbol && propSymbol.DeclaredAccessibility == Accessibility.Private && propSymbol.ExplicitInterfaceImplementations.Any() ?
-                SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.IdentifierName(propSymbol.ExplicitInterfaceImplementations.First().ContainingType.Name))
+
+            string potentialMethodId;
+            var explicitInterfaceSpecifier = declaredPropSymbol is { } propSymbol && IsPrivateInterfaceImplementation(propSymbol)
+                ? SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.IdentifierName(propSymbol.ExplicitInterfaceImplementations.First().ContainingType.Name))
                 : null;
+
             var sourceMap = ancestoryPropertyBlock?.Accessors.FirstOrDefault() == node ? SourceTriviaMapKind.All : SourceTriviaMapKind.None;
             var returnType = containingPropertyStmt?.AsClause is VBSyntax.SimpleAsClauseSyntax asClause ?
                 await asClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor, sourceMap) :
@@ -909,7 +1000,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.GetAccessorDeclaration;
                     potentialMethodId = GetMethodId(containingPropertyStmt);
 
-                    if (await ShouldConvertAsParameterizedPropertyAsync(containingPropertyStmt)) {
+                    if (ShouldConvertAsParameterizedProperty(containingPropertyStmt)) {
                         var method = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList, false);
                         return method;
                     }
@@ -918,9 +1009,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                     blockKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind.SetAccessorDeclaration;
                     potentialMethodId = SetMethodId(containingPropertyStmt);
 
-                    if (await ShouldConvertAsParameterizedPropertyAsync(containingPropertyStmt)) {
+                    if (ShouldConvertAsParameterizedProperty(containingPropertyStmt)) {
                         var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList, true);
-                        return AddValueSetParameter(declaredPropSymbol, setMethod, returnType);
+                        return AddValueSetParameter(declaredPropSymbol, setMethod, returnType, explicitInterfaceSpecifier);
                     }
                     break;
                 case VBasic.SyntaxKind.AddHandlerAccessorBlock:
@@ -943,8 +1034,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             async Task<MethodDeclarationSyntax> CreateMethodDeclarationSyntax(VBSyntax.ParameterListSyntax containingPropParameterList, bool voidReturn)
             {
                 var parameterListSyntax = await containingPropParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor, sourceMap);
-                var methodModifiers = explicitInterfaceSpecifier != null ? modifiers.RemoveOnly(x => x.IsKind(CSSyntaxKind.PrivateKeyword))
-                    : modifiers;
+                SyntaxTokenList methodModifiers;
+
+                if (explicitInterfaceSpecifier != null) {
+                    methodModifiers = modifiers.RemoveOnly(x => x.IsKind(CSSyntaxKind.PrivateKeyword));
+                    parameterListSyntax = MakeOptionalParametersRequired(parameterListSyntax);
+
+                } else {
+                    methodModifiers = modifiers;
+                }
+
                 MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, methodModifiers,
                     voidReturn ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)) : returnType,
                     explicitInterfaceSpecifier,
@@ -954,10 +1053,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        private static MethodDeclarationSyntax AddValueSetParameter(IPropertySymbol declaredPropSymbol, MethodDeclarationSyntax setMethod, TypeSyntax returnType)
+        private static MethodDeclarationSyntax AddValueSetParameter(IPropertySymbol declaredPropSymbol,
+            MethodDeclarationSyntax setMethod, TypeSyntax returnType,
+            ExplicitInterfaceSpecifierSyntax explicitInterfaceSpecifierSyntax)
         {
             var valueParam = SyntaxFactory.Parameter(CommonConversions.CsEscapedIdentifier("value")).WithType(returnType);
-            if (declaredPropSymbol?.Parameters.Any(p => p.IsOptional) == true) valueParam = valueParam.WithDefault(SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.DefaultExpression));
+            if ((declaredPropSymbol?.Parameters.Any(p => p.IsOptional) ?? false) && explicitInterfaceSpecifierSyntax == null) valueParam = valueParam.WithDefault(SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.DefaultExpression));
             return setMethod.AddParameterListParameters(valueParam);
         }
 
@@ -971,13 +1072,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return $"get_{(containingPropertyStmt.Identifier.Text)}";
         }
 
-        private async Task<bool> ShouldConvertAsParameterizedPropertyAsync(VBSyntax.PropertyStatementSyntax propStmt)
+        private static bool ShouldConvertAsParameterizedProperty(VBSyntax.PropertyStatementSyntax propStmt)
         {
-            if (propStmt.ParameterList?.Parameters.Any() == true && !CommonConversions.IsDefaultIndexer(propStmt)) {
-                return true;
-            }
-
-            return false;
+            return propStmt.ParameterList?.Parameters.Any() == true
+                   && !CommonConversions.IsDefaultIndexer(propStmt);
         }
 
         public override async Task<CSharpSyntaxNode> VisitAccessorStatement(VBSyntax.AccessorStatementSyntax node)
@@ -1099,16 +1197,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var declaredSymbol = (IMethodSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
                 var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExternKeyword } : Array.Empty<Microsoft.CodeAnalysis.CSharp.SyntaxKind>();
                 var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
-                var explicitInterfaceSpecifier = declaredSymbol.DeclaredAccessibility == Accessibility.Private && declaredSymbol.ExplicitInterfaceImplementations.Any() ?
-                    SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.IdentifierName(declaredSymbol.ExplicitInterfaceImplementations.First().ContainingType.Name))
-                    : null;
+
                 bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
                 var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
 
                 if (declaredSymbol.IsPartialMethodImplementation() || isPartialDefinition) {
                     var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
-                    if (privateModifier != default(SyntaxToken)) {
+                    if (privateModifier != default) {
                         convertedModifiers = convertedModifiers.Remove(privateModifier);
                     }
                     if (!HasPartialKeyword(node.Modifiers)) {
@@ -1125,34 +1221,52 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList();
                 var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
-                // If we had to rename the method to match the interface, emit a method for external references with the old name to point to
-                if (!StringComparer.OrdinalIgnoreCase.Equals(directlyConvertedCsIdentifier.Value, csIdentifier.Value) && declaredSymbol.GetResultantVisibility() == SymbolVisibility.Public) {
+                var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(declaredSymbol) || IsRenamedInterfaceMember(declaredSymbol, directlyConvertedCsIdentifier, csIdentifier)
+                    ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(declaredSymbol.ExplicitInterfaceImplementations.First().ContainingType))
+                    : null;
 
-                    var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(csIdentifier), CreateDelegatingArgList(parameterList)));
-                    additionalDeclarations.Add(SyntaxFactory.MethodDeclaration(
-                        attributes,
-                        convertedModifiers,
-                        returnType,
-                        explicitInterfaceSpecifier,
-                        directlyConvertedCsIdentifier,
-                        typeParameters,
-                        parameterList,
-                        constraints,
-                        null,
-                        arrowClause,
-                        SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken)
-                    ).WithoutSourceMapping());
-                }
+                var additionalInterfaceImplements = explicitInterfaceSpecifier != null
+                    ? declaredSymbol.ExplicitInterfaceImplementations.Skip(1)
+                    : ImmutableArray<IMethodSymbol>.Empty;
+
+                var originalConvertedModifiers = convertedModifiers;
+                var originalParameterList = parameterList;
+
+                var filteredModifiers = convertedModifiers.RemoveOnly(m => m.IsCsMemberVisibility());
+                var requiredParameterList = MakeOptionalParametersRequired(parameterList);
+
+                var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };
+
+                var clause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier,
+                    requiredParameterList, false);
+
+                var interfaceDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers, returnType, typeParameters, requiredParameterList, constraints, clause);
+
+                AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations, interfaceMemberIdentifiers, interfaceDeclParams);
+
+                var renamedInterfaceImplDeclParams = new MethodDeclarationParameters(attributes, originalConvertedModifiers,
+                    returnType, typeParameters, originalParameterList, constraints, clause, directlyConvertedCsIdentifier);
+
+                AddInterfaceMemberDeclaration(interfaceMemberIdentifiers, declaredSymbol, additionalDeclarations, renamedInterfaceImplDeclParams);
+
                 // If the method is virtual, and there is a MyClass.SomeMethod() call,
                 // we need to emit a non-virtual method for it to call
                 if (accessedThroughMyClass) {
-                    var identifierName = "MyClass" + csIdentifier.ValueText;
+                    var identifierName = "MyClass" + directlyConvertedCsIdentifier.ValueText;
                     var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(identifierName), CreateDelegatingArgList(parameterList)));
+                    var declModifiers = convertedModifiers;
 
-                    convertedModifiers = convertedModifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
+                    // If an extra delegate method is emitted already because of interface method renaming,
+                    // don't emit the virtual and accessor modifiers on the explicit implementation. 
+                    if (interfaceMemberIdentifiers.Any(identifier => IsRenamedInterfaceMember(declaredSymbol,
+                        renamedInterfaceImplDeclParams.Identifier, identifier))) {
+                        declModifiers = declModifiers.RemoveOnly(m => m.IsCsMemberVisibility())
+                           .RemoveOnly(m => m.IsKind(CSSyntaxKind.VirtualKeyword));
+                    }
+
                     var originalNameDecl = SyntaxFactory.MethodDeclaration(
                         attributes,
-                        convertedModifiers,
+                        declModifiers,
                         returnType,
                         explicitInterfaceSpecifier,
                         csIdentifier,
@@ -1169,7 +1283,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     csIdentifier = SyntaxFactory.Identifier(identifierName);
                     explicitInterfaceSpecifier = null;
                 } else if (explicitInterfaceSpecifier != null) {
-                    convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(CSSyntaxKind.PrivateKeyword)));
+                    convertedModifiers = filteredModifiers;
+                    parameterList = requiredParameterList;
                 }
 
                 if (additionalDeclarations.Any()) {
@@ -1191,6 +1306,182 @@ namespace ICSharpCode.CodeConverter.CSharp
                 );
                 return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
             }
+        }
+
+        private static void AddInterfaceMemberDeclaration(IEnumerable<SyntaxToken> interfaceMemberIdentifiers, ISymbol symbol,
+            ICollection<MemberDeclarationSyntax> additionalDeclarations, DeclarationParameters interfaceImplDeclParams)
+        {
+            // If we had to rename the method to match the interface, emit a method for external references with the old name to point to
+            if (!interfaceMemberIdentifiers.Any(identifier => IsRenamedInterfaceMember(symbol,
+                interfaceImplDeclParams.Identifier, identifier))) {
+                return;
+            }
+
+            var semicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
+
+            Func<MemberDeclarationSyntax>
+                declDelegate = interfaceImplDeclParams switch {
+                    MethodDeclarationParameters methodParams => ()
+                        => SyntaxFactory.MethodDeclaration(methodParams.Attributes, methodParams.Modifiers,
+                            methodParams.ReturnType, null, methodParams.Identifier
+                            , methodParams.TypeParameters, methodParams.ParameterList, methodParams.Constraints, null,
+                            methodParams.ArrowClause, semicolonToken).WithoutSourceMapping(),
+
+                    PropertyDeclarationParameters propertyParams => ()
+                        => SyntaxFactory.PropertyDeclaration(propertyParams.Attributes, propertyParams.Modifiers,
+                            propertyParams.ReturnType, null, propertyParams.Identifier, propertyParams.Accessors,
+                            null, null).NormalizeWhitespace(),
+
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+
+            var declaration = declDelegate.Invoke();
+
+            additionalDeclarations.Add(declaration);
+        }
+
+        private void AddInterfaceMemberDeclarations(IEnumerable<ISymbol> additionalInterfaceImplements,
+            ICollection<MemberDeclarationSyntax> additionalDeclarations, DeclarationParameters declParams)
+        {
+            AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations,
+                new List<SyntaxToken>(), declParams);
+        }
+
+        private void AddInterfaceMemberDeclarations(IEnumerable<ISymbol> additionalInterfaceImplements,
+            ICollection<MemberDeclarationSyntax> additionalDeclarations, ICollection<SyntaxToken> interfaceMemberIdentifiers,
+            DeclarationParameters declParams)
+        {
+            var semicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
+            Func<ExplicitInterfaceSpecifierSyntax, SyntaxToken, MemberDeclarationSyntax>
+                declDelegate = declParams switch {
+                    MethodDeclarationParameters methodParams => (explintfspec, identifier)
+                        => SyntaxFactory.MethodDeclaration(methodParams.Attributes, methodParams.Modifiers,
+                            methodParams.ReturnType, explintfspec, identifier
+                            , methodParams.TypeParameters, methodParams.ParameterList, methodParams.Constraints, null,
+                            methodParams.ArrowClause, semicolonToken).WithoutSourceMapping(),
+
+                    PropertyDeclarationParameters propertyParams => (explintfspec, identifier)
+                        => SyntaxFactory.PropertyDeclaration(propertyParams.Attributes, propertyParams.Modifiers,
+                            propertyParams.ReturnType, explintfspec, identifier, propertyParams.Accessors,
+                            null, null).NormalizeWhitespace(),
+
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+
+            additionalInterfaceImplements.Do(interfaceImplement => AddMemberDeclaration(additionalDeclarations,
+                interfaceMemberIdentifiers, interfaceImplement, declParams.Identifier, declDelegate));
+        }
+
+        private void AddMemberDeclaration(ICollection<MemberDeclarationSyntax> additionalDeclarations, ICollection<SyntaxToken> interfaceMemberIdentifiers,
+            ISymbol interfaceImplement, SyntaxToken identifier, Func<ExplicitInterfaceSpecifierSyntax, SyntaxToken, MemberDeclarationSyntax> declDelegate)
+        {
+            var explicitInterfaceName = CommonConversions.GetFullyQualifiedNameSyntax(interfaceImplement.ContainingType);
+            var newExplicitInterfaceSpecifier = SyntaxFactory.ExplicitInterfaceSpecifier(explicitInterfaceName);
+            var interfaceImplIdentifier = identifier == default
+                ? SyntaxFactory.Identifier(interfaceImplement.Name)
+                : identifier;
+
+            var declaration = declDelegate.Invoke(newExplicitInterfaceSpecifier, interfaceImplIdentifier);
+            additionalDeclarations.Add(declaration);
+
+            interfaceMemberIdentifiers.Add(interfaceImplIdentifier);
+        }
+
+
+        private static ParameterListSyntax MakeOptionalParametersRequired(ParameterListSyntax parameterList)
+        {
+            if (parameterList == null) return null;
+
+            var nonOptionalParameters = parameterList.Parameters.Select(ConvertOptionalParameter);
+
+            var separatedSyntaxList = SyntaxFactory.SeparatedList(nonOptionalParameters);
+            var newParameterList = parameterList.WithParameters(separatedSyntaxList);
+            return newParameterList;
+        }
+
+        private static ParameterSyntax ConvertOptionalParameter(ParameterSyntax parameter)
+        {
+            var optionalAttributes = new List<string> { nameof(OptionalAttribute).GetAttributeIdentifier(),
+                nameof(DefaultParameterValueAttribute).GetAttributeIdentifier() };
+
+            var attrListsToRemove = parameter.AttributeLists.SingleOrDefault(aList => aList.Attributes
+               .All(a =>
+                {
+                    var attrIdentifier = ((IdentifierNameSyntax)a.Name).Identifier.Text;
+                    return optionalAttributes.Contains(attrIdentifier);
+                }));
+
+            var newAttrLists = parameter.AttributeLists.Remove(attrListsToRemove);
+            return parameter.WithDefault(null).WithAttributeLists(newAttrLists);
+        }
+
+        private static ArrowExpressionClauseSyntax GetDelegatingClause(
+            ExplicitInterfaceSpecifierSyntax explicitInterfaceSpecifier, SyntaxToken csIdentifier,
+            ParameterListSyntax parameterList, bool isSetAccessor)
+        {
+            if (explicitInterfaceSpecifier == null) return null;
+
+            if (parameterList != null && isSetAccessor)
+                throw new InvalidOperationException("Parameterized setters shouldn't have a delegating clause. " +
+                                                    $"\r\nInvalid arguments: {nameof(isSetAccessor)} = {true}," +
+                                                    $" {nameof(parameterList)} has {parameterList.Parameters.Count} parameters");
+
+            var simpleMemberAccess = GetSimpleMemberAccess(explicitInterfaceSpecifier, csIdentifier);
+
+            var expression = parameterList != null
+                ? (ExpressionSyntax)SyntaxFactory.InvocationExpression(simpleMemberAccess, CreateDelegatingArgList(parameterList))
+                : simpleMemberAccess;
+
+            var arrowClauseExpression = isSetAccessor
+                ? SyntaxFactory.AssignmentExpression(CSSyntaxKind.SimpleAssignmentExpression, simpleMemberAccess,
+                    SyntaxFactory.IdentifierName("value"))
+                : expression;
+
+            var arrowClause = SyntaxFactory.ArrowExpressionClause(arrowClauseExpression);
+            return arrowClause;
+        }
+
+        private static MemberAccessExpressionSyntax GetSimpleMemberAccess(
+            ExplicitInterfaceSpecifierSyntax explicitInterfaceSpecifier, SyntaxToken csIdentifier)
+        {
+            var cast = SyntaxFactory.CastExpression(SyntaxFactory.Token(CSSyntaxKind.OpenParenToken),
+                explicitInterfaceSpecifier.Name, SyntaxFactory.Token(CSSyntaxKind.CloseParenToken),
+                SyntaxFactory.ThisExpression());
+
+            var parenthesized = SyntaxFactory.ParenthesizedExpression(
+                SyntaxFactory.Token(CSSyntaxKind.OpenParenToken), cast,
+                SyntaxFactory.Token(CSSyntaxKind.CloseParenToken));
+
+            var simpleMemberAccess = SyntaxFactory.MemberAccessExpression(
+                CSSyntaxKind.SimpleMemberAccessExpression, parenthesized,
+                SyntaxFactory.Token(CSSyntaxKind.DotToken), SyntaxFactory.IdentifierName(csIdentifier));
+
+            return simpleMemberAccess;
+        }
+
+        private static bool IsPrivateInterfaceImplementation(ISymbol declaredSymbol)
+        {
+            return declaredSymbol switch {
+                IMethodSymbol methodSymbol => methodSymbol.DeclaredAccessibility == Accessibility.Private &&
+                                              methodSymbol.ExplicitInterfaceImplementations.Any(),
+                IPropertySymbol propertySymbol => propertySymbol.DeclaredAccessibility == Accessibility.Private &&
+                                                  propertySymbol.ExplicitInterfaceImplementations.Any(),
+                _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
+            };
+        }
+
+        private static bool IsRenamedInterfaceMember(ISymbol declaredSymbol,
+            SyntaxToken directlyConvertedCsIdentifier, SyntaxToken csIdentifier)
+        {
+            return declaredSymbol switch {
+                IMethodSymbol methodSymbol => !StringComparer.Ordinal.Equals(directlyConvertedCsIdentifier.Value,
+                                                  csIdentifier.Value)
+                                              && methodSymbol.ExplicitInterfaceImplementations.Any(),
+                IPropertySymbol propertySymbol => !StringComparer.Ordinal.Equals(directlyConvertedCsIdentifier.Value,
+                                                      csIdentifier.Value)
+                                                  && propertySymbol.ExplicitInterfaceImplementations.Any(),
+                _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
+            };
         }
 
         private static ArgumentListSyntax CreateDelegatingArgList(ParameterListSyntax parameterList)

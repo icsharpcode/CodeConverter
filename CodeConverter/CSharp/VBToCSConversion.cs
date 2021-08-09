@@ -30,12 +30,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         public ConversionOptions ConversionOptions { get; set; }
 
         public async Task<IProjectContentsConverter> CreateProjectContentsConverterAsync(Project project,
-            IEnumerable<IAssemblySymbol> assembliesBeingConverted, IProgress<ConversionProgress> progress,
-            CancellationToken cancellationToken)
+            IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
             bool useProjectLevelWinformsAdjustments = project.AssemblyName != FabricatedAssemblyName;
-            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, useProjectLevelWinformsAdjustments, assembliesBeingConverted, progress, cancellationToken);
+            _vbToCsProjectContentsConverter = new VBToCSProjectContentsConverter(ConversionOptions, useProjectLevelWinformsAdjustments, progress, cancellationToken);
             await _vbToCsProjectContentsConverter.InitializeSourceAsync(project);
             return _vbToCsProjectContentsConverter;
         }
