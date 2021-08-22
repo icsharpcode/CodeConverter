@@ -114,19 +114,48 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 return;
             }
 
-            string exceptionSpecificMessage = "";
+            string mainMessage = ex.ToString();
+            var messageSuffix = "";
 
-            var versionMessageSuffix = "";
             if (m_FullVsVersion < m_LowestSupportedVersion) {
-                versionMessageSuffix = $"{Environment.NewLine}This extension only supports VS {m_LowestSupportedVersion}+, you are currently using {m_FullVsVersion}";
+                messageSuffix = $"{Environment.NewLine}This extension only supports VS {m_LowestSupportedVersion}+, you are currently using {m_FullVsVersion}";
             }
 
             if (m_FullVsVersion.Major < 16) {
-                versionMessageSuffix = $"{Environment.NewLine}Support for VS2017 (15.*) is likely to end this year. You're using: {m_FullVsVersion}";
+                messageSuffix = $"{Environment.NewLine}Support for VS2017 (15.*) is likely to end this year. You're using: {m_FullVsVersion}";
             }
 
-            MessageBox.Show($"An error has occured during conversion - press Ctrl+C to copy the details: {exceptionSpecificMessage}{ex}{versionMessageSuffix}",
+            if (ex is FileNotFoundException fnf && !string.IsNullOrEmpty(fnf.FusionLog)) {
+                try {
+                    var options = await asyncPackage.GetDialogPageAsync<ConverterOptionsPage>();
+                    if (!options.BypassAssemblyLoadingErrors) {
+                        options.BypassAssemblyLoadingErrors = true;
+                        options.SaveSettingsToStorage();
+                        mainMessage =
+                            $"Assembly load issue detected. Tools->Options->Code Converter->BypassAssemblyLoadingErrors has now been automatically activated, please try again (but report this issue either way).{Environment.NewLine}";
+                    }
+                } catch {
+                    mainMessage =
+                        $"Assembly load issue detected. Try activating Tools->Options->Code Converter->Bypass assembly loading errors and try again (but report this issue either way).{Environment.NewLine}";
+                }
+
+                mainMessage += $"{ex.Message}{Environment.NewLine}{GetShortStackTrace(ex)}";
+                messageSuffix += $"{Environment.NewLine}{fnf.FusionLog}{Environment.NewLine}";
+            }
+
+            MessageBox.Show($"An error has occurred during conversion - press Ctrl+C to copy the details: {mainMessage}{messageSuffix}",
                 m_Title, MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private static string GetShortStackTrace(Exception ex)
+        {
+            var lines = ex.StackTrace.Split(Environment.NewLine.ToCharArray()).Where(l => !string.IsNullOrWhiteSpace(l)).ToList();
+            if (lines.Count < 5) return string.Join(Environment.NewLine, lines);
+            var summaryLines = lines.TakeWhile(l => !l.Contains("ICSharpCode.")).ToList();
+            summaryLines.Add(lines.ElementAt(summaryLines.Count));
+            summaryLines.Add("   ...");
+            summaryLines.Add(lines.Last());
+            return string.Join(Environment.NewLine, summaryLines);
         }
 
         /// <returns>true iff the user answers "OK"</returns>

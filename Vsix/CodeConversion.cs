@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using CodeConv.Shared.Util;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
@@ -34,6 +35,9 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         public static async Task<CodeConversion> CreateAsync(CodeConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
         {
+            var options = await getOptions();
+            AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution(options.BypassAssemblyLoadingErrors);
+
             return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, serviceProvider.PackageCancellation, visualStudioWorkspace,
                 getOptions, await OutputWindow.CreateAsync());
         }
