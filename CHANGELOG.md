@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### Vsix
-
+* Provided workaround in options for some assembly loading issues [#741](https://github.com/icsharpcode/CodeConverter/issues/741)
 
 ### VB -> C#
 
