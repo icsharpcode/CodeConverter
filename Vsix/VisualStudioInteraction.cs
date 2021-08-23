@@ -107,20 +107,26 @@ namespace ICSharpCode.CodeConverter.VsExtension
             return textDocument;
         }
 
-        public static async Task ShowExceptionAsync(Exception ex)
+        public static async Task ShowExceptionAsync(this AsyncPackage asyncPackage, Exception ex)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-            if (!CancelAllToken.IsCancellationRequested) {
-                var versionMessageSuffix = "";
-                if (m_FullVsVersion < m_LowestSupportedVersion) {
-                    versionMessageSuffix = $"{Environment.NewLine}This extension only supports VS {m_LowestSupportedVersion}+, you are currently using {m_FullVsVersion}";
-                }
-                if (m_FullVsVersion.Major < 16) {
-                    versionMessageSuffix = $"{Environment.NewLine}Support for VS2017 (15.*) is likely to end this year. You're using: {m_FullVsVersion}";
-                }
-                MessageBox.Show($"An error has occured during conversion - press Ctrl+C to copy the details: {ex}{versionMessageSuffix}",
-                    m_Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            if (CancelAllToken.IsCancellationRequested) {
+                return;
             }
+
+            string exceptionSpecificMessage = "";
+
+            var versionMessageSuffix = "";
+            if (m_FullVsVersion < m_LowestSupportedVersion) {
+                versionMessageSuffix = $"{Environment.NewLine}This extension only supports VS {m_LowestSupportedVersion}+, you are currently using {m_FullVsVersion}";
+            }
+
+            if (m_FullVsVersion.Major < 16) {
+                versionMessageSuffix = $"{Environment.NewLine}Support for VS2017 (15.*) is likely to end this year. You're using: {m_FullVsVersion}";
+            }
+
+            MessageBox.Show($"An error has occured during conversion - press Ctrl+C to copy the details: {exceptionSpecificMessage}{ex}{versionMessageSuffix}",
+                m_Title, MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         /// <returns>true iff the user answers "OK"</returns>

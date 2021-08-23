@@ -29,7 +29,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         /// <summary>
         ///     VS Package that provides this command, not null.
         /// </summary>
-        private readonly AsyncPackage package;
+        private readonly AsyncPackage _package;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="PasteAsVB" /> class.
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private PasteAsVB(CodeConverterPackage package, CodeConversion codeConversion,
             OleMenuCommandService commandService)
         {
-            this.package = package ?? throw new ArgumentNullException(nameof(package));
+            this._package = package ?? throw new ArgumentNullException(nameof(package));
             _codeConversion = codeConversion;
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
@@ -59,7 +59,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         /// <summary>
         ///     Gets the service provider from the owner package.
         /// </summary>
-        private IAsyncServiceProvider ServiceProvider => package;
+        private IAsyncServiceProvider ServiceProvider => _package;
 
         /// <remarks>
         ///     Must be called from UI thread
@@ -86,7 +86,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             try {
                 await _codeConversion.PasteAsAsync<CSToVBConversion>(cancellationToken);
             } catch (Exception ex) {
-                await VisualStudioInteraction.ShowExceptionAsync(ex);
+                await _package.ShowExceptionAsync(ex);
             }
         }
     }

@@ -173,7 +173,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 var projects = VisualStudioInteraction.GetSelectedProjectsAsync(ProjectExtension);
                 await _codeConversion.ConvertProjectsAsync<CSToVBConversion>(await projects, cancellationToken);
             } catch (Exception ex) {
-                await VisualStudioInteraction.ShowExceptionAsync(ex);
+                await _package.ShowExceptionAsync(ex);
             }
         }
 
@@ -186,7 +186,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             try {
                 await _codeConversion.ConvertDocumentAsync<CSToVBConversion>(documentPath, selected, cancellationToken);
             } catch (Exception ex) {
-                await VisualStudioInteraction.ShowExceptionAsync(ex);
+                await _package.ShowExceptionAsync(ex);
             }
         }
     }
