@@ -5,11 +5,20 @@ namespace CodeConv.Shared.Util
 {
     internal static class AppDomainExtensions
     {
-        public static void UseVersionAgnosticAssemblyResolution(this AppDomain appDomain) => appDomain.AssemblyResolve += LoadAnyVersion;
+        private static bool _hasRegisteredAssemblyResolveEvent;
+        private static bool _useVersionAgnosticAssemblyResolution;
+        public static void UseVersionAgnosticAssemblyResolution(this AppDomain appDomain, bool enable = true)
+        {
+            _useVersionAgnosticAssemblyResolution = enable;
+            if (_useVersionAgnosticAssemblyResolution && !_hasRegisteredAssemblyResolveEvent) {
+                appDomain.AssemblyResolve += LoadAnyVersion;
+                _hasRegisteredAssemblyResolveEvent = true;
+            }
+        }
 
         private static Assembly? LoadAnyVersion(object? sender, ResolveEventArgs? args)
         {
-            if (args?.Name == null) return null;
+            if (!_useVersionAgnosticAssemblyResolution || args?.Name == null) return null;
             var requestedAssemblyName = new AssemblyName(args.Name);
             if (requestedAssemblyName.Version != null && requestedAssemblyName.Name != null) {
                 try {
