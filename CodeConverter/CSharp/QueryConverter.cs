@@ -372,9 +372,18 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.QueryClauseSyntax> ConvertJoinClauseAsync(VBSyntax.JoinClauseSyntax js)
         {
             var variable = js.JoinedVariables.Single();
-            var joinLhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => await c.Left.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor)));
-            var joinRhs = SingleExpression(await js.JoinConditions.SelectAsync(async c => await c.Right.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor)));
             var convertIdentifier = CommonConversions.ConvertIdentifier(variable.Identifier.Identifier);
+
+            var joinLhsExpressions = await js.JoinConditions.SelectAsync(async c =>
+                await c.Left.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
+
+            var joinRhsExpressions = await js.JoinConditions.SelectAsync(async c =>
+                await c.Right.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor));
+
+            var (lhsAnonymousExpression, rhsAnonymousExpression) = CreateJoinAnonymousObjectKeys(joinLhsExpressions
+               .Zip(joinRhsExpressions, (lhs, rhs) => (Lhs: lhs, Rhs: rhs))
+               .ToList(), convertIdentifier);
+
             var expressionSyntax = await variable.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
 
             CSSyntax.JoinIntoClauseSyntax joinIntoClauseSyntax = null;
@@ -384,15 +393,71 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .Select(a => SyntaxFactory.JoinIntoClause(CommonConversions.ConvertIdentifier(a.NameEquals.Identifier.Identifier)))
                     .SingleOrDefault();
             }
-            return SyntaxFactory.JoinClause(null, convertIdentifier, expressionSyntax, joinLhs, joinRhs, joinIntoClauseSyntax);
+
+            return SyntaxFactory.JoinClause(null, convertIdentifier, expressionSyntax, lhsAnonymousExpression,
+                rhsAnonymousExpression, joinIntoClauseSyntax);
         }
 
-        private CSSyntax.ExpressionSyntax SingleExpression(IReadOnlyCollection<CSSyntax.ExpressionSyntax> expressions)
+        private static (CSSyntax.ExpressionSyntax Lhs, CSSyntax.ExpressionSyntax Rhs) CreateJoinAnonymousObjectKeys(IEnumerable<(CSSyntax.ExpressionSyntax Lhs, CSSyntax.ExpressionSyntax Rhs)> expressions,
+            SyntaxToken convertIdentifier)
         {
-            if (expressions.Count == 1) return expressions.Single();
-            return SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(expressions.Select((e, i) =>
-                SyntaxFactory.AnonymousObjectMemberDeclarator(SyntaxFactory.NameEquals($"key{i}"), e)
-            )));
+            // C# enforces specific ordering of range variables around the equals token inside a join clause (CS1937)
+            var swappedExpressions = expressions
+               .Select(expression => {
+                    return expression.Lhs switch
+                    {
+                        CSSyntax.MemberAccessExpressionSyntax mac => mac.Expression is not CSSyntax.IdentifierNameSyntax idNameSyntax ||
+                                                                     idNameSyntax.Identifier.ValueText != convertIdentifier.ValueText
+                            ? expression
+                            : SwapExpressions(expression),
+
+
+                        CSSyntax.IdentifierNameSyntax idName => idName.Identifier.ValueText != convertIdentifier.ValueText
+                            ? expression
+                            : SwapExpressions(expression),
+
+                        var _ => throw new NotImplementedException($"Conversion for join query clause with condition of kind '{expression.Lhs.Kind()}' not implemented")
+                    };
+                })
+               .ToList();
+
+            if (swappedExpressions.Count == 1) return swappedExpressions.Single();
+
+            static CSSyntax.AnonymousObjectCreationExpressionSyntax AnonCreateFunc(
+                IEnumerable<(CSSyntax.ExpressionSyntax Lhs, CSSyntax.ExpressionSyntax Rhs)> exp, bool isLhs)
+            {
+                var keySeparatedList = SyntaxFactory.SeparatedList(exp.Select((se, i) =>
+                {
+                    var keyNameEquals = SyntaxFactory.NameEquals($"key{i}");
+                    var anonObjectDeclarator = SyntaxFactory.AnonymousObjectMemberDeclarator(keyNameEquals, isLhs ? se.Lhs : se.Rhs);
+
+                    return anonObjectDeclarator;
+                }));
+
+                var anonObjectExpression = SyntaxFactory.AnonymousObjectCreationExpression(keySeparatedList);
+
+                return anonObjectExpression;
+            }
+
+            var lhsAnonymousObjectExpressions = AnonCreateFunc(swappedExpressions, true);
+            var rhsAnonymousObjectExpressions = AnonCreateFunc(swappedExpressions, false);
+
+            return (lhsAnonymousObjectExpressions, rhsAnonymousObjectExpressions);
+        }
+
+        /// <summary>
+        /// This method swaps the lhs and rhs of <paramref name="expression"/>
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        private static (CSSyntax.ExpressionSyntax Lhs, CSSyntax.ExpressionSyntax Rhs) SwapExpressions(
+            (CSSyntax.ExpressionSyntax Lhs, CSSyntax.ExpressionSyntax Rhs) expression)
+        {
+            var (lhs, rhs) = expression;
+            expression.Lhs = rhs;
+            expression.Rhs = lhs;
+
+            return expression;
         }
     }
 }

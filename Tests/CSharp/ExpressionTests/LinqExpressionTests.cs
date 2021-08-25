@@ -370,7 +370,154 @@ End Sub", @"private static void ASub()
 }");
         }
 
-        [Fact()]
+        [Fact]
+        public async Task LinqJoinReorderExpressionsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+    Public CustomerID As String
+    Public CompanyName As String
+End Class
+
+Class Order
+    Public CustomerID As String
+    Public Total As String
+End Class
+
+Class Test
+Private Shared Sub ASub()
+    Dim customers = New List(Of Customer)
+    Dim orders = New List(Of Order)
+    Dim customerList = From cust In customers
+                       Join ord In orders On ord.CustomerID Equals cust.CustomerID
+                       Select cust.CompanyName, ord.Total
+End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class Customer
+{
+    public string CustomerID;
+    public string CompanyName;
+}
+
+internal partial class Order
+{
+    public string CustomerID;
+    public string Total;
+}
+
+internal partial class Test
+{
+    private static void ASub()
+    {
+        var customers = new List<Customer>();
+        var orders = new List<Order>();
+        var customerList = from cust in customers
+                           join ord in orders on cust.CustomerID equals ord.CustomerID
+                           select new { cust.CompanyName, ord.Total };
+    }
+}");
+        }
+
+        [Fact]
+        public async Task LinqMultipleJoinConditionsReorderExpressionsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+    Public CustomerID As String
+    Public CompanyName As String
+End Class
+
+Class Order
+    Public CustomerID As String
+    Public Total As String
+End Class
+
+Class Test
+Private Shared Sub ASub()
+    Dim customers = New List(Of Customer)
+    Dim orders = New List(Of Order)
+    Dim customerList = From cust In customers
+                       Join ord In orders On ord.CustomerID Equals cust.CustomerID And cust.CompanyName Equals ord.Total
+                       Select cust.CompanyName, ord.Total
+End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class Customer
+{
+    public string CustomerID;
+    public string CompanyName;
+}
+
+internal partial class Order
+{
+    public string CustomerID;
+    public string Total;
+}
+
+internal partial class Test
+{
+    private static void ASub()
+    {
+        var customers = new List<Customer>();
+        var orders = new List<Order>();
+        var customerList = from cust in customers
+                           join ord in orders on new { key0 = cust.CustomerID, key1 = cust.CompanyName } equals new { key0 = ord.CustomerID, key1 = ord.Total }
+                           select new { cust.CompanyName, ord.Total };
+    }
+}");
+        }
+
+        [Fact]
+        public async Task LinqMultipleIdentifierOnlyJoinConditionsReorderExpressionsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+    Public CustomerID As String
+    Public CompanyName As String
+End Class
+
+Class Order
+    Public Customer As Customer
+    Public Total As String
+End Class
+
+Class Test
+Private Shared Sub ASub()
+    Dim customers = New List(Of Customer)
+    Dim orders = New List(Of Order)
+    Dim customerList = From cust In customers
+                       Join ord In orders On ord.Customer Equals cust And cust.CompanyName Equals ord.Total
+                       Select cust.CompanyName, ord.Total
+End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class Customer
+{
+    public string CustomerID;
+    public string CompanyName;
+}
+
+internal partial class Order
+{
+    public Customer Customer;
+    public string Total;
+}
+
+internal partial class Test
+{
+    private static void ASub()
+    {
+        var customers = new List<Customer>();
+        var orders = new List<Order>();
+        var customerList = from cust in customers
+                           join ord in orders on new { key0 = cust.Customer, key1 = cust.CompanyName } equals new { key0 = ord.Customer, key1 = ord.Total }
+                           select new { cust.CompanyName, ord.Total };
+    }
+}");
+        }
+
+        [Fact]
         public async Task LinqGroupByTwoThingsAnonymouslyAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
