@@ -33,7 +33,7 @@ jobs:
     - name: Publish all
       run: dotnet publish CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
     - name: Build vsix using legacy msbuild
-      run: msbuild Vsix/Vsix.csproj /p:Platform=$env:BuildPlatform  /p:Configuration=$env:BuildTarget
+      run: msbuild Vsix/Vsix.csproj -restore /p:Configuration=$env:BuildTarget
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
