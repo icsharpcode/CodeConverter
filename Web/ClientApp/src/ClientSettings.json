@@ -1,6 +1,20 @@
 {
     "endpoints": {
-        "conversion": "/api/converter/",
-        "version":  "/api/version/"
-    }
+        "convert": "/api/Convert/",
+        "version": "/api/Version/"
+    },
+    "baseUris": [
+        {
+            "key": "SameApp",
+            "baseUri": ""
+        },
+        {
+            "key": "LocalFunc",
+            "baseUri": "http://localhost:7071"
+        },
+        {
+            "key": "HostedFunc",
+            "baseUri": "https://dotnet-codeconverter.azurewebsites.net"
+        }
+    ]
 }

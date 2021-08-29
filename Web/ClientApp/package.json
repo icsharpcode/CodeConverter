@@ -2,6 +2,38 @@
     "name": "codeconverter",
     "version": "0.1.0",
     "private": true,
+    "eslintConfig": {
+        "extends": "react-app"
+    },
+    "scripts": {
+        "start": "rimraf ./build && react-scripts start",
+        "build": "react-scripts build",
+        "test": "cross-env CI=true react-scripts test --env=jsdom",
+        "eject": "react-scripts eject",
+        "lint": "eslint ./src/"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "babel": {
+        "presets": [
+            [
+                "@babel/preset-react",
+                {
+                    "runtime": "automatic"
+                }
+            ]
+        ]
+    },
     "dependencies": {
         "@monaco-editor/react": "^4.1.3",
         "axios": "^0.21.1",
@@ -43,37 +75,5 @@
         "jquery": "^3.6.0",
         "popper.js": "^1.16.1",
         "typescript": "^3.9.9"
-    },
-    "eslintConfig": {
-        "extends": "react-app"
-    },
-    "scripts": {
-        "start": "rimraf ./build && react-scripts start",
-        "build": "react-scripts build",
-        "test": "cross-env CI=true react-scripts test --env=jsdom",
-        "eject": "react-scripts eject",
-        "lint": "eslint ./src/"
-    },
-    "browserslist": {
-        "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
-        ],
-        "development": [
-            "last 1 chrome version",
-            "last 1 firefox version",
-            "last 1 safari version"
-        ]
-    },
-    "babel": {
-        "presets": [
-            [
-                "@babel/preset-react",
-                {
-                    "runtime": "automatic"
-                }
-            ]
-        ]
     }
 }
