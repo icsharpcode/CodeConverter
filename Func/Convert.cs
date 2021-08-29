@@ -18,7 +18,7 @@ namespace ICSharpCode.CodeConverter.Func
         //
         [FunctionName("Convert")]
 #pragma warning disable VSTHRD200 // Use "Async" suffix for async methods - Name must be "Run" for this to work AFAIK
-        public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, ILogger log)
 #pragma warning restore VSTHRD200 // Use "Async" suffix for async methods
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
