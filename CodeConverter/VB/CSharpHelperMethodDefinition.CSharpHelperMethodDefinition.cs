@@ -29,9 +29,9 @@ Shared Function {ThrowMethodName}(Of T)(ByVal e As System.Exception) As T
     Throw e
 End Function";
 
-        private static readonly ICompiler _compiler = new VisualBasicCompiler();
-        List<INamedTypeSymbol> AssignMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
-        List<INamedTypeSymbol> ThrowMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
+        private static readonly ICompiler Compiler = new VisualBasicCompiler();
+        private List<INamedTypeSymbol> AssignMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
+        private List<INamedTypeSymbol> ThrowMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
 
         public void AddAssignMethod(INamedTypeSymbol symbol) {
             if(AssignMethodTypeSymbols.Contains(symbol))
@@ -68,7 +68,7 @@ End Function";
 
         private StatementSyntax Parse(string methodDefinition)
         {
-            return _compiler.CreateTree(methodDefinition)
+            return Compiler.CreateTree(methodDefinition)
                 .GetRoot().ChildNodes().Single().NormalizeWhitespace() as StatementSyntax;
         }
     }
