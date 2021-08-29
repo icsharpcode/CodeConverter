@@ -3,7 +3,6 @@
         "convert": "/api/Convert/",
         "version": "/api/Version/"
     },
-    "defaultSource": "SameApp",
     "baseUris": [
         {
             "key": "SameApp",
