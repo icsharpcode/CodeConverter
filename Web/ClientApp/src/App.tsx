@@ -15,7 +15,7 @@ const App = () => {
             .then((response: any) => {
                 setVersionString(response.data);
             });
-    });
+    }, []);
 
     return (
         <Layout>
