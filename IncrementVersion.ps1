@@ -91,10 +91,10 @@ function Update-Changelog($filePath, $newVersion) {
 
 $newVersion = Increment-VersionInFile '.github\workflows\dotnet.yml' "(BuildVersion: ')(\d+\.\d+\.\d+)()"
 Increment-VersionInFile 'Vsix\source.extension.vsixmanifest' '(7e2a69d6-193b-4cdf-878d-3370d5931942" Version=")(\d+\.\d+\.\d+)(\.)' | Out-Null
-Get-ChildItem -Recurse '*.csproj' | Where { -not $_.FullName.Contains("TestData")} | % {
-    Increment-VersionInFile $_ '(\n    <Version>)(\d+\.\d+\.\d+)(<)' $true | Out-Null
-    Increment-VersionInFile $_ '(\n    <FileVersion>)(\d+\.\d+\.\d+)(\.)'  $true | Out-Null
-    Increment-VersionInFile $_ '(\n    <AssemblyVersion>)(\d+\.\d+\.\d+)(\.)' $true | Out-Null
-}
+$buildProps = 'Directory.Build.props'
+Increment-VersionInFile $buildProps '(\n    <Version>)(\d+\.\d+\.\d+)(<)' $true | Out-Null
+Increment-VersionInFile $buildProps '(\n    <FileVersion>)(\d+\.\d+\.\d+)(\.)'  $true | Out-Null
+Increment-VersionInFile $buildProps '(\n    <AssemblyVersion>)(\d+\.\d+\.\d+)(\.)' $true | Out-Null
+
 $newVersionString = $newVersion.ToString(3)
 Update-Changelog 'CHANGELOG.md' $newVersionString
