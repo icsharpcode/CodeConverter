@@ -62,4 +62,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip
-        path: Web/bin/${{ env.BuildTarget }}/publish/
+        path: Func/bin/${{ env.BuildTarget }}/publish/
