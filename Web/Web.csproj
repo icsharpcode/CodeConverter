@@ -3,11 +3,6 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
-    <AssemblyVersion>8.3.1.0</AssemblyVersion>
-    <FileVersion>8.3.1.0</FileVersion>
-    <Version>8.3.1</Version>
-    <LangVersion>8</LangVersion>
-    <NoWarn>$(NoWarn);1998</NoWarn>
     <RootNamespace>ICSharpCode.CodeConverter.Web</RootNamespace>
     <AssemblyName>ICSharpCode.CodeConverter.Web</AssemblyName>
     <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>

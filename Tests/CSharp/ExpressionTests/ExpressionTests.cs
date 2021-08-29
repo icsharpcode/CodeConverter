@@ -1936,7 +1936,7 @@ public partial class Compound
         }
 
         [Fact]
-        public async Task CintIsConvertedCorrectly()
+        public async Task CintIsConvertedCorrectlyAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Class Compound

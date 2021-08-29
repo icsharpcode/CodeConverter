@@ -30,28 +30,36 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
       with:
        vs-version: '[16.6,)'
-    - name: Restore the application
-      run: msbuild CodeConverter.sln /t:Restore /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
-    - name: Build
-      run: msbuild CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
+    - name: Publish the application
+      run: dotnet publish CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
-        Tests1: Tests\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.Tests.dll
+        Tests1: Tests/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.Tests.dll
     - name: Pack
       run:  dotnet pack CodeConverter/CodeConverter.csproj -c $env:BuildTarget
     - name: Upload NuGet package
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.${{ env.BuildVersion }}.nupkg
-        path: CodeConverter\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.*.nupkg
+        path: CodeConverter/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.*.nupkg
     - name: Upload VSIX
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.VsExtension.${{ env.BuildVersion }}.vsix
-        path: Vsix\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.VsExtension.vsix
+        path: Vsix/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.VsExtension.vsix
     - name: Upload code conv tool
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.CodeConv.${{ env.BuildVersion }}.nupkg
-        path: CommandLine\CodeConv\bin\${{ env.BuildTarget }}\ICSharpCode.CodeConverter.CodeConv.*.nupkg
+        path: CommandLine/CodeConv/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.CodeConv.*.nupkg
+    - name: Upload website
+      uses: actions/upload-artifact@v2
+      with:
+        name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
+        path: Web/bin/${{ env.BuildTarget }}/publish/
+    - name: Upload Azure function
+      uses: actions/upload-artifact@v2
+      with:
+        name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip
+        path: Func/bin/${{ env.BuildTarget }}/publish/

@@ -594,12 +594,12 @@ public partial class TestIssue479
         {
             for (int i = 0; i < 3; i++) {
                 try {
+                    await FlakeyAliasedImportsWithTypePromotionIssue401Async();
+                    return;
+                } catch (Exception) {
                     // I believe there are two valid simplifications and the simplifier is non-deterministic
                     // Just retry a few times and see if we get the one we expect before failing
                     // At the same time as this loop I added "aliasedAgain" in the hope that it'd discourage the simplifier from fully qualifying Strings
-                    await FlakeyAliasedImportsWithTypePromotionIssue401Async();
-                    return;
-                } catch (Exception e) {
                 }
             }
 

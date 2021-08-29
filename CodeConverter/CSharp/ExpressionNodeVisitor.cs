@@ -92,14 +92,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitXmlDocument(VBasic.Syntax.XmlDocumentSyntax node)
         {
-            var interpolationsList = SyntaxFactory.List(await node.PrecedingMisc.Concat(node.Root).Concat(node.FollowingMisc).SelectManyAsync(this.AcceptXmlInterpolated));
+            var interpolationsList = SyntaxFactory.List(await node.PrecedingMisc.Concat(node.Root).Concat(node.FollowingMisc).SelectManyAsync(this.AcceptXmlInterpolatedAsync));
             return InterpolatedString(interpolationsList);
         }
 
         public override async Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
-            var interpolationsList = SyntaxFactory.List(await AcceptXmlInterpolated(node));
+            var interpolationsList = SyntaxFactory.List(await AcceptXmlInterpolatedAsync(node));
             return InterpolatedString(interpolationsList);
         }
 
@@ -118,11 +118,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static InterpolatedStringTextSyntax InterpolatedStringText(string text) =>
             SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(SyntaxFactory.TriviaList(), SyntaxKind.InterpolatedStringTextToken, text, text, SyntaxFactory.TriviaList()));
 
-        private async Task<IEnumerable<InterpolatedStringContentSyntax>> AcceptXmlInterpolated(VBSyntax.XmlNodeSyntax n)
+        private async Task<IEnumerable<InterpolatedStringContentSyntax>> AcceptXmlInterpolatedAsync(VBSyntax.XmlNodeSyntax n)
         {
             if (n is VBSyntax.XmlElementSyntax xmlEs) {
                 return InterpolatedStringText(LiteralConversions.EscapeVerbatimQuotes(xmlEs.StartTag.ToString())).Yield()
-                .Concat(await xmlEs.Content.SelectManyAsync(AcceptXmlInterpolated))
+                .Concat(await xmlEs.Content.SelectManyAsync(AcceptXmlInterpolatedAsync))
                 .Concat(InterpolatedStringText(LiteralConversions.EscapeVerbatimQuotes(xmlEs.EndTag.ToString())));
             }
             var expression = await n.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);

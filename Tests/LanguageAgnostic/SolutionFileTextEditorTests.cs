@@ -547,7 +547,9 @@ EndProject";
         private static Solution CreateTestSolution()
         {
             var ws = Task.Run(() => ThreadSafeWorkspaceHelper.CreateAdhocWorkspace.GetValueAsync())
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits - the tests don't deadlock
                .GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
             var solutionId = SolutionId.CreateNewId(SlnName);
             var versionStamp = VersionStamp.Create();
             var solutionInfo = SolutionInfo.Create(solutionId, versionStamp, SlnFilePath);

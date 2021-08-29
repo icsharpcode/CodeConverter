@@ -81,14 +81,14 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
             var solutionResult = string.IsNullOrWhiteSpace(_sourceSolutionContents) ? Enumerable.Empty<ConversionResult>() : ConvertSolutionFile().Yield();
-            var convertedProjects = await ConvertProjects();
+            var convertedProjects = await ConvertProjectsAsync();
             var projectsAndSolutionResults = UpdateProjectReferences(projectsToUpdateReferencesOnly).Concat(solutionResult).ToAsyncEnumerable();
             await foreach (var p in convertedProjects.Concat(projectsAndSolutionResults)) {
                 yield return p;
             }
         }
 
-        private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjects()
+        private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjectsAsync()
         {
             return _projectsToConvert.ToAsyncEnumerable().SelectMany(ConvertProject);
         }

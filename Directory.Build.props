@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <NoWarn>$(NoWarn);1998;NU5100</NoWarn>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyVersion>8.3.1.0</AssemblyVersion>
+    <FileVersion>8.3.1.0</FileVersion>
+    <Version>8.3.1</Version>
+    <Authors>ICSharpCode</Authors>
+    <Copyright>Copyright (c) 2017-2021 AlphaSierraPapa for the CodeConverter team</Copyright>
+    <Company>ICSharpCode</Company>
+  </PropertyGroup>
+</Project>
