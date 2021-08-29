@@ -30,8 +30,10 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
       with:
        vs-version: '[16.6,)'
-    - name: Publish the application
+    - name: Publish all
       run: dotnet publish CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
+    - name: Build vsix using legacy msbuild
+      run: msbuild Vsix/Vsix.csproj -restore /p:Configuration=$env:BuildTarget
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
