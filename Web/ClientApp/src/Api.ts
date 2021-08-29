@@ -12,15 +12,10 @@ const getUri = (relativeUri: string) => {
 };
 
 export const getVersion = () =>
-    axios.get(getUri(ClientSettings.endpoints.version))
-    .then((response: any) => {
-        return response;
-    });
+    axios.get(getUri(ClientSettings.endpoints.version));
 
 export const convert = (inputCode: string, conversionType: string) =>
     axios.post(getUri(ClientSettings.endpoints.convert), {
         code: inputCode,
         requestedConversion: conversionType
-    }).then((response: any) => {
-        return response;
     });
