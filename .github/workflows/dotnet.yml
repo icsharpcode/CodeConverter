@@ -30,10 +30,8 @@ jobs:
       uses: microsoft/setup-msbuild@v1.0.2
       with:
        vs-version: '[16.6,)'
-    - name: Restore the application
-      run: msbuild CodeConverter.sln /t:Restore /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
-    - name: Build
-      run: msbuild CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform 
+    - name: Publish the application
+      run: dotnet publish CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
