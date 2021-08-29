@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ICSharpCode.CodeConverter.Web
 {
     [Route("api/[controller]")]
-    public class ConverterController : Controller
+    public class ConvertController : Controller
     {
         [HttpPost]
         [Produces(typeof(ConvertResponse))]

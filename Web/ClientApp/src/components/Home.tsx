@@ -1,5 +1,4 @@
-import axios from "axios";
-import ClientSettings from "../ClientSettings.json"
+import * as Api from "../Api"
 import React, { useState, useRef, useEffect } from "react";
 import  Editor  from "@monaco-editor/react";
 import * as monacoEditor from "monaco-editor";
@@ -46,11 +45,7 @@ export const Home = () => {
         setConvertedCode("");
         setErrorMessageOnResponse("");
 
-        axios.post(ClientSettings.endpoints.conversion,
-                {
-                    code: inputCode,
-                    requestedConversion: conversionType
-                })
+        Api.convert(inputCode, conversionType)
             .then((response: any) => {
                 setConverterCallInFlight(false);
                 if (200 === response.status) {
