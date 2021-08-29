@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.Web
     {
         [HttpPost]
         [Produces(typeof(ConvertResponse))]
-        public async Task<IActionResult> Post([FromBody] ConvertRequest todo)
+        public async Task<IActionResult> PostAsync([FromBody] ConvertRequest todo)
         {
             var response = await WebConverter.ConvertAsync(todo);
             return Ok(response);

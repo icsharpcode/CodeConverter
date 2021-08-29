@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
 import axios from "axios";
 import ClientSettings from "../ClientSettings.json"
+import React, { useState, useRef, useEffect } from "react";
 import  Editor  from "@monaco-editor/react";
 import * as monacoEditor from "monaco-editor";
 
@@ -16,6 +16,7 @@ export const Home = () => {
     const conversionIsFromVb = conversionType === vbNetToCsId;
     const inputEditor = useRef(null as unknown as monacoEditor.editor.IStandaloneCodeEditor);
     const outputEditor = useRef(null as unknown as monacoEditor.editor.IStandaloneCodeEditor);
+
     const selectAndFocus = (editorToFocus: React.MutableRefObject<monacoEditor.editor.IStandaloneCodeEditor>) => {
         setTimeout(() => {
             const editorToFocusCurrent = editorToFocus.current;
@@ -141,7 +142,7 @@ export const Home = () => {
                     errorMessageOnResponse.length > 1 &&
                     <p style={{ whiteSpace: "pre-wrap" }}>Error message:<br/>{errorMessageOnResponse}</p>}
 
-                <p>Get a more accurate conversion by using our free <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter extension for Visual Studio</a>.</p>
-            </div>
-        );
+            <p>Get a more accurate conversion by using our free <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter extension for Visual Studio</a>.</p>
+        </div>
+    );
 };

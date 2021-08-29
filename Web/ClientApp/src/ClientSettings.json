@@ -1,5 +1,6 @@
 {
     "endpoints": {
-        "conversion": "/api/converter/"
+        "conversion": "/api/converter/",
+        "version":  "/api/version/"
     }
 }
