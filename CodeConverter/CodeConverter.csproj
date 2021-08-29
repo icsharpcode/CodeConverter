@@ -3,7 +3,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
-    <Company>ICSharpCode</Company>
     <Description>
       Convert VB.NET to/from C#
       * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
@@ -13,10 +12,6 @@
       See https://github.com/icsharpcode/CodeConverter for a pre-built command line, visual studio extension and web converter.
     </Description>
     <Product>Code Converter for C# to/from VB.NET</Product>
-    <Copyright>Copyright (c) 2017-2020 AlphaSierraPapa for the CodeConverter team</Copyright>
-    <AssemblyVersion>8.3.1.0</AssemblyVersion>
-    <FileVersion>8.3.1.0</FileVersion>
-    <Version>8.3.1</Version>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -25,9 +20,6 @@
     <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
     <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md </PackageReleaseNotes>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <LangVersion>9.0</LangVersion>
-    <NoWarn>$(NoWarn);1998</NoWarn>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Shared\DefaultReferences.cs" />

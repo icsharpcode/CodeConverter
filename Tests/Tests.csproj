@@ -4,9 +4,6 @@
     <OutputType>Library</OutputType>
     <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <LangVersion>8.0</LangVersion>
-    <NoWarn>$(NoWarn);1998</NoWarn>
     <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
