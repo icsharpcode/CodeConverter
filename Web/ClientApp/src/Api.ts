@@ -11,8 +11,7 @@ const getUri = (relativeUri: string) => {
     return baseUri + relativeUri;
 };
 
-export const getVersion = () =>
-    axios.get(getUri(ClientSettings.endpoints.version));
+export const getVersion = () => axios.get(getUri(ClientSettings.endpoints.version));
 
 export const convert = (inputCode: string, conversionType: string) =>
     axios.post(getUri(ClientSettings.endpoints.convert), {
