@@ -51,10 +51,9 @@
   <ItemGroup>
     <!-- Build against VS 15.7 -->
     <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="2.8.2" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="15.0.0" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK.EmbedInteropTypes" Version="15.0.29" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="15.0.1" ExcludeAssets="runtime" />
     <!-- Avoids needing the VSSDK MSI installed. Version is the VS version used during compilation, not where the VSIX will be installed -->
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.0.2150-preview2">
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.0.4201-preview4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -77,9 +76,20 @@
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
-    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Threading.Tasks.Dataflow.dll">
-      <Link>System.Threading.Tasks.Dataflow.dll</Link>
+    <Content Include="..\CommandLine\CodeConv.NetFramework\bin\Debug\\Microsoft.Bcl.AsyncInterfaces.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>Lib\Microsoft.Bcl.AsyncInterfaces.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\CommandLine\CodeConv.NetFramework\bin\Debug\\System.Threading.Tasks.Dataflow.dll">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>Lib\System.Threading.Tasks.Dataflow.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\CommandLine\CodeConv.NetFramework\bin\Debug\\System.Threading.Tasks.Extensions.dll">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>Lib\System.Threading.Tasks.Extensions.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\refactoringessentials-logo90.png">
       <IncludeInVSIX>true</IncludeInVSIX>
