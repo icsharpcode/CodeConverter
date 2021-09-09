@@ -1407,7 +1407,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attrListsToRemove = parameter.AttributeLists.SingleOrDefault(aList => aList.Attributes
                .All(a =>
                 {
-                    var attrIdentifier = ((IdentifierNameSyntax)a.Name).Identifier.Text;
+                    string attrIdentifier = string.Empty;
+
+                    if (a.Name is IdentifierNameSyntax identifierNameSyntax) {
+                        attrIdentifier = identifierNameSyntax.Identifier.Text;
+                    } else if (a.Name is AliasQualifiedNameSyntax aliasQualifiedNameSyntax) {
+                        attrIdentifier = aliasQualifiedNameSyntax.Alias.Identifier.Text;
+                    }
+
                     return optionalAttributes.Contains(attrIdentifier);
                 }));
 
