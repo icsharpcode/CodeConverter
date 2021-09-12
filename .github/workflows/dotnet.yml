@@ -18,7 +18,7 @@ jobs:
     - name: Update project version
       uses: roryprimrose/set-vs-sdk-project-version@v1
       with:
-        projectFilter: '**/CodeConverter.csproj'
+        projectFilter: 'Directory.Build.props'
         version: ${{ env.BuildVersion }}.${{ github.run_number }}
         assemblyVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
         fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
