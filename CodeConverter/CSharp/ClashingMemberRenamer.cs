@@ -15,12 +15,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// Renames symbols in a VB project so that they don't clash with rules for C# member names, attempting to rename the least public ones first.
         /// See https://github.com/icsharpcode/CodeConverter/issues/420
         /// </summary>
-        public static async Task<Project> RenameClashingSymbolsAsync(Project project)
+        public static async Task<Project> RenameClashingSymbolsAsync(Project project, IProgress<ConversionProgress> progress)
         {
             var compilation = await project.GetCompilationAsync();
             var memberRenames = SymbolRenamer.GetNamespacesAndTypesInAssembly(project, compilation)
                 .SelectMany(x => GetSymbolsWithNewNames(x, compilation));
-            return await SymbolRenamer.PerformRenamesAsync(project, memberRenames.ToList());
+            return await SymbolRenamer.PerformRenamesAsync(project, memberRenames.ToList(), progress);
         }
 
         private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)

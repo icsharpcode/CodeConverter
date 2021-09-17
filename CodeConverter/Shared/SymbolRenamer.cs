@@ -30,12 +30,15 @@ namespace ICSharpCode.CodeConverter.Shared
             return m.Name;
         }
 
-        public static async Task<Project> PerformRenamesAsync(Project project, IReadOnlyCollection<(ISymbol Original, string NewName)> symbolsWithNewNames)
+        public static async Task<Project> PerformRenamesAsync(Project project, IReadOnlyCollection<(ISymbol Original, string NewName)> symbolsWithNewNames, IProgress<ConversionProgress> progress)
         {
             var solution = project.Solution;
             foreach (var (originalSymbol, newName) in symbolsWithNewNames) {
                 project = solution.GetProject(project.Id);
-                var compilation = await project.GetCompilationAsync();
+            var compilation = await project.GetCompilationAsync();
+
+                progress?.Report(new ConversionProgress($"Renaming {originalSymbol} to {newName}", 0));
+
                 ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).FirstOrDefault();
                 if (currentDeclaration == null)
                     continue; //Must have already renamed this symbol for a different reason
