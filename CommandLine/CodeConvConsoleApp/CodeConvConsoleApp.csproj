@@ -27,5 +27,9 @@
     <ProjectReference Include="..\..\CodeConverter\CodeConverter.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="rmdir $(OutDir)NetFramework /s /q&#xD;&#xA;mkdir $(OutDir)NetFramework&#xD;&#xA;xcopy $(OutDir)..\..\..\CodeConv.NetFramework\bin\$(ConfigurationName) $(OutDir)NetFramework" />
+  </Target>
+
 
 </Project>
