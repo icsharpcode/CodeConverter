@@ -36,6 +36,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Func", "Func\Func.csproj", "{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConvConsoleApp", "CommandLine\CodeConvConsoleApp\CodeConvConsoleApp.csproj", "{41880B32-7D90-469D-B7EF-8A8E2D3DA621}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D} = {CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
