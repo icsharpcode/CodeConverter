@@ -709,15 +709,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
             SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
-            if (kind == SyntaxKind.LogicalNotExpression && await NegateAndSimplifyOrNullAsync(node, expr) is { } simpleNegation) {
-                return AsBool(node, simpleNegation);
+
+
+            if (kind == SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
+                if (t.IsNumericType() || t.IsEnumType()) {
+                    csTokenKind = SyntaxKind.TildeToken;
+                } else if (await NegateAndSimplifyOrNullAsync(node, expr, t) is { } simpleNegation) {
+                    return simpleNegation;
+                }
             }
 
-            if (kind == SyntaxKind.LogicalNotExpression &&
-                _semanticModel.GetTypeInfo(node.Operand).ConvertedType is {} t &&
-                (t.IsNumericType() || t.IsEnumType())) {
-                csTokenKind = SyntaxKind.TildeToken;
-            }
             return SyntaxFactory.PrefixUnaryExpression(
                 kind,
                 SyntaxFactory.Token(csTokenKind),
@@ -725,17 +726,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             );
         }
 
-        private ExpressionSyntax AsBool(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
-        {
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr, forceTargetType: _vbBooleanTypeSymbol);
-        }
-
-        private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr)
+        private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr, ITypeSymbol operandConvertedType)
         {
             if (await _operatorConverter.ConvertReferenceOrNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), true) is { } nothingComparison) {
                 return nothingComparison;
-            } else if (expr is BinaryExpressionSyntax bes && bes.OperatorToken.IsKind(SyntaxKind.EqualsToken)) {
-                return bes.WithOperatorToken(SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken));
+            } else if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
+                return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, expr, LiteralConversions.GetLiteralExpression(false));
+            } else if (expr is BinaryExpressionSyntax eq && eq.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken, SyntaxKind.ExclamationEqualsToken)){
+                return eq.WithOperatorToken(SyntaxFactory.Token(eq.OperatorToken.IsKind(SyntaxKind.ExclamationEqualsToken) ? SyntaxKind.EqualsEqualsToken : SyntaxKind.ExclamationEqualsToken));
             }
 
             return null;
@@ -764,14 +762,27 @@ namespace ICSharpCode.CodeConverter.CSharp
             var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
             ITypeSymbol forceLhsTargetType = null;
+            ITypeSymbol forceRhsTargetType = null;
             bool omitRightConversion = false;
             bool omitConversion = false;
-            if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression) && !lhsTypeInfo.Type.IsEnumType() && !rhsTypeInfo.Type.IsEnumType()) {
-                omitRightConversion = true;
-                omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
-                    rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
-                if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
-                    forceLhsTargetType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
+            if (lhsTypeInfo.Type != null && rhsTypeInfo.Type != null)
+            {
+                if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression) && 
+                !lhsTypeInfo.Type.IsEnumType() && !rhsTypeInfo.Type.IsEnumType())
+                {
+                    omitRightConversion = true;
+                    omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
+                                     rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
+                    if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
+                        forceLhsTargetType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
+                    }
+                }
+                else if (node.AlwaysHasBooleanTypeInCSharp()) {
+                    if (!node.Left.AlwaysHasBooleanTypeInCSharp() && lhsTypeInfo.Type.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
+                        forceLhsTargetType = _vbBooleanTypeSymbol;
+                    } else if (!node.Right.AlwaysHasBooleanTypeInCSharp() && rhsTypeInfo.Type.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
+                        forceRhsTargetType = _vbBooleanTypeSymbol;
+                    }
                 }
             }
 
@@ -792,9 +803,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
                                  lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
-                                 && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression);
+                                 && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
+                                 && forceLhsTargetType == null && forceRhsTargetType == null;
             lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
-            rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+            rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, forceTargetType: forceRhsTargetType);
 
 
             var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);

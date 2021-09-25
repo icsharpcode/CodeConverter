@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 
 * Convert VB exclamation mark into C# indexer [#765](https://github.com/icsharpcode/CodeConverter/issues/765)
+* Deal with nullable bools in binary expressions [#712](https://github.com/icsharpcode/CodeConverter/issues/712)
 
 ### C# -> VB
 

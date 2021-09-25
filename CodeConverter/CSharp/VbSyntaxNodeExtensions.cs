@@ -1,4 +1,5 @@
-﻿using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using ICSharpCode.CodeConverter.Util;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -22,5 +23,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return parentIsMemberAccessExpression || parentIsNonArgumentExpression && !parentIsBinaryExpression && !parentIsLambda && !parentIsParenthesis;
         }
+
+        public static bool AlwaysHasBooleanTypeInCSharp(this VBSyntax.ExpressionSyntax node) =>
+            node.SkipIntoParens().IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrElseExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.NotExpression);
     }
 }

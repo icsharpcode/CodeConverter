@@ -23,6 +23,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
+using TypeInfo = Microsoft.CodeAnalysis.TypeInfo;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -304,7 +305,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 typeConversionKind = TypeConversionKind.Conversion;
                 return true;
             } else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean) {
-                typeConversionKind = TypeConversionKind.NullableBool;
+                typeConversionKind = vbNode.AlwaysHasBooleanTypeInCSharp() ? TypeConversionKind.Identity : TypeConversionKind.NullableBool;
                 return true;
             } else if (csConversion.IsExplicit) {
                 typeConversionKind = TypeConversionKind.DestructiveCast;

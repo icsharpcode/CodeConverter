@@ -198,6 +198,51 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task ImplicitBooleanConversion712Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
+    Private Function TestMethod()
+        Dim var1 As Boolean? = Nothing
+        Dim var2 As Boolean? = Nothing
+        Return var1 OrElse Not var2
+    End Function
+End Class", @"
+internal partial class TestClass712
+{
+    private object TestMethod()
+    {
+        bool? var1 = default;
+        bool? var2 = default;
+        return var1 == true || var2 == false;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ImplicitIfStatementBooleanConversion712Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
+    Private Function TestMethod()
+        Dim var1 As Boolean? = Nothing
+        Dim var2 As Boolean? = Nothing
+        If var1 OrElse Not var2 Then Return True Else Return False
+    End Function
+End Class", @"
+internal partial class TestClass712
+{
+    private object TestMethod()
+    {
+        bool? var1 = default;
+        bool? var2 = default;
+        if (var1 == true || var2 == false)
+            return true;
+        else
+            return false;
+    }
+}");
+        }
+
+        [Fact]
         public async Task ConversionInComparisonOperatorAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionInComparisonOperatorTest
