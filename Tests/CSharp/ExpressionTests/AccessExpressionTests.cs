@@ -590,6 +590,30 @@ public partial class TestIssue479
         }
 
         [Fact]
+        public async Task ExclamationPointOperator765Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Imports System.Data
+
+Public Class Issue765
+    Public Sub GetByName(dataReader As IDataReader)
+        Dim foo As Object
+        foo = dataReader!foo
+    End Sub
+End Class",
+                @"using System.Data;
+
+public partial class Issue765
+{
+    public void GetByName(IDataReader dataReader)
+    {
+        object foo;
+        foo = dataReader[""foo""];
+    }
+}");
+        }
+
+        [Fact]
         public async Task AliasedImportsWithTypePromotionIssue401Async()
         {
             for (int i = 0; i < 3; i++) {

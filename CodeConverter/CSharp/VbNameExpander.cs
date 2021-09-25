@@ -24,8 +24,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static bool ShouldExpandMemberAccess(SyntaxNode node, SemanticModel semanticModel)
         {
             return node is MemberAccessExpressionSyntax maes && !IsRoslynInstanceExpressionBug(maes) &&
+                   !IsRoslynElementAccessBug(maes) &&
                    ShouldBeQualified(node, semanticModel.GetSymbolInfo(node).Symbol, semanticModel);
         }
+
+        /// <summary>
+        /// https://github.com/icsharpcode/CodeConverter/issues/765 Roslyn turns dataReader["foo"] into dataReader.Item
+        /// </summary>
+        private static bool IsRoslynElementAccessBug(MemberAccessExpressionSyntax maes) => maes.IsKind(SyntaxKind.DictionaryAccessExpression);
 
         private static bool ShouldExpandName(SyntaxNode node) =>
             node is NameSyntax && NameCanBeExpanded(node);
