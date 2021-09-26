@@ -151,6 +151,21 @@ internal partial class Test
         }
 
         [Fact]
+        public async Task HexAndBinaryLiterals754Async()
+        {
+        await TestConversionVisualBasicToCSharpAsync(
+        @"Class Test754
+    Private value As Integer = &H80000000
+    Private value2 As Integer = &HF1234567
+End Class", @"
+internal partial class Test754
+{
+    private int value = int.MinValue + 0x00000000;
+    private int value2 = int.MinValue + 0x71234567;
+}");
+        }
+
+        [Fact]
         public async Task Issue483_HexAndBinaryLiteralsAsync()
         {
         await TestConversionVisualBasicToCSharpAsync(

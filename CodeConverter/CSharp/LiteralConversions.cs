@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis.CSharp;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using Microsoft.CodeAnalysis;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
@@ -36,7 +34,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             // Important to use value text, otherwise "10.0" gets coerced to and integer literal of 10 which can change semantics
             value = ConvertLiteralNumericValueOrNull(value, convertedType) ?? value;
 
-            textForUser = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value);
+            var (maybeTextForUser, maybeFullExpression) = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value);
+            if (maybeFullExpression != null) return maybeFullExpression;
+            textForUser = maybeTextForUser;
             
             switch (value)
             {
@@ -139,7 +139,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         ///  https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/data-types/type-characters
         ///  https://stackoverflow.com/a/166762/1128762
         /// </summary>
-        private static string ConvertNumericLiteralValueText(string textForUser, object value)
+        private static (string textForUser, ExpressionSyntax MaybeFullExpression) ConvertNumericLiteralValueText(string textForUser, object value)
         {
             bool canBeBinaryOrHex = value switch {
                 double _ => false,
@@ -151,7 +151,25 @@ namespace ICSharpCode.CodeConverter.CSharp
             textForUser = textForUser.TrimEnd(_vbTypeLiteralNonHexSpecifierCharacters);
 
             if (canBeBinaryOrHex && textForUser.StartsWith("&H", StringComparison.OrdinalIgnoreCase)) {
-                textForUser = "0x" + textForUser.Substring(2);
+                string hexValue = textForUser.Substring(2);
+                textForUser = "0x" + hexValue;
+
+                int parsedHexValue = int.Parse(hexValue, System.Globalization.NumberStyles.HexNumber);
+
+                // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
+                // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `int.MinValue + 0x11234567`
+                // This way the value looks pretty close to before and remains a compile time constant
+                if (parsedHexValue < 0) {
+                    int positiveValue = parsedHexValue - int.MinValue;
+
+                    var intMinValueExpr = SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        SyntaxFactory.PredefinedType(
+                            SyntaxFactory.Token(SyntaxKind.IntKeyword)),
+                        SyntaxFactory.IdentifierName(nameof(int.MinValue)));
+                    var positiveValueExpr = NumericLiteral(SyntaxFactory.Literal("0x" + positiveValue.ToString("X8"), positiveValue));
+                    return (null, SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, intMinValueExpr, positiveValueExpr));
+                }
             } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
                 textForUser = "0b" + textForUser.Substring(2);
             } else if (textForUser.StartsWith("&", StringComparison.OrdinalIgnoreCase)) {
@@ -175,7 +193,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 textForUser += suffix;
             }
 
-            return textForUser;
+            return (textForUser, null);
         }
     }
 }
