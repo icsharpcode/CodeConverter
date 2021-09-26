@@ -17,6 +17,8 @@
     <StartArguments>/rootsuffix $(VSSDKTargetPlatformRegRootSuffix)</StartArguments>
     <SignAssembly>false</SignAssembly>
     <DeployExtension Condition="'$(BuildingInsideVisualStudio)' != 'true'">False</DeployExtension>
+    <CopyVsixExtensionLocation>$(LocalAppData)\Microsoft\VisualStudio\15.0_8bd9890a\Extensions\frc3cnfo.23z</CopyVsixExtensionLocation>
+    <CopyVsixExtensionFiles Condition="Exists($(CopyVsixExtensionLocation))">True</CopyVsixExtensionFiles>
     <RuntimeIdentifiers>win</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup>
