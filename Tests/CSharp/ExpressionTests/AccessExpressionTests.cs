@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Xunit;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
 {
@@ -28,6 +29,34 @@ public partial class TestClass
     }
 
     private static int Val;
+}");
+        }
+
+        [Fact]
+        public async Task DictionaryIndexingIssue769Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Classinator769
+  Private _dictionary As New Dictionary(Of Integer, String)
+
+  Private Sub AccessDictionary()
+    If ( _dictionary(2) = ""StringyMcStringface"")
+      Console.WriteLine(""It is true"")
+   End If
+  End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class Classinator769
+{
+    private Dictionary<int, string> _dictionary = new Dictionary<int, string>();
+
+    private void AccessDictionary()
+    {
+        if (_dictionary[2] == ""StringyMcStringface"")
+        {
+            Console.WriteLine(""It is true"");
+        }
+    }
 }");
         }
 
