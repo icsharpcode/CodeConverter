@@ -27,6 +27,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (containerSymbol.IsNamespace) return Enumerable.Empty<(ISymbol Original, string NewName)>();
 
+            // A hack here
+            // Enum Retirement.Shared.Enumerations.DynamicSection.Fld has over 10,000 elements
+            // The conversion program tries to rename each of the element and it takes forever.
+            // We don't want to rename them
+            if ((containerSymbol.Name == "Fld") && (containerSymbol.ContainingSymbol.Name == "DynamicSection")) return Enumerable.Empty<(ISymbol Original, string NewName)>();
+
             var members = containerSymbol.GetMembers()
                 .Where(m => m.Locations.Any(loc => loc.SourceTree != null && compilation.ContainsSyntaxTree(loc.SourceTree)))
                 .Where(s => containerSymbol.Name == s.Name || containerSymbol is INamedTypeSymbol nt && nt.IsEnumType() && SymbolRenamer.GetName(s).StartsWith(containerSymbol.Name));
