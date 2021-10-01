@@ -17,6 +17,12 @@ namespace ICSharpCode.CodeConverter.Shared
             var symbolsWithNewNames = toRename.OrderByDescending(x => x.DeclaredAccessibility).ThenByDescending(x => x.Kind == SymbolKind.Parameter || x.Kind == SymbolKind.Property).Skip(canKeepOne ? 1 :0).Select(tr =>
             {
                 string newName = NameGenerator.GenerateUniqueName(GetBaseForNewName(tr), canUse);
+                // A hack
+                // Conversion code renames property with Name Spec and type Spec to SpecProp
+                // We don't want to rename
+                if (GetName(tr) == "Spec" && tr.Kind == SymbolKind.Property && tr.ContainingType.Name == "Spec") {
+                    newName = GetName(tr);
+                }
                 return (Original: tr, NewName: newName);
             });
             return symbolsWithNewNames;
