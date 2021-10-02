@@ -162,7 +162,7 @@ public partial class Class1
         decimal someDecimal = 123.0m;
         set_SomeProp(123, (float)someDecimal);
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
+}");
         }
 
         [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
@@ -287,7 +287,7 @@ public partial class ParameterizedPropertiesAndEnumTest
                 }
         }
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
+}");
         }
 
         [Fact]

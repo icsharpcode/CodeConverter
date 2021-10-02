@@ -119,8 +119,14 @@ End Sub";
             if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue)
             {
                 await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
-                    "'", _ => true);
+                    "'", LineCanHaveVisualBasicComment);
             }
+        }
+
+        private static bool LineCanHaveVisualBasicComment(string l)
+        {
+            string trimmed = l.Trim();
+            return !trimmed.StartsWith("#Region") && !trimmed.StartsWith("#End Region");
         }
 
         private static string SurroundWithBlock(string expectedCsharpCode)
