@@ -81,7 +81,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public static async Task SelectAllAsync(this Window window)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-            ((TextSelection)window.Document.Selection).SelectAll();
+            ((TextSelection)window?.Document?.Selection)?.SelectAll(); // https://github.com/icsharpcode/CodeConverter/issues/770
             await TaskScheduler.Default;
         }
         public static async Task<IReadOnlyCollection<Project>> GetSelectedProjectsAsync(string projectExtension)
