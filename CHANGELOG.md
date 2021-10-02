@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.4.1] - 2021-10-02
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Convert VB exclamation mark into C# indexer [#765](https://github.com/icsharpcode/CodeConverter/issues/765)
 * Deal with nullable bools in binary expressions [#712](https://github.com/icsharpcode/CodeConverter/issues/712)
 * No longer tries to qualify type parameters (e.g. in generic delegates) [#771](https://github.com/icsharpcode/CodeConverter/issues/771)
