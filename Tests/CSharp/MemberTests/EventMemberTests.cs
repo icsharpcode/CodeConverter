@@ -137,7 +137,7 @@ Module Module1
 
     Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
     End Sub
-    ' Comment bug: This comment moves due to the Handles transformation
+
     Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
     End Sub
 End Module", @"using System.Runtime.CompilerServices;
@@ -178,7 +178,6 @@ internal static partial class Module1
             if (_EventClassInstance != null)
             {
                 _EventClassInstance.TestEvent -= PrintTestMessage2;
-                // Comment bug: This comment moves due to the Handles transformation
                 _EventClassInstance.TestEvent -= PrintTestMessage3;
             }
 

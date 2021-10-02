@@ -2083,7 +2083,7 @@ End Interface
 Public Class Foo
     Implements IFoo, IBar
     
-    Private Property ExplicitProp As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment ends up out of order, but attached to correct method
+    Private Property ExplicitProp As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment moves because this line gets split
         Get
           Return 5
         End Get
@@ -2115,10 +2115,10 @@ public partial class Foo : IFoo, IBar
         }
     }
 
-    int IBar.ExplicitProp // Comment ends up out of order, but attached to correct method
+    int IBar.ExplicitProp
     {
         get => ((IFoo)this).ExplicitProp;
-        set => ((IFoo)this).ExplicitProp = value;
+        set => ((IFoo)this).ExplicitProp = value; // Comment moves because this line gets split
     }
 }");
         }
@@ -2138,7 +2138,7 @@ End Interface
 Public Class Foo
     Implements IFoo, IBar
     
-    ReadOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment ends up out of order, but attached to correct method
+    ReadOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp
 End Class", @"
 public partial interface IFoo
 {
@@ -2157,7 +2157,7 @@ public partial class Foo : IFoo, IBar
     {
         get => ((IFoo)this).ExplicitProp;
     }
-    public int ExplicitPropRenamed // Comment ends up out of order, but attached to correct method
+    public int ExplicitPropRenamed
     {
         get => ((IFoo)this).ExplicitProp;
     }
@@ -2179,7 +2179,7 @@ End Interface
 Public Class Foo
     Implements IFoo, IBar
     
-    WriteOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment ends up out of order, but attached to correct method
+    WriteOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment moves because this line gets split
         Set
         End Set        
     End Property
@@ -2207,9 +2207,9 @@ public partial class Foo : IFoo, IBar
     {
         set => ((IFoo)this).ExplicitProp = value;
     }
-    public int ExplicitPropRenamed // Comment ends up out of order, but attached to correct method
+    public int ExplicitPropRenamed
     {
-        set => ((IFoo)this).ExplicitProp = value;
+        set => ((IFoo)this).ExplicitProp = value; // Comment moves because this line gets split
     }
 }");
         }

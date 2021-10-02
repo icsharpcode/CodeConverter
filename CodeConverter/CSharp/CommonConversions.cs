@@ -293,7 +293,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
                 }
                 var csId = CsEscapedIdentifier(text);
-                return sourceTriviaMapKind != SourceTriviaMapKind.None ? csId : csId.WithSourceMappingFrom(id);
+                return sourceTriviaMapKind == SourceTriviaMapKind.None ? csId : csId.WithSourceMappingFrom(id);
             } else {
                 text = text.WithHalfWidthLatinCharacters();
             }
