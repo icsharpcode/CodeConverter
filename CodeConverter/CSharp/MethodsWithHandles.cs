@@ -31,10 +31,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static MethodsWithHandles Create(List<MethodWithHandles> methodWithHandleses)
         {
             var handledMethodsFromPropertyWithEventName = methodWithHandleses
-                .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.EventContainerName.Text, MethodWithHandles: m)))
+                .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.EventContainerName, MethodWithHandles: m)))
                 .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
             var containerFieldsConvertedToProperties = methodWithHandleses
-                .SelectMany(m => m.HandledPropertyEventCSharpIds, (_, handled) => handled.EventContainerName.Text)
+                .SelectMany(m => m.HandledPropertyEventCSharpIds, (_, handled) => handled.EventContainerName)
                 .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
             return new MethodsWithHandles(methodWithHandleses, handledMethodsFromPropertyWithEventName, containerFieldsConvertedToProperties);
         }

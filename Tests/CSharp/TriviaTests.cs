@@ -144,7 +144,7 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
 
     public VisualBasicClass()
     {
-        this.Load += Eventhandler_Load;
+        Load += Eventhandler_Load;
     }
 
     #endregion
@@ -158,9 +158,7 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
 
     #endregion
 
-}
-1 target compilation errors:
-CS0103: The name 'this' does not exist in the current context");
+}");
         }
 
         [Fact]

@@ -625,9 +625,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(m => HandledEvents(m).Any())
                 .Select(m => {
                     var ids = HandledEvents(m)
-                        .Select(p => (SyntaxFactory.Identifier(GetCSharpIdentifierText(p.EventContainer)), CommonConversions.ConvertIdentifier(p.EventMember.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None), p.Event, p.ParametersToDiscard))
+                        .Select(p => (GetCSharpIdentifierText(p.EventContainer), CommonConversions.ConvertIdentifier(p.EventMember.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None), p.Event, p.ParametersToDiscard))
                         .ToList();
-                    var csFormIds = ids.Where(id => id.Item1.Text == "this" || id.Item1.Text == "base").ToList();
+                    var csFormIds = ids.Where(id => id.Item1 == "this" || id.Item1 == "base").ToList();
                     var csPropIds = ids.Except(csFormIds).ToList();
                     if (!csPropIds.Any() && !csFormIds.Any()) return null;
                     var csMethodId = SyntaxFactory.Identifier(m.Name);
@@ -667,12 +667,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private IEnumerable<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember, IEventSymbol Event, int ParametersToDiscard)> HandledEvent(VBSyntax.MethodStatementSyntax mbb)
         {
             var mayRequireDiscardedParameters = !mbb.ParameterList.Parameters.Any();
-            //TODO: PERF: Get group by syntax tree and get semantic model once in case it doesn't get succesfully cached
+            //TODO: PERF: Get group by syntax tree and get semantic model once in case it doesn't get successfully cached
             var semanticModel = mbb.SyntaxTree == _semanticModel.SyntaxTree ? _semanticModel : _vbCompilation.GetSemanticModel(mbb.SyntaxTree, ignoreAccessibility: true);
             return mbb.HandlesClause.Events.Select(e => {
                 var symbol = semanticModel.GetSymbolInfo(e.EventMember).Symbol as IEventSymbol;
                 var toDiscard = mayRequireDiscardedParameters ? symbol?.Type.GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
-                var symbolParameters = symbol?.GetParameters();
                 return (e.EventContainer, e.EventMember, Event: symbol, toDiscard);
             });
         }
