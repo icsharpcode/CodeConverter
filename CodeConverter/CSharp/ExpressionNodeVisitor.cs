@@ -1695,7 +1695,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var nodeSymbolInfo = GetSymbolInfoInDocument<ISymbol>(node);
             if (left != null &&
-                nodeSymbolInfo?.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol &&
+                nodeSymbolInfo != null &&
+                nodeSymbolInfo.MatchesKind(SymbolKind.TypeParameter) == false &&
+                nodeSymbolInfo.ContainingSymbol is INamespaceOrTypeSymbol containingSymbol &&
                 !ContextImplicitlyQualfiesSymbol(node, containingSymbol)) {
 
                 if (containingSymbol is ITypeSymbol containingTypeSymbol &&

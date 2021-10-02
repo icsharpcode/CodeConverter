@@ -396,6 +396,14 @@ CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.Compar
         }
 
         [Fact]
+        public async Task TestGenericDelegate771Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Delegate Function Operation(Of T)() As T",
+                @"public delegate T Operation<T>();");
+        }
+
+        [Fact]
         public async Task TestDelegateWithOmittedParameterTypeAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
