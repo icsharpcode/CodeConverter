@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class ParameterTests : ConverterTestBase
     {
         [Fact]
-        public async Task OptionalParameter_DoesNotThrowInvalidCastException()
+        public async Task OptionalParameter_DoesNotThrowInvalidCastExceptionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
 Public Class MyTestAttribute

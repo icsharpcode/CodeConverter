@@ -55,7 +55,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (!additionalInitializers.Any() && (!addConstructor || !addedConstructorRequiresInitializeComponent)) return convertedMembers;
             var constructors = new HashSet<ConstructorDeclarationSyntax>(constructorsEnumerable);
-            convertedMembers = convertedMembers.Except(constructors).ToList();
+
             if (addConstructor) {
                 var statements = new List<StatementSyntax>();
                 if (addedConstructorRequiresInitializeComponent) {
@@ -67,10 +67,24 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             foreach (var constructor in constructors) {
                 var newConstructor = WithAdditionalInitializers(constructor, additionalInitializers);
-                convertedMembers.Insert(0, newConstructor);
+                ReplaceOrInsertBeforeFirstConstructor(convertedMembers, constructor, newConstructor);
             }
 
             return convertedMembers;
+        }
+
+        private static void ReplaceOrInsertBeforeFirstConstructor(List<MemberDeclarationSyntax> convertedMembers, ConstructorDeclarationSyntax constructor, ConstructorDeclarationSyntax newConstructor)
+        {
+            int existingIndex = convertedMembers.IndexOf(constructor);
+            if (existingIndex > -1)
+            {
+                convertedMembers[existingIndex] = newConstructor;
+            }
+            else
+            {
+                int constructorIndex = convertedMembers.FindIndex(c => c is ConstructorDeclarationSyntax);
+                convertedMembers.Insert(constructorIndex > -1 ? constructorIndex : 0, newConstructor);
+            }
         }
 
         private ConstructorDeclarationSyntax WithAdditionalInitializers(ConstructorDeclarationSyntax oldConstructor,

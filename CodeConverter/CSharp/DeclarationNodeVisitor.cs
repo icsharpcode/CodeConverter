@@ -243,7 +243,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 return additionalInitializers.WithAdditionalInitializers(convertedMembers.ToList(),
-                    CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier));
+                    CommonConversions.ConvertIdentifier(parentType.BlockStatement.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
             }
         }
 
