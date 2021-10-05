@@ -25,15 +25,17 @@ namespace ICSharpCode.CodeConverter.CommandLine
     public sealed class MSBuildWorkspaceConverter : IDisposable
     {
         private readonly bool _bestEffortConversion;
+        private readonly bool _skipBuild;
         private readonly string _solutionFilePath;
         private readonly Dictionary<string, string> _buildProps;
         private readonly AsyncLazy<MSBuildWorkspace> _workspace; //Cached to avoid NullRef from OptionsService when initialized concurrently (e.g. in our tests)
         private AsyncLazy<Solution>? _cachedSolution; //Cached for performance of tests
         private readonly bool _isNetCore;
 
-        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, JoinableTaskFactory joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
+        public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, JoinableTaskFactory joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null, bool skipBuild = false)
         {
             _bestEffortConversion = bestEffortConversion;
+            _skipBuild = skipBuild;
             _buildProps = buildProps ?? new Dictionary<string, string>();
             _buildProps.TryAdd("Configuration", "Debug");
             _buildProps.TryAdd("Platform", "AnyCPU");
@@ -69,28 +71,37 @@ namespace ICSharpCode.CodeConverter.CommandLine
 
         private async Task<Solution> GetSolutionAsync(string projectOrSolutionFile, IProgress<string> progress)
         {
-            progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
-            await RestorePackagesForSolutionAsync(projectOrSolutionFile);
+            if (_skipBuild) {
+                progress.Report($"Skipping dotnet restore on {projectOrSolutionFile}");
+            } else {
+                progress.Report($"Running dotnet restore on {projectOrSolutionFile}");
+                await RestorePackagesForSolutionAsync(projectOrSolutionFile);
+            }
 
             var workspace = await _workspace.GetValueAsync();
             var solution = string.Equals(Path.GetExtension(projectOrSolutionFile), ".sln", StringComparison.OrdinalIgnoreCase) ? await workspace.OpenSolutionAsync(projectOrSolutionFile)
                 : (await workspace.OpenProjectAsync(projectOrSolutionFile)).Solution;
 
-            var errorString = await GetCompilationErrorsAsync(solution.Projects);
-            if (string.IsNullOrEmpty(errorString)) return solution;
-            progress.Report($"Compilation errors found before conversion.:{Environment.NewLine}{errorString}");
+            if (!_skipBuild) {
+                progress.Report($"Running build on {projectOrSolutionFile}");
 
-            bool wrongFramework = new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains);
-            if (_bestEffortConversion) {
-                progress.Report("Attempting best effort conversion on broken input due to override");
-            } else if (wrongFramework && _isNetCore) {
-                throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)");
-            } else if (wrongFramework && !_isNetCore) {
-                throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution");
-            } else {
-                var mainMessage = "Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
-                throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
+                var errorString = await GetCompilationErrorsAsync(solution.Projects);
+                if (string.IsNullOrEmpty(errorString)) return solution;
+                progress.Report($"Compilation errors found before conversion.:{Environment.NewLine}{errorString}");
+
+                bool wrongFramework = new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains);
+                if (_bestEffortConversion) {
+                    progress.Report("Attempting best effort conversion on broken input due to override");
+                } else if (wrongFramework && _isNetCore) {
+                    throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)");
+                } else if (wrongFramework && !_isNetCore) {
+                    throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution");
+                } else {
+                    var mainMessage = "Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
+                    throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
+                }
             }
+
             return solution;
         }
 

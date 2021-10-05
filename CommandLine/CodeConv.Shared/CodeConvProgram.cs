@@ -56,6 +56,9 @@ Remarks:
         [Option(CoreOptionDefinition, "Force dot net core build if converting only .NET Core projects and seeing pre-conversion compile errors", CommandOptionType.NoValue)]
         public bool CoreOnlyProjects { get; }
 
+        [Option("--skip-build", "Skip building the solution before the conversion. After .NET restore, building the solution using MSBuid could fail with error related to Nuget", CommandOptionType.NoValue)]
+        public bool SkipBuild { get; }
+
         [Option("-b|--best-effort", "Overrides warnings about compilation issues with input, and attempts a best effort conversion anyway", CommandOptionType.NoValue)]
         public bool BestEffort { get; }
 
@@ -140,7 +143,7 @@ Remarks:
 
             var properties = ParsedProperties();
             var joinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
-            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(finalSolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties);
+            var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(finalSolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties, SkipBuild);
 
             var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, finalSolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
