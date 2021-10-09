@@ -1,4 +1,4 @@
-﻿using static VbNetStandardLib.ModuleWithClassAndMethod;
+using static VbNetStandardLib.ModuleWithClassAndMethod;
 
 namespace VbLibrary.ModuleImport
 {

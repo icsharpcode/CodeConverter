@@ -5,6 +5,7 @@ using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -13,7 +14,6 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    [System.Diagnostics.DebuggerStepThrough]
     internal class CommentConvertingVisitorWrapper
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<CS.CSharpSyntaxNode>> _wrappedVisitor;
@@ -67,14 +67,16 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </remarks>
         private static T WithSourceMapping<T>(SyntaxNode vbNode, T converted) where T : CS.CSharpSyntaxNode
         {
+            converted = vbNode.CopyAnnotationsTo(converted);
             switch (vbNode) {
                 case VBSyntax.CompilationUnitSyntax vbCus when converted is CSSyntax.CompilationUnitSyntax csCus:
-                    converted = (T)(object)csCus.WithEndOfFileToken(
-                        csCus.EndOfFileToken.WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
-                     );
-                    break;
+                    return (T)(object)csCus
+                        .WithSourceStartLineAnnotation(vbNode.SyntaxTree.GetLineSpan(new TextSpan(0, 0)))
+                        .WithEndOfFileToken(csCus.EndOfFileToken
+                            .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
+                    );
             }
-            return vbNode.CopyAnnotationsTo(converted).WithVbSourceMappingFrom(vbNode);
+            return converted.WithVbSourceMappingFrom(vbNode);
         }
     }
 }

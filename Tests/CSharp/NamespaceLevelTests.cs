@@ -541,10 +541,10 @@ End Class
 ''' </summary>
 Friend Class Program
 End Class",
-                @"/// <summary>
+                @"
+/// <summary>
 /// Class xml doc
 /// </summary>
-
 public partial class MyTestClass
 {
     private string MyFunc4()

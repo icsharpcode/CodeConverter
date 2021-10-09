@@ -199,7 +199,7 @@ namespace NotNestedWithinRoot
         [Fact]
         public async Task RootNamespaceOnlyAppliedToUnqualifiedMembersAsync()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"
+            await TestConversionVisualBasicToCSharpAsync(@" 'Comment from start of file moves within the namespace
 Class AClassInRootNamespace ' Becomes nested - 1
 End Class ' Becomes nested - 2
 
@@ -222,6 +222,7 @@ namespace NotNestedWithinRoot
 
 namespace TheRootNamespace
 {
+    // Comment from start of file moves within the namespace
     internal partial class AClassInRootNamespace // Becomes nested - 1
     {
     } // Becomes nested - 2
