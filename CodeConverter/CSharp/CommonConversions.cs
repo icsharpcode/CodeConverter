@@ -540,17 +540,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.AttributeArgumentList(SyntaxFactory.SeparatedList(attributeArgumentSyntaxs));
         }
 
-        public static CSSyntax.LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue)
+        public static CSSyntax.LocalDeclarationStatementSyntax CreateLocalVariableDeclarationAndAssignment(string variableName, ExpressionSyntax initValue, TypeSyntax optionalType = null)
         {
-            return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue));
+            return SyntaxFactory.LocalDeclarationStatement(CreateVariableDeclarationAndAssignment(variableName, initValue, optionalType));
         }
 
         public static CSSyntax.VariableDeclarationSyntax CreateVariableDeclarationAndAssignment(string variableName,
             ExpressionSyntax initValue, TypeSyntax explicitType = null)
         {
+            explicitType ??= ValidSyntaxFactory.VarType;
             CSSyntax.VariableDeclaratorSyntax variableDeclaratorSyntax = CreateVariableDeclarator(variableName, initValue);
             var variableDeclarationSyntax = SyntaxFactory.VariableDeclaration(
-                explicitType ?? ValidSyntaxFactory.VarType,
+                explicitType,
                 SyntaxFactory.SingletonSeparatedList(variableDeclaratorSyntax));
             return variableDeclarationSyntax;
         }

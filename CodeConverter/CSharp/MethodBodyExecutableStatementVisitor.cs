@@ -761,20 +761,23 @@ namespace ICSharpCode.CodeConverter.CSharp
                 SyntaxFactory.WhenClause(binaryExp), SyntaxFactory.Token(SyntaxKind.ColonToken));
         }
 
-        private async Task<(ExpressionSyntax Reusable, SyntaxList<StatementSyntax> Statements, ExpressionSyntax SingleUse)> GetExpressionWithoutSideEffectsAsync(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, bool forceVariable = false)
+        private async Task<(ExpressionSyntax Reusable, SyntaxList<StatementSyntax> Statements, ExpressionSyntax SingleUse)> GetExpressionWithoutSideEffectsAsync(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase)
         {
             var expr = await vbExpr.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
             expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbExpr, expr);
             SyntaxList<StatementSyntax> stmts = SyntaxFactory.List<StatementSyntax>();
             ExpressionSyntax exprWithoutSideEffects;
             ExpressionSyntax reusableExprWithoutSideEffects;
-            if (forceVariable || !await CanEvaluateMultipleTimesAsync(vbExpr)) {
-                var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
-                var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
-                var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr);
+            if (!await CanEvaluateMultipleTimesAsync(vbExpr)) {
+                TypeSyntax forceType = null;
+                if (_semanticModel.GetOperation(vbExpr.SkipIntoParens()).IsAssignableExpression()) {
+                    forceType = SyntaxFactory.RefType(ValidSyntaxFactory.VarType);
+                    expr = SyntaxFactory.RefExpression(expr);
+                }
+
+                var (stmt, id) = CreateLocalVariableWithUniqueName(vbExpr, variableNameBase, expr, forceType);
                 stmts = stmts.Add(stmt);
-                exprWithoutSideEffects = SyntaxFactory.IdentifierName(varName);
-                reusableExprWithoutSideEffects = exprWithoutSideEffects;
+                reusableExprWithoutSideEffects = exprWithoutSideEffects = id;
             } else {
                 exprWithoutSideEffects = expr;
                 reusableExprWithoutSideEffects = expr.WithoutSourceMapping();

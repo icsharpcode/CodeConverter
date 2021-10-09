@@ -1,5 +1,9 @@
-﻿using System.Threading.Tasks;
+﻿using System.Reflection;
+using System;
+using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests
@@ -637,6 +641,57 @@ internal partial class TestClass
             withBlock.Capacity = 20;
             withBlock?.Append(0);
         }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task WithBlockStruct634Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Structure SomeStruct
+    Public FieldA As Integer
+    Public FieldB As Integer
+End Structure
+
+Module Module1
+   Sub Main()
+      Dim myArray(0) As SomeStruct
+
+      With myArray(0)
+         .FieldA = 3
+         .FieldB = 4
+      End With
+
+      'Outputs: FieldA was changed to New FieldA value 
+      Console.WriteLine($""FieldA was changed to {myArray(0).FieldA}"")
+      Console.WriteLine($""FieldB was changed to {myArray(0).FieldB}"")
+      Console.ReadLine
+   End Sub
+End Module", @"using System;
+
+public partial struct SomeStruct
+{
+    public int FieldA;
+    public int FieldB;
+}
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        var myArray = new SomeStruct[1];
+        {
+            ref var withBlock = ref myArray[0];
+            withBlock.FieldA = 3;
+            withBlock.FieldB = 4;
+        }
+
+        // Outputs: FieldA was changed to New FieldA value 
+        Console.WriteLine($""FieldA was changed to {myArray[0].FieldA}"");
+        Console.WriteLine($""FieldB was changed to {myArray[0].FieldB}"");
+        Console.ReadLine();
     }
 }");
         }

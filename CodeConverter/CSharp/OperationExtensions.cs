@@ -46,5 +46,26 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             return operation != null && operation.Kind == OperationKind.ArrayElementReference;
         }
+
+        public static bool IsAssignableExpression(this IOperation operation)
+        {
+            switch (operation?.Kind) {
+                case OperationKind.ArrayElementReference:
+                case OperationKind.LocalReference:
+                case OperationKind.ParameterReference:
+                case OperationKind.FieldReference:
+                case OperationKind.MethodReference:
+                case OperationKind.EventReference:
+                case OperationKind.InstanceReference:
+                case OperationKind.DynamicMemberReference:
+                    return true;
+
+                //Just documenting since it's the only one mentioning reference that can't be assigned to AFAIK
+                case OperationKind.PropertyReference:
+                    return false;
+            }
+
+            return false;
+        }
     }
 }
