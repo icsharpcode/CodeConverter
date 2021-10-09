@@ -126,7 +126,7 @@ namespace ICSharpCode.CodeConverter.Shared
                 var targetLine = GetTargetLine(sourceLineIndex, false);
                 if (targetLine != default) {
                     var originalToReplace = targetLine.GetTrailingForLine(_target);
-                    if (originalToReplace != null) {
+                    if (originalToReplace != default) {
                         var targetTrivia = GetTargetTriviaCollection(originalToReplace);
                         targetTrivia.Trailing.AddRange(_trailingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                         _trailingTriviaCarriedOver.Clear();
