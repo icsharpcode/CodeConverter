@@ -267,10 +267,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!preserve) return SingleStatement(newArrayAssignment);
 
             var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
-            var (oldTargetExpression, stmts, _) = await GetExpressionWithoutSideEffectsAsync(node.Expression, "old" + lastIdentifierText.ToPascalCase(), true);
-            var arrayCopyIfNotNull = CreateConditionalArrayCopy(node, (IdentifierNameSyntax) oldTargetExpression, csTargetArrayExpression, convertedBounds);
+            string variableNameBase = "old" + lastIdentifierText.ToPascalCase();
+            var expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csTargetArrayExpression);
+            var (stmt, oldTargetExpression) = CreateLocalVariableWithUniqueName(node.Expression, variableNameBase, expr);
+            
+            var arrayCopyIfNotNull = CreateConditionalArrayCopy(node, oldTargetExpression, csTargetArrayExpression, convertedBounds);
 
-            return stmts.AddRange(new StatementSyntax[] {newArrayAssignment, arrayCopyIfNotNull});
+            return SyntaxFactory.List(new[] { stmt, newArrayAssignment, arrayCopyIfNotNull});
         }
 
         /// <summary>
@@ -778,6 +781,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return (reusableExprWithoutSideEffects, stmts, exprWithoutSideEffects);
+        }
+
+        private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
+        {
+            var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
+            var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
+            var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr, forceType);
+            return (stmt, SyntaxFactory.IdentifierName(varName));
         }
 
         private async Task<bool> CanEvaluateMultipleTimesAsync(VBSyntax.ExpressionSyntax vbExpr)
