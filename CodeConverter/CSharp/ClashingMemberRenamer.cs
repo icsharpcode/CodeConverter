@@ -33,6 +33,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             // We don't want to rename them
             if ((containerSymbol.Name == "Fld") && (containerSymbol.ContainingSymbol.Name == "DynamicSection")) return Enumerable.Empty<(ISymbol Original, string NewName)>();
 
+            // Enum WindowsLogon.LOGON32_LOGON and WindowsLogon.LOGON32_PROVIDER were renamed. We don't want to rename them
+            if ((containerSymbol.Name == "LOGON32_LOGON") && (containerSymbol.ContainingSymbol.Name == "WindowsLogon")) return Enumerable.Empty<(ISymbol Original, string NewName)>();
+            if ((containerSymbol.Name == "LOGON32_PROVIDER") && (containerSymbol.ContainingSymbol.Name == "WindowsLogon")) return Enumerable.Empty<(ISymbol Original, string NewName)>();
+
             var members = containerSymbol.GetMembers()
                 .Where(m => m.Locations.Any(loc => loc.SourceTree != null && compilation.ContainsSyntaxTree(loc.SourceTree)))
                 .Where(s => containerSymbol.Name == s.Name || containerSymbol is INamedTypeSymbol nt && nt.IsEnumType() && SymbolRenamer.GetName(s).StartsWith(containerSymbol.Name));
