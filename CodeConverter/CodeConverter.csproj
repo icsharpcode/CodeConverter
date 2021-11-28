@@ -20,6 +20,7 @@
     <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
     <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md </PackageReleaseNotes>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <EmbedUntrackedSources>$(ContinuousIntegrationBuild)</EmbedUntrackedSources>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Shared\DefaultReferences.cs" />

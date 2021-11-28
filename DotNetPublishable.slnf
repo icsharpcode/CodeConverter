@@ -1,0 +1,9 @@
+{
+  "solution": {
+    "path": "CodeConverter.sln",
+    "projects": [
+      "Func\\Func.csproj",
+      "Web\\Web.csproj"
+    ]
+  }
+}
