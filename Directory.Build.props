@@ -11,4 +11,7 @@
     <Copyright>Copyright (c) 2017-2021 AlphaSierraPapa for the CodeConverter team</Copyright>
     <Company>ICSharpCode</Company>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+</PropertyGroup> 
 </Project>
