@@ -35,16 +35,13 @@ jobs:
       with:
        vs-version: '[16.6,)'
 
-    - name: Dotnet Build
-      run:  dotnet build DotNetBuildable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
+    - name: Dotnet deterministic Build
+      run:  dotnet build DotNetBuildable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget /p:ContinuousIntegrationBuild=true
 
     - name: Dotnet Publish
       run: dotnet publish DotNetPublishable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
-    - name: Pack multitargeted CodeConv
-      run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
-
-    - name: Build Vsix (not yet compatible with dotnet process)
+    - name: MSBuild Vsix
       run: msbuild Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
 
     - name: Execute unit tests

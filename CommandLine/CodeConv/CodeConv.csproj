@@ -19,6 +19,7 @@ For a nugetted dll, web converter or visual studio extension, see https://github
     <RepositoryUrl>https://github.com/icsharpcode/CodeConverter/</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Nullable>enable</Nullable>
+    <EmbedUntrackedSources>$(ContinuousIntegrationBuild)</EmbedUntrackedSources>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +33,10 @@ For a nugetted dll, web converter or visual studio extension, see https://github
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.4.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.4.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="3.4.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.6.13" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
     <PackageReference Include="NuGet.Build.Tasks" Version="5.4.0" />
