@@ -44,10 +44,13 @@ jobs:
     - name: Publish Func
       run: dotnet publish Func\Func.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
-    - name: Build MultiTargeted Tool
+    - name: Build framework command line shim
       run:  dotnet build CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
 
-    - name: Pack MultiTargeted Tool
+    - name: Build multitargeted CodeConv
+      run:  dotnet build CommandLine/CodeConv.NetFramework/CodeConv.NetFramework.csproj -c $env:BuildTarget
+
+    - name: Pack multitargeted CodeConv
       run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
 
     - name: Build Vsix (not yet compatible with dotnet process)
