@@ -35,8 +35,8 @@ jobs:
       with:
        vs-version: '[16.6,)'
 
-    - name: Pack NuGet
-      run:  dotnet pack CodeConverter/CodeConverter.csproj -c $env:BuildTarget
+    - name: Build/Pack NuGet
+      run:  dotnet publish CodeConverter/CodeConverter.csproj -c $env:BuildTarget
       
     - name: Publish Web
       run: dotnet publish Web\Web.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
@@ -44,7 +44,10 @@ jobs:
     - name: Publish Func
       run: dotnet publish Func\Func.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
-    - name: Pack Tool
+    - name: Build MultiTargeted Tool
+      run:  dotnet build CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
+
+    - name: Pack MultiTargeted Tool
       run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
 
     - name: Build Vsix (not yet compatible with dotnet process)
