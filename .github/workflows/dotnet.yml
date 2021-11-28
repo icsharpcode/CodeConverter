@@ -51,7 +51,7 @@ jobs:
       run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
 
     - name: Build Vsix (not yet compatible with dotnet process)
-      run: msbuild Vsix\Vsix.csproj -restore /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
+      run: msbuild Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
 
     - name: Execute unit tests
       run: dotnet test $env:Tests1
