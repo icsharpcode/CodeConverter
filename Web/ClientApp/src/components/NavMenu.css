@@ -46,7 +46,13 @@ a.navbar-brand {
     word-break: break-all;
 }
 
-html { font-size: 14px; }
+.navbar-expand-sm .navbar-collapse {
+    display: inline-flex !important;
+}
+
+html {
+    font-size: 14px;
+}
 
 @media (min-width: 768px) {
     html { font-size: 16px; }
