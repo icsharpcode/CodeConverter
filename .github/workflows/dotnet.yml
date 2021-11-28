@@ -35,20 +35,11 @@ jobs:
       with:
        vs-version: '[16.6,)'
 
-    - name: Build/Pack NuGet
-      run:  dotnet publish CodeConverter/CodeConverter.csproj -c $env:BuildTarget
-      
-    - name: Publish Web
-      run: dotnet publish Web\Web.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
+    - name: Dotnet Build
+      run:  dotnet build DotNetBuildable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
-    - name: Publish Func
-      run: dotnet publish Func\Func.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
-
-    - name: Build framework command line shim
-      run:  dotnet build CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
-
-    - name: Build multitargeted CodeConv
-      run:  dotnet build CommandLine/CodeConv.NetFramework/CodeConv.NetFramework.csproj -c $env:BuildTarget
+    - name: Dotnet Publish
+      run: dotnet publish DotNetPublishable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
     - name: Pack multitargeted CodeConv
       run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
