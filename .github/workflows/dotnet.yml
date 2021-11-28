@@ -36,22 +36,15 @@ jobs:
        vs-version: '[16.6,)'
 
     - name: Build Solution
-      run: dotnet build CodeConverter.sln -restore /p:Configuration=$env:BuildTarget
+      run: dotnet publish CodeConverter.sln -restore /p:Configuration=$env:BuildTarget
+
+    - name: Build Vsix (not yet compatible with dotnet publish)
+      run: msbuild CodeConverter\Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
 
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
         Tests1: Tests/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.Tests.dll
-
-    - name: Publish Web
-      run: dotnet publish Web/Web.csproj /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
-    - name: Publish Function
-      run: dotnet publish Func/Func.csproj /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
-
-    - name: Pack NuGet
-      run:  dotnet pack CodeConverter/CodeConverter.csproj -c $env:BuildTarget
-    - name: Pack Tool
-      run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
 
     - name: Upload NuGet package
       uses: actions/upload-artifact@v2
