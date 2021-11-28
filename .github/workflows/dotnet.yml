@@ -35,11 +35,20 @@ jobs:
       with:
        vs-version: '[16.6,)'
 
-    - name: Build Solution
-      run: dotnet publish CodeConverter.sln -restore /p:Configuration=$env:BuildTarget
+    - name: Pack NuGet
+      run:  dotnet pack CodeConverter/CodeConverter.csproj -c $env:BuildTarget
+      
+    - name: Publish Web
+      run: dotnet publish Web\Web.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
-    - name: Build Vsix (not yet compatible with dotnet publish)
-      run: msbuild CodeConverter\Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
+    - name: Publish Func
+      run: dotnet publish Func\Func.csproj /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
+
+    - name: Pack Tool
+      run:  dotnet pack CommandLine/CodeConv/CodeConv.csproj -c $env:BuildTarget
+
+    - name: Build Vsix (not yet compatible with dotnet process)
+      run: msbuild Vsix\Vsix.csproj -restore /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
 
     - name: Execute unit tests
       run: dotnet test $env:Tests1
