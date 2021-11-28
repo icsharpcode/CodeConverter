@@ -36,7 +36,7 @@ jobs:
        vs-version: '[16.6,)'
 
     - name: Build Solution
-      run: msbuild CodeConverter.sln -restore /p:Configuration=$env:BuildTarget
+      run: dotnet build CodeConverter.sln -restore /p:Configuration=$env:BuildTarget
 
     - name: Execute unit tests
       run: dotnet test $env:Tests1
