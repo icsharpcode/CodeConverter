@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Web.Models;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Web
 {
+    public record ConvertRequest(string code, string requestedConversion);
+    public record ConvertResponse(bool conversionOk, string convertedCode, string errorMessage);
+
     public static class WebConverter
     {
         public static async Task<ConvertResponse> ConvertAsync(ConvertRequest todo)
@@ -31,18 +33,12 @@ namespace ICSharpCode.CodeConverter.Web
 
             var result = await CodeConverter.ConvertAsync(codeWithOptions);
 
-            return new ConvertResponse {
-                conversionOk = result.Success,
-                convertedCode = result.ConvertedCode,
-                errorMessage = result.GetExceptionsAsString()
-            };
+            return new ConvertResponse(result.Success, result.ConvertedCode, result.GetExceptionsAsString());
         }
 
         private static string ParseLanguage(string language)
         {
-            if (language == null) {
-                throw new ArgumentNullException(nameof(language));
-            }
+            ArgumentNullException.ThrowIfNull(language);
 
             if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase)) {
                 return LanguageNames.CSharp;
@@ -57,9 +53,7 @@ namespace ICSharpCode.CodeConverter.Web
 
         private static int GetDefaultVersionForLanguage(string language)
         {
-            if (language == null) {
-                throw new ArgumentNullException(nameof(language));
-            }
+            ArgumentNullException.ThrowIfNull(language);
 
             if (language.StartsWith("cs", StringComparison.OrdinalIgnoreCase)) {
                 return 6;

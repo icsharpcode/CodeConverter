@@ -1,12 +1,15 @@
-﻿using Microsoft.OpenApi.Models;
+﻿using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Web;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
 builder.Services.AddSwaggerGen(c => {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Code Converter API", Version = "v1" });
 });
+
+builder.Services.AddEndpointsApiExplorer();
+
 string localOrigins = "local";
 builder.Services.AddCors(options => {
     options.AddPolicy(name: localOrigins, b =>
@@ -16,23 +19,29 @@ builder.Services.AddCors(options => {
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment()) {
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 if (!app.Environment.IsDevelopment()) {
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors(localOrigins);
 
-var routes = app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller}/{action=Index}/{id?}");
+app.MapPost("/api/convert", async (ConvertRequest todo) => await WebConverter.ConvertAsync(todo))
+    .RequireCors(localOrigins)
+    .Produces<ConvertResponse>();
 
-if (app.Environment.IsDevelopment()) routes.RequireCors(localOrigins);
+app.MapGet("/api/version", () => CodeConverterVersion.GetVersion())
+    .RequireCors(localOrigins)
+    .Produces<string>();
 
-app.MapFallbackToFile("index.html"); ;
+app.MapFallbackToFile("index.html");
 
 app.Run();
