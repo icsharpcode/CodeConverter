@@ -4,9 +4,9 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NoWarn>$(NoWarn);1998;NU5100</NoWarn>
     <LangVersion>9.0</LangVersion>
-    <AssemblyVersion>8.4.1.0</AssemblyVersion>
-    <FileVersion>8.4.1.0</FileVersion>
-    <Version>8.4.1</Version>
+    <AssemblyVersion>8.4.2.0</AssemblyVersion>
+    <FileVersion>8.4.2.0</FileVersion>
+    <Version>8.4.2</Version>
     <Authors>ICSharpCode</Authors>
     <Copyright>Copyright (c) 2017-2021 AlphaSierraPapa for the CodeConverter team</Copyright>
     <Company>ICSharpCode</Company>
