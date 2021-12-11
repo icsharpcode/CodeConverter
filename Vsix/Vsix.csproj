@@ -81,6 +81,11 @@
       <Link>Lib\Microsoft.Bcl.AsyncInterfaces.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <Link>Lib\System.Runtime.CompilerServices.Unsafe.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Threading.Tasks.Dataflow.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
       <Link>Lib\System.Threading.Tasks.Dataflow.dll</Link>
