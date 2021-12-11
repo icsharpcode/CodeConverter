@@ -9,7 +9,7 @@ Convert code from VB.NET to C# and vice versa using Roslyn - all free and open s
 ## Visual Studio Extension
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for advice / help using it.
 
-Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Requires VS 2017 15.7+)
+Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Use VS 2019+)
 
 * Flexible: Convert a small selection, or a whole solution in one go, in either direction.
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
