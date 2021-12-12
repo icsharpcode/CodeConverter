@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -13,6 +14,7 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualBasic.CompilerServices;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
@@ -897,16 +899,24 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return convertedExpression; //Parameterless property access
             }
 
-            if (!IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)) {
-                return SyntaxFactory.InvocationExpression(convertedExpression,
-                    await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList));
+            var convertedArgumentList= await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList);
+
+            if (IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)) {
+                convertedExpression = GetElementAtOrDefaultExpression(expressionType, convertedExpression);
             }
 
-            var newExpression = GetElementAtOrDefaultExpression(expressionType, convertedExpression);
+            if (invocationSymbol.IsReducedExtension() && invocationSymbol is IMethodSymbol {ReducedFrom: {Parameters: var parameters}} &&
+                !parameters.FirstOrDefault().ValidCSharpExtensionMethodParameter() &&
+                node.Expression is VBSyntax.MemberAccessExpressionSyntax maes) {
+                var thisArgExpression = await maes.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                var thisArg = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.Argument(thisArgExpression).WithRefKindKeyword(GetRefToken(RefKind.Ref));
+                convertedArgumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(convertedArgumentList.Arguments.Prepend(thisArg)));
+                var containingType = (ExpressionSyntax) CommonConversions.CsSyntaxGenerator.TypeExpression(invocationSymbol.ContainingType);
+                convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, containingType,
+                    SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(invocationSymbol.Name)));
+            }
 
-            return SyntaxFactory.InvocationExpression(newExpression,
-                await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList));
-
+            return SyntaxFactory.InvocationExpression(convertedExpression, convertedArgumentList);
         }
 
         private async Task<(ExpressionSyntax, bool isElementAccess)> ConvertInvocationSubExpressionAsync(VBSyntax.InvocationExpressionSyntax node,
@@ -1148,7 +1158,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync)).ToList();
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
-            var csParamSymbol = CommonConversions.GetDeclaredCsOriginalSymbolOrNull(node) as IParameterSymbol;
+            var vbSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
+            var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(vbSymbol) as IParameterSymbol;
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
                 modifiers = SyntaxFactory.TokenList(modifiers
                     .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
@@ -1193,7 +1204,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss
-                && mss.AttributeLists.Any(CommonConversions.HasExtensionAttribute) && node.Parent.ChildNodes().First() == node) {
+                && mss.AttributeLists.Any(CommonConversions.HasExtensionAttribute) && node.Parent.ChildNodes().First() == node &&
+                vbSymbol.ValidCSharpExtensionMethodParameter()) {
                 modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
             }
             return SyntaxFactory.Parameter(

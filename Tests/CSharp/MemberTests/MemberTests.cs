@@ -575,6 +575,49 @@ internal static partial class TestClass
         }
 
         [Fact]
+        public async Task TestRefExtensionMethodAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Imports System
+Imports System.Runtime.CompilerServices ' Removed since the extension attribute is removed
+
+Public Module MyExtensions
+    <Extension()>
+    Public Sub Add(Of T)(ByRef arr As T(), item As T)
+        Array.Resize(arr, arr.Length + 1)
+        arr(arr.Length - 1) = item
+    End Sub
+End Module
+
+Public Module UsagePoint
+    Public Sub Main()
+        Dim arr = New Integer() {1, 2, 3}
+        arr.Add(4)
+        System.Console.WriteLine(arr(3))
+    End Sub
+End Module", @"using System;
+
+public static partial class MyExtensions
+{
+    public static void Add<T>(ref T[] arr, T item)
+    {
+        Array.Resize(ref arr, arr.Length + 1);
+        arr[arr.Length - 1] = item;
+    }
+}
+
+public static partial class UsagePoint
+{
+    public static void Main()
+    {
+        var arr = new int[] { 1, 2, 3 };
+        MyExtensions.Add(ref arr, 4);
+        Console.WriteLine(arr[3]);
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestExtensionWithinExtendedTypeAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

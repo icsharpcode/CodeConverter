@@ -89,6 +89,12 @@ namespace ICSharpCode.CodeConverter.Util
         {
             return symbol is IMethodSymbol ms && ms.ReducedFrom?.TypeParameters.Count() > ms.TypeParameters.Count();
         }
+
+        /// <summary>
+        /// Since non value types can't be ref types for extension methods in C#, convert to a static invocation
+        /// https://github.com/icsharpcode/CodeConverter/issues/785
+        /// </summary>
+        public static bool ValidCSharpExtensionMethodParameter(this IParameterSymbol vbSymbol) => vbSymbol != null && (vbSymbol.RefKind != RefKind.Ref || vbSymbol.Type.IsValueType);
     }
 }
 
