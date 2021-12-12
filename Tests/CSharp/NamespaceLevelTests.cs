@@ -890,7 +890,7 @@ internal static partial class Module1
         }
 
         [Fact]
-        public async Task NewConstraintLastAsync()
+        public async Task NewTypeConstraintLastAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Interface Foo
 End Interface

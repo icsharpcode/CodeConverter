@@ -1386,7 +1386,8 @@ End Class
 1 source compilation errors:
 CS0161: 'TestClass.this[int].get': not all code paths return a value");
         }
-        [Fact(Skip = "TODO")]
+
+        [Fact]
         public async Task GenericMethodWithConstraintsAsync() {
             await TestConversionCSharpToVisualBasicAsync(
 @"using System; //Gets simplified away
@@ -1397,7 +1398,8 @@ public class BaseClass {
     }
 }
 public class TestClass : BaseClass {
-    public override void TestMethod<T>(T parameter) {
+    public override void TestMethod<T>(T parameter)
+        where T : class {
     }
 }",
 @"Public Class BaseClass
