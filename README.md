@@ -6,6 +6,8 @@ Convert code from VB.NET to C# and vice versa using Roslyn - all free and open s
 * [Nuget library](https://www.nuget.org/packages/ICSharpCode.CodeConverter/) (this underpins all other free converters you'll find online)
 * Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global`
 
+See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on getting the best results. 
+
 ## Visual Studio Extension
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for advice / help using it.
 
