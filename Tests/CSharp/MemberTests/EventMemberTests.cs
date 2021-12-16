@@ -553,6 +553,7 @@ public partial class Class1
 Partial Public Class TestHandlesAdded
 
     Sub InitializeComponent()
+        Me.POW_btnV2DBM = New System.Windows.Forms.Button()
         '
         'POW_btnV2DBM
         '
@@ -582,10 +583,12 @@ public partial class TestHandlesAdded
     {
         InitializeComponent();
         _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
+        POW_btnV2DBM = _POW_btnV2DBM;
     }
 
     public void InitializeComponent()
     {
+        _POW_btnV2DBM = new System.Windows.Forms.Button();
         // 
         // POW_btnV2DBM
         // 
