@@ -10,7 +10,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class UsageTypeAnalyzer
     {
-        public static async Task<bool> IsNeverWrittenAsync(this Solution solution, ISymbol symbol, Location outsideLocation = null)
+        /// <summary>
+        /// Only detects direct assignment, not use of ByRef, late binding, dynamic, reflection, etc.
+        /// </summary>
+        public static async ValueTask<bool> IsNeverWrittenAsync(this Solution solution, ISymbol symbol, Location outsideLocation = null)
         {
             return symbol.AllWriteUsagesKnowable() && !await ContainsWriteUsagesForAsync(solution, symbol, outsideLocation);
         }

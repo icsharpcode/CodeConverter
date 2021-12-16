@@ -145,7 +145,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         /// <remarks>
         /// <paramref name="requiresNewDelegate"/> must be set to true if this statement will be within InitializeComponent, otherwise C# Winforms designer won't be able to recognize it.
-        /// If a lambda has been generated to discard parameters, the C# Winforms designer will throw an exception when trying to load, but it will wprl at runtime, and it's better than silently losing events on regeneration.
+        /// If a lambda has been generated to discard parameters, the C# Winforms designer will throw an exception when trying to load, but it will work at runtime, and it's better than silently losing events on regeneration.
         /// </remarks>
         private StatementSyntax CreateHandlesUpdater(ExpressionSyntax eventSource,
             (string EventContainerName, SyntaxToken EventSymbolName, IEventSymbol Event, int ParametersToDiscard) e,
