@@ -54,11 +54,27 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(ShouldPrefixAssignedNameWithUnderscore)
                 .Select(s => (s.Left as VBSyntax.MemberAccessExpressionSyntax)?.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>())
                 .Where(s => s != null)
-                .Select(id => {
-                    var nameAccess = ValidSyntaxFactory.MemberAccess(SyntaxFactory.IdentifierName("_" + id.Identifier.Text), "Name");
-                    var originalRuntimeNameToRestore = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(id.Identifier.Text));
-                    return new Assignment(nameAccess, SyntaxKind.SimpleAssignmentExpression, originalRuntimeNameToRestore, true);
-                });
+                .SelectMany(id => new[]{ CreateNameAssignment(id), CreatePropertyAssignment(id) });
+        }
+
+        private static Assignment CreateNameAssignment(VBSyntax.IdentifierNameSyntax id)
+        {
+            var nameAccess = ValidSyntaxFactory.MemberAccess(SyntaxFactory.IdentifierName("_" + id.Identifier.Text), "Name");
+            var originalRuntimeNameToRestore = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(id.Identifier.Text));
+            return new Assignment(nameAccess, SyntaxKind.SimpleAssignmentExpression, originalRuntimeNameToRestore, true);
+        }
+
+        /// <summary>
+        /// In VB, the property is assigned directly in InitializeComponent
+        /// In C#, that breaks the designer, so we assign directly to the private field there instead
+        /// When a subclass uses Handles on the property, this assignment ensures the subclass handled events are added too
+        /// https://github.com/icsharpcode/CodeConverter/issues/774
+        /// </summary>
+        private static Assignment CreatePropertyAssignment(VBSyntax.IdentifierNameSyntax id)
+        {
+            var lhs = SyntaxFactory.IdentifierName(id.Identifier.Text);
+            var rhs = SyntaxFactory.IdentifierName("_" + id.Identifier.Text);
+            return new Assignment(lhs, SyntaxKind.SimpleAssignmentExpression, rhs, true);
         }
 
         /// <summary>

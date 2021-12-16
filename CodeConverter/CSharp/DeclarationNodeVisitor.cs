@@ -211,17 +211,18 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
             var additionalInitializers = new AdditionalInitializers(parentType, namedTypeSymbol, _vbCompilation);
-            var methodsWithHandles = MethodsWithHandles.Create(GetMethodWithHandles(parentType));
+            var methodsWithHandles = MethodsWithHandles.Create(CommonConversions, GetMethodWithHandles(parentType));
 
             if (methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
             
             _typeContext.Push(methodsWithHandles, additionalInitializers);
             try {
+                var membersFromBase = additionalInitializers.IsBestPartToAddTypeInit ? methodsWithHandles.GetDeclarationsForHandlingBaseMembers(namedTypeSymbol) : Array.Empty<MemberDeclarationSyntax>();
                 var convertedMembers = (await members.SelectManyAsync(async member =>
                         (await ConvertMemberAsync(member)).Yield().Concat(GetAdditionalDeclarations(member)))
                     );
 
-                return WithAdditionalMembers(convertedMembers).ToArray();//Ensure evaluated before popping type context
+                return WithAdditionalMembers(membersFromBase.Concat(convertedMembers)).ToArray();//Ensure evaluated before popping type context
             } finally {
                 _typeContext.Pop();
             }

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Xml.Linq;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -14,21 +16,23 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// </summary>
     internal class MethodsWithHandles
     {
+        private readonly CommonConversions _commonConversions;
         private readonly List<MethodWithHandles> _methodWithHandleses;
         private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
         private readonly ImmutableHashSet<string> _containerFieldsConvertedToProperties;
 
 
-        private MethodsWithHandles(List<MethodWithHandles> methodWithHandleses,
+        private MethodsWithHandles(CommonConversions commonConversions, List<MethodWithHandles> methodWithHandleses,
             ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName,
             ImmutableHashSet<string> containerFieldsConvertedToProperties)
         {
+            _commonConversions = commonConversions;
             _methodWithHandleses = methodWithHandleses;
             _handledMethodsFromPropertyWithEventName = handledMethodsFromPropertyWithEventName;
             _containerFieldsConvertedToProperties = containerFieldsConvertedToProperties;
         }
 
-        public static MethodsWithHandles Create(List<MethodWithHandles> methodWithHandleses)
+        public static MethodsWithHandles Create(CommonConversions commonConversions, List<MethodWithHandles> methodWithHandleses)
         {
             var handledMethodsFromPropertyWithEventName = methodWithHandleses
                 .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.EventContainerName, MethodWithHandles: m)))
@@ -36,7 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var containerFieldsConvertedToProperties = methodWithHandleses
                 .SelectMany(m => m.HandledPropertyEventCSharpIds, (_, handled) => handled.EventContainerName)
                 .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
-            return new MethodsWithHandles(methodWithHandleses, handledMethodsFromPropertyWithEventName, containerFieldsConvertedToProperties);
+            return new MethodsWithHandles(commonConversions, methodWithHandleses, handledMethodsFromPropertyWithEventName, containerFieldsConvertedToProperties);
         }
 
         public bool Any() => _methodWithHandleses.Any();
@@ -45,6 +49,30 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(VariableDeclarationSyntax fieldDecl, SyntaxTokenList convertedModifiers, SyntaxList<AttributeListSyntax> attributes)
         {
             return MethodWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl, convertedModifiers, attributes, _methodWithHandleses);
+        }
+
+        public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForHandlingBaseMembers(INamedTypeSymbol namedTypeSymbol)
+        {
+            var handledAncestorMemberNames = _containerFieldsConvertedToProperties
+                .Where(p => !namedTypeSymbol.GetMembers(p).Any(MemberCanHandleEvents))
+                .ToArray();
+            if (!handledAncestorMemberNames.Any()) {
+                return Array.Empty<MemberDeclarationSyntax>();
+            }
+
+            var ancestorMembersByName = namedTypeSymbol.GetBaseTypes().SelectMany(t => t.GetMembers().Where(MemberCanHandleEvents)).ToLookup(m => m.Name);
+            return handledAncestorMemberNames.Select(name => ancestorMembersByName[name].FirstOrDefault()).Where(x => x != null)
+                .Select(GetDeclarationsForHandlingBaseMembers);
+        }
+
+        private static bool MemberCanHandleEvents(ISymbol m) => m.IsKind(SymbolKind.Property);
+
+        private PropertyDeclarationSyntax GetDeclarationsForHandlingBaseMembers(ISymbol symbol)
+        {
+            var prop = (PropertyDeclarationSyntax) _commonConversions.CsSyntaxGenerator.Declaration(symbol);
+            var modifiers = prop.Modifiers.RemoveOnly(m => m.IsKind(SyntaxKind.VirtualKeyword)).Add(SyntaxFactory.Token(SyntaxKind.OverrideKeyword));
+            return MethodWithHandles.GetDeclarationsForFieldBackedProperty(_methodWithHandleses, SyntaxFactory.List<SyntaxNode>(), modifiers, 
+                prop.Type, prop.Identifier, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.BaseExpression(), SyntaxFactory.IdentifierName(prop.Identifier)));
         }
 
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)

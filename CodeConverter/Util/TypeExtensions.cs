@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.Util
         /// </summary>
         /// <returns>All classes and interfaces.</returns>
         /// <param name="type">Type.</param>
-        public static IEnumerable<INamedTypeSymbol> GetAllBaseClassesAndInterfaces(this INamedTypeSymbol type, bool includeSuperType = false)
+        public static IEnumerable<INamedTypeSymbol> GetAllBaseClassesAndInterfaces(this INamedTypeSymbol type, bool includeSuperType)
         {
             if (!includeSuperType)
                 type = type.BaseType;

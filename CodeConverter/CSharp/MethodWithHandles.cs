@@ -57,49 +57,49 @@ namespace ICSharpCode.CodeConverter.CSharp
             foreach (var (variable, newId) in renamedEvents) {
                 yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,
                     decl.Type, variable.Identifier,
-                    newId);
+                    SyntaxFactory.IdentifierName(newId));
             }
         }
 
         private static SyntaxTokenList MakePrivate(SyntaxTokenList convertedModifiers)
         {
-            var noVisibility = convertedModifiers.Where(m => !m.IsCsVisibility(false, false));
-            return SyntaxFactory.TokenList(new[] {SyntaxFactory.Token(SyntaxKind.PrivateKeyword)}.Concat(noVisibility));
+            var noVisibility = convertedModifiers
+                .RemoveOnly(m => m.IsCsVisibility(false, false))
+                .Insert(0, SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+            return noVisibility;
         }
 
         private static bool HasEvents(IReadOnlyCollection<MethodWithHandles> methodsWithHandles, SyntaxToken propertyId) => 
             methodsWithHandles.Any(m => m.GetPropertyEvents(propertyId.Text).Any());
 
-        private static PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty(IReadOnlyCollection<MethodWithHandles> methods,
+        public static PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty(IReadOnlyCollection<MethodWithHandles> methods,
             SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList convertedModifiers, TypeSyntax typeSyntax,
-            SyntaxToken propertyIdentifier, SyntaxToken fieldIdentifier)
+            SyntaxToken propertyIdentifier, ExpressionSyntax internalEventTarget)
         {
-            var fieldIdSyntax = SyntaxFactory.IdentifierName(fieldIdentifier);
             var synchronizedAttribute = SyntaxFactory.List(new[] {CreateSynchronizedAttribute()});
-            var propIdSyntax = SyntaxFactory.IdentifierName(propertyIdentifier);
 
-            var returnField = SyntaxFactory.ReturnStatement(fieldIdSyntax);
+            var returnField = SyntaxFactory.ReturnStatement(internalEventTarget);
             var getter = SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration, synchronizedAttribute, SyntaxFactory.TokenList(), SyntaxFactory.Block(returnField));
 
-            var block = CreateSetterBlockToUpdateHandles(propertyIdentifier.Text, fieldIdSyntax, methods);
+            var block = CreateSetterBlockToUpdateHandles(propertyIdentifier.Text, internalEventTarget, methods);
             var setter = SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration, synchronizedAttribute, SyntaxFactory.TokenList(), SyntaxFactory.Block(block));
 
             var accessorListSyntax = SyntaxFactory.AccessorList(SyntaxFactory.List(new[] {getter, setter}));
 
             var propModifiers = SyntaxFactory.TokenList(convertedModifiers.Where(m => !m.IsKind(SyntaxKind.ReadOnlyKeyword)));
             return SyntaxFactory.PropertyDeclaration(attributes,
-                propModifiers, typeSyntax, null, propIdSyntax.Identifier, accessorListSyntax);
+                propModifiers, typeSyntax, null, propertyIdentifier, accessorListSyntax);
         }
 
         private static StatementSyntax[] CreateSetterBlockToUpdateHandles(string propertyIdentifier,
-            IdentifierNameSyntax fieldIdSyntax,
+            ExpressionSyntax fieldIdSyntax,
             IReadOnlyCollection<MethodWithHandles> methods)
         {
             var assignBackingField = SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
                 SyntaxKind.SimpleAssignmentExpression, fieldIdSyntax,
                 SyntaxFactory.IdentifierName("value")));
 
-            if (!methods.Any()) return new[] { assignBackingField };
+            if (!methods.Any()) return new StatementSyntax[] { assignBackingField };
 
             return new[]
             {
@@ -110,7 +110,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private static IEnumerable<StatementSyntax> CreateHandlesUpdaters(string propertyIdentifier,
-            IdentifierNameSyntax fieldIdSyntax,
+            ExpressionSyntax fieldIdSyntax,
             IReadOnlyCollection<MethodWithHandles> handlesSpecs,
             SyntaxKind assignmentExpressionKind)
         {
@@ -124,7 +124,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private IEnumerable<StatementSyntax> CreateHandlesUpdater(string propertyIdentifier,
-            IdentifierNameSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind, bool requiresNewDelegate = false)
+            ExpressionSyntax fieldIdSyntax, SyntaxKind assignmentExpressionKind, bool requiresNewDelegate = false)
         {
             return GetPropertyEvents(propertyIdentifier)
                 .Select(e => CreateHandlesUpdater(fieldIdSyntax, e, assignmentExpressionKind, requiresNewDelegate));
@@ -155,7 +155,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var handledFieldMember = MemberAccess(eventSource, e);
 
             var invocableRight = requiresNewDelegate && e.Event != null ? NewDelegateMethodId(e)
-                : Invocable(_methodId, e.ParametersToDiscard);
+                : Invokable(_methodId, e.ParametersToDiscard);
 
             return SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.AssignmentExpression(assignmentExpressionKind,
@@ -199,7 +199,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IEnumerable<Assignment> GetConstructorEventHandlers()
         {
             return HandledClassEventCSharpIds.Select(e =>
-                new Assignment(MemberAccess(EventContainerExpression(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, Invocable(_methodId, e.ParametersToDiscard))
+                new Assignment(MemberAccess(EventContainerExpression(e.EventContainerName), e), SyntaxKind.AddAssignmentExpression, Invokable(_methodId, e.ParametersToDiscard))
             );
 
             ExpressionSyntax EventContainerExpression(string e) =>
@@ -211,14 +211,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 };
         }
 
-        private ExpressionSyntax Invocable(IdentifierNameSyntax methodId, int parametersToDiscard)
+        private ExpressionSyntax Invokable(IdentifierNameSyntax methodId, int parametersToDiscard)
         {
             return parametersToDiscard > 0
                 ? CommonConversions.ThrowawayParameters(methodId, parametersToDiscard)
                 : methodId;
         }
 
-        private static StatementSyntax IfFieldNotNull(IdentifierNameSyntax fieldIdSyntax, IEnumerable<StatementSyntax> statements)
+        private static StatementSyntax IfFieldNotNull(ExpressionSyntax fieldIdSyntax, IEnumerable<StatementSyntax> statements)
         {
             return SyntaxFactory.IfStatement(SyntaxFactory.BinaryExpression(
                     SyntaxKind.NotEqualsExpression,
