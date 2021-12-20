@@ -1,10 +1,10 @@
-# Code Converter [![Build CodeConverter](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml/badge.svg?branch=master&event=push)](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml)
+# Code Converter [![Build CodeConverter](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml/badge.svg?branch=master&event=push)](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml) [![Install](https://vsmarketplacebadge.jeremyrajan.com/api/badge.svg?itemName=SharpDevelopTeam.CodeConverter&install)](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
 
 Convert code from VB.NET to C# and vice versa using Roslyn - all free and open source:
-* [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (~75k installs)
+* [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
 * [Online snippet converter](https://codeconverter.icsharpcode.net/)
+* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global` (Requires VS2017+ installed)
 * [Nuget library](https://www.nuget.org/packages/ICSharpCode.CodeConverter/) (this underpins all other free converters you'll find online)
-* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global`
 
 See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on getting the best results. 
 
