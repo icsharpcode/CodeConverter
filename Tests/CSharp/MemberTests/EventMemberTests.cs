@@ -554,7 +554,16 @@ internal partial class Form1 : BaseForm
         [MethodImpl(MethodImplOptions.Synchronized)]
         set
         {
+            if (base.BaseButton != null)
+            {
+                base.BaseButton.Click -= MultiClickHandler;
+            }
+
             base.BaseButton = value;
+            if (base.BaseButton != null)
+            {
+                base.BaseButton.Click += MultiClickHandler;
+            }
         }
     }
 

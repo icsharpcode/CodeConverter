@@ -218,7 +218,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             
             _typeContext.Push(methodsWithHandles, additionalInitializers);
             try {
-                var membersFromBase = additionalInitializers.IsBestPartToAddTypeInit ? methodsWithHandles.GetDeclarationsForHandlingBaseMembers(namedTypeSymbol) : Array.Empty<MemberDeclarationSyntax>();
+                var membersFromBase = additionalInitializers.IsBestPartToAddTypeInit ? methodsWithHandles.GetDeclarationsForHandlingBaseMembers() : Array.Empty<MemberDeclarationSyntax>();
                 var convertedMembers = (await members.SelectManyAsync(async member =>
                         (await ConvertMemberAsync(member)).Yield().Concat(GetAdditionalDeclarations(member)))
                     );
