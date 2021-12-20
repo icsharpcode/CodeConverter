@@ -19,6 +19,7 @@ using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 using Microsoft.CodeAnalysis.VisualBasic;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis.FindSymbols;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -211,9 +212,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
             var additionalInitializers = new AdditionalInitializers(parentType, namedTypeSymbol, _vbCompilation);
-            var methodsWithHandles = MethodsWithHandles.Create(CommonConversions, GetMethodWithHandles(parentType));
+            var methodsWithHandles = await GetMethodWithHandlesAsync(parentType);
 
-            if (methodsWithHandles.Any()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
+            if (methodsWithHandles.AnySynchronizedPropertiesGenerated()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
             
             _typeContext.Push(methodsWithHandles, additionalInitializers);
             try {
@@ -618,9 +619,18 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .ToArray();
         }
 
-        private List<MethodWithHandles> GetMethodWithHandles(VBSyntax.TypeBlockSyntax parentType)
+        private async Task<MethodsWithHandles> GetMethodWithHandlesAsync(VBSyntax.TypeBlockSyntax parentType)
         {
-            if (parentType == null || !(this._semanticModel.GetDeclaredSymbol((global::Microsoft.CodeAnalysis.SyntaxNode)parentType) is ITypeSymbol containingType)) return new List<MethodWithHandles>();
+            if (parentType == null || _semanticModel.GetDeclaredSymbol((SyntaxNode)parentType) is not ITypeSymbol containingType) {
+                return MethodsWithHandles.Create(CommonConversions, new List<MethodWithHandles>(), Array.Empty<IPropertySymbol>());
+            }
+
+            IPropertySymbol[] writtenWithEventsProperties;
+            if (!containingType.IsSealed) {
+                writtenWithEventsProperties = await containingType.GetMembers().OfType<IPropertySymbol>().ToAsyncEnumerable().WhereAwait(async p => !await IsNeverWrittenOrOverriddenAsync(p)).ToArrayAsync();
+            } else {
+                writtenWithEventsProperties = Array.Empty<IPropertySymbol>();
+            }
 
             var methodWithHandleses = containingType.GetMembers().OfType<IMethodSymbol>()
                 .Where(m => HandledEvents(m).Any())
@@ -634,7 +644,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     var csMethodId = SyntaxFactory.Identifier(m.Name);
                     return new MethodWithHandles(_csSyntaxGenerator, csMethodId, csPropIds, csFormIds);
                 }).Where(x => x != null).ToList();
-            return methodWithHandleses;
+            return MethodsWithHandles.Create(CommonConversions, methodWithHandleses, writtenWithEventsProperties);
 
             string GetCSharpIdentifierText(VBSyntax.EventContainerSyntax p)
             {
@@ -652,6 +662,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                         throw new ArgumentOutOfRangeException(nameof(p), p, $"Unrecognized event container: `{p}`");
                 }
             }
+        }
+
+        private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol, Location allowedLocation = null)
+        {
+            if (!await CommonConversions.Document.Project.Solution.IsNeverWrittenAsync(symbol, allowedLocation)) return false;
+            var overrides = await SymbolFinder.FindOverridesAsync(symbol, CommonConversions.Document.Project.Solution);
+            return !overrides.Any();
         }
 
         /// <summary>

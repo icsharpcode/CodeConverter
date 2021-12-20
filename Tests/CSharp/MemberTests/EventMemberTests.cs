@@ -589,6 +589,7 @@ public partial class TestHandlesAdded
     public void InitializeComponent()
     {
         _POW_btnV2DBM = new System.Windows.Forms.Button();
+        _POW_btnV2DBM.Click += POW_btnV2DBM_Click;
         // 
         // POW_btnV2DBM
         // 
@@ -641,6 +642,139 @@ CS0246: The type or namespace name 'Button' could not be found (are you missing 
         }
 
         [Fact]
+        public async Task Issue774_HandlerForBasePropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Imports System.Windows.Forms
+Imports Microsoft.VisualBasic.CompilerServices
+
+Partial Class BaseForm
+    Inherits Form
+    Friend WithEvents BaseButton As Button
+End Class
+
+<DesignerGenerated>
+Partial Class BaseForm
+    Inherits System.Windows.Forms.Form
+
+    Private Sub InitializeComponent()
+        Me.BaseButton = New Button()
+    End Sub
+End Class
+
+<DesignerGenerated>
+Partial Class Form1
+    Inherits BaseForm
+    Private Sub InitializeComponent()
+        Me.Button1 = New Button()
+    End Sub
+    Friend WithEvents Button1 As Button
+End Class
+
+Partial Class Form1
+    Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
+                                                                            BaseButton.Click
+    End Sub
+End Class", @"using System;
+using System.Runtime.CompilerServices;
+using System.Windows.Forms;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class BaseForm : Form
+{
+    public BaseForm()
+    {
+        InitializeComponent();
+    }
+
+    internal Button BaseButton;
+}
+
+[DesignerGenerated]
+internal partial class BaseForm : Form
+{
+    private void InitializeComponent()
+    {
+        this._BaseButton = new Button();
+    }
+}
+
+[DesignerGenerated]
+internal partial class Form1 : BaseForm
+{
+    public Form1()
+    {
+        InitializeComponent();
+    }
+
+    internal override Button BaseButton
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return base.BaseButton;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (base.BaseButton != null)
+            {
+                base.BaseButton.Click -= MultiClickHandler;
+            }
+
+            base.BaseButton = value;
+            if (base.BaseButton != null)
+            {
+                base.BaseButton.Click += MultiClickHandler;
+            }
+        }
+    }
+
+    private void InitializeComponent()
+    {
+        _Button1 = new Button();
+        _Button1.Click += new EventHandler(MultiClickHandler);
+    }
+
+    private Button _Button1;
+
+    internal Button Button1
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _Button1;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (_Button1 != null)
+            {
+                _Button1.Click -= MultiClickHandler;
+            }
+
+            _Button1 = value;
+            if (_Button1 != null)
+            {
+                _Button1.Click += MultiClickHandler;
+            }
+        }
+    }
+}
+
+internal partial class Form1
+{
+    private void MultiClickHandler(object sender, EventArgs e)
+    {
+    }
+}
+2 target compilation errors:
+CS0544: 'Form1.BaseButton': cannot override because 'BaseForm.BaseButton' is not a property
+CS1061: 'BaseForm' does not contain a definition for '_BaseButton' and no accessible extension method '_BaseButton' accepting a first argument of type 'BaseForm' could be found (are you missing a using directive or an assembly reference?)
+");
+        }
         public async Task Issue584_EventWithByRefAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue584RaiseEventByRefDemo

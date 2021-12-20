@@ -14,6 +14,8 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis.FindSymbols;
+using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

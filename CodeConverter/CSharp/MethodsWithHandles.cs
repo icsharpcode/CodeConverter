@@ -18,33 +18,35 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly CommonConversions _commonConversions;
         private readonly List<MethodWithHandles> _methodWithHandleses;
-        private readonly ILookup<string, MethodWithHandles> _handledMethodsFromPropertyWithEventName;
+        private readonly Dictionary<string, (IPropertySymbol Symbol, MethodWithHandles[] MethodWithHandles)> _propertyNameToHandledEvents;
         private readonly ImmutableHashSet<string> _containerFieldsConvertedToProperties;
 
 
         private MethodsWithHandles(CommonConversions commonConversions, List<MethodWithHandles> methodWithHandleses,
-            ILookup<string, MethodWithHandles> handledMethodsFromPropertyWithEventName,
+            Dictionary<string, (IPropertySymbol Symbol, MethodWithHandles[])> propertyNameToHandledEvents,
             ImmutableHashSet<string> containerFieldsConvertedToProperties)
         {
             _commonConversions = commonConversions;
             _methodWithHandleses = methodWithHandleses;
-            _handledMethodsFromPropertyWithEventName = handledMethodsFromPropertyWithEventName;
+            _propertyNameToHandledEvents = propertyNameToHandledEvents;
             _containerFieldsConvertedToProperties = containerFieldsConvertedToProperties;
         }
 
-        public static MethodsWithHandles Create(CommonConversions commonConversions, List<MethodWithHandles> methodWithHandleses)
+        public static MethodsWithHandles Create(CommonConversions commonConversions, List<MethodWithHandles> methodWithHandleses, IPropertySymbol[] writtenWithEventsProperties)
         {
             var handledMethodsFromPropertyWithEventName = methodWithHandleses
                 .SelectMany(m => m.HandledPropertyEventCSharpIds.Select(h => (EventPropertyName: h.EventContainerName, MethodWithHandles: m)))
                 .ToLookup(m => m.EventPropertyName, m => m.MethodWithHandles);
+            var propertiesWithEvents = writtenWithEventsProperties.ToDictionary(p => p.Name, p => (p: p, handledMethodsFromPropertyWithEventName[p.Name].ToArray()));
             var containerFieldsConvertedToProperties = methodWithHandleses
                 .SelectMany(m => m.HandledPropertyEventCSharpIds, (_, handled) => handled.EventContainerName)
                 .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
-            return new MethodsWithHandles(commonConversions, methodWithHandleses, handledMethodsFromPropertyWithEventName, containerFieldsConvertedToProperties);
+            return new MethodsWithHandles(commonConversions, methodWithHandleses, propertiesWithEvents, containerFieldsConvertedToProperties);
         }
 
-        public bool Any() => _methodWithHandleses.Any();
-        public bool AnyForPropertyName(string propertyIdentifierText) => _containerFieldsConvertedToProperties.Contains(propertyIdentifierText);
+        public bool AnySynchronizedPropertiesGenerated() => _propertyNameToHandledEvents.Any();
+        public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _propertyNameToHandledEvents.ContainsKey(propertyIdentifierText) ||
+                                                                         _containerFieldsConvertedToProperties.Contains(propertyIdentifierText);
 
         public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(VariableDeclarationSyntax fieldDecl, SyntaxTokenList convertedModifiers, SyntaxList<AttributeListSyntax> attributes)
         {
@@ -78,17 +80,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
         {
             var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
-            var handledMethods = _handledMethodsFromPropertyWithEventName[potentialPropertySymbol.Name].ToArray();
-            if (handledMethods.Any())
+            var handledMethods = _propertyNameToHandledEvents.TryGetValue(potentialPropertySymbol.Name, out var h) ? h.MethodWithHandles : Array.Empty<MethodWithHandles>();
+            var postAssignmentStatements = handledMethods.SelectMany(hm =>
+                hm.GetPostInitializationStatements(potentialPropertySymbol.Name, fieldName));
             {
-                var postAssignmentStatements = handledMethods.SelectMany(h =>
-                    h.GetPostInitializationStatements(potentialPropertySymbol.Name, fieldName));
-                {
-                    return SyntaxFactory.List(postAssignmentStatements);
-                }
+                return SyntaxFactory.List(postAssignmentStatements);
             }
-
-            return SyntaxFactory.List<StatementSyntax>();
         }
 
         public IEnumerable<StatementSyntax> GetInitializeComponentClassEventHandlers()

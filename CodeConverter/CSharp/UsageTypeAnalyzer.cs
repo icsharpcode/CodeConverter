@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -25,7 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var semanticModel = await g.Doc.GetSemanticModelAsync();
                 var syntaxRoot = await g.Doc.GetSyntaxRootAsync();
                 return g.Usages.Select(l => syntaxRoot.FindNode(l.Location.SourceSpan))
-                        .Select(syntaxNode => semanticModel.GetOperation(syntaxNode));
+                        .Select(syntaxNode => semanticModel.GetAncestorOperationOrNull<IOperation>(syntaxNode));
             });
             foreach (var documentUsages in operationsReferencing) {
                 var usages = await documentUsages;
