@@ -61,7 +61,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator);
-            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, csCompilation, _typeContext, _visualBasicEqualityComparison);
+            CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
             var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives);
             _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
             _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitorAsync;
@@ -553,7 +553,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 initializerCollection.Add((SyntaxFactory.IdentifierName(initializer.Key), Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
             }
 
-            var fieldDecls = _typeContext.MethodsWithHandles.GetDeclarationsForFieldBackedProperty(fieldDecl,
+            var fieldDecls = _typeContext.HandledEventsAnalysis.GetDeclarationsForFieldBackedProperty(fieldDecl,
                 convertedModifiers, SyntaxFactory.List(attributes));
             return fieldDecls;
         }
@@ -619,79 +619,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .ToArray();
         }
 
-        private async Task<MethodsWithHandles> GetMethodWithHandlesAsync(VBSyntax.TypeBlockSyntax parentType)
+        private async Task<HandledEventsAnalysis> GetMethodWithHandlesAsync(VBSyntax.TypeBlockSyntax parentType)
         {
-            if (parentType == null || _semanticModel.GetDeclaredSymbol((SyntaxNode)parentType) is not ITypeSymbol containingType) {
-                return MethodsWithHandles.Create(CommonConversions, new List<MethodWithHandles>(), Array.Empty<IPropertySymbol>());
+            if (parentType == null || _semanticModel.GetDeclaredSymbol((SyntaxNode)parentType) is not INamedTypeSymbol containingType) {
+                return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, null);
             }
 
-            IPropertySymbol[] writtenWithEventsProperties;
-            if (!containingType.IsSealed) {
-                writtenWithEventsProperties = await containingType.GetMembers().OfType<IPropertySymbol>().ToAsyncEnumerable().WhereAwait(async p => !await IsNeverWrittenOrOverriddenAsync(p)).ToArrayAsync();
-            } else {
-                writtenWithEventsProperties = Array.Empty<IPropertySymbol>();
-            }
-
-            var methodWithHandleses = containingType.GetMembers().OfType<IMethodSymbol>()
-                .Where(m => HandledEvents(m).Any())
-                .Select(m => {
-                    var ids = HandledEvents(m)
-                        .Select(p => (GetCSharpIdentifierText(p.EventContainer), CommonConversions.ConvertIdentifier(p.EventMember.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None), p.Event, p.ParametersToDiscard))
-                        .ToList();
-                    var csFormIds = ids.Where(id => id.Item1 == "this" || id.Item1 == "base").ToList();
-                    var csPropIds = ids.Except(csFormIds).ToList();
-                    if (!csPropIds.Any() && !csFormIds.Any()) return null;
-                    var csMethodId = SyntaxFactory.Identifier(m.Name);
-                    return new MethodWithHandles(_csSyntaxGenerator, csMethodId, csPropIds, csFormIds);
-                }).Where(x => x != null).ToList();
-            return MethodsWithHandles.Create(CommonConversions, methodWithHandleses, writtenWithEventsProperties);
-
-            string GetCSharpIdentifierText(VBSyntax.EventContainerSyntax p)
-            {
-                switch (p) {
-                    //For me, trying to use "MyClass" in a Handles expression is a syntax error. Events aren't overridable anyway so I'm not sure how this would get used.
-                    case VBSyntax.KeywordEventContainerSyntax kecs when kecs.Keyword.IsKind(VBasic.SyntaxKind.MyBaseKeyword):
-                        return "base";
-                    case VBSyntax.KeywordEventContainerSyntax _:
-                        return "this";
-                    case VBSyntax.WithEventsEventContainerSyntax weecs:
-                        return CommonConversions.CsEscapedIdentifier(weecs.Identifier.Text).Text;
-                    case VBSyntax.WithEventsPropertyEventContainerSyntax wepecs:
-                        return CommonConversions.CsEscapedIdentifier(wepecs.Property.Identifier.Text).Text;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(p), p, $"Unrecognized event container: `{p}`");
-                }
-            }
-        }
-
-        private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol, Location allowedLocation = null)
-        {
-            if (!await CommonConversions.Document.Project.Solution.IsNeverWrittenAsync(symbol, allowedLocation)) return false;
-            var overrides = await SymbolFinder.FindOverridesAsync(symbol, CommonConversions.Document.Project.Solution);
-            return !overrides.Any();
-        }
-
-        /// <summary>
-        /// VBasic.VisualBasicExtensions.HandledEvents(m) seems to optimize away some events, so just detect from syntax
-        /// </summary>
-        private List<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember, IEventSymbol Event, int ParametersToDiscard)> HandledEvents(IMethodSymbol m)
-        {
-            return m.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<VBSyntax.MethodStatementSyntax>()
-                .Where(mbb => mbb.HandlesClause?.Events.Any() == true)
-                .SelectMany(mbb => HandledEvent(mbb))
-                .ToList();
-        }
-
-        private IEnumerable<(VBSyntax.EventContainerSyntax EventContainer, VBSyntax.IdentifierNameSyntax EventMember, IEventSymbol Event, int ParametersToDiscard)> HandledEvent(VBSyntax.MethodStatementSyntax mbb)
-        {
-            var mayRequireDiscardedParameters = !mbb.ParameterList.Parameters.Any();
-            //TODO: PERF: Get group by syntax tree and get semantic model once in case it doesn't get successfully cached
-            var semanticModel = mbb.SyntaxTree == _semanticModel.SyntaxTree ? _semanticModel : _vbCompilation.GetSemanticModel(mbb.SyntaxTree, ignoreAccessibility: true);
-            return mbb.HandlesClause.Events.Select(e => {
-                var symbol = semanticModel.GetSymbolInfo(e.EventMember).Symbol as IEventSymbol;
-                var toDiscard = mayRequireDiscardedParameters ? symbol?.Type.GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
-                return (e.EventContainer, e.EventMember, Event: symbol, toDiscard);
-            });
+            return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType);
         }
 
         public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
@@ -1115,7 +1049,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             //  Just class events - for property events, see other use of IsDesignerGeneratedTypeWithInitializeComponent
             if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation)) {
                 var firstResumeLayout = convertedStatements.Statements.FirstOrDefault(IsThisResumeLayoutInvocation) ?? convertedStatements.Statements.Last();
-                convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.MethodsWithHandles.GetInitializeComponentClassEventHandlers());
+                convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
             }
 
             var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);

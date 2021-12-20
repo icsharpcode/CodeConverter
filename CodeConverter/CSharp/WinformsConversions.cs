@@ -24,7 +24,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </remarks>
         public bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
         {
-            return potentialPropertySymbol != null && _typeContext.Any() && _typeContext.MethodsWithHandles.ShouldGeneratePropertyFor(potentialPropertySymbol.Name) && InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
+            return potentialPropertySymbol != null && _typeContext.Any() && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(potentialPropertySymbol.Name) && InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
         }
 
         public static bool InMethodCalledInitializeComponent(SyntaxNode anyNodePossiblyWithinMethod)
@@ -89,7 +89,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                    maes.Name.Identifier.Text == "Name" &&
                    !(maes.Expression is VBSyntax.MeExpressionSyntax) &&
                    maes.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>()?.Identifier.Text is {} propName &&
-                   _typeContext.MethodsWithHandles.ShouldGeneratePropertyFor(propName);
+                   _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(propName);
         }
     }
 }

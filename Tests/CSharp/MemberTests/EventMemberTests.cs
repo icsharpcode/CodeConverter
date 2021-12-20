@@ -140,8 +140,7 @@ Module Module1
 
     Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
     End Sub
-End Module", @"using System.Runtime.CompilerServices;
-
+End Module", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -162,57 +161,7 @@ internal static partial class Module1
         EventClassInstance2 = new MyEventClass();
     }
 
-    private static MyEventClass _EventClassInstance, _EventClassInstance2;
-
-    private static MyEventClass EventClassInstance
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _EventClassInstance;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_EventClassInstance != null)
-            {
-                _EventClassInstance.TestEvent -= PrintTestMessage2;
-                _EventClassInstance.TestEvent -= PrintTestMessage3;
-            }
-
-            _EventClassInstance = value;
-            if (_EventClassInstance != null)
-            {
-                _EventClassInstance.TestEvent += PrintTestMessage2;
-                _EventClassInstance.TestEvent += PrintTestMessage3;
-            }
-        }
-    }
-
-    private static MyEventClass EventClassInstance2
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _EventClassInstance2;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_EventClassInstance2 != null)
-            {
-                _EventClassInstance2.TestEvent -= PrintTestMessage2;
-            }
-
-            _EventClassInstance2 = value;
-            if (_EventClassInstance2 != null)
-            {
-                _EventClassInstance2.TestEvent += PrintTestMessage2;
-            }
-        }
-    }
+    private static MyEventClass EventClassInstance, EventClassInstance2;
 
     public static void PrintTestMessage2()
     {
@@ -235,8 +184,7 @@ Class Class1
     WithEvents MyEventClassInstance As MyEventClass
     Sub EventClassInstance_TestEvent() Handles MyEventClassInstance.TestEvent
     End Sub
-End Class", @"using System.Runtime.CompilerServices;
-
+End Class", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -246,31 +194,7 @@ internal partial class MyEventClass
 
 internal partial class Class1
 {
-    private MyEventClass _MyEventClassInstance;
-
-    private MyEventClass MyEventClassInstance
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _MyEventClassInstance;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_MyEventClassInstance != null)
-            {
-                _MyEventClassInstance.TestEvent -= EventClassInstance_TestEvent;
-            }
-
-            _MyEventClassInstance = value;
-            if (_MyEventClassInstance != null)
-            {
-                _MyEventClassInstance.TestEvent += EventClassInstance_TestEvent;
-            }
-        }
-    }
+    private MyEventClass MyEventClassInstance;
 
     public void EventClassInstance_TestEvent()
     {
@@ -313,8 +237,7 @@ Class Class1
 End Class
 
 Public Class ShouldNotGainConstructor
-End Class", @"using System.Runtime.CompilerServices;
-
+End Class", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -329,59 +252,8 @@ internal partial class MyEventClass
 
 internal partial class Class1
 {
-    private static MyEventClass _SharedEventClassInstance;
-
-    private static MyEventClass SharedEventClassInstance
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _SharedEventClassInstance;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_SharedEventClassInstance != null)
-            {
-                _SharedEventClassInstance.TestEvent -= PrintTestMessage2;
-            }
-
-            _SharedEventClassInstance = value;
-            if (_SharedEventClassInstance != null)
-            {
-                _SharedEventClassInstance.TestEvent += PrintTestMessage2;
-            }
-        }
-    }
-
-    private MyEventClass _NonSharedEventClassInstance;
-
-    private MyEventClass NonSharedEventClassInstance
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _NonSharedEventClassInstance;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_NonSharedEventClassInstance != null)
-            {
-                _NonSharedEventClassInstance.TestEvent -= PrintTestMessage2;
-                _NonSharedEventClassInstance.TestEvent -= PrintTestMessage3;
-            }
-
-            _NonSharedEventClassInstance = value;
-            if (_NonSharedEventClassInstance != null)
-            {
-                _NonSharedEventClassInstance.TestEvent += PrintTestMessage2;
-                _NonSharedEventClassInstance.TestEvent += PrintTestMessage3;
-            }
-        }
-    }
+    private static MyEventClass SharedEventClassInstance;
+    private MyEventClass NonSharedEventClassInstance;
 
     static Class1()
     {
@@ -447,8 +319,7 @@ Public Partial Class Class1
 
     Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
     End Sub
-End Class", @"using System.Runtime.CompilerServices;
-
+End Class", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -463,57 +334,7 @@ internal partial class MyEventClass
 
 public partial class Class1
 {
-    private MyEventClass _EventClassInstance, _EventClassInstance2;
-
-    private MyEventClass EventClassInstance
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _EventClassInstance;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_EventClassInstance != null)
-            {
-                _EventClassInstance.TestEvent -= PrintTestMessage2;
-                _EventClassInstance.TestEvent -= PrintTestMessage3;
-            }
-
-            _EventClassInstance = value;
-            if (_EventClassInstance != null)
-            {
-                _EventClassInstance.TestEvent += PrintTestMessage2;
-                _EventClassInstance.TestEvent += PrintTestMessage3;
-            }
-        }
-    }
-
-    private MyEventClass EventClassInstance2
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _EventClassInstance2;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_EventClassInstance2 != null)
-            {
-                _EventClassInstance2.TestEvent -= PrintTestMessage2;
-            }
-
-            _EventClassInstance2 = value;
-            if (_EventClassInstance2 != null)
-            {
-                _EventClassInstance2.TestEvent += PrintTestMessage2;
-            }
-        }
-    }
+    private MyEventClass EventClassInstance, EventClassInstance2;
 
     public Class1()
     {
@@ -687,7 +508,22 @@ internal partial class BaseForm : Form
         InitializeComponent();
     }
 
-    internal Button BaseButton;
+    private Button _BaseButton;
+
+    internal virtual Button BaseButton
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return _BaseButton;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            _BaseButton = value;
+        }
+    }
 }
 
 [DesignerGenerated]
@@ -695,7 +531,7 @@ internal partial class BaseForm : Form
 {
     private void InitializeComponent()
     {
-        this._BaseButton = new Button();
+        _BaseButton = new Button();
     }
 }
 
@@ -718,16 +554,7 @@ internal partial class Form1 : BaseForm
         [MethodImpl(MethodImplOptions.Synchronized)]
         set
         {
-            if (base.BaseButton != null)
-            {
-                base.BaseButton.Click -= MultiClickHandler;
-            }
-
             base.BaseButton = value;
-            if (base.BaseButton != null)
-            {
-                base.BaseButton.Click += MultiClickHandler;
-            }
         }
     }
 
@@ -739,7 +566,7 @@ internal partial class Form1 : BaseForm
 
     private Button _Button1;
 
-    internal Button Button1
+    internal virtual Button Button1
     {
         [MethodImpl(MethodImplOptions.Synchronized)]
         get
@@ -770,9 +597,6 @@ internal partial class Form1
     {
     }
 }
-2 target compilation errors:
-CS0544: 'Form1.BaseButton': cannot override because 'BaseForm.BaseButton' is not a property
-CS1061: 'BaseForm' does not contain a definition for '_BaseButton' and no accessible extension method '_BaseButton' accepting a first argument of type 'BaseForm' could be found (are you missing a using directive or an assembly reference?)
 ");
         }
         public async Task Issue584_EventWithByRefAsync()
@@ -845,7 +669,7 @@ public partial class Form1 : System.Windows.Forms.Form
 
     private System.Windows.Forms.Button _Button1;
 
-    internal System.Windows.Forms.Button Button1
+    internal virtual System.Windows.Forms.Button Button1
     {
         [MethodImpl(MethodImplOptions.Synchronized)]
         get
@@ -871,7 +695,7 @@ public partial class Form1 : System.Windows.Forms.Form
 
     private System.Windows.Forms.Button _Button2;
 
-    internal System.Windows.Forms.Button Button2
+    internal virtual System.Windows.Forms.Button Button2
     {
         [MethodImpl(MethodImplOptions.Synchronized)]
         get

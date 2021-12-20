@@ -35,7 +35,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public static IEnumerable<MemberDeclarationSyntax> GetDeclarationsForFieldBackedProperty(
             VariableDeclarationSyntax decl, SyntaxTokenList convertedModifiers,
             SyntaxList<AttributeListSyntax> attributes,
-            IReadOnlyCollection<MethodWithHandles> methodsWithHandles)
+            Dictionary<string, (IPropertySymbol Symbol, MethodWithHandles[] MethodWithHandles)> methodsWithHandles)
         {
             // It should be safe to use the underscore name since in VB the compiler generates a backing field with that name, and errors if you try to clash with it
             var (nonRenamedEvents, renamedEvents) = decl.Variables
@@ -53,9 +53,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var nonRenamedDecl = decl.WithVariables(SyntaxFactory.SeparatedList(renamedEvents.Select(v => v.Variable.WithIdentifier(v.NewId))));
                 yield return SyntaxFactory.FieldDeclaration(attributes, MakePrivate(convertedModifiers), nonRenamedDecl);
             }
-
+            
             foreach (var (variable, newId) in renamedEvents) {
-                yield return GetDeclarationsForFieldBackedProperty(methodsWithHandles, attributes, convertedModifiers,
+                var toHandle = methodsWithHandles[variable.Identifier.Text];
+                var propertySymbol = toHandle.Symbol;
+
+                // This is overridden when a inheriting class handles the event - see other use of GetDeclarationsForFieldBackedProperty
+                var propModifiers = !propertySymbol.ContainingType.IsSealed && propertySymbol.DeclaredAccessibility != Accessibility.Private
+                    ? convertedModifiers.Add(SyntaxFactory.Token(SyntaxKind.VirtualKeyword))
+                    : convertedModifiers;
+
+                yield return GetDeclarationsForFieldBackedProperty(toHandle.MethodWithHandles, attributes, propModifiers,
                     decl.Type, variable.Identifier,
                     SyntaxFactory.IdentifierName(newId));
             }
@@ -69,8 +77,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             return noVisibility;
         }
 
-        private static bool HasEvents(IReadOnlyCollection<MethodWithHandles> methodsWithHandles, SyntaxToken propertyId) => 
-            methodsWithHandles.Any(m => m.GetPropertyEvents(propertyId.Text).Any());
+        private static bool HasEvents(Dictionary<string, (IPropertySymbol Symbol, MethodWithHandles[] MethodWithHandles)> methodsWithHandles, SyntaxToken propertyId) => 
+            methodsWithHandles.ContainsKey(propertyId.Text);
 
         public static PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty(IReadOnlyCollection<MethodWithHandles> methods,
             SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList convertedModifiers, TypeSyntax typeSyntax,

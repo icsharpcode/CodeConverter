@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly CommentConvertingVisitorWrapper _expressionVisitor;
         private readonly Stack<ExpressionSyntax> _withBlockLhs;
         private readonly HashSet<string> _extraUsingDirectives;
-        private readonly MethodsWithHandles _methodsWithHandles;
+        private readonly HandledEventsAnalysis _handledEventsAnalysis;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
         private readonly HashSet<VBSyntax.StatementSyntax> _redundantSourceStatements = new HashSet<VBSyntax.StatementSyntax>();
         private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
@@ -64,7 +64,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             CommonConversions = commonConversions;
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
-            _methodsWithHandles = typeContext.MethodsWithHandles;
+            _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
             var byRefParameterVisitor = new HoistedNodeStateVisitor(this, typeContext.HoistedState, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
@@ -226,7 +226,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
         {
             if (CommonConversions.WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol)) {
-                return _methodsWithHandles.GetPostAssignmentStatements(potentialPropertySymbol);
+                return _handledEventsAnalysis.GetPostAssignmentStatements(potentialPropertySymbol);
             }
 
             return SyntaxFactory.List<StatementSyntax>();
