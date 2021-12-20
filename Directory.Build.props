@@ -3,7 +3,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <NoWarn>$(NoWarn);1998;NU5100</NoWarn>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <AssemblyVersion>8.4.2.0</AssemblyVersion>
     <FileVersion>8.4.2.0</FileVersion>
     <Version>8.4.2</Version>
