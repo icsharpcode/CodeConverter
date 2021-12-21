@@ -403,8 +403,8 @@ public partial class TestHandlesAdded
     public TestHandlesAdded()
     {
         InitializeComponent();
-        _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
         POW_btnV2DBM = _POW_btnV2DBM;
+        _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
     }
 
     public void InitializeComponent()
@@ -506,6 +506,7 @@ internal partial class BaseForm : Form
     public BaseForm()
     {
         InitializeComponent();
+        BaseButton = _BaseButton;
     }
 
     private Button _BaseButton;
@@ -541,6 +542,7 @@ internal partial class Form1 : BaseForm
     public Form1()
     {
         InitializeComponent();
+        Button1 = _Button1;
     }
 
     internal override Button BaseButton

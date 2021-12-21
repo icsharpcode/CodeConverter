@@ -239,7 +239,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (additionalInitializers.RequiresInitializeComponent) {
                     // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
                     if (additionalInitializers.IsBestPartToAddTypeInit) convertedMembers = convertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
-                    additionalInitializers.AdditionalInstanceInitializers.AddRange(CommonConversions.WinformsConversions.GetNameAssignments(otherPartsOfType));
+                    additionalInitializers.AdditionalInstanceInitializers.AddRange(CommonConversions.WinformsConversions.GetConstructorReassignments(otherPartsOfType));
                 } else {
                     additionalInitializers.AdditionalInstanceInitializers.AddRange(methodsWithHandles.GetConstructorEventHandlers());
                 }

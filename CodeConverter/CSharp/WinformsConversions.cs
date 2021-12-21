@@ -38,23 +38,44 @@ namespace ICSharpCode.CodeConverter.CSharp
             return methodBlockSyntax?.SubOrFunctionStatement.Identifier.Text == "InitializeComponent";
         }
 
-        public IEnumerable<Assignment> GetNameAssignments((VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)[] otherPartsOfType)
+        public IEnumerable<Assignment> GetConstructorReassignments((VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)[] otherPartsOfType)
         {
             return otherPartsOfType.SelectMany(typePart => 
                 typePart.Type.Members.OfType<VBSyntax.MethodBlockSyntax>()
                     .Where(IsInitializeComponent)
-                    .SelectMany(GetAssignments)
+                    .SelectMany(GetAssignmentsFromInitializeComponent)
             );
         }
 
-        private IEnumerable<Assignment> GetAssignments(VBSyntax.MethodBlockSyntax initializeComponent)
+        private IEnumerable<Assignment> GetAssignmentsFromInitializeComponent(VBSyntax.MethodBlockSyntax initializeComponent)
         {
             return initializeComponent.Statements
                 .OfType<VBSyntax.AssignmentStatementSyntax>()
-                .Where(ShouldPrefixAssignedNameWithUnderscore)
-                .Select(s => (s.Left as VBSyntax.MemberAccessExpressionSyntax)?.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>())
-                .Where(s => s != null)
-                .SelectMany(id => new[]{ CreateNameAssignment(id), CreatePropertyAssignment(id) });
+                .Select(GetRequiredReassignmentOrNull)
+                .Where(s => s.HasValue)
+                .Select(s => s.Value);
+        }
+
+        private Assignment? GetRequiredReassignmentOrNull(VBSyntax.AssignmentStatementSyntax s)
+        {
+            if (ShouldPrefixAssignedNameWithUnderscore(s)) {
+                if (s.Left is VBSyntax.MemberAccessExpressionSyntax maes) {
+                    return CreateNameAssignment(maes.Expression.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>());
+                }
+            } else if (ShouldReassignProperty(s)){
+                return CreatePropertyAssignment(s.Left.LastOrDefaultDescendant<VBSyntax.IdentifierNameSyntax>());
+            }
+
+            return null;
+        }
+
+        private bool ShouldReassignProperty(VBSyntax.StatementSyntax statementOrNull)
+        {
+            return statementOrNull is VBSyntax.AssignmentStatementSyntax assignment &&
+                   _typeContext.Any() &&
+                   InMethodCalledInitializeComponent(assignment) &&
+                   (assignment.Left is VBSyntax.MemberAccessExpressionSyntax maes && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(maes.Name.Identifier.Text) 
+                       || assignment.Left is VBSyntax.IdentifierNameSyntax id && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(id.Identifier.Text));
         }
 
         private static Assignment CreateNameAssignment(VBSyntax.IdentifierNameSyntax id)
