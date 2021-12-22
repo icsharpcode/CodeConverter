@@ -44,6 +44,9 @@ jobs:
     - name: MSBuild Vsix
       run: msbuild Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
 
+    - name: MSBuild TestData project
+      run: msbuild Tests\TestData\MultiFileCharacterization\SourceFiles\CharacterizationTestSolution.sln -restore /p:Configuration=$env:BuildTarget
+
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
