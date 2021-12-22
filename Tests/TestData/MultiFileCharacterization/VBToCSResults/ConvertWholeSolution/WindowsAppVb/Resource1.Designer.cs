@@ -22,7 +22,7 @@ namespace WindowsAppVb.My.Resources
     /// <summary>
     /// A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
-    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [DebuggerNonUserCode()]
     [CompilerGenerated()]
     public class Resource1

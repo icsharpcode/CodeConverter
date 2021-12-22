@@ -21,7 +21,7 @@ namespace VbLibrary.My.Resources
     /// <summary>
     /// A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
-    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
     [HideModuleName()]
@@ -40,7 +40,7 @@ namespace VbLibrary.My.Resources
             {
                 if (ReferenceEquals(resourceMan, null))
                 {
-                    var temp = new System.Resources.ResourceManager("EmptyVb.Resources", typeof(Resources).Assembly);
+                    var temp = new System.Resources.ResourceManager("VbLibrary.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
 
