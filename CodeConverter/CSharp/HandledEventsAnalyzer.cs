@@ -85,7 +85,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return m.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<MethodStatementSyntax>()
                 .GroupBy(method => method.SyntaxTree)
                 .Select(g => {
-                    var semanticModel = Equals(_semanticModel.SyntaxTree, g.Key) ? _semanticModel : (_commonConversions.Compilation.GetSemanticModel(g.Key, true));
+                    var semanticModel = Equals(_semanticModel.SyntaxTree, g.Key) ? _semanticModel : _commonConversions.Compilation.GetSemanticModel(g.Key, true);
                     return (SemanticModel: semanticModel, MethodDeclarations: g.ToArray());
                 })
                 .SelectMany(mbb => HandledEvent(mbb.SemanticModel, mbb.MethodDeclarations, m));

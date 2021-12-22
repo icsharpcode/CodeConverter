@@ -22,9 +22,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// Co-ordinates inlining property events, see <see cref="MethodBodyExecutableStatementVisitor.GetPostAssignmentStatements"/>
         /// Also see usages of IsDesignerGeneratedTypeWithInitializeComponent
         /// </remarks>
-        public bool MustInlinePropertyWithEventsAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
+        public bool MayNeedToInlinePropertyAccess(SyntaxNode anyNodePossiblyWithinMethod, ISymbol potentialPropertySymbol)
         {
-            return potentialPropertySymbol != null && _typeContext.Any() && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(potentialPropertySymbol.Name) && InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
+            return potentialPropertySymbol != null && _typeContext.Any() && InMethodCalledInitializeComponent(anyNodePossiblyWithinMethod) && potentialPropertySymbol is IPropertySymbol prop && prop.IsWithEvents;
         }
 
         public static bool InMethodCalledInitializeComponent(SyntaxNode anyNodePossiblyWithinMethod)

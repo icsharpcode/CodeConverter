@@ -9,6 +9,7 @@
 // ------------------------------------------------------------------------------
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace VbNetStandardLib.My.Resources
 {
@@ -22,7 +23,7 @@ namespace VbNetStandardLib.My.Resources
     /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [DebuggerNonUserCode()]
-    [System.Runtime.CompilerServices.CompilerGenerated()]
+    [CompilerGenerated()]
     public class RootResources
     {
         private static System.Resources.ResourceManager resourceMan;

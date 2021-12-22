@@ -27,7 +27,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             _commonConversions = commonConversions;
             _type = type;
             var (handlingMethodsForInstance, handlingMethodsForPropertyEvents) = csharpEventContainerToHandlingMethods
-                .Where(m => !m.PropertyDetails.IsNeverWrittenOrOverridden)
                 .Select(m => (m.EventContainer, m.PropertyDetails, m.HandledMethods))
                 .SplitOn(m => m.EventContainer.Kind == EventContainerKind.Property);
 
@@ -35,9 +34,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             _handlingMethodsByPropertyName = handlingMethodsForPropertyEvents.ToDictionary(h => h.EventContainer.PropertyName, StringComparer.OrdinalIgnoreCase);
         }
 
-        public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any();
-        public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _handlingMethodsByPropertyName.ContainsKey(propertyIdentifierText);
-        
+        public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => !p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
+        public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _handlingMethodsByPropertyName.TryGetValue(propertyIdentifierText, out var handled) && !handled.PropertyDetails.IsNeverWrittenOrOverridden;
+
         public IEnumerable<Assignment> GetConstructorEventHandlers()
         {
             return _handlingMethodsForInstance.SelectMany(e => e.HandledMethods, (e, m) => {
@@ -89,9 +88,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
         {
-            var fieldName = SyntaxFactory.IdentifierName("_" + potentialPropertySymbol.Name);
-            var handledMethods = _handlingMethodsByPropertyName.TryGetValue(potentialPropertySymbol.Name, out var h) ? h.HandledMethods : Array.Empty<(EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)>();
-            var postAssignmentStatements = handledMethods.Select(hm =>
+            if (!_handlingMethodsByPropertyName.TryGetValue(potentialPropertySymbol.Name, out var h)) return SyntaxFactory.List<StatementSyntax>();
+            var prefix = h.PropertyDetails.IsNeverWrittenOrOverridden ? "" : "_";
+            var fieldName = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(prefix + potentialPropertySymbol.Name));
+            var postAssignmentStatements = h.HandledMethods.Select(hm =>
                 CreateHandlesUpdater(fieldName, hm.Event, SyntaxKind.AddAssignmentExpression, hm.HandlingMethod, hm.ParametersToDiscard, true));
             {
                 return SyntaxFactory.List(postAssignmentStatements);
@@ -104,8 +104,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             // It should be safe to use the underscore name since in VB the compiler generates a backing field with that name, and errors if you try to clash with it
             var (nonRenamedEvents, renamedEvents) = decl.Variables
-                .SplitOn(
-                    v => HasEvents(v.Identifier),
+                .SplitOn(v => ShouldGeneratePropertyFor(v.Identifier.Text),
                     v => (Variable: v, NewId: SyntaxFactory.Identifier("_" + v.Identifier.Text))
                 );
 
@@ -141,9 +140,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Insert(0, SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
             return noVisibility;
         }
-
-        private bool HasEvents(SyntaxToken propertyId) =>
-            _handlingMethodsByPropertyName.ContainsKey(propertyId.Text);
 
         private PropertyDeclarationSyntax GetDeclarationsForFieldBackedProperty((EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] methods,
             SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList convertedModifiers, TypeSyntax typeSyntax,

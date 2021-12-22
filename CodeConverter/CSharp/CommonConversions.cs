@@ -290,8 +290,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
                     } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
-                    } else if (WinformsConversions.MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
-                        // For C# Winforms designer, we need to use direct field access - see other usage of MustInlinePropertyWithEventsAccess
+                    } else if (WinformsConversions.MayNeedToInlinePropertyAccess(id.Parent, idSymbol) && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(idSymbol.Name)) {
+                        // For C# Winforms designer, we need to use direct field access - see other usage of MayNeedToInlinePropertyAccess
                         text = "_" + text;
                     }
                 }

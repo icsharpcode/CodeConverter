@@ -225,7 +225,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
         {
-            if (CommonConversions.WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol)) {
+            if (CommonConversions.WinformsConversions.MayNeedToInlinePropertyAccess(node, potentialPropertySymbol)) {
                 return _handledEventsAnalysis.GetPostAssignmentStatements(potentialPropertySymbol);
             }
 
