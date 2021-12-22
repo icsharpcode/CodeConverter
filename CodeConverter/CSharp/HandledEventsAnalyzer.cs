@@ -48,7 +48,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     .Where(e => !eventContainerToMethods.Contains(e.EventContainer));
             var eventsThatHaveDirectHandlesSubscriptions = eventContainerToMethods //TODO Make event container grouping case insensitive, or resolve property and use that
                 .Select(g => 
-                    (EventContainer: g.Key, PropertyDetails: writtenWithEventsProperties.TryGetValue(g.Key.PropertyName, out var p) ? p : default, g.Select(x => (x.Event, x.HandlingMethod, ParametersToDiscard(x.Event.SymbolOrNull, x.HandlingMethod))).ToArray()));
+                    (EventContainer: g.Key, PropertyDetails: g.Key.PropertyName != null && writtenWithEventsProperties.TryGetValue(g.Key.PropertyName, out var p) ? p : default, g.Select(x => (x.Event, x.HandlingMethod, ParametersToDiscard(x.Event.SymbolOrNull, x.HandlingMethod))).ToArray()));
             var csharpEventContainersRequiringDelegatingProperties = eventsThatHaveDirectHandlesSubscriptions.Concat(eventsThatMayNeedInheritors);
 
             return new HandledEventsAnalysis(_commonConversions, _type, csharpEventContainersRequiringDelegatingProperties);
