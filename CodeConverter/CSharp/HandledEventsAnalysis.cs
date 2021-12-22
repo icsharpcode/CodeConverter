@@ -63,7 +63,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<MethodDeclarationSyntax> CreateDelegatingMethodsRequiredByInitializeComponent()
         {
-            return _handlingMethodsForInstance.SelectMany(x => x.HandledMethods, (c, s) => (Container: c, Subscription: s))
+            return _handlingMethodsForInstance.Concat(_handlingMethodsByPropertyName.Values).SelectMany(x => x.HandledMethods, (c, s) => (Container: c, Subscription: s))
                 .Where(h => h.Subscription.ParametersToDiscard > 0 && h.Subscription.Event.SymbolOrNull?.Type.GetDelegateInvokeMethod() != null)
                 .Select(e => CreateDelegatingMethod(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(e.Subscription.HandlingMethod.Name)), e.Subscription.Event))
                 .GroupBy(m => (m.Identifier.Text, string.Join(",", m.ParameterList.Parameters.Select(p => p.Type.ToString()))))
