@@ -17,21 +17,24 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly CommonConversions _commonConversions;
         private readonly INamedTypeSymbol _type;
         private readonly Location _initializeComponentLocationOrNull;
+        private readonly ILookup<INamedTypeSymbol, ITypeSymbol> _baseToInheritors;
         private readonly SemanticModel _semanticModel;
 
-        private HandledEventsAnalyzer(CommonConversions commonConversions, INamedTypeSymbol type, Location initializeComponentLocationOrNull)
+        private HandledEventsAnalyzer(CommonConversions commonConversions, INamedTypeSymbol type, Location initializeComponentLocationOrNull, ILookup<INamedTypeSymbol, ITypeSymbol> baseToInheritors)
         {
             _commonConversions = commonConversions;
             _semanticModel = commonConversions.SemanticModel;
             _type = type;
             _initializeComponentLocationOrNull = initializeComponentLocationOrNull;
+            _baseToInheritors = baseToInheritors;
         }
 
-        public static Task<HandledEventsAnalysis> AnalyzeAsync(CommonConversions commonConversions, INamedTypeSymbol type, IMethodSymbol designerGeneratedInitializeComponentOrNull)
+        public static Task<HandledEventsAnalysis> AnalyzeAsync(CommonConversions commonConversions, INamedTypeSymbol type, IMethodSymbol designerGeneratedInitializeComponentOrNull,
+            ILookup<INamedTypeSymbol, ITypeSymbol> baseToInheritors)
         {
             var initializeComponentLocationOrNull = designerGeneratedInitializeComponentOrNull?.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<MethodStatementSyntax>().OrderByDescending(m => m.Span.Length).Select(s => s.Parent.GetLocation()).FirstOrDefault();
             
-            return new HandledEventsAnalyzer(commonConversions, type, initializeComponentLocationOrNull).AnalyzeAsync();
+            return new HandledEventsAnalyzer(commonConversions, type, initializeComponentLocationOrNull, baseToInheritors).AnalyzeAsync();
         }
 
         private async Task<HandledEventsAnalysis> AnalyzeAsync()
@@ -70,11 +73,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var projectSolution = _commonConversions.Document.Project.Solution;
             if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull)) return false;
-            var explicitPropertyOverrides = await SymbolFinder.FindOverridesAsync(symbol, projectSolution);
-            if (explicitPropertyOverrides.Any()) return false;
-            var classOverrides = (await SymbolFinder.FindOverridesAsync(symbol.ContainingType, projectSolution)).ToArray();
-            if (classOverrides.Any()) return false;
-            return true;
+            return !_baseToInheritors.Contains(symbol.ContainingType);
         }
 
         /// <summary>

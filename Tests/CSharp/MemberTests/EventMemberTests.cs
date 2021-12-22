@@ -394,8 +394,7 @@ Partial Public Class TestHandlesAdded
     Public Sub POW_btnV2DBM_Click() Handles POW_btnV2DBM.Click
 
     End Sub
-End Class", @"using System.Runtime.CompilerServices;
-using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 [DesignerGenerated]
 public partial class TestHandlesAdded
@@ -403,53 +402,27 @@ public partial class TestHandlesAdded
     public TestHandlesAdded()
     {
         InitializeComponent();
-        POW_btnV2DBM = _POW_btnV2DBM;
-        _POW_btnV2DBM.Name = ""POW_btnV2DBM"";
     }
 
     public void InitializeComponent()
     {
-        _POW_btnV2DBM = new System.Windows.Forms.Button();
-        _POW_btnV2DBM.Click += POW_btnV2DBM_Click;
+        POW_btnV2DBM = new System.Windows.Forms.Button();
+        POW_btnV2DBM.Click += POW_btnV2DBM_Click;
         // 
         // POW_btnV2DBM
         // 
-        _POW_btnV2DBM.Location = new System.Drawing.Point(207, 15);
-        _POW_btnV2DBM.Name = ""_POW_btnV2DBM"";
-        _POW_btnV2DBM.Size = new System.Drawing.Size(42, 23);
-        _POW_btnV2DBM.TabIndex = 3;
-        _POW_btnV2DBM.Text = "">>"";
-        _POW_btnV2DBM.UseVisualStyleBackColor = true;
+        POW_btnV2DBM.Location = new System.Drawing.Point(207, 15);
+        POW_btnV2DBM.Name = ""POW_btnV2DBM"";
+        POW_btnV2DBM.Size = new System.Drawing.Size(42, 23);
+        POW_btnV2DBM.TabIndex = 3;
+        POW_btnV2DBM.Text = "">>"";
+        POW_btnV2DBM.UseVisualStyleBackColor = true;
     }
 }
 
 public partial class TestHandlesAdded
 {
-    private Button _POW_btnV2DBM;
-
-    private Button POW_btnV2DBM
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _POW_btnV2DBM;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_POW_btnV2DBM != null)
-            {
-                _POW_btnV2DBM.Click -= POW_btnV2DBM_Click;
-            }
-
-            _POW_btnV2DBM = value;
-            if (_POW_btnV2DBM != null)
-            {
-                _POW_btnV2DBM.Click += POW_btnV2DBM_Click;
-            }
-        }
-    }
+    private Button POW_btnV2DBM;
 
     public void POW_btnV2DBM_Click()
     {
@@ -542,7 +515,6 @@ internal partial class Form1 : BaseForm
     public Form1()
     {
         InitializeComponent();
-        Button1 = _Button1;
     }
 
     internal override Button BaseButton
@@ -571,35 +543,11 @@ internal partial class Form1 : BaseForm
 
     private void InitializeComponent()
     {
-        _Button1 = new Button();
-        _Button1.Click += new EventHandler(MultiClickHandler);
+        Button1 = new Button();
+        Button1.Click += new EventHandler(MultiClickHandler);
     }
 
-    private Button _Button1;
-
-    internal virtual Button Button1
-    {
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        get
-        {
-            return _Button1;
-        }
-
-        [MethodImpl(MethodImplOptions.Synchronized)]
-        set
-        {
-            if (_Button1 != null)
-            {
-                _Button1.Click -= MultiClickHandler;
-            }
-
-            _Button1 = value;
-            if (_Button1 != null)
-            {
-                _Button1.Click += MultiClickHandler;
-            }
-        }
-    }
+    internal Button Button1;
 }
 
 internal partial class Form1

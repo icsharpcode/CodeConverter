@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
@@ -26,8 +27,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
             var semanticModel = compilation.GetSemanticModel(tree, true);
+            var baseToInheritors = compilation.GetAllNamespacesAndTypes().OfType<ITypeSymbol>()
+                .ToLookup(t => t.BaseType);
             var visualBasicSyntaxVisitor = new
-                DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
+                DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator, baseToInheritors);
             var converted = await root.AcceptAsync<CSS.CompilationUnitSyntax>(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
             return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);
