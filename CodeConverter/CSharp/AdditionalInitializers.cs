@@ -25,12 +25,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             HasInstanceConstructorsOutsideThisPart = instanceConstructors.Any(c => c.DeclaringSyntaxReferences.Any(
                 reference => !typeSyntax.OverlapsWith(reference)
             )) || !instanceConstructors.Any() && !isBestPartToAddParameterlessConstructor;
-            RequiresInitializeComponent = namedTypeSybol.IsDesignerGeneratedTypeWithInitializeComponent(vbCompilation);
+            DesignerGeneratedInitializeComponentOrNull = namedTypeSybol.GetDesignerGeneratedInitializeComponentOrNull(vbCompilation);
         }
 
         public bool HasInstanceConstructorsOutsideThisPart { get; }
         public bool IsBestPartToAddTypeInit { get; }
-        public bool RequiresInitializeComponent { get; }
+        public IMethodSymbol DesignerGeneratedInitializeComponentOrNull { get; }
 
         public List<Assignment> AdditionalStaticInitializers { get; } = new List<Assignment>();
         public List<Assignment> AdditionalInstanceInitializers { get; } = new List<Assignment>();
@@ -41,7 +41,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
                 .SplitOn(cds => cds.IsInStaticCsContext());
 
-            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootInstanceConstructors, _shouldAddInstanceConstructor, RequiresInitializeComponent);
+            convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootInstanceConstructors, _shouldAddInstanceConstructor, DesignerGeneratedInitializeComponentOrNull != null);
 
             convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
                 AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootStaticConstructors, _shouldAddStaticConstructor, false);

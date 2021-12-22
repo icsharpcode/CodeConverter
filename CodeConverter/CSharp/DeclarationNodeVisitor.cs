@@ -212,7 +212,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
             var additionalInitializers = new AdditionalInitializers(parentType, namedTypeSymbol, _vbCompilation);
-            var methodsWithHandles = await GetMethodWithHandlesAsync(parentType);
+            var methodsWithHandles = await GetMethodWithHandlesAsync(parentType, additionalInitializers.DesignerGeneratedInitializeComponentOrNull);
 
             if (methodsWithHandles.AnySynchronizedPropertiesGenerated()) _extraUsingDirectives.Add("System.Runtime.CompilerServices");//For MethodImplOptions.Synchronized
             
@@ -236,7 +236,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                                  !t.Type.Span.Equals(parentType.Span)))
                     .SelectMany(r => GetFieldsIdentifiersWithInitializer(r.Type, r.SemanticModel));
                 additionalInitializers.AdditionalInstanceInitializers.AddRange(constructorFieldInitializersFromOtherParts);
-                if (additionalInitializers.RequiresInitializeComponent) {
+                if (additionalInitializers.DesignerGeneratedInitializeComponentOrNull is {}) {
                     // Constructor event handlers not required since they'll be inside InitializeComponent - see other use of IsDesignerGeneratedTypeWithInitializeComponent
                     if (additionalInitializers.IsBestPartToAddTypeInit) convertedMembers = convertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
                     additionalInitializers.AdditionalInstanceInitializers.AddRange(CommonConversions.WinformsConversions.GetConstructorReassignments(otherPartsOfType));
@@ -619,13 +619,12 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .ToArray();
         }
 
-        private async Task<HandledEventsAnalysis> GetMethodWithHandlesAsync(VBSyntax.TypeBlockSyntax parentType)
+        private async Task<HandledEventsAnalysis> GetMethodWithHandlesAsync(VBSyntax.TypeBlockSyntax parentType, IMethodSymbol designerGeneratedInitializeComponentOrNull)
         {
             if (parentType == null || _semanticModel.GetDeclaredSymbol((SyntaxNode)parentType) is not INamedTypeSymbol containingType) {
-                return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, null);
+                return new HandledEventsAnalysis(CommonConversions, null, Array.Empty<(HandledEventsAnalysis.EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)>());
             }
-
-            return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType);
+            return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType, designerGeneratedInitializeComponentOrNull);
         }
 
         public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
@@ -1047,7 +1046,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var convertedStatements = await ConvertStatementsAsync(node.Statements, visualBasicSyntaxVisitor);
 
             //  Just class events - for property events, see other use of IsDesignerGeneratedTypeWithInitializeComponent
-            if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.IsDesignerGeneratedTypeWithInitializeComponent(_vbCompilation)) {
+            if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.GetDesignerGeneratedInitializeComponentOrNull(_vbCompilation) != null) {
                 var firstResumeLayout = convertedStatements.Statements.FirstOrDefault(IsThisResumeLayoutInvocation) ?? convertedStatements.Statements.Last();
                 convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
             }

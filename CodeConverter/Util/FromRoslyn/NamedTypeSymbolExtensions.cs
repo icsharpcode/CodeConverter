@@ -11,15 +11,15 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
         /// <summary>
         /// Determines if the default constructor emitted by the compiler would contain an InitializeComponent() call.
         /// </summary>
-        public static bool IsDesignerGeneratedTypeWithInitializeComponent(this INamedTypeSymbol type, Compilation compilation)
+        public static IMethodSymbol GetDesignerGeneratedInitializeComponentOrNull(this INamedTypeSymbol type, Compilation compilation)
         {
             var designerGeneratedAttribute = compilation.DesignerGeneratedAttributeType();
             if (designerGeneratedAttribute == null) {
-                return false;
+                return null;
             }
 
             if (!type.GetAttributes().Where(a => Equals(a.AttributeClass, designerGeneratedAttribute)).Any()) {
-                return false;
+                return null;
             }
 
             // We now need to see if we have an InitializeComponent that matches the pattern. This is 
@@ -27,11 +27,11 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             foreach (var baseType in type.GetBaseTypesAndThis()) {
                 var possibleInitializeComponent = baseType.GetMembers("InitializeComponent").OfType<IMethodSymbol>().FirstOrDefault();
                 if (possibleInitializeComponent?.IsAccessibleWithin(type) == true && !possibleInitializeComponent.Parameters.Any() && possibleInitializeComponent.ReturnsVoid && !possibleInitializeComponent.IsStatic) {
-                    return true;
+                    return possibleInitializeComponent;
                 }
             }
 
-            return false;
+            return null;
         }
     }
 }

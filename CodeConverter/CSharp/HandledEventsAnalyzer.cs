@@ -16,18 +16,22 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly CommonConversions _commonConversions;
         private readonly INamedTypeSymbol _type;
+        private readonly Location _initializeComponentLocationOrNull;
         private readonly SemanticModel _semanticModel;
 
-        private HandledEventsAnalyzer(CommonConversions commonConversions, INamedTypeSymbol type)
+        private HandledEventsAnalyzer(CommonConversions commonConversions, INamedTypeSymbol type, Location initializeComponentLocationOrNull)
         {
             _commonConversions = commonConversions;
             _semanticModel = commonConversions.SemanticModel;
             _type = type;
+            _initializeComponentLocationOrNull = initializeComponentLocationOrNull;
         }
 
-        public static Task<HandledEventsAnalysis> AnalyzeAsync(CommonConversions commonConversions, INamedTypeSymbol type)
+        public static Task<HandledEventsAnalysis> AnalyzeAsync(CommonConversions commonConversions, INamedTypeSymbol type, IMethodSymbol designerGeneratedInitializeComponentOrNull)
         {
-            return new HandledEventsAnalyzer(commonConversions, type).AnalyzeAsync();
+            var initializeComponentLocationOrNull = designerGeneratedInitializeComponentOrNull?.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<MethodStatementSyntax>().OrderByDescending(m => m.Span.Length).Select(s => s.Parent.GetLocation()).FirstOrDefault();
+            
+            return new HandledEventsAnalyzer(commonConversions, type, initializeComponentLocationOrNull).AnalyzeAsync();
         }
 
         private async Task<HandledEventsAnalysis> AnalyzeAsync()
@@ -62,10 +66,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             return toDiscard;
         }
 
-        private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol, Location allowedLocation = null)
+        private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol)
         {
             var projectSolution = _commonConversions.Document.Project.Solution;
-            if (!await projectSolution.IsNeverWrittenAsync(symbol, allowedLocation)) return false;
+            if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull)) return false;
             var explicitPropertyOverrides = await SymbolFinder.FindOverridesAsync(symbol, projectSolution);
             if (explicitPropertyOverrides.Any()) return false;
             var classOverrides = (await SymbolFinder.FindOverridesAsync(symbol.ContainingType, projectSolution)).ToArray();

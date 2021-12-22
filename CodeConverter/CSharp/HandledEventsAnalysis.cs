@@ -14,8 +14,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         public enum EventContainerKind { Base, This, Property }
         public record EventContainer(EventContainerKind Kind, string PropertyName);
 
-        private readonly Dictionary<string, (EventContainer EventContainer, IPropertySymbol Property, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)> _handlingMethodsByPropertyName;
-        private readonly (EventContainer EventContainer, IPropertySymbol Property, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)[] _handlingMethodsForInstance;
+        private readonly Dictionary<string, (EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)> _handlingMethodsByPropertyName;
+        private readonly (EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)[] _handlingMethodsForInstance;
         private readonly CommonConversions _commonConversions;
         private readonly INamedTypeSymbol _type;
 
@@ -28,7 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _type = type;
             var (handlingMethodsForInstance, handlingMethodsForPropertyEvents) = csharpEventContainerToHandlingMethods
                 .Where(m => !m.PropertyDetails.IsNeverWrittenOrOverridden)
-                .Select(m => (m.EventContainer, m.PropertyDetails.Property, m.HandledMethods))
+                .Select(m => (m.EventContainer, m.PropertyDetails, m.HandledMethods))
                 .SplitOn(m => m.EventContainer.Kind == EventContainerKind.Property);
 
             _handlingMethodsForInstance = handlingMethodsForInstance;
@@ -74,13 +74,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForHandlingBaseMembers()
         {
             return _handlingMethodsByPropertyName.Values
-                .Where(m => m.EventContainer.Kind == EventContainerKind.Property && !_type.Equals(m.Property?.ContainingType))
+                .Where(m => m.EventContainer.Kind == EventContainerKind.Property && !_type.Equals(m.PropertyDetails.Property?.ContainingType))
                 .Select(x => GetDeclarationsForHandlingBaseMembers(x));
         }
 
-        private PropertyDeclarationSyntax GetDeclarationsForHandlingBaseMembers((EventContainer EventContainer, IPropertySymbol Property, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods) basePropertyEventSubscription)
+        private PropertyDeclarationSyntax GetDeclarationsForHandlingBaseMembers((EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods) basePropertyEventSubscription)
         {
-            var prop = (PropertyDeclarationSyntax) _commonConversions.CsSyntaxGenerator.Declaration(basePropertyEventSubscription.Property);
+            var prop = (PropertyDeclarationSyntax) _commonConversions.CsSyntaxGenerator.Declaration(basePropertyEventSubscription.PropertyDetails.Property);
             var modifiers = prop.Modifiers.RemoveOnly(m => m.IsKind(SyntaxKind.VirtualKeyword)).Add(SyntaxFactory.Token(SyntaxKind.OverrideKeyword));
             //TODO Stash away methodwithandles in constructor that don't match any symbol from that type, to match here against base symbols
             return GetDeclarationsForFieldBackedProperty(basePropertyEventSubscription.HandledMethods, SyntaxFactory.List<SyntaxNode>(), modifiers, 
@@ -121,7 +121,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var (variable, newId) in renamedEvents) {
                 var toHandle = _handlingMethodsByPropertyName[variable.Identifier.Text];
-                var propertySymbol = toHandle.Property;
+                var propertySymbol = toHandle.PropertyDetails.Property;
 
                 // This is overridden when a inheriting class handles the event - see other use of GetDeclarationsForFieldBackedProperty
                 var propModifiers = !propertySymbol.ContainingType.IsSealed && propertySymbol.DeclaredAccessibility != Accessibility.Private
