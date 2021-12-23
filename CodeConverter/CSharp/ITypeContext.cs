@@ -3,7 +3,7 @@
     internal interface ITypeContext
     {
         AdditionalInitializers Initializers { get; }
-        MethodsWithHandles MethodsWithHandles { get; }
+        HandledEventsAnalysis HandledEventsAnalysis { get; }
         HoistedNodeState HoistedState { get; }
         bool Any();
     }

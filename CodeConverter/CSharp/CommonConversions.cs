@@ -38,8 +38,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
         private static readonly Type OutAttributeType = typeof(OutAttribute);
         public Document Document { get; }
-        private readonly SemanticModel _semanticModel;
+        public SemanticModel SemanticModel { get; }
         public SyntaxGenerator CsSyntaxGenerator { get; }
+        public Compilation Compilation { get; }
         public VisualBasicEqualityComparison VisualBasicEqualityComparison { get; }
 
         private readonly CSharpCompilation _csCompilation;
@@ -51,12 +52,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public CommonConversions(Document document, SemanticModel semanticModel,
             TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
+            Compilation compilation,
             CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison)
         {
             TypeConversionAnalyzer = typeConversionAnalyzer;
             Document = document;
-            _semanticModel = semanticModel;
+            SemanticModel = semanticModel;
             CsSyntaxGenerator = csSyntaxGenerator;
+            Compilation = compilation;
             _csCompilation = csCompilation;
             _typeContext = typeContext;
             VisualBasicEqualityComparison = visualBasicEqualityComparison;
@@ -68,7 +71,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var vbInitValue = GetInitializerToConvert(declarator);
             var initializerOrMethodDecl = await vbInitValue.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
-            var vbInitializerTypeInfo = vbInitValue != null ? _semanticModel.GetTypeInfo(vbInitValue) : default(TypeInfo?);
+            var vbInitializerTypeInfo = vbInitValue != null ? SemanticModel.GetTypeInfo(vbInitValue) : default(TypeInfo?);
             var vbInitializerType = vbInitValue != null ? vbInitializerTypeInfo.Value.Type : default(ITypeSymbol);
 
             bool requireExplicitTypeForAll = declarator.Names.Count > 1;
@@ -76,7 +79,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbInitValue != null) {
                 TypeInfo expType = vbInitializerTypeInfo.Value;
                 preferExplicitType |= ShouldPreferExplicitType(vbInitValue, expType.ConvertedType, out bool vbInitIsNothingLiteral);
-                initSymbol = _semanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
+                initSymbol = SemanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
                 bool isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
                 requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
             }
@@ -86,7 +89,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             foreach (var name in declarator.Names) {
 
-                var declaredSymbol = _semanticModel.GetDeclaredSymbol(name);
+                var declaredSymbol = SemanticModel.GetDeclaredSymbol(name);
                 if (symbolsToSkip?.Contains(declaredSymbol) == true) continue;
                 var declaredSymbolType = declaredSymbol.GetSymbolType();
                 var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntaxAsync(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
@@ -115,9 +118,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             ITypeSymbol expConvertedType,
             out bool isNothingLiteral)
         {
-            var op = _semanticModel.GetExpressionOperation(exp);
+            var op = SemanticModel.GetExpressionOperation(exp);
             exp = op.Syntax as VBSyntax.ExpressionSyntax;
-            var vbInitConstantValue = _semanticModel.GetConstantValue(exp);
+            var vbInitConstantValue = SemanticModel.GetConstantValue(exp);
             isNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null || exp is VBSyntax.LiteralExpressionSyntax les && les.IsKind(SyntaxKind.NothingLiteralExpression);
             bool shouldPreferExplicitType = expConvertedType != null && (expConvertedType.HasCsKeyword() || !expConvertedType.Equals(op.Type));
             return shouldPreferExplicitType;
@@ -143,7 +146,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     ? TypeConversionAnalyzer.AddExplicitConversion(vbInitValue, adjustedInitializerExpr, isConst: declaredConst)
                     : adjustedInitializerExpr;
 
-                if (isField && !declaredSymbol.IsStatic && !_semanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
+                if (isField && !declaredSymbol.IsStatic && !SemanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
                     if (!_typeContext.Initializers.HasInstanceConstructorsOutsideThisPart) {
                         var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
                         _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
@@ -157,7 +160,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
                 }
             }
-            else if (isField || declaredSymbol != null && _semanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
+            else if (isField || declaredSymbol != null && SemanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
             {
                 equalsValueClauseSyntax = null;
             }
@@ -270,8 +273,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             string text = id.ValueText;
 
-            if (id.SyntaxTree == _semanticModel.SyntaxTree) {
-                var idSymbol = _semanticModel.GetSymbolInfo(id.Parent).Symbol ?? _semanticModel.GetDeclaredSymbol(id.Parent);
+            if (id.SyntaxTree == SemanticModel.SyntaxTree) {
+                var idSymbol = SemanticModel.GetSymbolInfo(id.Parent).Symbol ?? SemanticModel.GetDeclaredSymbol(id.Parent);
                 if (idSymbol != null && !String.IsNullOrWhiteSpace(idSymbol.Name)) {
                     text = WithDeclarationName(id, idSymbol, text);
                     var normalizedText = text.WithHalfWidthLatinCharacters();
@@ -287,8 +290,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                         text = propertyFieldSymbol.AssociatedSymbol.Name;
                     } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                         text = eventFieldSymbol.AssociatedSymbol.Name;
-                    } else if (WinformsConversions.MustInlinePropertyWithEventsAccess(id.Parent, idSymbol)) {
-                        // For C# Winforms designer, we need to use direct field access - see other usage of MustInlinePropertyWithEventsAccess
+                    } else if (WinformsConversions.MayNeedToInlinePropertyAccess(id.Parent, idSymbol) && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(idSymbol.Name)) {
+                        // For C# Winforms designer, we need to use direct field access - see other usage of MayNeedToInlinePropertyAccess
                         text = "_" + text;
                     }
                 }
@@ -350,7 +353,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public SyntaxTokenList ConvertModifiers(SyntaxNode node, IReadOnlyCollection<SyntaxToken> modifiers,
             TokenContext context = TokenContext.Global, bool isVariableOrConst = false, params CSSyntaxKind[] extraCsModifierKinds)
         {
-            ISymbol declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            ISymbol declaredSymbol = SemanticModel.GetDeclaredSymbol(node);
             var declaredAccessibility = declaredSymbol?.DeclaredAccessibility ?? Accessibility.NotApplicable;
             modifiers = modifiers.Where(m =>
                 !m.IsKind(SyntaxKind.OverloadsKeyword) || RequiresNewKeyword(declaredSymbol) != false).ToList();
@@ -506,7 +509,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpressionAsync(VBSyntax.ExpressionSyntax expr)
         {
-            var op = _semanticModel.GetOperation(expr);
+            var op = SemanticModel.GetOperation(expr);
             var constant = op.ConstantValue;
             if (constant.HasValue && constant.Value is int)
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
@@ -588,7 +591,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public CSSyntax.IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockBaseSyntax node)
         {
             if (!node.MustReturn()) return null;
-            if (_semanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
+            if (SemanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
                 return null;
             }
             
@@ -598,7 +601,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (!node.Statements.IsEmpty()) {
                 string methodName = GetMethodBlockBaseIdentifierForImplicitReturn(node).ValueText ?? "";
                 Func<ISymbol, bool> equalsMethodName = s => s.IsKind(SymbolKind.Local) && s.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase);
-                var flow = _semanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
+                var flow = SemanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
 
                 if (flow.Succeeded) {
                     assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
@@ -646,19 +649,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
         {
-            return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+            return SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
                        ?.Equals(ExtensionAttributeType.FullName) == true;
         }
 
         public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
         {
-            return _semanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
+            return SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
                        ?.Equals(OutAttributeType.FullName) == true;
         }
 
         public ISymbol GetDeclaredCsOriginalSymbolOrNull(VBasic.VisualBasicSyntaxNode node)
         {
-            var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
+            var declaredSymbol = SemanticModel.GetDeclaredSymbol(node);
             return declaredSymbol != null ? GetCsOriginalSymbolOrNull(declaredSymbol) : null;
         }
 

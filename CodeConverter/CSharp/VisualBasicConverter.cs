@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
@@ -14,7 +15,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         public static async Task<SyntaxNode> ConvertCompilationTreeAsync(Document document,
             CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject,
-            OptionalOperations optionalOperations, CancellationToken cancellationToken)
+            OptionalOperations optionalOperations, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors, CancellationToken cancellationToken)
         {
             document = await document.WithExpandedRootAsync(cancellationToken);
             var root = await document.GetSyntaxRootAsync(cancellationToken) as VBSyntax.CompilationUnitSyntax ??
@@ -27,7 +28,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
             var semanticModel = compilation.GetSemanticModel(tree, true);
             var visualBasicSyntaxVisitor = new
-                DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator);
+                DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator, typeToInheritors);
             var converted = await root.AcceptAsync<CSS.CompilationUnitSyntax>(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
             return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);

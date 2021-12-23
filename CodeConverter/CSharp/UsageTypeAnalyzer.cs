@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -10,7 +11,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal static class UsageTypeAnalyzer
     {
-        public static async Task<bool> IsNeverWrittenAsync(this Solution solution, ISymbol symbol, Location outsideLocation = null)
+        /// <summary>
+        /// Only detects direct assignment, not use of ByRef, late binding, dynamic, reflection, etc.
+        /// </summary>
+        public static async ValueTask<bool> IsNeverWrittenAsync(this Solution solution, ISymbol symbol, Location outsideLocation = null)
         {
             return symbol.AllWriteUsagesKnowable() && !await ContainsWriteUsagesForAsync(solution, symbol, outsideLocation);
         }
@@ -22,7 +26,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 var semanticModel = await g.Doc.GetSemanticModelAsync();
                 var syntaxRoot = await g.Doc.GetSyntaxRootAsync();
                 return g.Usages.Select(l => syntaxRoot.FindNode(l.Location.SourceSpan))
-                        .Select(syntaxNode => semanticModel.GetOperation(syntaxNode));
+                        .Select(syntaxNode => semanticModel.GetAncestorOperationOrNull<IOperation>(syntaxNode));
             });
             foreach (var documentUsages in operationsReferencing) {
                 var usages = await documentUsages;

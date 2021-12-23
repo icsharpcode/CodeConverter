@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.VisualBasic.CompilerServices;
@@ -38,56 +37,56 @@ namespace WindowsAppVb
         [DebuggerStepThrough()]
         private void InitializeComponent()
         {
-            _Button1 = new Button();
-            _Button1.Click += new EventHandler(Button1_Click);
-            _Button1.Click += new EventHandler(CheckedChangedOrButtonClicked);
-            _Button1.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
-            _Button1.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs2); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
-            _CheckBox1 = new CheckBox();
-            _CheckBox1.CheckedChanged += new EventHandler(CheckedChangedOrButtonClicked);
-            _CheckBox1.CheckedChanged += new EventHandler(ButtonMouseClickWithNoArgs2);
-            _Button2 = new Button();
-            _Button2.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
-            _Button2.Click += new EventHandler(Button2_Click);
+            Button1 = new Button();
+            Button1.Click += new EventHandler(Button1_Click);
+            Button1.Click += new EventHandler(CheckedChangedOrButtonClicked);
+            Button1.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
+            Button1.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs2); // In C#, need to assign to field (not property), and bind event manually to ensure Winforms designer renders
+            CheckBox1 = new CheckBox();
+            CheckBox1.CheckedChanged += new EventHandler(CheckedChangedOrButtonClicked);
+            CheckBox1.CheckedChanged += new EventHandler(ButtonMouseClickWithNoArgs2);
+            Button2 = new Button();
+            Button2.MouseClick += new MouseEventHandler(ButtonMouseClickWithNoArgs);
+            Button2.Click += new EventHandler(Button2_Click);
             DataGridView1 = new DataGridView();
             Column1 = new DataGridViewTextBoxColumn();
-            _ColumnWithEvent = new DataGridViewTextBoxColumn();
-            _ColumnWithEvent.Disposed += new EventHandler(ColumnWithEvent_Disposed);
+            ColumnWithEvent = new DataGridViewTextBoxColumn();
+            ColumnWithEvent.Disposed += new EventHandler(ColumnWithEvent_Disposed);
             ((System.ComponentModel.ISupportInitialize)DataGridView1).BeginInit();
             SuspendLayout();
             // 
             // Button1
             // 
-            _Button1.Location = new Point(95, 80);
-            _Button1.Name = "_Button1";
-            _Button1.Size = new Size(75, 23);
-            _Button1.TabIndex = 0;
-            _Button1.Text = "Button1";
-            _Button1.UseVisualStyleBackColor = true;
+            Button1.Location = new Point(95, 80);
+            Button1.Name = "Button1";
+            Button1.Size = new Size(75, 23);
+            Button1.TabIndex = 0;
+            Button1.Text = "Button1";
+            Button1.UseVisualStyleBackColor = true;
             // 
             // CheckBox1
             // 
-            _CheckBox1.AutoSize = true;
-            _CheckBox1.Location = new Point(89, 28);
-            _CheckBox1.Name = "_CheckBox1";
-            _CheckBox1.Size = new Size(81, 17);
-            _CheckBox1.TabIndex = 1;
-            _CheckBox1.Text = "CheckBox1";
-            _CheckBox1.UseVisualStyleBackColor = true;
+            CheckBox1.AutoSize = true;
+            CheckBox1.Location = new Point(89, 28);
+            CheckBox1.Name = "CheckBox1";
+            CheckBox1.Size = new Size(81, 17);
+            CheckBox1.TabIndex = 1;
+            CheckBox1.Text = "CheckBox1";
+            CheckBox1.UseVisualStyleBackColor = true;
             // 
             // Button2
             // 
-            _Button2.Location = new Point(95, 110);
-            _Button2.Name = "_Button2";
-            _Button2.Size = new Size(75, 23);
-            _Button2.TabIndex = 2;
-            _Button2.Text = "Show resources";
-            _Button2.UseVisualStyleBackColor = true;
+            Button2.Location = new Point(95, 110);
+            Button2.Name = "Button2";
+            Button2.Size = new Size(75, 23);
+            Button2.TabIndex = 2;
+            Button2.Text = "Show resources";
+            Button2.UseVisualStyleBackColor = true;
             // 
             // DataGridView1
             // 
             DataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            DataGridView1.Columns.AddRange(new DataGridViewColumn[] { Column1, _ColumnWithEvent });
+            DataGridView1.Columns.AddRange(new DataGridViewColumn[] { Column1, ColumnWithEvent });
             DataGridView1.Location = new Point(35, 156);
             DataGridView1.Name = "DataGridView1";
             DataGridView1.Size = new Size(240, 150);
@@ -100,8 +99,8 @@ namespace WindowsAppVb
             // 
             // ColumnWithEvent
             // 
-            _ColumnWithEvent.HeaderText = "ColumnWithEvent";
-            _ColumnWithEvent.Name = "_ColumnWithEvent";
+            ColumnWithEvent.HeaderText = "ColumnWithEvent";
+            ColumnWithEvent.Name = "ColumnWithEvent";
             // 
             // WinformsDesignerTest
             // 
@@ -109,9 +108,9 @@ namespace WindowsAppVb
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(471, 364);
             Controls.Add(DataGridView1);
-            Controls.Add(_Button2);
-            Controls.Add(_CheckBox1);
-            Controls.Add(_Button1);
+            Controls.Add(Button2);
+            Controls.Add(CheckBox1);
+            Controls.Add(Button1);
             Name = "WinformsDesignerTest";
             Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)DataGridView1).EndInit();
@@ -127,120 +126,11 @@ namespace WindowsAppVb
             return default;
         }
 
-        private Button _Button1;
-
-        internal Button Button1
-        {
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            get
-            {
-                return _Button1;
-            }
-
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            set
-            {
-                if (_Button1 != null)
-                {
-                    _Button1.Click -= Button1_Click;
-                    _Button1.Click -= CheckedChangedOrButtonClicked;
-                    _Button1.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs();
-                    _Button1.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs2();
-                }
-
-                _Button1 = value;
-                if (_Button1 != null)
-                {
-                    _Button1.Click += Button1_Click;
-                    _Button1.Click += CheckedChangedOrButtonClicked;
-                    _Button1.MouseClick += (_, __) => ButtonMouseClickWithNoArgs();
-                    _Button1.MouseClick += (_, __) => ButtonMouseClickWithNoArgs2();
-                }
-            }
-        }
-
-        private CheckBox _CheckBox1;
-
-        internal CheckBox CheckBox1
-        {
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            get
-            {
-                return _CheckBox1;
-            }
-
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            set
-            {
-                if (_CheckBox1 != null)
-                {
-                    _CheckBox1.CheckedChanged -= CheckedChangedOrButtonClicked;
-                    _CheckBox1.CheckedChanged -= (_, __) => ButtonMouseClickWithNoArgs2();
-                }
-
-                _CheckBox1 = value;
-                if (_CheckBox1 != null)
-                {
-                    _CheckBox1.CheckedChanged += CheckedChangedOrButtonClicked;
-                    _CheckBox1.CheckedChanged += (_, __) => ButtonMouseClickWithNoArgs2();
-                }
-            }
-        }
-
-        private Button _Button2;
-
-        internal Button Button2
-        {
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            get
-            {
-                return _Button2;
-            }
-
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            set
-            {
-                if (_Button2 != null)
-                {
-                    _Button2.MouseClick -= (_, __) => ButtonMouseClickWithNoArgs();
-                    _Button2.Click -= Button2_Click;
-                }
-
-                _Button2 = value;
-                if (_Button2 != null)
-                {
-                    _Button2.MouseClick += (_, __) => ButtonMouseClickWithNoArgs();
-                    _Button2.Click += Button2_Click;
-                }
-            }
-        }
-
+        internal Button Button1;
+        internal CheckBox CheckBox1;
+        internal Button Button2;
         internal DataGridView DataGridView1;
         internal DataGridViewTextBoxColumn Column1;
-        private DataGridViewTextBoxColumn _ColumnWithEvent;
-
-        internal DataGridViewTextBoxColumn ColumnWithEvent
-        {
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            get
-            {
-                return _ColumnWithEvent;
-            }
-
-            [MethodImpl(MethodImplOptions.Synchronized)]
-            set
-            {
-                if (_ColumnWithEvent != null)
-                {
-                    _ColumnWithEvent.Disposed -= ColumnWithEvent_Disposed;
-                }
-
-                _ColumnWithEvent = value;
-                if (_ColumnWithEvent != null)
-                {
-                    _ColumnWithEvent.Disposed += ColumnWithEvent_Disposed;
-                }
-            }
-        }
+        internal DataGridViewTextBoxColumn ColumnWithEvent;
     }
 }
