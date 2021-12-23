@@ -34,7 +34,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static readonly Type CharSetType = typeof(CharSet);
         private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
         private readonly SyntaxGenerator _csSyntaxGenerator;
-        private readonly ILookup<INamedTypeSymbol, ITypeSymbol> _baseToInheritors;
+        private readonly ILookup<string, ITypeSymbol> _typeMetadataNameToInheritors;
         private readonly Compilation _vbCompilation;
         private readonly SemanticModel _semanticModel;
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
@@ -53,12 +53,12 @@ namespace ICSharpCode.CodeConverter.CSharp
         internal HoistedNodeState AdditionalLocals => _typeContext.HoistedState;
 
         public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
-            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<INamedTypeSymbol, ITypeSymbol> baseToInheritors)
+            CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<string, ITypeSymbol> typeMetadataNameToInheritors)
         {
             _vbCompilation = compilation;
             _semanticModel = semanticModel;
             _csSyntaxGenerator = csSyntaxGenerator;
-            _baseToInheritors = baseToInheritors;
+            _typeMetadataNameToInheritors = typeMetadataNameToInheritors;
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
@@ -626,7 +626,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (parentType == null || _semanticModel.GetDeclaredSymbol((SyntaxNode)parentType) is not INamedTypeSymbol containingType) {
                 return new HandledEventsAnalysis(CommonConversions, null, Array.Empty<(HandledEventsAnalysis.EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)>());
             }
-            return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType, designerGeneratedInitializeComponentOrNull, _baseToInheritors);
+            return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType, designerGeneratedInitializeComponentOrNull, _typeMetadataNameToInheritors);
         }
 
         public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
