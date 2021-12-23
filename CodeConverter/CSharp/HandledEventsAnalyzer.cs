@@ -14,24 +14,24 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly CommonConversions _commonConversions;
         private readonly INamedTypeSymbol _type;
         private readonly Location _initializeComponentLocationOrNull;
-        private readonly ILookup<string, ITypeSymbol> _typeMetadataNameToInheritors;
+        private readonly ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
         private readonly SemanticModel _semanticModel;
 
-        private HandledEventsAnalyzer(CommonConversions commonConversions, INamedTypeSymbol type, Location initializeComponentLocationOrNull, ILookup<string, ITypeSymbol> typeMetadataNameToInheritors)
+        private HandledEventsAnalyzer(CommonConversions commonConversions, INamedTypeSymbol type, Location initializeComponentLocationOrNull, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors)
         {
             _commonConversions = commonConversions;
             _semanticModel = commonConversions.SemanticModel;
             _type = type;
             _initializeComponentLocationOrNull = initializeComponentLocationOrNull;
-            _typeMetadataNameToInheritors = typeMetadataNameToInheritors;
+            _typeToInheritors = typeToInheritors;
         }
 
         public static Task<HandledEventsAnalysis> AnalyzeAsync(CommonConversions commonConversions, INamedTypeSymbol type, IMethodSymbol designerGeneratedInitializeComponentOrNull,
-            ILookup<string, ITypeSymbol> typeMetadataNameToInheritors)
+            ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors)
         {
             var initializeComponentLocationOrNull = designerGeneratedInitializeComponentOrNull?.DeclaringSyntaxReferences.Select(r => r.GetSyntax()).OfType<MethodStatementSyntax>().OrderByDescending(m => m.Span.Length).Select(s => s.Parent.GetLocation()).FirstOrDefault();
             
-            return new HandledEventsAnalyzer(commonConversions, type, initializeComponentLocationOrNull, typeMetadataNameToInheritors).AnalyzeAsync();
+            return new HandledEventsAnalyzer(commonConversions, type, initializeComponentLocationOrNull, typeToInheritors).AnalyzeAsync();
         }
 
         private async Task<HandledEventsAnalysis> AnalyzeAsync()
@@ -70,7 +70,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var projectSolution = _commonConversions.Document.Project.Solution;
             if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull)) return false;
-            return !_typeMetadataNameToInheritors.Contains(symbol.ContainingType.MetadataName);
+            return !_typeToInheritors.Contains(symbol.ContainingType);
         }
 
         /// <summary>

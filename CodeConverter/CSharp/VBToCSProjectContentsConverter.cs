@@ -30,7 +30,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private Project _csharpReferenceProject;
         private readonly IProgress<ConversionProgress> _progress;
         private readonly CancellationToken _cancellationToken;
-        private ILookup<string, ITypeSymbol> _typeMetadataNameToInheritors;
+        private ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
 
         public VBToCSProjectContentsConverter(ConversionOptions conversionOptions,
             bool useProjectLevelWinformsAdjustments,
@@ -59,9 +59,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             SourceProject = await WithProjectLevelWinformsAdjustmentsAsync(project);
 
             var compilation = await project.GetCompilationAsync(_cancellationToken);
-            _typeMetadataNameToInheritors = compilation.GetAllNamespacesAndTypes().OfType<ITypeSymbol>()
+            _typeToInheritors = compilation.GetAllNamespacesAndTypes().OfType<ITypeSymbol>()
                 .Where(t => t.BaseType?.IsDefinedInSource() == true)
-                .ToLookup(t => t.BaseType.MetadataName);
+                .ToLookup(t => t.BaseType, TypeSymbolFullNameComparer.Instance);
+        }
+
+        private class TypeSymbolFullNameComparer : IEqualityComparer<ITypeSymbol>
+        {
+            public static readonly IEqualityComparer<ITypeSymbol> Instance = new TypeSymbolFullNameComparer();
+            public bool Equals(ITypeSymbol x, ITypeSymbol y) => x.GetFullMetadataName().Equals(y.GetFullMetadataName());
+            public int GetHashCode(ITypeSymbol obj) => obj.GetFullMetadataName().GetHashCode();
         }
 
         private async Task<Project> WithProjectLevelWinformsAdjustmentsAsync(Project project)
@@ -77,7 +84,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
-            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _typeMetadataNameToInheritors, _cancellationToken);
+            return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _typeToInheritors, _cancellationToken);
         }
 
         public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)
