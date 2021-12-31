@@ -46,11 +46,13 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             if (vbProject.FilePath == null || !File.Exists(vbProject.FilePath)) yield break;
             var projXml = XDocument.Load(vbProject.FilePath);
-            var xmlNs = projXml.Root.GetDefaultNamespace();
+            var xmlNs = projXml.Root?.GetDefaultNamespace();
             foreach (var resx in projXml.Descendants().Where(IsStandaloneGeneratedResource)) {
                 string relativePath = GetIncludeOrUpdateAttribute(resx).Value;
-                string lastGenOutput = resx.Element(xmlNs + "LastGenOutput").Value;
-                yield return (relativePath, Path.Combine(Path.GetDirectoryName(relativePath), lastGenOutput));
+                string directoryName = Path.GetDirectoryName(relativePath);
+                if (directoryName != null && resx.Element(xmlNs + "LastGenOutput") is {Value: {} lastGenOutput}) {
+                    yield return (relativePath, Path.Combine(directoryName, lastGenOutput));
+                }
             }
         }
 
