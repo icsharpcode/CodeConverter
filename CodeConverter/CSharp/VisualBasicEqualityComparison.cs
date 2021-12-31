@@ -14,6 +14,7 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using System.Diagnostics.Tracing;
+using Microsoft.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -47,6 +48,14 @@ namespace ICSharpCode.CodeConverter.CSharp
             get {
                 var compareTextKind = OptionCompareTextCaseInsensitive ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression;
                 return SyntaxFactory.LiteralExpression(compareTextKind);
+            }
+        }
+
+        public ExpressionSyntax CompareMethodExpression {
+            get {
+                var compareTextKind = OptionCompareTextCaseInsensitive ? "Text" : "Binary";
+                var compareMethod = ValidSyntaxFactory.MemberAccess(nameof(Microsoft), nameof(Microsoft.VisualBasic), "CompareMethod", compareTextKind);
+                return compareMethod;
             }
         }
 
