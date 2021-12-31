@@ -346,18 +346,25 @@ namespace ICSharpCode.CodeConverter.VB
                 return false;
 
             ExpressionSyntax end;
+            var rightExpression = (ExpressionSyntax)condition.Right.Accept(_nodesVisitor);
+            var rightVal = (rightExpression is LiteralExpressionSyntax && _semanticModel.GetConstantValue(condition.Right) is {Value: int r}) ? r : default(int?);
             if (iterator.IsKind(SyntaxKind.SubtractAssignmentStatement)) {
-                if (condition.IsKind(CS.SyntaxKind.GreaterThanOrEqualExpression))
-                    end = (ExpressionSyntax)condition.Right.Accept(_nodesVisitor);
-                else if (condition.IsKind(CS.SyntaxKind.GreaterThanExpression))
-                    end = SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, (ExpressionSyntax)condition.Right.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.PlusToken), _commonConversions.Literal(1));
-                else return false;
+                if (condition.IsKind(CS.SyntaxKind.GreaterThanOrEqualExpression)) {
+                    end = rightExpression;
+                } else if (condition.IsKind(CS.SyntaxKind.GreaterThanExpression)) {
+                    end = rightVal.HasValue ? _commonConversions.Literal(rightVal.Value + 1) 
+                        : SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, rightExpression, SyntaxFactory.Token(SyntaxKind.PlusToken), _commonConversions.Literal(1));
+                } else {
+                    return false;
+                }
             } else {
-                if (condition.IsKind(CS.SyntaxKind.LessThanOrEqualExpression))
-                    end = (ExpressionSyntax)condition.Right.Accept(_nodesVisitor);
-                else if (condition.IsKind(CS.SyntaxKind.LessThanExpression))
-                    end = SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression, (ExpressionSyntax)condition.Right.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.MinusToken), _commonConversions.Literal(1));
-                else return false;
+                if (condition.IsKind(CS.SyntaxKind.LessThanOrEqualExpression)) {
+                    end = rightExpression;
+                } else if (condition.IsKind(CS.SyntaxKind.LessThanExpression)) {
+
+                    end = rightVal.HasValue ? _commonConversions.Literal(rightVal.Value - 1)
+                        : SyntaxFactory.BinaryExpression(SyntaxKind.SubtractExpression, rightExpression, SyntaxFactory.Token(SyntaxKind.MinusToken), _commonConversions.Literal(1));
+                } else return false;
             }
 
             VisualBasicSyntaxNode variable;

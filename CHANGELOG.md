@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* More terse conversion in for loop with literal end value [#798](https://github.com/icsharpcode/CodeConverter/issues/798)
 
 ## [8.4.3] - 2021-12-23
 
