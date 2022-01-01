@@ -27,7 +27,7 @@ In ProjectConversion, you'll see there's a separate entry point for the online s
 * Attempts to create a valid syntax tree to convert
 * Adds a bunch of default references and imports
 
-The majority of the work happens in the heart of the converter which is based around a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://github.com/dotnet/roslyn/wiki/Roslyn-Overview). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/). 
+The majority of the work happens in the heart of the converter which is based around a visitor pattern with a method for each syntax type. If you don't know what a Syntax Tree is, that's definitely worth [looking up](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/work-with-syntax#syntax-trees). There are lots of tests, set a breakpoint somewhere like `VisitCompilationUnit`, then run them in debug mode. If you step through the code, you'll see how it walks down the syntax tree converting piece by piece. If you want to find the name of the syntax for some specific code, use [Roslyn Quoter](https://roslynquoter.azurewebsites.net/). 
 
 See the main 3 visitors containing a method for each bit of syntax (e.g. for an if statement):
 * https://github.com/icsharpcode/CodeConverter/blob/master/CodeConverter/CSharp/DeclarationNodeVisitor.cs
