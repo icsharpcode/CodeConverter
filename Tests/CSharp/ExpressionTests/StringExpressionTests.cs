@@ -259,7 +259,7 @@ internal partial class Issue655
         [Fact]
         public async Task StringCompareTextInstrAsync()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+            await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text ' Comment omitted since line has no conversion
 Imports Microsoft.VisualBasic
 
 Class Issue655
@@ -285,12 +285,12 @@ internal partial class Issue655
         s7 = OtherFunction();
     }
 
-    private object s1 = Strings.InStr(1, ""obj"", ""object '"");
-    private object s2 = Strings.InStrRev(1.ToString(), ""obj"", Conversions.ToInteger(""object '""));
-    private object s3 = Strings.Replace(1.ToString(), ""obj"", ""object '"");
-    private object s4 = Strings.Split(1.ToString(), ""obj"", Conversions.ToInteger(""object '""));
+    private object s1 = Strings.InStr(1, ""obj"", ""object '"", Compare: CompareMethod.Text);
+    private object s2 = Strings.InStrRev(1.ToString(), ""obj"", Conversions.ToInteger(""object '""), Compare: CompareMethod.Text);
+    private object s3 = Strings.Replace(1.ToString(), ""obj"", ""object '"", Compare: CompareMethod.Text);
+    private object s4 = Strings.Split(1.ToString(), ""obj"", Conversions.ToInteger(""object '""), Compare: CompareMethod.Text);
     private object s5 = Strings.Filter(new string[] { 1.ToString(), 2.ToString() }, ""obj"");
-    private object s6 = Strings.StrComp(1.ToString(), ""obj"");
+    private object s6 = Strings.StrComp(1.ToString(), ""obj"", Compare: CompareMethod.Text);
     private object s7;
 
     public bool OtherFunction(CompareMethod c = CompareMethod.Binary)
