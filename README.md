@@ -9,6 +9,7 @@ Convert code from VB.NET to C# and vice versa using Roslyn - all free and open s
 See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on getting the best results. 
 
 ## Visual Studio Extension
+
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for advice / help using it.
 
 Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Use VS 2019+)
@@ -25,6 +26,7 @@ Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/i
 </p>
 
 ## Contributing
+
 Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! See [Contributing.md](https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md) for more info.
 
 Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction. Visual Basic will have support for some project types on initial versions of .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/).
@@ -32,12 +34,13 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 ## Other ways to use the converter
 * Latest CI build (potentially less stable):
   * [See latest build](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml?query=is%3Asuccess+branch%3Amaster)
-  * Uninstall current version, then install VSIX file inside "1 published" artifact
+  * Uninstall current version, click on a build and download/install the VSIX file at the bottom of the page
 * Integrating the NuGet library
-  * Check out the [CodeConversion class](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) in the VSIX project.
-  * Or check out the [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
+  * See [CodeConversion.ConvertDocumentUnhandledAsync](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) or [CodeConversion.ConvertProjectUnhandled](https://github.com/icsharpcode/CodeConverter/blob/daa741246770fabf9aa87cd75b753220306aaaaa/Vsix/CodeConversion.cs#L276-L279) in the VSIX project.
+  * See [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
 
 ## Building/running from source
+
 1. Ensure you have [.NET Core SDK 6.0](https://dotnet.microsoft.com/download/dotnet-core/6.0)
 2. Open the solution in Visual Studio 2022+ (Community edition is sufficient)
 3. To run the website, set CodeConverter.Web as the startup project
@@ -45,9 +48,11 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
    * A new instance of Visual Studio will open with the extension installed
 
 ##  History
+
 A spiritual successor of the code conversion within [SharpDevelop](https://github.com/icsharpcode/SharpDevelop) and later part of [Refactoring Essentials](https://github.com/icsharpcode/RefactoringEssentials), the code converter was separated out to avoid difficulties with different Visual Studio and Roslyn versions.
 
 ## More screenshots
+
 <p float="left">
   <img src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/solution.png" width="49%" />
   <img src="https://github.com/icsharpcode/CodeConverter/raw/master/.github/img/vbToCsFile.png" width="49%" /> 
