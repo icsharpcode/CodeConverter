@@ -46,10 +46,6 @@ a.navbar-brand {
     word-break: break-all;
 }
 
-.navbar-expand-sm .navbar-collapse {
-    display: inline-flex !important;
-}
-
 html {
     font-size: 14px;
 }

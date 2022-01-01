@@ -98,3 +98,7 @@ input[type="radio"] {
 .navbar-brand:not(:hover) .title-highlight {
     color: #b28bbc;
 }
+
+@media (min-width: 576px) {
+    .navbar-expand-sm .navbar-collapse { display: inline-flex !important; }
+}
