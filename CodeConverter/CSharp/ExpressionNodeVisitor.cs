@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -877,6 +878,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
                 (await SubstituteVisualBasicMethodOrNullAsync(node, invocationSymbol, expressionSymbol) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
                 return csEquivalent;
+            }
+
+            if (invocationSymbol?.Name is "op_Implicit" or "op_Explicit") {
+                var vbExpr = node.ArgumentList.Arguments.Single().GetExpression();
+                var csExpr = await vbExpr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbExpr, csExpr, true, true, false, forceTargetType: invocationSymbol.GetReturnType());
             }
 
             return await ConvertInvocationAsync(node, invocationSymbol, expressionSymbol);
