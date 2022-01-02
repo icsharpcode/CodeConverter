@@ -44,7 +44,7 @@ Currently, the VB -> C# conversion quality is higher than the C# -> VB conversio
 1. Ensure you have [.NET Core SDK 6.0](https://dotnet.microsoft.com/download/dotnet-core/6.0)
 2. Open the solution in Visual Studio 2022+ (Community edition is sufficient)
 3. To run the website, set CodeConverter.Web as the startup project
-  * You will need nodejs 16.* (node 17 introduces a breaking change causing ERR_OSSL_EVP_UNSUPPORTED)
+  * You will need [Node (LTS)](https://community.chocolatey.org/packages/nodejs-lts) 16.* (node 17 introduces a breaking change causing ERR_OSSL_EVP_UNSUPPORTED)
 5. To run the Visual Studio extension, set Vsix as the startup project
    * A new instance of Visual Studio will open with the extension installed
 
