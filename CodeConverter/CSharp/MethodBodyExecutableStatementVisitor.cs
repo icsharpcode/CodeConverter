@@ -32,9 +32,9 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly HandledEventsAnalysis _handledEventsAnalysis;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
-        private readonly HashSet<VBSyntax.StatementSyntax> _redundantSourceStatements = new HashSet<VBSyntax.StatementSyntax>();
         private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
         private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
+        private PerScopeState _perScopeState;
 
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -65,7 +65,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
             _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
-            var byRefParameterVisitor = new HoistedNodeStateVisitor(this, typeContext.HoistedState, semanticModel, _generatedNames);
+            _perScopeState = typeContext.PerScopeState;
+            var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
             _localsToInlineInLoop = localsToInlineInLoop;
@@ -411,7 +412,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node)
         {
-            switch (VBasic.VisualBasicExtensions.Kind(node.BlockKeyword)) {
+            var vbBlockKeywordKind = VBasic.VisualBasicExtensions.Kind(node.BlockKeyword);
+            switch (vbBlockKeywordKind) {
                 case VBasic.SyntaxKind.SubKeyword:
                 case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) != true:
                     return SingleStatement(SyntaxFactory.ReturnStatement());
@@ -433,7 +435,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
 
                     return SingleStatement(SyntaxFactory.ReturnStatement());
+                case VBasic.SyntaxKind.TryKeyword:
+                    throw new InvalidOperationException($"Cannot convert exit {node.BlockKeyword} since no C# equivalent exists");
                 default:
+                    var containingExitableScope = _perScopeState.TypeOfExitableExecutableStatementScope;
+                    if (containingExitableScope != vbBlockKeywordKind) {
+                        throw new InvalidOperationException(
+                            $"Cannot convert exit {node.BlockKeyword} to break since it would break only from the containing {VBasic.SyntaxFactory.Token(containingExitableScope)}");
+                    }
                     return SingleStatement(SyntaxFactory.BreakStatement());
             }
         }

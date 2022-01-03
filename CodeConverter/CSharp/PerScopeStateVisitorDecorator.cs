@@ -18,14 +18,14 @@ namespace ICSharpCode.CodeConverter.CSharp
     /// e.g. Add a member declaration in the scope immediately before the member currently being visited.
     /// The current implementation uses a guid variable name, then replaces it later with a unique name by tracking the annotation added to it.
     /// </summary>
-    internal class HoistedNodeStateVisitor : VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>
+    internal class PerScopeStateVisitorDecorator : VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>
     {
         private readonly VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> _wrappedVisitor;
-        private readonly HoistedNodeState _additionalLocals;
+        private readonly PerScopeState _additionalLocals;
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _generatedNames;
 
-        public HoistedNodeStateVisitor(VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> wrappedVisitor, HoistedNodeState additionalLocals,
+        public PerScopeStateVisitorDecorator(VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> wrappedVisitor, PerScopeState additionalLocals,
             SemanticModel semanticModel, HashSet<string> generatedNames)
         {
             _wrappedVisitor = wrappedVisitor;
@@ -40,9 +40,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .WithNodeInformation(node);
         }
 
-        private async Task<SyntaxList<StatementSyntax>> AddLocalVariablesAsync(VBasic.VisualBasicSyntaxNode node)
+        private async Task<SyntaxList<StatementSyntax>> AddLocalVariablesAsync(VBasic.VisualBasicSyntaxNode node, VBasic.SyntaxKind exitableType = default)
         {
-            _additionalLocals.PushScope();
+            _additionalLocals.PushScope(exitableType);
             try {
                 var csNodes = await _wrappedVisitor.Visit(node);
                 var statements = await _additionalLocals.CreateLocalsAsync(node, csNodes, _generatedNames, _semanticModel);
@@ -56,13 +56,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override Task<SyntaxList<StatementSyntax>> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node) => AddLocalVariablesAsync(node);
-        public override Task<SyntaxList<StatementSyntax>> VisitDoLoopBlock(VBSyntax.DoLoopBlockSyntax node) => AddLocalVariablesAsync(node);
+        public override Task<SyntaxList<StatementSyntax>> VisitDoLoopBlock(VBSyntax.DoLoopBlockSyntax node) => AddLocalVariablesAsync(node, VBasic.SyntaxKind.DoKeyword);
         public override Task<SyntaxList<StatementSyntax>> VisitEraseStatement(VBSyntax.EraseStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitErrorStatement(VBSyntax.ErrorStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node) => AddLocalVariablesAsync(node);
+
         public override Task<SyntaxList<StatementSyntax>> VisitExpressionStatement(VBSyntax.ExpressionStatementSyntax node) => AddLocalVariablesAsync(node);
-        public override Task<SyntaxList<StatementSyntax>> VisitForBlock(VBSyntax.ForBlockSyntax node) => AddLocalVariablesAsync(node);
-        public override Task<SyntaxList<StatementSyntax>> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node) => AddLocalVariablesAsync(node);
+        public override Task<SyntaxList<StatementSyntax>> VisitForBlock(VBSyntax.ForBlockSyntax node) => AddLocalVariablesAsync(node, VBasic.SyntaxKind.ForKeyword);
+        public override Task<SyntaxList<StatementSyntax>> VisitForEachBlock(VBSyntax.ForEachBlockSyntax node) => AddLocalVariablesAsync(node, VBasic.SyntaxKind.ForKeyword);
         public override Task<SyntaxList<StatementSyntax>> VisitGoToStatement(VBSyntax.GoToStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitLabelStatement(VBSyntax.LabelStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node) => AddLocalVariablesAsync(node);
@@ -74,14 +75,14 @@ namespace ICSharpCode.CodeConverter.CSharp
         public override Task<SyntaxList<StatementSyntax>> VisitReDimStatement(VBSyntax.ReDimStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitResumeStatement(VBSyntax.ResumeStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node) => AddLocalVariablesAsync(node);
-        public override Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node) => AddLocalVariablesAsync(node);
+        public override Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node) => AddLocalVariablesAsync(node, VBasic.SyntaxKind.SelectKeyword);
         public override Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitSyncLockBlock(VBSyntax.SyncLockBlockSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node) => AddLocalVariablesAsync(node);
-        public override Task<SyntaxList<StatementSyntax>> VisitTryBlock(VBSyntax.TryBlockSyntax node) => AddLocalVariablesAsync(node);
+        public override Task<SyntaxList<StatementSyntax>> VisitTryBlock(VBSyntax.TryBlockSyntax node) => AddLocalVariablesAsync(node, VBasic.SyntaxKind.TryKeyword);
         public override Task<SyntaxList<StatementSyntax>> VisitUsingBlock(VBSyntax.UsingBlockSyntax node) => AddLocalVariablesAsync(node);
-        public override Task<SyntaxList<StatementSyntax>> VisitWhileBlock(VBSyntax.WhileBlockSyntax node) => AddLocalVariablesAsync(node);
+        public override Task<SyntaxList<StatementSyntax>> VisitWhileBlock(VBSyntax.WhileBlockSyntax node) => AddLocalVariablesAsync(node, VBasic.SyntaxKind.WhileKeyword);
         public override Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node) => AddLocalVariablesAsync(node);
         public override Task<SyntaxList<StatementSyntax>> VisitYieldStatement(VBSyntax.YieldStatementSyntax node) => AddLocalVariablesAsync(node);
     }

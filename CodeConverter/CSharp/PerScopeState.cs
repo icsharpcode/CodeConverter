@@ -13,26 +13,28 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
-    internal class HoistedNodeState
+
+    internal class PerScopeState
     {
+        private record ScopeState(List<IHoistedNode> HoistedNodes, VBasic.SyntaxKind ExitableKind, bool RequiresExitVariable = false)
+        {
+            public void Add<T>(T additionalLocal) where T : IHoistedNode => HoistedNodes.Add(additionalLocal);
+            public IEnumerable<T> OfType<T>() => HoistedNodes.OfType<T>();
+        }
+
         public static SyntaxAnnotation Annotation = new SyntaxAnnotation("CodeconverterAdditionalLocal");
 
-        private readonly Stack<List<IHoistedNode>> _hoistedNodesPerScope;
+        private readonly Stack<ScopeState> _hoistedNodesPerScope;
 
-        public HoistedNodeState()
-        {
-            _hoistedNodesPerScope = new Stack<List<IHoistedNode>>();
-        }
+        public PerScopeState() =>_hoistedNodesPerScope = new Stack<ScopeState>();
 
-        public void PushScope()
-        {
-            _hoistedNodesPerScope.Push(new List<IHoistedNode>());
-        }
+        public VBasic.SyntaxKind TypeOfExitableExecutableStatementScope =>
+            _hoistedNodesPerScope.Select(x => x.ExitableKind).FirstOrDefault(x => x != VBasic.SyntaxKind.None);
 
-        public void PopScope()
-        {
-            _hoistedNodesPerScope.Pop();
-        }
+        public void PushScope(VBasic.SyntaxKind exitableKind = default) =>
+            _hoistedNodesPerScope.Push(new ScopeState(new List<IHoistedNode>(), exitableKind));
+
+        public void PopScope() => _hoistedNodesPerScope.Pop();
 
         public void PopExpressionScope()
         {

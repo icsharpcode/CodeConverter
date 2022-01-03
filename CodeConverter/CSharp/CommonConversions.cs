@@ -153,7 +153,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                         equalsValueClauseSyntax = null;
                     } else {
                         var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
-                        _typeContext.HoistedState.Hoist<HoistedParameterlessFunction>(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
+                        _typeContext.PerScopeState.Hoist<HoistedParameterlessFunction>(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
                         equalsValueClauseSyntax = null;
                     }
                 } else {

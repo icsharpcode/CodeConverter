@@ -470,17 +470,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (refLValue is ElementAccessExpressionSyntax eae) {
                 //Hoist out the container so we can assign back to the same one after (like VB does)
-                var tmpContainer = _typeContext.HoistedState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
+                var tmpContainer = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
                 refLValue = eae.WithExpression(tmpContainer.IdentifierName);
             }
 
             var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, refLValue, defaultToCast: refKind != RefKind.None);
 
-            var local = _typeContext.HoistedState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
+            var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
 
             if (refType == RefConversion.PreAndPostAssignment) {
                 var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-                _typeContext.HoistedState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
+                _typeContext.PerScopeState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
             }
 
             return local.IdentifierName;
@@ -857,7 +857,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodInvocationSymbol = invocationSymbol as IMethodSymbol;
             var withinLocalFunction = methodInvocationSymbol != null && RequiresLocalFunction(node, methodInvocationSymbol);
             if (withinLocalFunction) {
-                _typeContext.HoistedState.PushScope();
+                _typeContext.PerScopeState.PushScope();
             }
             try {
                 var convertedInvocation = await ConvertOrReplaceInvocationAsync(node, invocationSymbol);
@@ -867,7 +867,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return convertedInvocation;
             } finally {
                 if (withinLocalFunction) {
-                    _typeContext.HoistedState.PopExpressionScope();
+                    _typeContext.PerScopeState.PopExpressionScope();
                 }
             }
         }
@@ -1031,14 +1031,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
 
-            var statements = await _typeContext.HoistedState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
+            var statements = await _typeContext.PerScopeState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
 
             var block = SyntaxFactory.Block(
                 statements.Concat(SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName)).Yield())
             );
             var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
             
-            var localFunc = _typeContext.HoistedState.Hoist(new HoistedParameterlessFunction(localFuncName, returnType, block));
+            var localFunc = _typeContext.PerScopeState.Hoist(new HoistedParameterlessFunction(localFuncName, returnType, block));
             return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList());
         }
 
@@ -1568,7 +1568,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
         {
             string prefix = $"arg{p.Name}";
-            var local = _typeContext.HoistedState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+            var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
         }
 

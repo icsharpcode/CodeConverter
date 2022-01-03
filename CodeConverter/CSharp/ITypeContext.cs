@@ -4,7 +4,7 @@
     {
         AdditionalInitializers Initializers { get; }
         HandledEventsAnalysis HandledEventsAnalysis { get; }
-        HoistedNodeState HoistedState { get; }
+        PerScopeState PerScopeState { get; }
         bool Any();
     }
 }

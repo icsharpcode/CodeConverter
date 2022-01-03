@@ -571,56 +571,6 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task ExitStatementsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Function FuncReturningNull() As Object
-        Dim zeroLambda = Function(y) As Integer
-                            Exit Function
-                         End Function
-        Exit Function
-    End Function
-
-    Private Function FuncReturningZero() As Integer
-        Dim nullLambda = Function(y) As Object
-                            Exit Function
-                         End Function
-        Exit Function
-    End Function
-
-    Private Function FuncReturningAssignedValue() As Integer
-        Dim aSub = Sub(y)
-                            Exit Sub
-                         End Sub
-        FuncReturningAssignedValue = 3
-        Exit Function
-    End Function
-End Class", @"
-internal partial class TestClass
-{
-    private object FuncReturningNull()
-    {
-        int zeroLambda(object y) => default;
-        return default;
-    }
-
-    private int FuncReturningZero()
-    {
-        object nullLambda(object y) => default;
-        return default;
-    }
-
-    private int FuncReturningAssignedValue()
-    {
-        int FuncReturningAssignedValueRet = default;
-        void aSub(object y) { return; };
-        FuncReturningAssignedValueRet = 3;
-        return FuncReturningAssignedValueRet;
-    }
-}");
-        }
-
-        [Fact]
         public async Task WithBlockAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
@@ -1770,35 +1720,6 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
         }
 
         [Fact]
-        public async Task SelectCaseWithExplicitExitAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class A
-    Public Function Add(ByVal x As Integer) As Integer
-        Select Case x
-            Case 1
-                Exit Select
-        End Select
-        Return 3
-    End Function
-End Class", @"
-internal partial class A
-{
-    public int Add(int x)
-    {
-        switch (x)
-        {
-            case 1:
-                {
-                    break;
-                }
-        }
-
-        return 3;
-    }
-}");
-        }
-
-        [Fact]
         public async Task Issue579SelectCaseWithCaseInsensitiveTextCompareAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
@@ -1972,35 +1893,6 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task YieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
-        If number < 0 Then Return
-        If number < 1 Then Exit Function
-        For i As Integer = 0 To number - 1
-            Yield i
-        Next
-        Return
-    End Function
-End Class", @"using System.Collections.Generic;
-
-internal partial class TestClass
-{
-    private IEnumerable<int> TestMethod(int number)
-    {
-        if (number < 0)
-            yield break;
-        if (number < 1)
-            yield break;
-        for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
-            yield return i;
-        yield break;
-    }
-}");
-        }
-
-        [Fact]
         public async Task SwitchIntToEnumAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Module Main
@@ -2090,6 +1982,86 @@ public partial class NonStringSelect
 }
 1 target compilation errors:
 CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+        }
+
+
+        [Fact]
+        public async Task ExitMethodBlockStatementsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function FuncReturningNull() As Object
+        Dim zeroLambda = Function(y) As Integer
+                            Exit Function
+                         End Function
+        Exit Function
+    End Function
+
+    Private Function FuncReturningZero() As Integer
+        Dim nullLambda = Function(y) As Object
+                            Exit Function
+                         End Function
+        Exit Function
+    End Function
+
+    Private Function FuncReturningAssignedValue() As Integer
+        Dim aSub = Sub(y)
+                            Exit Sub
+                         End Sub
+        FuncReturningAssignedValue = 3
+        Exit Function
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private object FuncReturningNull()
+    {
+        int zeroLambda(object y) => default;
+        return default;
+    }
+
+    private int FuncReturningZero()
+    {
+        object nullLambda(object y) => default;
+        return default;
+    }
+
+    private int FuncReturningAssignedValue()
+    {
+        int FuncReturningAssignedValueRet = default;
+        void aSub(object y) { return; };
+        FuncReturningAssignedValueRet = 3;
+        return FuncReturningAssignedValueRet;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task YieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
+        If number < 0 Then Return
+        If number < 1 Then Exit Function
+        For i As Integer = 0 To number - 1
+            Yield i
+        Next
+        Return
+    End Function
+End Class", @"using System.Collections.Generic;
+
+internal partial class TestClass
+{
+    private IEnumerable<int> TestMethod(int number)
+    {
+        if (number < 0)
+            yield break;
+        if (number < 1)
+            yield break;
+        for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
+            yield return i;
+        yield break;
+    }
+}");
         }
     }
 }

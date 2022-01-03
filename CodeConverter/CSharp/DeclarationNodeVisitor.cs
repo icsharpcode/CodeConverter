@@ -50,7 +50,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private CommonConversions CommonConversions { get; }
         private Func<VisualBasicSyntaxNode, bool, IdentifierNameSyntax, Task<VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>>> _createMethodBodyVisitorAsync { get; }
 
-        internal HoistedNodeState AdditionalLocals => _typeContext.HoistedState;
+        internal PerScopeState AdditionalLocals => _typeContext.PerScopeState;
 
         public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
             CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors)
@@ -587,7 +587,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
             var newNames = declarationInfo.ToDictionary(l => l.Id, l => l.Prefix);
-            var newInitializer = HoistedNodeState.ReplaceNames(v.Initializer.Value, newNames);
+            var newInitializer = PerScopeState.ReplaceNames(v.Initializer.Value, newNames);
 
             var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.ReturnStatement(newInitializer).Yield()));
             // Method calls in initializers must be static in C# - Supporting this is #281
@@ -613,7 +613,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var newMethodNames = methodsInfos.ToDictionary(l => l.Id, l => l.Prefix);
             for (int i = 0; i < _typeContext.Initializers.AdditionalInstanceInitializers.Count; i++) {
                 var (a, b, initializer) = _typeContext.Initializers.AdditionalInstanceInitializers[i];
-                _typeContext.Initializers.AdditionalInstanceInitializers[i] = (a, b, HoistedNodeState.ReplaceNames(initializer, newMethodNames));
+                _typeContext.Initializers.AdditionalInstanceInitializers[i] = (a, b, PerScopeState.ReplaceNames(initializer, newMethodNames));
             }
 
             return methodsInfos

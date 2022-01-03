@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public AdditionalInitializers Initializers => _contextStack.Peek().Initializers;
         public HandledEventsAnalysis HandledEventsAnalysis => _contextStack.Peek().Methods;
 
-        public HoistedNodeState HoistedState { get; internal set; } = new HoistedNodeState();
+        public PerScopeState PerScopeState { get; internal set; } = new PerScopeState();
 
         public void Push(HandledEventsAnalysis methodWithHandles, AdditionalInitializers additionalInitializers)
         {
