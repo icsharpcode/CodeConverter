@@ -15,8 +15,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class HoistedNodeState
     {
-        public static SyntaxAnnotation Annotation = new SyntaxAnnotation("CodeconverterAdditionalLocal");
-
+        public static SyntaxAnnotation AdditionalLocalAnnotation = new SyntaxAnnotation("CodeConverter.AdditionalLocal");
+                
         private readonly Stack<List<IHoistedNode>> _hoistedNodesPerScope;
 
         public HoistedNodeState()
@@ -43,10 +43,16 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
         }
 
-        public T Hoist<T>(T additionalLocal) where T: IHoistedNode
+        public T Hoist<T>(T additionalLocal) where T : IHoistedNode
         {
             _hoistedNodesPerScope.Peek().Add(additionalLocal);
             return additionalLocal;
+        }
+
+        public T HoistToTopLevel<T>(T additionalField) where T : IHoistedNode
+        {
+            _hoistedNodesPerScope.Last().Add(additionalField);
+            return additionalField;
         }
 
         public IReadOnlyCollection<AdditionalDeclaration> GetDeclarations()
@@ -62,6 +68,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         public IReadOnlyCollection<HoistedParameterlessFunction> GetParameterlessFunctions()
         {
             return _hoistedNodesPerScope.Peek().OfType<HoistedParameterlessFunction>().ToArray();
+        }
+
+        public IReadOnlyCollection<HoistedFieldFromVbStaticVariable> GetFields()
+        {
+            return _hoistedNodesPerScope.Peek().OfType<HoistedFieldFromVbStaticVariable>().ToArray();
         }
 
         public SyntaxList<StatementSyntax> CreateStatements(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> statements, HashSet<string> generatedNames, SemanticModel semanticModel)
@@ -100,7 +111,31 @@ namespace ICSharpCode.CodeConverter.CSharp
             return CS.SyntaxFactory.List(statementsWithUpdatedIds);
         }
 
-        public static IEnumerable<StatementSyntax> ReplaceNames(IEnumerable<StatementSyntax> csNodes, Dictionary<string, string> newNames)
+
+        public async Task<SyntaxList<MemberDeclarationSyntax>> CreateVbStaticFieldsAsync(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<MemberDeclarationSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
+        {
+            var declarations = new List<FieldDeclarationSyntax>();
+
+            var fieldInfo = GetFields();
+            var newNames = fieldInfo.ToDictionary(f => f.OriginalVariableName, f =>
+                NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.FieldName)
+            );
+            foreach (var field in fieldInfo) {
+                var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[field.OriginalVariableName],
+                    field.Initializer, field.Type);
+                var modifiers = new List<SyntaxToken> { CS.SyntaxFactory.Token(SyntaxKind.PrivateKeyword) };
+                if (field.IsStatic) {
+                    modifiers.Add(CS.SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+                }
+                declarations.Add(CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List<AttributeListSyntax>(), CS.SyntaxFactory.TokenList(modifiers), decl));
+            }
+
+            var statementsWithUpdatedIds = ReplaceNames(declarations.Concat(csNodes), newNames);
+
+            return CS.SyntaxFactory.List(statementsWithUpdatedIds);
+        }
+
+        public static IEnumerable<T> ReplaceNames<T>(IEnumerable<T> csNodes, Dictionary<string, string> newNames) where T : SyntaxNode
         {
             csNodes = csNodes.Select(csNode => ReplaceNames(csNode, newNames)).ToList();
             return csNodes;
@@ -108,10 +143,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public static T ReplaceNames<T>(T csNode, Dictionary<string, string> newNames) where T : SyntaxNode
         {
-            return csNode.ReplaceNodes(csNode.GetAnnotatedNodes(Annotation), (_, withReplaced) => {
-                var idns = (IdentifierNameSyntax)withReplaced;
+            return csNode.ReplaceNodes(csNode.DescendantNodes().OfType<IdentifierNameSyntax>(), (_, idns) => {
                 if (newNames.TryGetValue(idns.Identifier.ValueText, out var newName)) {
-                    return idns.WithoutAnnotations(Annotation).WithIdentifier(CS.SyntaxFactory.Identifier(newName));
+                    return idns.WithoutAnnotations(AdditionalLocalAnnotation).WithIdentifier(CS.SyntaxFactory.Identifier(newName));
                 }
                 return idns;
             });

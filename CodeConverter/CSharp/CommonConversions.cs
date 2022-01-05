@@ -451,6 +451,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case SyntaxKind.ByValKeyword:
                 case SyntaxKind.IteratorKeyword:
                 case SyntaxKind.DimKeyword:
+                case SyntaxKind.StaticKeyword:
                     return true;
                 default:
                     return false;

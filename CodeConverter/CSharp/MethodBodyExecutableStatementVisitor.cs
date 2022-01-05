@@ -29,6 +29,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly Stack<ExpressionSyntax> _withBlockLhs;
         private readonly HashSet<string> _extraUsingDirectives;
         private readonly MethodsWithHandles _methodsWithHandles;
+        private readonly HoistedNodeState _hoistedState;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
         private readonly HashSet<VBSyntax.StatementSyntax> _redundantSourceStatements = new HashSet<VBSyntax.StatementSyntax>();
         private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
@@ -63,6 +64,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
             _methodsWithHandles = typeContext.MethodsWithHandles;
+            _hoistedState = typeContext.HoistedState;
             var byRefParameterVisitor = new HoistedNodeStateVisitor(this, typeContext.HoistedState, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
@@ -95,17 +97,39 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         public override async Task<SyntaxList<StatementSyntax>> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
-        {
+        {  
             var modifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], node.Modifiers, TokenContext.Local);
             var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
+            var isVBStatic = node.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.StaticKeyword));
 
             var declarations = new List<StatementSyntax>();
 
             foreach (var declarator in node.Declarators) {
-                var splitVariableDeclarations = await SplitVariableDeclarationsAsync(declarator, preferExplicitType: isConst);
-                var localDeclarationStatementSyntaxs = splitVariableDeclarations.Variables.Select(declAndType => SyntaxFactory.LocalDeclarationStatement(modifiers, declAndType.Decl));
-                declarations.AddRange(localDeclarationStatementSyntaxs);
-                var localFunctions = splitVariableDeclarations.Methods.Cast<LocalFunctionStatementSyntax>();
+                var (variables, methods) = await SplitVariableDeclarationsAsync(declarator, preferExplicitType: isConst || isVBStatic);
+                var localDeclarationStatementSyntaxs = variables.Select(declAndType => SyntaxFactory.LocalDeclarationStatement(modifiers, declAndType.Decl));
+                if (isVBStatic) {
+                    foreach (var decl in localDeclarationStatementSyntaxs) {
+                        var variable = decl.Declaration.Variables.Single();
+                        var initializeValue = variable.Initializer.Value;
+                        string methodName;
+                        VBSyntax.MethodBaseSyntax methodOrSubNewStatement;
+                        if (_methodNode is VBSyntax.MethodBlockSyntax methodBlock) {
+                            var methodStatement = methodBlock.BlockStatement as VBSyntax.MethodStatementSyntax;
+                            methodOrSubNewStatement = methodStatement;
+                            methodName = methodStatement.Identifier.Text;
+                        } else if (_methodNode is VBSyntax.ConstructorBlockSyntax constructorBlock) {
+                            methodOrSubNewStatement = constructorBlock.BlockStatement as VBSyntax.SubNewStatementSyntax;
+                            methodName = null;
+                        } else {
+                            throw new NotImplementedException(_methodNode.GetType() + " not implemented!");
+                        }
+                        var isVbShared = methodOrSubNewStatement.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
+                        _hoistedState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
+                    }
+                } else {
+                    declarations.AddRange(localDeclarationStatementSyntaxs);
+                }
+                var localFunctions = methods.Cast<LocalFunctionStatementSyntax>();
                 declarations.AddRange(localFunctions);
             }
 
