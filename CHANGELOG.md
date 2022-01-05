@@ -10,7 +10,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* No longer throws NRE for embedded resources with no LastGenOutput [#804](https://github.com/icsharpcode/CodeConverter/issues/804)
+* Append CompareMethod.Text for Strings methods when needed [#655](https://github.com/icsharpcode/CodeConverter/issues/655)
+* Convert op_Implicit/op_Explicit calls to casts [#678](https://github.com/icsharpcode/CodeConverter/issues/678)
+
+### C# -> VB
+
+* More terse conversion in for loop with literal end value [#798](https://github.com/icsharpcode/CodeConverter/issues/798)
+
+## [8.4.3] - 2021-12-23
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Convert extension methods on ByRef reference types to static invocations [#785](https://github.com/icsharpcode/CodeConverter/issues/785)
+* Wire up events for WithEvents fields in an ancestor class [#774](https://github.com/icsharpcode/CodeConverter/issues/774)
+* Only create delegating property for WithEvents fields if there is a *known* write usage or descendant class [Due to feedback on #615](https://github.com/icsharpcode/CodeConverter/issues/615#issuecomment-993151917)
 
 ### C# -> VB
 

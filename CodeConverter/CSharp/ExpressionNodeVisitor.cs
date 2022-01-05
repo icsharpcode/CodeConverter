@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -12,6 +14,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
+using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
@@ -467,17 +470,17 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (refLValue is ElementAccessExpressionSyntax eae) {
                 //Hoist out the container so we can assign back to the same one after (like VB does)
-                var tmpContainer = _typeContext.HoistedState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
+                var tmpContainer = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
                 refLValue = eae.WithExpression(tmpContainer.IdentifierName);
             }
 
             var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, refLValue, defaultToCast: refKind != RefKind.None);
 
-            var local = _typeContext.HoistedState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
+            var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
 
             if (refType == RefConversion.PreAndPostAssignment) {
                 var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-                _typeContext.HoistedState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
+                _typeContext.PerScopeState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
             }
 
             return local.IdentifierName;
@@ -854,34 +857,47 @@ namespace ICSharpCode.CodeConverter.CSharp
             var methodInvocationSymbol = invocationSymbol as IMethodSymbol;
             var withinLocalFunction = methodInvocationSymbol != null && RequiresLocalFunction(node, methodInvocationSymbol);
             if (withinLocalFunction) {
-                _typeContext.HoistedState.PushScope();
+                _typeContext.PerScopeState.PushScope();
             }
             try {
-                var convertedInvocation = await ConvertInvocationAsync(node, invocationSymbol);
+                var convertedInvocation = await ConvertOrReplaceInvocationAsync(node, invocationSymbol);
                 if (withinLocalFunction) {
                     return await HoistAndCallLocalFunctionAsync(node, methodInvocationSymbol, (ExpressionSyntax)convertedInvocation);
                 }
                 return convertedInvocation;
             } finally {
                 if (withinLocalFunction) {
-                    _typeContext.HoistedState.PopExpressionScope();
+                    _typeContext.PerScopeState.PopExpressionScope();
                 }
             }
         }
 
-        private async Task<CSharpSyntaxNode> ConvertInvocationAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol)
+        private async Task<CSharpSyntaxNode> ConvertOrReplaceInvocationAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol)
         {
             var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
-            var expressionType = _semanticModel.GetTypeInfo(node.Expression).Type;
-            var expressionReturnType = expressionSymbol?.GetReturnType() ?? expressionType;
-            var operation = _semanticModel.GetOperation(node);
             if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
-                (await SubstituteVisualBasicMethodOrNullAsync(node) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
+                (await SubstituteVisualBasicMethodOrNullAsync(node, invocationSymbol, expressionSymbol) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
                 return csEquivalent;
             }
 
+            if (invocationSymbol?.Name is "op_Implicit" or "op_Explicit") {
+                var vbExpr = node.ArgumentList.Arguments.Single().GetExpression();
+                var csExpr = await vbExpr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbExpr, csExpr, true, true, false, forceTargetType: invocationSymbol.GetReturnType());
+            }
+
+            return await ConvertInvocationAsync(node, invocationSymbol, expressionSymbol);
+        }
+
+        private async Task<ExpressionSyntax> ConvertInvocationAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol, ISymbol expressionSymbol)
+        {
+            var expressionType = _semanticModel.GetTypeInfo(node.Expression).Type;
+            var expressionReturnType = expressionSymbol?.GetReturnType() ?? expressionType;
+            var operation = _semanticModel.GetOperation(node);
+
             var expr = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
-            if (await TryConvertParameterizedPropertyAsync(operation, node, expr, node.ArgumentList) is {} invocation) {
+            if (await TryConvertParameterizedPropertyAsync(operation, node, expr, node.ArgumentList) is { } invocation)
+            {
                 return invocation;
             }
             //TODO: Decide if the above override should be subject to the rest of this method's adjustments (probably)
@@ -890,24 +906,28 @@ namespace ICSharpCode.CodeConverter.CSharp
             // VB doesn't have a specialized node for element access because the syntax is ambiguous. Instead, it just uses an invocation expression or dictionary access expression, then figures out using the semantic model which one is most likely intended.
             // https://github.com/dotnet/roslyn/blob/master/src/Workspaces/VisualBasic/Portable/LanguageServices/VisualBasicSyntaxFactsService.vb#L768
             (var convertedExpression, bool shouldBeElementAccess) = await ConvertInvocationSubExpressionAsync(node, operation, expressionSymbol, expressionReturnType, expr);
-            if (shouldBeElementAccess) {
+            if (shouldBeElementAccess)
+            {
                 return await CreateElementAccessAsync(node, convertedExpression);
             }
 
             if (expressionSymbol != null && expressionSymbol.IsKind(SymbolKind.Property) &&
-                invocationSymbol != null && invocationSymbol.GetParameters().Length == 0 && node.ArgumentList.Arguments.Count == 0) {
+                invocationSymbol != null && invocationSymbol.GetParameters().Length == 0 && node.ArgumentList.Arguments.Count == 0)
+            {
                 return convertedExpression; //Parameterless property access
             }
 
-            var convertedArgumentList= await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList);
+            var convertedArgumentList = await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList);
 
-            if (IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)) {
+            if (IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol))
+            {
                 convertedExpression = GetElementAtOrDefaultExpression(expressionType, convertedExpression);
             }
 
             if (invocationSymbol.IsReducedExtension() && invocationSymbol is IMethodSymbol {ReducedFrom: {Parameters: var parameters}} &&
                 !parameters.FirstOrDefault().ValidCSharpExtensionMethodParameter() &&
-                node.Expression is VBSyntax.MemberAccessExpressionSyntax maes) {
+                node.Expression is VBSyntax.MemberAccessExpressionSyntax maes)
+            {
                 var thisArgExpression = await maes.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
                 var thisArg = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.Argument(thisArgExpression).WithRefKindKeyword(GetRefToken(RefKind.Ref));
                 convertedArgumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(convertedArgumentList.Arguments.Prepend(thisArg)));
@@ -931,7 +951,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return (expressionSyntax, isElementAccess);
         }
 
-        private async Task<CSharpSyntaxNode> CreateElementAccessAsync(VBSyntax.InvocationExpressionSyntax node, ExpressionSyntax expression)
+        private async Task<ExpressionSyntax> CreateElementAccessAsync(VBSyntax.InvocationExpressionSyntax node, ExpressionSyntax expression)
         {
             var args =
                 await node.ArgumentList.Arguments.AcceptSeparatedListAsync<VBSyntax.ArgumentSyntax, ArgumentSyntax>(TriviaConvertingExpressionVisitor);
@@ -1011,14 +1031,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
 
-            var statements = await _typeContext.HoistedState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
+            var statements = await _typeContext.PerScopeState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
 
             var block = SyntaxFactory.Block(
                 statements.Concat(SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName)).Yield())
             );
             var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
             
-            var localFunc = _typeContext.HoistedState.Hoist(new HoistedParameterlessFunction(localFuncName, returnType, block));
+            var localFunc = _typeContext.PerScopeState.Hoist(new HoistedParameterlessFunction(localFuncName, returnType, block));
             return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList());
         }
 
@@ -1524,27 +1544,31 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             int vbPositionalArgs = existingArgs.TakeWhile(a => !a.IsNamed).Count();
             var namedArgNames = new HashSet<string>(existingArgs.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+
+            var requiresCompareMethod = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive && RequiresStringCompareMethodToBeAppended(invocationSymbol);
+
             if (invocationSymbol != null) {
                 var requiredInCs = invocationSymbol.GetParameters()
-                    .Select((p, i) => CreateExtraArgOrNull(invocationSymbol, p, i, vbPositionalArgs, namedArgNames));
+                    .Select((p, i) => CreateExtraArgOrNull(invocationSymbol, p, i, vbPositionalArgs, namedArgNames, requiresCompareMethod));
                 return requiredInCs.Where(x => x != null);
             }
 
             return Enumerable.Empty<ArgumentSyntax>();
         }
 
-        private ArgumentSyntax CreateExtraArgOrNull(ISymbol invocationSymbol, IParameterSymbol p, int i, int vbPositionalArgs, HashSet<string> namedArgNames)
+        private ArgumentSyntax CreateExtraArgOrNull(ISymbol invocationSymbol, IParameterSymbol p, int i, int vbPositionalArgs, HashSet<string> namedArgNames, bool requiresCompareMethod)
         {
             if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) return null;
             if (p.RefKind != RefKind.None) return CreateOptionalRefArg(p);
             if (invocationSymbol is IPropertySymbol)  return SyntaxFactory.Argument(CommonConversions.Literal(p.ExplicitDefaultValue));
+            if (requiresCompareMethod && p.Type.Name == "CompareMethod") return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
             return null;
         }
 
         private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
         {
             string prefix = $"arg{p.Name}";
-            var local = _typeContext.HoistedState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+            var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
         }
 
@@ -1666,7 +1690,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                    );
         }
 
-        private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBasic.Syntax.InvocationExpressionSyntax node)
+        private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol, ISymbol expressionSymbol)
         {
             ExpressionSyntax cSharpSyntaxNode = null;
             var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
@@ -1681,6 +1705,12 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             return cSharpSyntaxNode;
         }
+
+        private static bool RequiresStringCompareMethodToBeAppended(ISymbol symbol) =>
+            symbol?.ContainingType.Name == nameof(Strings) &&
+            symbol.ContainingType.ContainingNamespace.Name == nameof(Microsoft.VisualBasic) &&
+            symbol.ContainingType.ContainingNamespace.ContainingNamespace.Name == nameof(Microsoft) &&
+            symbol.Name is "InStr" or "InStrRev" or "Replace" or "Split" or "StrComp";
 
         /// <summary>
         /// https://github.com/icsharpcode/CodeConverter/issues/745

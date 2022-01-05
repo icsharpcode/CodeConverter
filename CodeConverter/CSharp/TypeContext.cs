@@ -5,14 +5,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 {
     internal class TypeContext : ITypeContext
     {
-        private readonly Stack<(AdditionalInitializers Initializers, MethodsWithHandles Methods)> _contextStack = new Stack<(AdditionalInitializers Initializers, MethodsWithHandles Methods)>();
+        private readonly Stack<(AdditionalInitializers Initializers, HandledEventsAnalysis Methods)> _contextStack = new Stack<(AdditionalInitializers Initializers, HandledEventsAnalysis Methods)>();
 
         public AdditionalInitializers Initializers => _contextStack.Peek().Initializers;
-        public MethodsWithHandles MethodsWithHandles => _contextStack.Peek().Methods;
+        public HandledEventsAnalysis HandledEventsAnalysis => _contextStack.Peek().Methods;
 
-        public HoistedNodeState HoistedState { get; internal set; } = new HoistedNodeState();
+        public PerScopeState PerScopeState { get; internal set; } = new PerScopeState();
 
-        public void Push(MethodsWithHandles methodWithHandles, AdditionalInitializers additionalInitializers)
+        public void Push(HandledEventsAnalysis methodWithHandles, AdditionalInitializers additionalInitializers)
         {
             _contextStack.Push((additionalInitializers, methodWithHandles));
         }

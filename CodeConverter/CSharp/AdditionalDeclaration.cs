@@ -22,6 +22,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             Type = type;
         }
 
-        public IdentifierNameSyntax IdentifierName => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(HoistedNodeState.AdditionalLocalAnnotation);
+        public IdentifierNameSyntax IdentifierName => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(PerScopeState.AdditionalLocalAnnotation);
     }
 }

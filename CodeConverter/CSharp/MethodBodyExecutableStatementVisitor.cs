@@ -14,6 +14,8 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis.FindSymbols;
+using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -28,12 +30,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly CommentConvertingVisitorWrapper _expressionVisitor;
         private readonly Stack<ExpressionSyntax> _withBlockLhs;
         private readonly HashSet<string> _extraUsingDirectives;
-        private readonly MethodsWithHandles _methodsWithHandles;
-        private readonly HoistedNodeState _hoistedState;
+        private readonly HandledEventsAnalysis _handledEventsAnalysis;
         private readonly HashSet<string> _generatedNames = new HashSet<string>();
-        private readonly HashSet<VBSyntax.StatementSyntax> _redundantSourceStatements = new HashSet<VBSyntax.StatementSyntax>();
         private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
         private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
+        private PerScopeState _perScopeState;
 
         public bool IsIterator { get; set; }
         public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -63,9 +64,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             CommonConversions = commonConversions;
             _withBlockLhs = withBlockLhs;
             _extraUsingDirectives = extraUsingDirectives;
-            _methodsWithHandles = typeContext.MethodsWithHandles;
-            _hoistedState = typeContext.HoistedState;
-            var byRefParameterVisitor = new HoistedNodeStateVisitor(this, typeContext.HoistedState, semanticModel, _generatedNames);
+            _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
+            _perScopeState = typeContext.PerScopeState;
+            var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
             CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
             _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
             _localsToInlineInLoop = localsToInlineInLoop;
@@ -124,7 +125,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             throw new NotImplementedException(_methodNode.GetType() + " not implemented!");
                         }
                         var isVbShared = methodOrSubNewStatement.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
-                        _hoistedState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
+                        _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
                     }
                 } else {
                     declarations.AddRange(localDeclarationStatementSyntaxs);
@@ -247,8 +248,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         /// </summary>
         public SyntaxList<StatementSyntax> GetPostAssignmentStatements(Microsoft.CodeAnalysis.VisualBasic.Syntax.AssignmentStatementSyntax node, ISymbol potentialPropertySymbol)
         {
-            if (CommonConversions.WinformsConversions.MustInlinePropertyWithEventsAccess(node, potentialPropertySymbol)) {
-                return _methodsWithHandles.GetPostAssignmentStatements(potentialPropertySymbol);
+            if (CommonConversions.WinformsConversions.MayNeedToInlinePropertyAccess(node, potentialPropertySymbol)) {
+                return _handledEventsAnalysis.GetPostAssignmentStatements(potentialPropertySymbol);
             }
 
             return SyntaxFactory.List<StatementSyntax>();
@@ -433,7 +434,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node)
         {
-            switch (VBasic.VisualBasicExtensions.Kind(node.BlockKeyword)) {
+            var vbBlockKeywordKind = VBasic.VisualBasicExtensions.Kind(node.BlockKeyword);
+            switch (vbBlockKeywordKind) {
                 case VBasic.SyntaxKind.SubKeyword:
                 case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) != true:
                     return SingleStatement(SyntaxFactory.ReturnStatement());
@@ -455,7 +457,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
 
                     return SingleStatement(SyntaxFactory.ReturnStatement());
+                case VBasic.SyntaxKind.TryKeyword:
+                    throw new InvalidOperationException($"Cannot convert exit {node.BlockKeyword} since no C# equivalent exists");
                 default:
+                    var containingExitableScope = _perScopeState.TypeOfExitableExecutableStatementScope;
+                    if (containingExitableScope != vbBlockKeywordKind) {
+                        throw new InvalidOperationException(
+                            $"Cannot convert exit {node.BlockKeyword} to break since it would break only from the containing {VBasic.SyntaxFactory.Token(containingExitableScope)}");
+                    }
                     return SingleStatement(SyntaxFactory.BreakStatement());
             }
         }

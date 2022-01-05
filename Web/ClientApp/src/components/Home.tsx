@@ -93,49 +93,47 @@ export const Home = () => {
     };
 
     return (
-            <div id="app">
-                <div className="form-group">
-                    <label>Input code ({conversionIsFromVb ? "VB.NET" : "C#"})</label>
+        <div id="app">
+            <div className="form-group">
+                <label>Input code ({conversionIsFromVb ? "VB.NET" : "C#"})</label>
+                <Editor
+                    className="code-editor"
+                    value={inputCode} language={conversionIsFromVb ? "vb" : "csharp"}
+                    onChange={(code, _) => setInputCode(code || "")}
+                    onMount={ (editor, _) => {
+                            inputEditor.current = editor;
+                            selectAndFocus(inputEditor);
+                        } }
+                    height="30vh"
+                    options={{ ...commonEditorOptions }}/>
+            </div>
+            <div className="form-group conversion-controls">
+                <label className="horizontal-spaced">
+                    <input type="radio" checked={conversionIsFromVb} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDefaultInput(e.target.value)} value={vbNetToCsId}/>
+                    VB.NET to C#
+                </label>
+                <label className="horizontal-spaced">
+                    <input type="radio" checked={!conversionIsFromVb} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDefaultInput(e.target.value)} value="cs2vbnet"/>
+                    C# to VB.NET
+                </label>
+                <button id="convert-button" className="btn btn-default horizontal-spaced" onClick={() => convert()}>Convert Code</button>
+            </div>
+            <div className="form-group">
+                <label>Converted code ({conversionIsFromVb ? "C#" : "VB.NET"})</label>
+                <div className="spinner-container">
                     <Editor
-                        className="code-editor"
-                        value={inputCode} language={conversionIsFromVb ? "vb" : "csharp"} 
-                        onChange={( code, _) => setInputCode(code || "")}
-                        onMount={ ( editor,_) => { inputEditor.current = editor; selectAndFocus(inputEditor); } }
-                        height="30vh"
-                        options={{ ...commonEditorOptions }}
-                    />
-                </div>
-                <div className="form-group">
-                    <button id="convert-button" className="btn btn-default" onClick={() => convert()}>Convert Code</button>
-                    &nbsp;
-                    <label className="horizontal-spaced">
-                        <input type="radio" checked={conversionIsFromVb} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDefaultInput(e.target.value)} value={vbNetToCsId} />
-                        VB.NET to C#
-                    </label>
-                    &nbsp;
-                    <label className="horizontal-spaced">
-                        <input type="radio" checked={!conversionIsFromVb} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDefaultInput(e.target.value)} value="cs2vbnet"/>
-                        C# to VB.NET
-                    </label>
-                    &nbsp;
-                    {converterCallInFlight && <div className="spinner horizontal-spaced"></div>}
-                </div>
-                <div className="form-group">
-                    <label>Converted code ({conversionIsFromVb ? "C#" : "VB.NET"})</label>
-                    <Editor
-                        className="code-editor"
+                    className={converterCallInFlight ? "code-editor spinner" : "code-editor"}
                         value={convertedCode}
                         language={conversionIsFromVb ? "csharp" : "vb"}
                         onChange={(code, _) => setConvertedCode(code || "")}
                         onMount={(editor, _) => outputEditor.current = editor}
                         height="30vh"
-                        options={{ ...commonEditorOptions, readOnly: true }}
-                    />
+                            options={{ ...commonEditorOptions, readOnly: true }} />
                 </div>
-
-                {!converterCallInFlight &&
-                    errorMessageOnResponse.length > 1 &&
-                    <p style={{ whiteSpace: "pre-wrap" }}>Error message:<br/>{errorMessageOnResponse}</p>}
+            </div>
+            {!converterCallInFlight &&
+                errorMessageOnResponse.length > 1 &&
+                <p style={{ whiteSpace: "pre-wrap" }}>Error message:<br/>{errorMessageOnResponse}</p>}
 
             <p>Get a more accurate conversion by using our free <a href="https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter">Code Converter extension for Visual Studio</a>.</p>
         </div>

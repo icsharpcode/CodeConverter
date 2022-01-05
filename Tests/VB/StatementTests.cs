@@ -745,13 +745,13 @@ CS0103: The name 'Console' does not exist in the current context");
         {
             await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
-    void TestMethod()
+    void TestMethod(int i, int[] b, int[] s, int end, bool unknownCondition)
     {
         for (i = 0; unknownCondition; i++)
             b[i] = s[i];
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod()
+    Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer, ByVal unknownCondition As Boolean)
         i = 0
 
         While unknownCondition
@@ -759,78 +759,69 @@ CS0103: The name 'Console' does not exist in the current context");
             i += 1
         End While
     End Sub
-End Class
-
-4 source compilation errors:
-CS0103: The name 'i' does not exist in the current context
-CS0103: The name 'unknownCondition' does not exist in the current context
-CS0103: The name 'b' does not exist in the current context
-CS0103: The name 's' does not exist in the current context
-4 target compilation errors:
-BC30451: 'i' is not declared. It may be inaccessible due to its protection level.
-BC30451: 'unknownCondition' is not declared. It may be inaccessible due to its protection level.
-BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
-BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
+End Class");
         }
 
         [Fact]
         public async Task ForWithUnknownConditionAndBlockAsync()
         {
-            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClassForWithUnknownConditionAndBlockAsync
 {
-    void TestMethod()
+    void TestMethod(int i, int[] b, int[] s, int end, bool unknownCondition)
     {
-        for (int i = 0; unknownCondition; i++) { // Increment moves to bottom of loop
+        for (i = 0; unknownCondition; i++) { // Increment moves to bottom of loop
             b[i] = s[i];
         }
     }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
-        Dim i As Integer = 0
+}", @"Friend Class TestClassForWithUnknownConditionAndBlockAsync
+    Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer, ByVal unknownCondition As Boolean)
+        i = 0
 
         While unknownCondition
             b(i) = s(i)
             i += 1 ' Increment moves to bottom of loop
         End While
     End Sub
-End Class
-
-3 source compilation errors:
-CS0103: The name 'unknownCondition' does not exist in the current context
-CS0103: The name 'b' does not exist in the current context
-CS0103: The name 's' does not exist in the current context
-3 target compilation errors:
-BC30451: 'unknownCondition' is not declared. It may be inaccessible due to its protection level.
-BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
-BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
+End Class");
         }
 
         [Fact]
         public async Task ForWithSingleStatementAsync()
         {
-            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClassForWithSingleStatementAsync
 {
-    void TestMethod()
+    void TestMethod(int i, int[] b, int[] s, int end)
     {
         for (i = 0; i < end; i++) b[i] = s[i];
     }
-}", @"Friend Class TestClass
-    Private Sub TestMethod()
+}", @"Friend Class TestClassForWithSingleStatementAsync
+    Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer)
         For i = 0 To [end] - 1
             b(i) = s(i)
         Next
     End Sub
-End Class
+End Class");
+        }
 
-4 source compilation errors:
-CS0103: The name 'i' does not exist in the current context
-CS0103: The name 'end' does not exist in the current context
-CS0103: The name 'b' does not exist in the current context
-CS0103: The name 's' does not exist in the current context
-3 target compilation errors:
-BC30451: 'end' is not declared. It may be inaccessible due to its protection level.
-BC30451: 'b' is not declared. It may be inaccessible due to its protection level.
-BC30451: 's' is not declared. It may be inaccessible due to its protection level.");
+        [Fact]
+        public async Task ForWithNegativeStepAsync()
+        {
+            await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    void TestMethod(int[] b, int[] s, int nbMessage)
+    {
+        for (int m=nbMessage;m>0;m--)
+        {
+            // Loop body
+        }
+    }
+}", @"Friend Class TestClass
+    Private Sub TestMethod(ByVal b As Integer(), ByVal s As Integer(), ByVal nbMessage As Integer)
+        For m As Integer = nbMessage To 1 Step -1
+            ' Loop body
+        Next
+    End Sub
+End Class");
         }
 
         [Fact]
@@ -876,7 +867,7 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        For i = [end] To 0 + 1 Step -1
+        For i = [end] To 1 Step -1
             b(i) = s(i)
         Next
     End Sub

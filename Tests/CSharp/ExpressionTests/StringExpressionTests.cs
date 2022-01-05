@@ -1,5 +1,8 @@
 ﻿using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using Microsoft.CodeAnalysis;
+using Microsoft.VisualBasic;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
@@ -206,6 +209,93 @@ public partial class Class1
         {
             // 
         }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task StringCompareDefaultInstrAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic
+
+Class Issue655
+    Dim s1 = InStr(1, ""obj"", ""object '"")
+    Dim s2 = InStrRev(1, ""obj"", ""object '"")
+    Dim s3 = Replace(1, ""obj"", ""object '"")
+    Dim s4 = Split(1, ""obj"", ""object '"")
+    Dim s5 = Filter(New String() { 1, 2}, ""obj"")
+    Dim s6 = StrComp(1, ""obj"")
+    Dim s7 = OtherFunction()
+    
+    Function OtherFunction(Optional c As CompareMethod = CompareMethod.Binary) As Boolean
+        Return c = CompareMethod.Binary
+    End Function
+End Class", 
+                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class Issue655
+{
+    public Issue655()
+    {
+        s7 = OtherFunction();
+    }
+
+    private object s1 = Strings.InStr(1, ""obj"", ""object '"");
+    private object s2 = Strings.InStrRev(1.ToString(), ""obj"", Conversions.ToInteger(""object '""));
+    private object s3 = Strings.Replace(1.ToString(), ""obj"", ""object '"");
+    private object s4 = Strings.Split(1.ToString(), ""obj"", Conversions.ToInteger(""object '""));
+    private object s5 = Strings.Filter(new string[] { 1.ToString(), 2.ToString() }, ""obj"");
+    private object s6 = Strings.StrComp(1.ToString(), ""obj"");
+    private object s7;
+
+    public bool OtherFunction(CompareMethod c = CompareMethod.Binary)
+    {
+        return c == CompareMethod.Binary;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task StringCompareTextInstrAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text ' Comment omitted since line has no conversion
+Imports Microsoft.VisualBasic
+
+Class Issue655
+    Dim s1 = InStr(1, ""obj"", ""object '"")
+    Dim s2 = InStrRev(1, ""obj"", ""object '"")
+    Dim s3 = Replace(1, ""obj"", ""object '"")
+    Dim s4 = Split(1, ""obj"", ""object '"")
+    Dim s5 = Filter(New String() { 1, 2}, ""obj"")
+    Dim s6 = StrComp(1, ""obj"")
+    Dim s7 = OtherFunction()
+    
+    Function OtherFunction(Optional c As CompareMethod = CompareMethod.Binary) As Boolean
+        Return c = CompareMethod.Binary
+    End Function
+End Class", 
+                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class Issue655
+{
+    public Issue655()
+    {
+        s7 = OtherFunction();
+    }
+
+    private object s1 = Strings.InStr(1, ""obj"", ""object '"", Compare: CompareMethod.Text);
+    private object s2 = Strings.InStrRev(1.ToString(), ""obj"", Conversions.ToInteger(""object '""), Compare: CompareMethod.Text);
+    private object s3 = Strings.Replace(1.ToString(), ""obj"", ""object '"", Compare: CompareMethod.Text);
+    private object s4 = Strings.Split(1.ToString(), ""obj"", Conversions.ToInteger(""object '""), Compare: CompareMethod.Text);
+    private object s5 = Strings.Filter(new string[] { 1.ToString(), 2.ToString() }, ""obj"");
+    private object s6 = Strings.StrComp(1.ToString(), ""obj"", Compare: CompareMethod.Text);
+    private object s7;
+
+    public bool OtherFunction(CompareMethod c = CompareMethod.Binary)
+    {
+        return c == CompareMethod.Binary;
     }
 }");
         }

@@ -88,6 +88,7 @@ internal partial class Class1
     }
 }" + Environment.NewLine);
         }
+
         [Fact]
         public async Task ImplicitCastObjectToStringAsync()
         {
@@ -108,6 +109,7 @@ internal partial class Class1
     }
 }" + Environment.NewLine);
         }
+
         [Fact]
         public async Task CastArrayListAssignmentToStringAsync()
         {
@@ -135,6 +137,7 @@ internal partial class Class1
     }
 }" + Environment.NewLine);
         }
+
         [Fact]
         public async Task ImplicitCastObjecStringToStringAsync()
         {
@@ -155,6 +158,37 @@ internal partial class Class1
     }
 }" + Environment.NewLine);
         }
+
+        [Fact]
+        public async Task ExplicitOperatorInvocation_Issue678Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Imports System.Drawing
+
+Public Class AShape
+    Private PaneArea As RectangleF
+    Private _OuterGap As Integer
+    Public Sub SetSize(ByVal clientRectangle As Rectangle)
+        Dim area = RectangleF.op_Implicit(clientRectangle)
+        area.Inflate(-Me._OuterGap, -Me._OuterGap)
+        Me.PaneArea = area
+    End Sub
+End Class", @"using System.Drawing;
+
+public partial class AShape
+{
+    private RectangleF PaneArea;
+    private int _OuterGap;
+
+    public void SetSize(Rectangle clientRectangle)
+    {
+        var area = (RectangleF)clientRectangle;
+        area.Inflate(-_OuterGap, -_OuterGap);
+        PaneArea = area;
+    }
+}");
+        }
+
         [Fact]
         public async Task CTypeDoubleToIntAsync()
         {

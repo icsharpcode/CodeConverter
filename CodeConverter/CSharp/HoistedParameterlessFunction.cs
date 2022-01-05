@@ -21,7 +21,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _block = block;
         }
 
-        public IdentifierNameSyntax TempIdentifier => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(HoistedNodeState.AdditionalLocalAnnotation);
+        public IdentifierNameSyntax TempIdentifier => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(PerScopeState.AdditionalLocalAnnotation);
         public LocalFunctionStatementSyntax AsLocalFunction(string functionName) => SyntaxFactory.LocalFunctionStatement(_returnType, SyntaxFactory.Identifier(functionName)).WithBody(_block);
         public MethodDeclarationSyntax AsInstanceMethod(string functionName) => ValidSyntaxFactory.CreateParameterlessMethod(functionName, _returnType, _block);
     }

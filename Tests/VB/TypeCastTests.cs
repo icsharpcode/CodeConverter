@@ -187,6 +187,7 @@ Public Class Test2
     End Sub
 End Class");
         }
+
         [Fact]
         public async Task MethodInvocation_TryCastAsync() {
             await TestConversionCSharpToVisualBasicAsync(
