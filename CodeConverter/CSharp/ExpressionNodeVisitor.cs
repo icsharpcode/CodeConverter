@@ -773,7 +773,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (lhsTypeInfo.Type != null && rhsTypeInfo.Type != null)
             {
                 if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression) && 
-                !lhsTypeInfo.Type.IsEnumType() && !rhsTypeInfo.Type.IsEnumType())
+                    !lhsTypeInfo.Type.IsEnumType() && !rhsTypeInfo.Type.IsEnumType() && 
+                    !lhsTypeInfo.Type.IsDateType() && !rhsTypeInfo.Type.IsDateType())
                 {
                     omitRightConversion = true;
                     omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
