@@ -908,19 +908,20 @@ internal partial class TestClass
             await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Module MyExtensions
-    public sub NewColumn(type As Type , Optional strV1 As String = nothing, optional code As String = ""code"")
+    public sub NewColumn(type As Type , Optional strV1 As String = nothing, Optional code As String = ""code"", Optional argInt as Integer = 1)
     End sub
 
     public Sub CallNewColumn()
         NewColumn(GetType(MyExtensions))
         NewColumn(Nothing, , ""otherCode"")
         NewColumn(Nothing, ""fred"")
+        NewColumn(Nothing, , argInt:=2)
     End Sub
 End Module", @"using System;
 
 public static partial class MyExtensions
 {
-    public static void NewColumn(Type type, string strV1 = null, string code = ""code"")
+    public static void NewColumn(Type type, string strV1 = null, string code = ""code"", int argInt = 1)
     {
     }
 
@@ -929,6 +930,7 @@ public static partial class MyExtensions
         NewColumn(typeof(MyExtensions));
         NewColumn(null, code: ""otherCode"");
         NewColumn(null, ""fred"");
+        NewColumn(null, argInt: 2);
     }
 }");
         }
