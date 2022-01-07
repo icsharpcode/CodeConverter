@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * No longer throws NRE for embedded resources with no LastGenOutput [#804](https://github.com/icsharpcode/CodeConverter/issues/804)
 * Append CompareMethod.Text for Strings methods when needed [#655](https://github.com/icsharpcode/CodeConverter/issues/655)
 * Convert op_Implicit/op_Explicit calls to casts [#678](https://github.com/icsharpcode/CodeConverter/issues/678)
+* Use Conversions.ToString when concatenating a DateTime with a string [#806](https://github.com/icsharpcode/CodeConverter/issues/806)
 
 ### C# -> VB
 
