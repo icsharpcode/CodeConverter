@@ -1532,7 +1532,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var argumentSyntax = await a.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
 
-                if (forceNamedParameters) {
+                if (forceNamedParameters && !a.IsNamed) {
                     var elementAtOrDefault = invocationSymbol.GetParameters().ElementAt(i).Name;
                     return argumentSyntax.WithNameColon(SyntaxFactory.NameColon(elementAtOrDefault));
                 }
