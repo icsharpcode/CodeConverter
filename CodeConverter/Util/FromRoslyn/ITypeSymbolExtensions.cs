@@ -552,6 +552,11 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn
             return type.IsValueType && type.TypeKind == TypeKind.Enum;
         }
 
+        public static bool IsDateType(this ITypeSymbol type)
+        {
+            return type.SpecialType == SpecialType.System_DateTime;
+        }
+
         /// <remarks>
         /// WARNING: BUG: TODO: Modified from original Roslyn source because NullableAnnotation is not supported in CodeAnalysis 2.8.2
         /// </remarks>

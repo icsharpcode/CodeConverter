@@ -512,5 +512,26 @@ public partial class EnumTests
 1 target compilation errors:
 CS0019: Operator '+' cannot be applied to operands of type 'EnumTests.RankEnum' and 'EnumTests.RankEnum'");
         }
+
+        [Fact]
+        public async Task Issue806DateTimeConvertsToStringWithinConcatenationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Issue806
+    Sub Foo()
+        Dim x = #2022-01-01# & "" 15:00""
+    End Sub
+End Class",
+                @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Issue806
+{
+    public void Foo()
+    {
+        string x = Conversions.ToString(DateTime.Parse(""2022-01-01"")) + "" 15:00"";
+    }
+}");
+        }
     }
 }
