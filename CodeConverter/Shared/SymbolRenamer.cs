@@ -60,7 +60,7 @@ namespace ICSharpCode.CodeConverter.Shared
         public static IEnumerable<INamespaceOrTypeSymbol> GetNamespacesAndTypesInAssembly(Project project, Compilation compilation)
         {
             return compilation.GetAllNamespacesAndTypes()
-                .Where(s => s.IsDefinedInSource() && MayBeInThisAssembly(project, s));
+                .Where(s => MayBeInThisAssembly(project, s));
         }
 
         private static bool MayBeInThisAssembly(Project project, INamespaceOrTypeSymbol s)
