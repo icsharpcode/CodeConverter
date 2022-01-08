@@ -2507,6 +2507,39 @@ internal partial class StaticLocalConvertedToField
         }
 
         [Fact]
+        public async Task TestModuleStaticLocalConvertedToStaticFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Module StaticLocalConvertedToField
+    Sub OtherName(x As Boolean)
+        Static sPrevPosition As Integer = 3 ' Comment moves with declaration
+        Console.WriteLine(sPrevPosition)
+    End Sub
+    Function OtherName(x As Integer) as Integer
+        Static sPrevPosition As Integer ' Comment also moves with declaration
+        Return sPrevPosition
+    End Function
+End Module", @"using System;
+
+internal static partial class StaticLocalConvertedToField
+{
+    private static int _OtherName_sPrevPosition = 3; // Comment moves with declaration
+
+    public static void OtherName(bool x)
+    {
+        Console.WriteLine(_OtherName_sPrevPosition);
+    }
+
+    private static int _OtherName_sPrevPosition1 = default;
+
+    public static int OtherName(int x) // Comment also moves with declaration
+    {
+        return _OtherName_sPrevPosition1;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestStaticLocalConvertedToStaticFieldAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
@@ -2516,7 +2549,7 @@ internal partial class StaticLocalConvertedToField
         Console.WriteLine(sPrevPosition)
     End Sub
     Sub OtherName(x As Integer)
-        Static sPrevPosition As Integer = 5
+        Static sPrevPosition As Integer = 5 ' Comment also moves with declaration
         Console.WriteLine(sPrevPosition)
     End Sub
 End Class", @"using System;
@@ -2530,7 +2563,7 @@ internal partial class StaticLocalConvertedToField
         Console.WriteLine(_OtherName_sPrevPosition);
     }
 
-    private int _OtherName_sPrevPosition1 = 5;
+    private int _OtherName_sPrevPosition1 = 5; // Comment also moves with declaration
 
     public void OtherName(int x)
     {

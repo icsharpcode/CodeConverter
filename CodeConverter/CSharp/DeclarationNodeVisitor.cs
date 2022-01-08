@@ -227,7 +227,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                     try
                     {
                         return (await _typeContext.PerScopeState.CreateVbStaticFieldsAsync(
-                            parentType, (await ConvertMemberAsync(member)).Yield(), _generatedNames, _semanticModel)
+                            parentType, namedTypeSymbol, (await ConvertMemberAsync(member)).Yield(), _generatedNames, _semanticModel)
                         ).Concat(GetAdditionalDeclarations(member));
                     }
                     finally

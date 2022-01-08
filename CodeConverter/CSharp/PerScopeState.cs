@@ -8,6 +8,7 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using System;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -114,19 +115,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
 
-        public async Task<SyntaxList<MemberDeclarationSyntax>> CreateVbStaticFieldsAsync(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<MemberDeclarationSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
+        public async Task<SyntaxList<MemberDeclarationSyntax>> CreateVbStaticFieldsAsync(VBasic.VisualBasicSyntaxNode typeNode, INamedTypeSymbol namedTypeSymbol,
+            IEnumerable<MemberDeclarationSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
         {
             var declarations = new List<FieldDeclarationSyntax>();
 
             var fieldInfo = GetFields();
             var newNames = fieldInfo.ToDictionary(f => f.OriginalVariableName, f =>
-                NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.FieldName)
+                NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, typeNode, f.FieldName)
             );
             foreach (var field in fieldInfo) {
                 var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[field.OriginalVariableName],
                     field.Initializer, field.Type);
                 var modifiers = new List<SyntaxToken> { CS.SyntaxFactory.Token(SyntaxKind.PrivateKeyword) };
-                if (field.IsStatic) {
+                if (field.IsStatic || namedTypeSymbol.IsModuleType()) {
                     modifiers.Add(CS.SyntaxFactory.Token(SyntaxKind.StaticKeyword));
                 }
                 declarations.Add(CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List<AttributeListSyntax>(), CS.SyntaxFactory.TokenList(modifiers), decl));
