@@ -37,6 +37,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
         private readonly Compilation _vbCompilation;
         private readonly SemanticModel _semanticModel;
+        private readonly HashSet<string> _generatedNames = new HashSet<string>();
         private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
         private readonly TypeContext _typeContext = new TypeContext();
         private uint _failedMemberConversionMarkerCount;
@@ -221,10 +222,19 @@ namespace ICSharpCode.CodeConverter.CSharp
             _typeContext.Push(methodsWithHandles, additionalInitializers);
             try {
                 var membersFromBase = additionalInitializers.IsBestPartToAddTypeInit ? methodsWithHandles.GetDeclarationsForHandlingBaseMembers() : Array.Empty<MemberDeclarationSyntax>();
-                var convertedMembers = (await members.SelectManyAsync(async member =>
-                        (await ConvertMemberAsync(member)).Yield().Concat(GetAdditionalDeclarations(member)))
-                    );
-
+                var convertedMembers = await members.SelectManyAsync(async member => {
+                    _typeContext.PerScopeState.PushScope();
+                    try
+                    {
+                        return (await _typeContext.PerScopeState.CreateVbStaticFieldsAsync(
+                            parentType, (await ConvertMemberAsync(member)).Yield(), _generatedNames, _semanticModel)
+                        ).Concat(GetAdditionalDeclarations(member));
+                    }
+                    finally
+                    {
+                        _typeContext.PerScopeState.PopScope();
+                    }
+                });
                 return WithAdditionalMembers(membersFromBase.Concat(convertedMembers)).ToArray();//Ensure evaluated before popping type context
             } finally {
                 _typeContext.Pop();

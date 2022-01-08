@@ -2439,5 +2439,104 @@ internal enum MyEnumType
 }
 ");
         }
+
+        [Fact]
+        public async Task TestConstructorStaticLocalConvertedToFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class StaticLocalConvertedToField
+    Sub New(x As Boolean)
+        Static sPrevPosition As Integer = 7
+        Console.WriteLine(sPrevPosition)
+    End Sub
+    Sub New(x As Integer)
+        Static sPrevPosition As Integer
+        Console.WriteLine(sPrevPosition)
+    End Sub
+End Class", @"using System;
+
+internal partial class StaticLocalConvertedToField
+{
+    private int _sPrevPosition = 7;
+
+    public StaticLocalConvertedToField(bool x)
+    {
+        Console.WriteLine(_sPrevPosition);
+    }
+
+    private int _sPrevPosition1 = default;
+
+    public StaticLocalConvertedToField(int x)
+    {
+        Console.WriteLine(_sPrevPosition1);
+    }
+}", hasLineCommentConversionIssue: true);
+        }
+
+        [Fact]
+        public async Task TestStaticLocalConvertedToFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class StaticLocalConvertedToField
+    Sub OtherName(x As Boolean)
+        Static sPrevPosition As Integer = 3
+        Console.WriteLine(sPrevPosition)
+    End Sub
+    Function OtherName(x As Integer) as Integer
+        Static sPrevPosition As Integer
+        Return sPrevPosition
+    End Function
+End Class", @"using System;
+
+internal partial class StaticLocalConvertedToField
+{
+    private int _OtherName_sPrevPosition = 3;
+
+    public void OtherName(bool x)
+    {
+        Console.WriteLine(_OtherName_sPrevPosition);
+    }
+
+    private int _OtherName_sPrevPosition1 = default;
+
+    public int OtherName(int x)
+    {
+        return _OtherName_sPrevPosition1;
+    }
+}", hasLineCommentConversionIssue: true);
+        }
+
+        [Fact]
+        public async Task TestStaticLocalConvertedToStaticFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class StaticLocalConvertedToField
+    Shared Sub OtherName(x As Boolean)
+        Static sPrevPosition As Integer
+        Console.WriteLine(sPrevPosition)
+    End Sub
+    Sub OtherName(x As Integer)
+        Static sPrevPosition As Integer = 5
+        Console.WriteLine(sPrevPosition)
+    End Sub
+End Class", @"using System;
+
+internal partial class StaticLocalConvertedToField
+{
+    private static int _OtherName_sPrevPosition = default;
+
+    public static void OtherName(bool x)
+    {
+        Console.WriteLine(_OtherName_sPrevPosition);
+    }
+
+    private int _OtherName_sPrevPosition1 = 5;
+
+    public void OtherName(int x)
+    {
+        Console.WriteLine(_OtherName_sPrevPosition1);
+    }
+}", hasLineCommentConversionIssue: true);
+        }
     }
 }
