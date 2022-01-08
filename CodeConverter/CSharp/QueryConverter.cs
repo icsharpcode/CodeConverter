@@ -416,7 +416,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             ? expression
                             : SwapExpressions(expression),
 
-                        var _ => throw new NotImplementedException($"Conversion for join query clause with condition of kind '{expression.Lhs.Kind()}' not implemented")
+                        _ => throw new NotImplementedException($"Conversion for join query clause with condition of kind '{expression.Lhs.Kind()}' not implemented")
                     };
                 })
                .ToList();
