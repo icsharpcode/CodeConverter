@@ -1536,18 +1536,34 @@ namespace ICSharpCode.CodeConverter.VB
 
         public override VisualBasicSyntaxNode VisitJoinClause(CSS.JoinClauseSyntax node)
         {
-            if (node.Into != null) {
-                return SyntaxFactory.GroupJoinClause(
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(_commonConversions.ConvertIdentifier(node.Identifier)), node.Type == null ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor))),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.JoinCondition((ExpressionSyntax)node.LeftExpression.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.RightExpression.Accept(TriviaConvertingVisitor))),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.AggregationRangeVariable(SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(_commonConversions.ConvertIdentifier(node.Into.Identifier))), SyntaxFactory.GroupAggregation()))
-                );
-            } else {
-                return SyntaxFactory.SimpleJoinClause(
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(_commonConversions.ConvertIdentifier(node.Identifier)), node.Type == null ? null : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor)), (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor))),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.JoinCondition((ExpressionSyntax)node.LeftExpression.Accept(TriviaConvertingVisitor), (ExpressionSyntax)node.RightExpression.Accept(TriviaConvertingVisitor)))
-                );
-            }
+            var asClause = node.Type == null
+                ? null
+                : SyntaxFactory.SimpleAsClause((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
+
+            var expression = (ExpressionSyntax)node.InExpression.Accept(TriviaConvertingVisitor);
+            var identifierToken = _commonConversions.ConvertIdentifier(node.Identifier);
+            var identifier = SyntaxFactory.ModifiedIdentifier(identifierToken);
+            var collectionRangeVariable = SyntaxFactory.CollectionRangeVariable(identifier, asClause, expression);
+
+            var joinedVariables = SyntaxFactory.SingletonSeparatedList(collectionRangeVariable);
+
+            var leftJoinExpression = (ExpressionSyntax)node.LeftExpression.Accept(TriviaConvertingVisitor);
+            var rightJoinExpression = (ExpressionSyntax)node.RightExpression.Accept(TriviaConvertingVisitor);
+            var joinCondition = SyntaxFactory.JoinCondition(leftJoinExpression, rightJoinExpression);
+
+            var joinConditions = SyntaxFactory.SingletonSeparatedList(joinCondition);
+
+            if (node.Into == null) return SyntaxFactory.SimpleJoinClause(joinedVariables, joinConditions);
+
+            var variableIdToken = _commonConversions.ConvertIdentifier(node.Into.Identifier);
+            var variableId = SyntaxFactory.ModifiedIdentifier(variableIdToken);
+            var aggregationNameEquals = SyntaxFactory.VariableNameEquals(variableId);
+
+            var aggregationVariable = SyntaxFactory.AggregationRangeVariable(aggregationNameEquals, SyntaxFactory.GroupAggregation());
+            var aggregationVariables = SyntaxFactory.SingletonSeparatedList(aggregationVariable);
+
+            return SyntaxFactory.GroupJoinClause(joinedVariables, joinConditions, aggregationVariables);
+
         }
 
         public override VisualBasicSyntaxNode VisitOrderByClause(CSS.OrderByClauseSyntax node)

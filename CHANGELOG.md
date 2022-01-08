@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Use Conversions.ToString when concatenating a DateTime with a string [#806](https://github.com/icsharpcode/CodeConverter/issues/806)
 * Ensure named arguments are correctly named when followed by an omitted argument [#808](https://github.com/icsharpcode/CodeConverter/issues/808)
 * Convert static variables into fields [#623](https://github.com/icsharpcode/CodeConverter/issues/623)
+* Ensure query syntax join conditions are swapped to the necessary C# order [#752](https://github.com/icsharpcode/CodeConverter/issues/752)
 
 ### C# -> VB
 
