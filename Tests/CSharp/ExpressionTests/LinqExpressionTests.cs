@@ -463,6 +463,7 @@ internal partial class Test
         var orders = new List<Order>();
         var customerList = from cust in customers
                            join ord in orders on new { key0 = cust.CustomerID, key1 = cust.CompanyName } equals new { key0 = ord.CustomerID, key1 = ord.Total }
+
                            select new { cust.CompanyName, ord.Total };
     }
 }");
@@ -511,7 +512,8 @@ internal partial class Test
         var customers = new List<Customer>();
         var orders = new List<Order>();
         var customerList = from cust in customers
-                           join ord in orders on new { key0 = cust.Customer, key1 = cust.CompanyName } equals new { key0 = ord.Customer, key1 = ord.Total }
+                           join ord in orders on new { key0 = cust, key1 = cust.CompanyName } equals new { key0 = ord.Customer, key1 = ord.Total }
+
                            select new { cust.CompanyName, ord.Total };
     }
 }");
