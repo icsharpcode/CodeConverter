@@ -2446,7 +2446,7 @@ internal enum MyEnumType
             await TestConversionVisualBasicToCSharpAsync(
 @"Class StaticLocalConvertedToField
     Sub New(x As Boolean)
-        Static sPrevPosition As Integer = 7
+        Static sPrevPosition As Integer = 7 ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
     End Sub
     Sub New(x As Integer)
@@ -2457,7 +2457,7 @@ End Class", @"using System;
 
 internal partial class StaticLocalConvertedToField
 {
-    private int _sPrevPosition = 7;
+    private int _sPrevPosition = 7; // Comment moves with declaration
 
     public StaticLocalConvertedToField(bool x)
     {
@@ -2470,7 +2470,7 @@ internal partial class StaticLocalConvertedToField
     {
         Console.WriteLine(_sPrevPosition1);
     }
-}", hasLineCommentConversionIssue: true);
+}");
         }
 
         [Fact]
@@ -2479,7 +2479,7 @@ internal partial class StaticLocalConvertedToField
             await TestConversionVisualBasicToCSharpAsync(
 @"Class StaticLocalConvertedToField
     Sub OtherName(x As Boolean)
-        Static sPrevPosition As Integer = 3
+        Static sPrevPosition As Integer = 3 ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
     End Sub
     Function OtherName(x As Integer) as Integer
@@ -2490,7 +2490,7 @@ End Class", @"using System;
 
 internal partial class StaticLocalConvertedToField
 {
-    private int _OtherName_sPrevPosition = 3;
+    private int _OtherName_sPrevPosition = 3; // Comment moves with declaration
 
     public void OtherName(bool x)
     {
@@ -2503,7 +2503,7 @@ internal partial class StaticLocalConvertedToField
     {
         return _OtherName_sPrevPosition1;
     }
-}", hasLineCommentConversionIssue: true);
+}");
         }
 
         [Fact]
@@ -2512,7 +2512,7 @@ internal partial class StaticLocalConvertedToField
             await TestConversionVisualBasicToCSharpAsync(
 @"Class StaticLocalConvertedToField
     Shared Sub OtherName(x As Boolean)
-        Static sPrevPosition As Integer
+        Static sPrevPosition As Integer ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
     End Sub
     Sub OtherName(x As Integer)
@@ -2525,7 +2525,7 @@ internal partial class StaticLocalConvertedToField
 {
     private static int _OtherName_sPrevPosition = default;
 
-    public static void OtherName(bool x)
+    public static void OtherName(bool x) // Comment moves with declaration
     {
         Console.WriteLine(_OtherName_sPrevPosition);
     }
@@ -2536,7 +2536,7 @@ internal partial class StaticLocalConvertedToField
     {
         Console.WriteLine(_OtherName_sPrevPosition1);
     }
-}", hasLineCommentConversionIssue: true);
+}");
         }
     }
 }
