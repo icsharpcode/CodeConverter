@@ -558,6 +558,8 @@ internal partial class Form1
 }
 ");
         }
+
+        [Fact]
         public async Task Issue584_EventWithByRefAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue584RaiseEventByRefDemo
