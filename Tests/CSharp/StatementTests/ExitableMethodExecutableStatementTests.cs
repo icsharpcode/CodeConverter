@@ -368,7 +368,7 @@ internal partial class A
         }
 
         [Fact()]
-        public async Task MultipleBreakable_CreatesCompileErrorCharacterization_Issue690Async()
+        public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_Issue690Async()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
 
@@ -403,17 +403,17 @@ public partial class VisualBasicClass
         foreach (int CurVal in LstTmp)
         {
             i_Total += CurVal;
-            bool exitSelect = false;
+            bool exitFor = false;
             switch (CurVal)
             {
                 case 6:
                     {
-                        exitSelect = true;
+                        exitFor = true;
                         break;
                     }
             }
 
-            if (exitSelect)
+            if (exitFor)
             {
                 break;
             }
@@ -425,13 +425,13 @@ public partial class VisualBasicClass
         }
 
         [Fact]
-        public async Task ExitTry_CreatesCompileErrorCharacterization_Issue779Async()
+        public async Task ExitTry_CreatesBreakableLoop_Issue779Async()
         {
-            var converted = await ConvertAsync<VBToCSConversion>(@"Imports System
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
-    Public Property ComboBox_CostCenter As Object
+    Public Property ComboBox_CostCenter As Object()
     Public Property The_Cost_Center As Object
 
     Public Sub Test
@@ -447,9 +447,8 @@ Public Class VisualBasicClass779
                 Exit Try
             End If
 
-            ComboBox_CostCenter.SelectedIndex = -1
-            For i = 0 To ComboBox_CostCenter.Items.Count - 1
-                If ComboBox_CostCenter.Items(i).item(0) = The_Cost_Center Then
+            For i = 0 To ComboBox_CostCenter.Length - 1
+                If 7 = The_Cost_Center Then
                     SomeCase *=7
                     Exit Try
                 End If
@@ -461,8 +460,270 @@ Public Class VisualBasicClass779
     Private Function To_Show_Cost() As Boolean
         Throw New NotImplementedException()
     End Function
-End Class");
-            Assert.Contains("Cannot convert exit Try since no C# equivalent exists", converted);
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class VisualBasicClass779
+{
+    public int SomeCase { get; set; } = 1;
+    public object[] ComboBox_CostCenter { get; set; }
+    public object The_Cost_Center { get; set; }
+
+    public void Test()
+    {
+        do
+        {
+            try
+            {
+                if (!To_Show_Cost())
+                {
+                    SomeCase *= 2;
+                }
+
+                SomeCase *= 3;
+                if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(The_Cost_Center, 0, false)))
+                {
+                    SomeCase *= 5;
+                    break;
+                }
+
+                bool exitTry = false;
+                for (int i = 0, loopTo = ComboBox_CostCenter.Length - 1; i <= loopTo; i++)
+                {
+                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(7, The_Cost_Center, false)))
+                    {
+                        SomeCase *= 7;
+                        exitTry = true;
+                        break;
+                    }
+                }
+
+                if (exitTry)
+                {
+                    break;
+                }
+            }
+            finally
+            {
+            }
+        }
+        while (false);
+    }
+
+    private bool To_Show_Cost()
+    {
+        throw new NotImplementedException();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task WithinNonExitedTryAndFor_ExitForGeneratesBreakAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Class VisualBasicClass779
+    Public Property SomeCase As Integer = 1
+    Public Property ComboBox_CostCenter As Object()
+    Public Property The_Cost_Center As Object
+
+    Public Sub Test
+        Try
+            For i = 0 To ComboBox_CostCenter.Length - 1
+                If 7 = The_Cost_Center Then
+                    SomeCase *=7
+                    Exit For
+                End If
+            Next
+        Finally
+        End Try
+    End Sub
+
+    Private Function To_Show_Cost() As Boolean
+        Throw New NotImplementedException()
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class VisualBasicClass779
+{
+    public int SomeCase { get; set; } = 1;
+    public object[] ComboBox_CostCenter { get; set; }
+    public object The_Cost_Center { get; set; }
+
+    public void Test()
+    {
+        try
+        {
+            for (int i = 0, loopTo = ComboBox_CostCenter.Length - 1; i <= loopTo; i++)
+            {
+                if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(7, The_Cost_Center, false)))
+                {
+                    SomeCase *= 7;
+                    break;
+                }
+            }
+        }
+        finally
+        {
+        }
+    }
+
+    private bool To_Show_Cost()
+    {
+        throw new NotImplementedException();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task WithinForAndNonExitedTry_ExitForGeneratesBreakAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Class VisualBasicClass779
+    Public Property SomeCase As Integer = 1
+    Public Property ComboBox_CostCenter As Object()
+    Public Property The_Cost_Center As Object
+
+    Public Sub Test
+        For i = 0 To ComboBox_CostCenter.Length - 1
+            Try
+                If 7 = The_Cost_Center Then
+                    SomeCase *=7
+                    Exit For
+                End If
+            Finally
+            End Try
+        Next
+    End Sub
+
+    Private Function To_Show_Cost() As Boolean
+        Throw New NotImplementedException()
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class VisualBasicClass779
+{
+    public int SomeCase { get; set; } = 1;
+    public object[] ComboBox_CostCenter { get; set; }
+    public object The_Cost_Center { get; set; }
+
+    public void Test()
+    {
+        for (int i = 0, loopTo = ComboBox_CostCenter.Length - 1; i <= loopTo; i++)
+        {
+            do
+            {
+                bool exitFor = false;
+                try
+                {
+                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(7, The_Cost_Center, false)))
+                    {
+                        SomeCase *= 7;
+                        exitFor = true;
+                        break;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                finally
+                {
+                }
+
+                if (exitFor)
+                {
+                    break;
+                }
+            }
+            while (false);
+        }
+    }
+
+    private bool To_Show_Cost()
+    {
+        throw new NotImplementedException();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task WithinForAndExitedTry_ExitForGeneratesIfStatementsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Class VisualBasicClass779
+    Public Property SomeCase As Integer = 1
+    Public Property ComboBox_CostCenter As Object()
+    Public Property The_Cost_Center As Object
+
+    Public Sub Test
+        For i = 0 To ComboBox_CostCenter.Length - 1
+            Try
+                If 7 = The_Cost_Center Then
+                    SomeCase *=7
+                    Exit For
+                Else
+                    Exit Try
+                End If
+            Finally
+            End Try
+        Next
+    End Sub
+
+    Private Function To_Show_Cost() As Boolean
+        Throw New NotImplementedException()
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class VisualBasicClass779
+{
+    public int SomeCase { get; set; } = 1;
+    public object[] ComboBox_CostCenter { get; set; }
+    public object The_Cost_Center { get; set; }
+
+    public void Test()
+    {
+        for (int i = 0, loopTo = ComboBox_CostCenter.Length - 1; i <= loopTo; i++)
+        {
+            do
+            {
+                bool exitFor = false;
+                try
+                {
+                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(7, The_Cost_Center, false)))
+                    {
+                        SomeCase *= 7;
+                        exitFor = true;
+                        break;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                finally
+                {
+                }
+
+                if (exitFor)
+                {
+                    break;
+                }
+            }
+            while (false);
+        }
+    }
+
+    private bool To_Show_Cost()
+    {
+        throw new NotImplementedException();
+    }
+}");
         }
     }
 }

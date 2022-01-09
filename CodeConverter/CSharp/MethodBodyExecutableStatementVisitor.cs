@@ -457,8 +457,6 @@ namespace ICSharpCode.CodeConverter.CSharp
                     }
 
                     return SingleStatement(SyntaxFactory.ReturnStatement());
-                case VBasic.SyntaxKind.TryKeyword:
-                    throw new InvalidOperationException($"Cannot convert exit {node.BlockKeyword} since no C# equivalent exists");
                 default:
                     return SyntaxFactory.List(_perScopeState.ConvertExit(vbBlockKeywordKind));
             }

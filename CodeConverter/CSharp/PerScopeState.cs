@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
     internal class PerScopeState
     {
-        private record ScopeState(List<IHoistedNode> HoistedNodes, VBasic.SyntaxKind ExitableKind, bool RequiresExitVariable = false)
+        public record ScopeState(List<IHoistedNode> HoistedNodes, VBasic.SyntaxKind ExitableKind, bool IsBreakableInCs = false)
         {
             public void Add<T>(T additionalLocal) where T : IHoistedNode => HoistedNodes.Add(additionalLocal);
             public IEnumerable<T> OfType<T>() => HoistedNodes.OfType<T>();
@@ -29,8 +29,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public PerScopeState() =>_hoistedNodesPerScope = new Stack<ScopeState>();
 
-        public void PushScope(VBasic.SyntaxKind exitableKind = default) =>
-            _hoistedNodesPerScope.Push(new ScopeState(new List<IHoistedNode>(), exitableKind));
+        public void PushScope(VBasic.SyntaxKind exitableKind = default, bool isBreakableInCs = false)
+        {
+            _hoistedNodesPerScope.Push(new ScopeState(new List<IHoistedNode>(), exitableKind, isBreakableInCs));
+        }
 
         public void PopScope() => _hoistedNodesPerScope.Pop();
 
@@ -156,10 +158,10 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public IEnumerable<StatementSyntax> ConvertExit(VBasic.SyntaxKind vbBlockKeywordKind)
         {
-            var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind != VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind).ToArray();
+            var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind != VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind && x.IsBreakableInCs).ToArray();
             var assignmentExpression = CommonConversions.Literal(true);
             foreach (var scope in scopesToExit) {
-                var exitScopeVar = new AdditionalDeclaration("exit" + VBasic.SyntaxFactory.Token(scope.ExitableKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
+                var exitScopeVar = new AdditionalDeclaration("exit" + VBasic.SyntaxFactory.Token(vbBlockKeywordKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
                 var ifTrueBreak = new IfTrueBreak(exitScopeVar.IdentifierName);
                 scope.HoistedNodes.Add(exitScopeVar);
                 scope.HoistedNodes.Add(ifTrueBreak);
@@ -168,10 +170,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (scopesToExit.Any()) yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
             yield return SyntaxFactory.BreakStatement();
         }
-
-
-        public VBasic.SyntaxKind TypeOfExitableExecutableStatementScope =>
-            _hoistedNodesPerScope.Select(x => x.ExitableKind).FirstOrDefault(x => x != VBasic.SyntaxKind.None);
-
+        
+        public bool ShouldMakeBreakable()
+        {
+            var scopeState = _hoistedNodesPerScope.Peek();
+            return scopeState.ExitableKind == VBasic.SyntaxKind.TryKeyword && scopeState.HoistedNodes.OfType<IfTrueBreak>().Any();
+        }
     }
 }
