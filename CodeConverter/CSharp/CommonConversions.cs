@@ -267,7 +267,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return initializer;
         }
 
-        public ExpressionSyntax Literal(object o, string textForUser = null, ITypeSymbol convertedType = null) => LiteralConversions.GetLiteralExpression(o, textForUser, convertedType);
+        public static ExpressionSyntax Literal(object o, string textForUser = null, ITypeSymbol convertedType = null) => LiteralConversions.GetLiteralExpression(o, textForUser, convertedType);
 
         public SyntaxToken ConvertIdentifier(SyntaxToken id, bool isAttribute = false, SourceTriviaMapKind sourceTriviaMapKind = SourceTriviaMapKind.All)
         {

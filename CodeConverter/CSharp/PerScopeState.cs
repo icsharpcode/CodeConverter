@@ -29,9 +29,6 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public PerScopeState() =>_hoistedNodesPerScope = new Stack<ScopeState>();
 
-        public VBasic.SyntaxKind TypeOfExitableExecutableStatementScope =>
-            _hoistedNodesPerScope.Select(x => x.ExitableKind).FirstOrDefault(x => x != VBasic.SyntaxKind.None);
-
         public void PushScope(VBasic.SyntaxKind exitableKind = default) =>
             _hoistedNodesPerScope.Push(new ScopeState(new List<IHoistedNode>(), exitableKind));
 
@@ -63,9 +60,11 @@ namespace ICSharpCode.CodeConverter.CSharp
             return _hoistedNodesPerScope.Peek().OfType<AdditionalDeclaration>().ToArray();
         }
 
-        public IReadOnlyCollection<AdditionalAssignment> GetPostAssignments()
+        private StatementSyntax[] GetPostStatements()
         {
-            return _hoistedNodesPerScope.Peek().OfType<AdditionalAssignment>().ToArray();
+            var scopeState = _hoistedNodesPerScope.Peek();
+            return scopeState.OfType<AdditionalAssignment>().Select(AdditionalAssignment.CreateAssignment)
+                .ToArray();
         }
 
         public IReadOnlyCollection<HoistedParameterlessFunction> GetParameterlessFunctions()
@@ -104,9 +103,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                 preDeclarations.Add(CS.SyntaxFactory.LocalDeclarationStatement(decl));
             }
 
-            foreach (var additionalAssignment in GetPostAssignments()) {
-                var assign = CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, additionalAssignment.LeftHandSide, additionalAssignment.RightHandSide);
-                postAssignments.Add(CS.SyntaxFactory.ExpressionStatement(assign));
+            foreach (var additionalAssignment in GetPostStatements()) {
+                postAssignments.Add(additionalAssignment);
             }
 
             var statementsWithUpdatedIds = ReplaceNames(preDeclarations.Concat(csNodes).Concat(postAssignments), newNames);

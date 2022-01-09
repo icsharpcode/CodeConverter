@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using System;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {
@@ -6,11 +7,17 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         public AdditionalAssignment(ExpressionSyntax lhs, ExpressionSyntax rhs)
         {
-            RightHandSide = rhs ?? throw new System.ArgumentNullException(nameof(rhs));
-            LeftHandSide = lhs ?? throw new System.ArgumentNullException(nameof(lhs));
+            RightHandSide = rhs ?? throw new ArgumentNullException(nameof(rhs));
+            LeftHandSide = lhs ?? throw new ArgumentNullException(nameof(lhs));
         }
 
         public ExpressionSyntax LeftHandSide { get; set; }
         public ExpressionSyntax RightHandSide { get; }
+
+        public static StatementSyntax CreateAssignment(AdditionalAssignment additionalAssignment)
+        {
+            var assign = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.AssignmentExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression, additionalAssignment.LeftHandSide, additionalAssignment.RightHandSide);
+            return Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ExpressionStatement(assign);
+        }
     }
 }
