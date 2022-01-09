@@ -16,7 +16,8 @@ namespace ICSharpCode.CodeConverter.CommandLine
         public static async Task WriteConvertedAsync(IAsyncEnumerable<ConversionResult> conversionResultsEnumerable, string solutionFilePath, DirectoryInfo targetDirectory, bool wipeTargetDirectory, bool copyOriginalDirectory, IProgress<string> progress, CancellationToken cancellationToken)
         {
             var solutionFile = new FileInfo(solutionFilePath);
-            var sourceAndTargetSame = string.Equals(solutionFile.Directory.FullName, targetDirectory.FullName);
+            var solutionFileDirectory = solutionFile.Directory ?? throw new InvalidOperationException("Solution file directory could not be found");
+            var sourceAndTargetSame = string.Equals(solutionFileDirectory.FullName, targetDirectory.FullName);
 
             if (!sourceAndTargetSame) {
                 if (wipeTargetDirectory) {
@@ -26,13 +27,13 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 }
 
                 if (copyOriginalDirectory) {
-                    progress.Report($"Started copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName} so that the output is a usable solution.{Environment.NewLine}" +
+                    progress.Report($"Started copying contents of {solutionFileDirectory.FullName} to {targetDirectory.FullName} so that the output is a usable solution.{Environment.NewLine}" +
                         "If you don't see the 'Finished copying contents' message, consider running the conversion in-place by not specifying an output directory."
                     );
 
                     // Speed up the copy by skipping irrelevant binaries and caches. An alternative would be to attempt a git clone
-                    await solutionFile.Directory.CopyExceptAsync(targetDirectory, true, FileSystemNamesToIgnore);
-                    progress.Report($"Finished copying contents of {solutionFile.Directory.FullName} to {targetDirectory.FullName}.");
+                    await solutionFileDirectory.CopyExceptAsync(targetDirectory, true, FileSystemNamesToIgnore);
+                    progress.Report($"Finished copying contents of {solutionFileDirectory.FullName} to {targetDirectory.FullName}.");
                 }
             }
 
@@ -44,15 +45,19 @@ namespace ICSharpCode.CodeConverter.CommandLine
                 targetPaths.Add(Path.GetFullPath(conversionResult.TargetPathOrNull));
                 cancellationToken.ThrowIfCancellationRequested();
                 var targetFilePath =
-                    conversionResult.TargetPathOrNull.Replace(solutionFile.Directory.FullName, targetDirectory.FullName);
-                Directory.CreateDirectory(Path.GetDirectoryName(targetFilePath));
+                    conversionResult.TargetPathOrNull.Replace(solutionFileDirectory.FullName, targetDirectory.FullName);
+                var directory = Path.GetDirectoryName(targetFilePath);
+                if (directory != null) {
+                    Directory.CreateDirectory(directory);
+                }
+
                 File.WriteAllText(targetFilePath, conversionResult.ConvertedCode);
             }
 
             if (!sourceAndTargetSame) {
                 var filePathsToRemove = sourcePaths.Except(targetPaths);
                 foreach (var filePathToRemove in filePathsToRemove) {
-                    string pathInTargetDir = filePathToRemove.Replace(solutionFile.Directory.FullName, targetDirectory.FullName);
+                    string pathInTargetDir = filePathToRemove.Replace(solutionFileDirectory.FullName, targetDirectory.FullName);
                     if (File.Exists(pathInTargetDir)) File.Delete(pathInTargetDir);
                 }
             }

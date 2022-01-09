@@ -42,10 +42,10 @@ Remarks:
         public string SolutionPath { get; } = "";
 
         [Option("-i|--include", "Regex matching project file paths to convert. Can be used multiple times", CommandOptionType.MultipleValue)]
-        public string[] Include { get; } = new string[0];
+        public string[] Include { get; } = Array.Empty<string>();
 
         [Option("-e|--exclude", "Regex matching project file paths to exclude from conversion. Can be used multiple times", CommandOptionType.MultipleValue)]
-        public string[] Exclude { get; } = new string[0];
+        public string[] Exclude { get; } = Array.Empty<string>();
 
         [Option("-t|--target-language", "The language to convert to.", CommandOptionType.SingleValue, ValueName = nameof(Language.CS) + " | " + nameof(Language.VB))]
         public Language? TargetLanguage { get; }
@@ -67,7 +67,7 @@ Remarks:
         /// Also allows semicolon and comma splitting of build properties to be compatible with https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-command-line-reference?view=vs-2019#switches
         /// </remarks>
         [Option("-p|--build-property", "Set build properties in format: propertyName=propertyValue. Can be used multiple times", CommandOptionType.MultipleValue, ValueName = "Configuration=Release")]
-        public string[] BuildProperty { get; } = new string[0];
+        public string[] BuildProperty { get; } = Array.Empty<string>();
 
         private async Task<int> ExecuteAsync()
         {
@@ -130,8 +130,9 @@ Remarks:
                 throw new ValidationException("Solution path must end in `.sln`");
             }
 
-            var outputDirectory = new DirectoryInfo(string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(finalSolutionPath) : OutputDirectory);
-            if (await CouldOverwriteUncomittedFilesAsync(outputDirectory)) {
+            string? directoryName = string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(finalSolutionPath) : OutputDirectory;
+            var outputDirectory = new DirectoryInfo(directoryName ?? throw new InvalidOperationException("Output directory could not be determined"));
+            if (await CouldOverwriteUncommittedFilesAsync(outputDirectory)) {
                 var action = string.IsNullOrWhiteSpace(OutputDirectory) ? "may be overwritten" : "will be deleted";
                 strProgress.Report($"WARNING: There are files in {outputDirectory.FullName} which {action}, and aren't comitted to git");
                 if (Force) strProgress.Report("Continuing with possibility of data loss due to force option.");
@@ -146,7 +147,7 @@ Remarks:
             await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, finalSolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
         }
 
-        private static async Task<bool> CouldOverwriteUncomittedFilesAsync(DirectoryInfo outputDirectory)
+        private static async Task<bool> CouldOverwriteUncommittedFilesAsync(DirectoryInfo outputDirectory)
         {
             if (!outputDirectory.Exists || !outputDirectory.ContainsDataOtherThanGitDir()) return false;
             return !await outputDirectory.IsGitDiffEmptyAsync();
@@ -165,8 +166,9 @@ Remarks:
 
         private bool ShouldIncludeProject(Project project)
         {
-            var isIncluded = !Include.Any() || Include.Any(regex => Regex.IsMatch(project.FilePath, regex));
-            return isIncluded && Exclude.All(regex => !Regex.IsMatch(project.FilePath, regex));
+            string? projectFilePath = project.FilePath ?? "";
+            var isIncluded = !Include.Any() || Include.Any(regex => Regex.IsMatch(projectFilePath, regex));
+            return isIncluded && Exclude.All(regex => !Regex.IsMatch(projectFilePath, regex));
         }
 
         private static async Task<string?> GetLatestMsBuildExePathAsync()
