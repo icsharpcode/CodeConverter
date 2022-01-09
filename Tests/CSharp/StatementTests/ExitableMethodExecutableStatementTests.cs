@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -421,6 +422,47 @@ public partial class VisualBasicClass
         Console.WriteLine(i_Total.ToString());
     }
 }");
+        }
+
+        [Fact]
+        public async Task ExitTry_CreatesCompileErrorCharacterization_Issue779Async()
+        {
+            var converted = await ConvertAsync<VBToCSConversion>(@"Imports System
+
+Public Class VisualBasicClass779
+    Public Property SomeCase As Integer = 1
+    Public Property ComboBox_CostCenter As Object
+    Public Property The_Cost_Center As Object
+
+    Public Sub Test
+        Try
+            If Not To_Show_Cost() Then
+                SomeCase *= 2
+            End If
+
+            SomeCase *= 3
+                
+            If The_Cost_Center = 0 Then
+                    SomeCase *=5
+                Exit Try
+            End If
+
+            ComboBox_CostCenter.SelectedIndex = -1
+            For i = 0 To ComboBox_CostCenter.Items.Count - 1
+                If ComboBox_CostCenter.Items(i).item(0) = The_Cost_Center Then
+                    SomeCase *=7
+                    Exit Try
+                End If
+            Next
+        Finally
+        End Try
+    End Sub
+
+    Private Function To_Show_Cost() As Boolean
+        Throw New NotImplementedException()
+    End Function
+End Class");
+            Assert.Contains("Cannot convert exit Try since no C# equivalent exists", converted);
         }
     }
 }
