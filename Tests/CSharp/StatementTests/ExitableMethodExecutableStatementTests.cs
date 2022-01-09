@@ -614,32 +614,17 @@ public partial class VisualBasicClass779
     {
         for (int i = 0, loopTo = ComboBox_CostCenter.Length - 1; i <= loopTo; i++)
         {
-            do
+            try
             {
-                bool exitFor = false;
-                try
+                if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(7, The_Cost_Center, false)))
                 {
-                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(7, The_Cost_Center, false)))
-                    {
-                        SomeCase *= 7;
-                        exitFor = true;
-                        break;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                finally
-                {
-                }
-
-                if (exitFor)
-                {
+                    SomeCase *= 7;
                     break;
                 }
             }
-            while (false);
+            finally
+            {
+            }
         }
     }
 
