@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.4.4] - 2022-01-09
+
+
+### Vsix
+
+
+### VB -> C#
+
 * No longer throws NRE for embedded resources with no LastGenOutput [#804](https://github.com/icsharpcode/CodeConverter/issues/804)
 * Append CompareMethod.Text for Strings methods when needed [#655](https://github.com/icsharpcode/CodeConverter/issues/655)
 * Convert op_Implicit/op_Explicit calls to casts [#678](https://github.com/icsharpcode/CodeConverter/issues/678)
