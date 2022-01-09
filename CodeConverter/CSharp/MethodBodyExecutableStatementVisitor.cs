@@ -460,12 +460,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case VBasic.SyntaxKind.TryKeyword:
                     throw new InvalidOperationException($"Cannot convert exit {node.BlockKeyword} since no C# equivalent exists");
                 default:
-                    var containingExitableScope = _perScopeState.TypeOfExitableExecutableStatementScope;
-                    if (containingExitableScope != vbBlockKeywordKind) {
-                        throw new InvalidOperationException(
-                            $"Cannot convert exit {node.BlockKeyword} to break since it would break only from the containing {VBasic.SyntaxFactory.Token(containingExitableScope)}");
-                    }
-                    return SingleStatement(SyntaxFactory.BreakStatement());
+                    return SyntaxFactory.List(_perScopeState.ConvertExit(vbBlockKeywordKind));
             }
         }
 

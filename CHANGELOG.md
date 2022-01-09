@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Ensure named arguments are correctly named when followed by an omitted argument [#808](https://github.com/icsharpcode/CodeConverter/issues/808)
 * Convert static variables into fields [#623](https://github.com/icsharpcode/CodeConverter/issues/623)
 * Ensure query syntax join conditions are swapped to the necessary C# order [#752](https://github.com/icsharpcode/CodeConverter/issues/752)
+* Convert nested exit statements to if statements [#690](https://github.com/icsharpcode/CodeConverter/issues/690)
 
 ### C# -> VB
 

@@ -365,5 +365,62 @@ internal partial class A
     }
 }");
         }
+
+        [Fact()]
+        public async Task MultipleBreakable_CreatesCompileErrorCharacterization_Issue690Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+
+Public Class VisualBasicClass
+    Public Sub Test
+        Dim LstTmp As New List(Of Integer)
+        LstTmp.Add(5)
+        LstTmp.Add(6)
+        LstTmp.Add(7)
+        Dim i_Total As Integer
+        For Each CurVal As Integer In LstTmp
+            i_Total += CurVal
+            Select Case CurVal
+                Case 6
+                    Exit For
+            End Select
+        Next
+    system.Console.WriteLine(i_Total.ToString())
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class VisualBasicClass
+{
+    public void Test()
+    {
+        var LstTmp = new List<int>();
+        LstTmp.Add(5);
+        LstTmp.Add(6);
+        LstTmp.Add(7);
+        var i_Total = default(int);
+        foreach (int CurVal in LstTmp)
+        {
+            i_Total += CurVal;
+            bool exitSelect = false;
+            switch (CurVal)
+            {
+                case 6:
+                    {
+                        exitSelect = true;
+                        break;
+                    }
+            }
+
+            if (exitSelect)
+            {
+                break;
+            }
+        }
+
+        Console.WriteLine(i_Total.ToString());
+    }
+}");
+        }
     }
 }

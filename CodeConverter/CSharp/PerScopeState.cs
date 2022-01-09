@@ -64,6 +64,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var scopeState = _hoistedNodesPerScope.Peek();
             return scopeState.OfType<AdditionalAssignment>().Select(AdditionalAssignment.CreateAssignment)
+                .Concat(scopeState.OfType<IfTrueBreak>().Select(arg => arg.CreateIfTrueBreakStatement()))
                 .ToArray();
         }
 
@@ -152,5 +153,25 @@ namespace ICSharpCode.CodeConverter.CSharp
                 return idns;
             });
         }
+
+        public IEnumerable<StatementSyntax> ConvertExit(VBasic.SyntaxKind vbBlockKeywordKind)
+        {
+            var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind != VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind).ToArray();
+            var assignmentExpression = CommonConversions.Literal(true);
+            foreach (var scope in scopesToExit) {
+                var exitScopeVar = new AdditionalDeclaration("exit" + VBasic.SyntaxFactory.Token(scope.ExitableKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
+                var ifTrueBreak = new IfTrueBreak(exitScopeVar.IdentifierName);
+                scope.HoistedNodes.Add(exitScopeVar);
+                scope.HoistedNodes.Add(ifTrueBreak);
+                assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, exitScopeVar.IdentifierName, assignmentExpression);
+            }
+            if (scopesToExit.Any()) yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
+            yield return SyntaxFactory.BreakStatement();
+        }
+
+
+        public VBasic.SyntaxKind TypeOfExitableExecutableStatementScope =>
+            _hoistedNodesPerScope.Select(x => x.ExitableKind).FirstOrDefault(x => x != VBasic.SyntaxKind.None);
+
     }
 }
