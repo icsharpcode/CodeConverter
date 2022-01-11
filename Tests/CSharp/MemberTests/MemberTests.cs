@@ -2507,6 +2507,32 @@ internal partial class StaticLocalConvertedToField
         }
 
         [Fact]
+        public async Task TestStaticLocalWithoutDefaultInitializerConvertedToFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class StaticLocalConvertedToField
+    Function OtherName() as Integer
+        Static sPrevPosition As Integer
+        sPrevPosition = 23
+        Console.WriteLine(sPrevPosition)
+        Return sPrevPosition
+    End Function
+End Class", @"using System;
+
+internal partial class StaticLocalConvertedToField
+{
+    private int _OtherName_sPrevPosition;
+
+    public int OtherName()
+    {
+        _OtherName_sPrevPosition = 23;
+        Console.WriteLine(_OtherName_sPrevPosition);
+        return _OtherName_sPrevPosition;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestModuleStaticLocalConvertedToStaticFieldAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(

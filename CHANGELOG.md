@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* No longer throws NRE for VB Static variable without initializer. [See comment on #623](https://github.com/icsharpcode/CodeConverter/issues/623#issuecomment-1009917188)
 
 ### C# -> VB
 
