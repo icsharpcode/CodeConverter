@@ -667,10 +667,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             var rightSide = await node.SecondExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
             rightSide = rightSide is LambdaExpressionSyntax ? SyntaxFactory.ParenthesizedExpression(rightSide) : rightSide;
 
-            var leftSide = await node.FirstExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            leftSide = leftSide is LambdaExpressionSyntax ? SyntaxFactory.ParenthesizedExpression(leftSide) : leftSide;
-
-            var expr = SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression, leftSide, rightSide);
+            var expr = SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression,
+                await node.FirstExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor), 
+                rightSide);
 
             if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
                 return SyntaxFactory.ParenthesizedExpression(expr);
