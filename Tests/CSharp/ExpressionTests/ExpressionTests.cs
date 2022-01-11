@@ -1993,6 +1993,9 @@ public partial class Compound
         Dim b As String = If(x, ""x"").ToUpper()
         Dim c As String = $""{If(x, ""x"")}""
         Dim d As String = $""{If(x, ""x"").ToUpper()}""
+        Dim e =  If(Nothing, Function() 5)
+        Dim f =  If(Nothing, (Function() 6))
+        Dim g =  If(Function() 1, Function() 7)
     End Sub
 End Class", @"
 public partial class VisualBasicClass
@@ -2003,6 +2006,9 @@ public partial class VisualBasicClass
         string b = (x ?? ""x"").ToUpper();
         string c = $""{x ?? ""x""}"";
         string d = $""{(x ?? ""x"").ToUpper()}"";
+        var e = default ?? (() => 5);
+        var f = default ?? (() => 6);
+        var g = (() => 1) ?? (() => 7);
     }
 }");
         }
