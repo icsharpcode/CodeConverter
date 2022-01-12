@@ -126,8 +126,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, typeNode, f.FieldName)
             );
             foreach (var field in fieldInfo) {
-                var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[field.OriginalVariableName],
-                    field.Initializer, field.Type);
+                var decl = (field.Initializer != null) 
+                    ? CommonConversions.CreateVariableDeclarationAndAssignment(newNames[field.OriginalVariableName], field.Initializer, field.Type)
+                    : SyntaxFactory.VariableDeclaration(field.Type, SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(newNames[field.OriginalVariableName])));
                 var modifiers = new List<SyntaxToken> { CS.SyntaxFactory.Token(SyntaxKind.PrivateKeyword) };
                 if (field.IsStatic || namedTypeSymbol.IsModuleType()) {
                     modifiers.Add(CS.SyntaxFactory.Token(SyntaxKind.StaticKeyword));

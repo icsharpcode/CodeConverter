@@ -111,7 +111,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 if (isVBStatic) {
                     foreach (var decl in localDeclarationStatementSyntaxs) {
                         var variable = decl.Declaration.Variables.Single();
-                        var initializeValue = variable.Initializer.Value;
+                        var initializeValue = variable.Initializer?.Value;
                         string methodName;
                         VBSyntax.MethodBaseSyntax methodOrSubNewStatement;
                         if (_methodNode is VBSyntax.MethodBlockSyntax methodBlock) {
