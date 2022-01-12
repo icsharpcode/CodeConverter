@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+* Fix missing parenthesis for null coalescing operator [#811](https://github.com/icsharpcode/CodeConverter/issues/811)
 
 
 ### C# -> VB

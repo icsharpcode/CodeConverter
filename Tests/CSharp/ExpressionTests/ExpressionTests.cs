@@ -1988,21 +1988,26 @@ public partial class Compound
         public async Task NullCoalescingOperatorUsesParenthesisWhenNeededAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
-    Public Sub TestMethod(ByVal x As String)
+    Public Sub TestMethod(ByVal x As String, ByVal y As Func(Of Integer))
         Dim a As String = If(x, ""x"")
         Dim b As String = If(x, ""x"").ToUpper()
         Dim c As String = $""{If(x, ""x"")}""
         Dim d As String = $""{If(x, ""x"").ToUpper()}""
+        Dim e =  If(y, Function() 5)
+        Dim f =  If(y, (Function() 6))
     End Sub
-End Class", @"
+End Class", @"using System;
+
 public partial class VisualBasicClass
 {
-    public void TestMethod(string x)
+    public void TestMethod(string x, Func<int> y)
     {
         string a = x ?? ""x"";
         string b = (x ?? ""x"").ToUpper();
         string c = $""{x ?? ""x""}"";
         string d = $""{(x ?? ""x"").ToUpper()}"";
+        var e = y ?? (() => 5);
+        var f = y ?? (() => 6);
     }
 }");
         }
