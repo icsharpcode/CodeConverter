@@ -664,14 +664,13 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
         {
+            var leftSide = await node.FirstExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
             var rightSide = await node.SecondExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            rightSide = rightSide is LambdaExpressionSyntax ? SyntaxFactory.ParenthesizedExpression(rightSide) : rightSide;
-
             var expr = SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression,
-                await node.FirstExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor), 
-                rightSide);
+                node.FirstExpression.ParenthesizeIfPrecedenceCouldChange(leftSide),
+                node.SecondExpression.ParenthesizeIfPrecedenceCouldChange(rightSide));
 
-            if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
+            if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || node.PrecedenceCouldChange())
                 return SyntaxFactory.ParenthesizedExpression(expr);
 
             return expr;
