@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -1723,8 +1724,13 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
+            if (SimpleMethodReplacement.TryGet(symbol, out var methodReplacement)) {
+                cSharpSyntaxNode = methodReplacement.ReplaceIfMatches(symbol, cSharpSyntaxNode, await ConvertArgumentsAsync(node.ArgumentList));
+            }
+
             return cSharpSyntaxNode;
         }
+
 
         private static bool RequiresStringCompareMethodToBeAppended(ISymbol symbol) =>
             symbol?.ContainingType.Name == nameof(Strings) &&
