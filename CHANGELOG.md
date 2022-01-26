@@ -9,9 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
-* Fix missing parenthesis for null coalescing operator [#811](https://github.com/icsharpcode/CodeConverter/issues/811)
 
+* Fix missing parenthesis for null coalescing operator [#811](https://github.com/icsharpcode/CodeConverter/issues/811)
 * No longer throws NRE for VB Static variable without initializer. [See comment on #623](https://github.com/icsharpcode/CodeConverter/issues/623#issuecomment-1009917188)
+* Convert nested xml literals to new XElement [#253](https://github.com/icsharpcode/CodeConverter/issues/253)
 
 ### C# -> VB
 
