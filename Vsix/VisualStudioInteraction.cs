@@ -170,15 +170,21 @@ namespace ICSharpCode.CodeConverter.VsExtension
             return userAnswer == MessageBoxResult.OK;
         }
 
-        public static async Task EnsureBuiltAsync(Func<string, Task> writeMessageAsync)
+        public static async Task EnsureBuiltAsync(IReadOnlyCollection<Project> projects, Func<string, Task> writeMessageAsync)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             var build = Dte.Solution.SolutionBuild;
             if (build.BuildState == vsBuildState.vsBuildStateInProgress) {
                 throw new InvalidOperationException("Build in progress, please wait for it to complete before conversion.");
             }
-            await writeMessageAsync("Building solution prior to conversion for maximum accuracy...");
-            build.Build(true);
+            if (projects.Count == 1 && build.ActiveConfiguration?.Name is { } configuration && projects.Single().UniqueName is {} uniqueName) {
+                await writeMessageAsync($"Building project '{uniqueName}' prior to conversion for maximum accuracy...");
+                build.BuildProject(configuration, uniqueName);
+            } else {
+                await writeMessageAsync("Building solution prior to conversion for maximum accuracy...");
+                build.Build(true);
+            }
+
             await TaskScheduler.Default;
         }
 
@@ -234,6 +240,14 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var caretPositionAsync = new CaretPosition(edit, viewHost.TextView.Caret.Position.BufferPosition.Position);
             await TaskScheduler.Default;
             return caretPositionAsync;
+        }
+
+        public static async Task<Project> GetFirstProjectContainingAsync(string documentFilePath)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            var containingProject = Dte.Solution.FindProjectItem(documentFilePath)?.ContainingProject;
+            await TaskScheduler.Default;
+            return containingProject;
         }
 
         internal class CaretPosition

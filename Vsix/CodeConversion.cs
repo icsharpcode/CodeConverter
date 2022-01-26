@@ -7,9 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using CodeConv.Shared.Util;
-using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
@@ -58,7 +56,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public async Task ConvertProjectsAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
-                await EnsureBuiltAsync();
+                await EnsureBuiltAsync(selectedProjects);
                 await _joinableTaskFactory.RunAsync(async () => {
                     var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects, cancellationToken);
                     await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
@@ -73,7 +71,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public async Task ConvertDocumentAsync<TLanguageConversion>(string documentFilePath, Span selected, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
-                await EnsureBuiltAsync();
+                var containingProject = await VisualStudioInteraction.GetFirstProjectContainingAsync(documentFilePath);
+                await EnsureBuiltAsync(containingProject is null ? Array.Empty<Project>() : new[]{containingProject});
                 var conversionResult = await _joinableTaskFactory.RunAsync(async () => {
                     var result = await ConvertDocumentUnhandledAsync<TLanguageConversion>(documentFilePath, selected, cancellationToken);
                     await WriteConvertedFilesAndShowSummaryAsync(new[] { result }.ToAsyncEnumerable());
@@ -96,9 +95,9 @@ namespace ICSharpCode.CodeConverter.VsExtension
         /// https://github.com/icsharpcode/CodeConverter/issues/592
         /// https://github.com/dotnet/roslyn/issues/6615
         /// </remarks>
-        private async Task EnsureBuiltAsync()
+        private async Task EnsureBuiltAsync(IReadOnlyCollection<Project> readOnlyCollection)
         {
-            await VisualStudioInteraction.EnsureBuiltAsync(m => _outputWindow.WriteToOutputWindowAsync(m));
+            await VisualStudioInteraction.EnsureBuiltAsync(readOnlyCollection, m => _outputWindow.WriteToOutputWindowAsync(m));
         }
 
         private static async Task SetClipboardTextOnUiThreadAsync(string conversionResultConvertedCode)
@@ -233,8 +232,8 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         {
             await _outputWindow.WriteToOutputWindowAsync($"Converting {documentPath}...", true, true);
 
-            //TODO Figure out when there are multiple document ids for a single file path
-            var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).SingleOrDefault();
+            // If multiple projects contain this file path, there may be multiple ids, but in that the wrong project may have been built too...
+            var documentId = _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(documentPath).FirstOrDefault();
             if (documentId == null) {
                 //If document doesn't belong to any project
                 await _outputWindow.WriteToOutputWindowAsync("File is not part of a compiling project, using best effort text conversion (less accurate).");

@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Only trigger build for converted project where possible [#816](https://github.com/icsharpcode/CodeConverter/issues/816)
 
 ### VB -> C#
 
