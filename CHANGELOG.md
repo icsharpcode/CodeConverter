@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Convert Exit Try to a do while false loop with a break statement [#779](https://github.com/icsharpcode/CodeConverter/issues/779)
 * Fix missing parenthesis for null coalescing operator [#811](https://github.com/icsharpcode/CodeConverter/issues/811)
 * No longer throws NRE for VB Static variable without initializer. [See comment on #623](https://github.com/icsharpcode/CodeConverter/issues/623#issuecomment-1009917188)
 * Convert nested xml literals to new XElement [#253](https://github.com/icsharpcode/CodeConverter/issues/253)
@@ -33,7 +34,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Convert static variables into fields [#623](https://github.com/icsharpcode/CodeConverter/issues/623)
 * Ensure query syntax join conditions are swapped to the necessary C# order [#752](https://github.com/icsharpcode/CodeConverter/issues/752)
 * Convert nested exit statements to if statements [#690](https://github.com/icsharpcode/CodeConverter/issues/690)
-* Convert Exit Try to a do while false loop with a break statement [#779](https://github.com/icsharpcode/CodeConverter/issues/779)
 
 ### C# -> VB
 
