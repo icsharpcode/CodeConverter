@@ -78,7 +78,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var convertMethods = convertType.GetMembers().Where(m =>
                 m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
             var methodsByType = convertMethods
-                .GroupBy(m => new {ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}"})
+                .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}" })
                 .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
             return methodsByType;
         }
@@ -97,17 +97,45 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitXmlDocument(VBasic.Syntax.XmlDocumentSyntax node)
         {
-            var interpolationsList = SyntaxFactory.List(await node.PrecedingMisc.Concat(node.Root).Concat(node.FollowingMisc).SelectManyAsync(this.AcceptXmlInterpolatedAsync));
-            return InterpolatedString(interpolationsList);
+            _extraUsingDirectives.Add("System.Xml.Linq");
+            var arguments = SyntaxFactory.SeparatedList(
+                (await node.PrecedingMisc.SelectAsync(async misc => SyntaxFactory.Argument(await misc.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
+                .Concat(SyntaxFactory.Argument(await node.Root.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield())
+                .Concat(await node.FollowingMisc.SelectAsync(async misc => SyntaxFactory.Argument(await misc.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
+                );
+            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XDocument")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
         }
 
         public override async Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
-            var interpolationsList = SyntaxFactory.List(await AcceptXmlInterpolatedAsync(node));
-            return InterpolatedString(interpolationsList);
+            var arguments = SyntaxFactory.SeparatedList(
+                SyntaxFactory.Argument(CommonConversions.Literal(node.StartTag.Name.ToString())).Yield()
+                .Concat(await node.StartTag.Attributes.SelectAsync(async attribute => SyntaxFactory.Argument(await attribute.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
+                .Concat(await node.Content.SelectAsync(async content => SyntaxFactory.Argument(await content.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
+                );
+            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
         }
 
+        public async override Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node)
+        {
+            _extraUsingDirectives.Add("System.Xml.Linq");
+            var arguments = SyntaxFactory.SeparatedList(
+                SyntaxFactory.Argument(CommonConversions.Literal(node.Name.ToString())).Yield()
+                .Concat(await node.Attributes.SelectAsync(async attribute => SyntaxFactory.Argument(await attribute.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
+                );
+            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        }
+
+        public override async Task<CSharpSyntaxNode> VisitXmlAttribute(VBasic.Syntax.XmlAttributeSyntax node)
+        {
+            var arguments = SyntaxFactory.SeparatedList(
+                SyntaxFactory.Argument(CommonConversions.Literal(node.Name.ToString())).Yield()
+                .Concat(SyntaxFactory.Argument(await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield())
+            );
+            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XAttribute")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        }
+       
         private CSharpSyntaxNode InterpolatedString(SyntaxList<InterpolatedStringContentSyntax> interpolationsList)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
@@ -123,24 +151,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static InterpolatedStringTextSyntax InterpolatedStringText(string text) =>
             SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(SyntaxFactory.TriviaList(), SyntaxKind.InterpolatedStringTextToken, text, text, SyntaxFactory.TriviaList()));
 
-        private async Task<IEnumerable<InterpolatedStringContentSyntax>> AcceptXmlInterpolatedAsync(VBSyntax.XmlNodeSyntax n)
-        {
-            if (n is VBSyntax.XmlElementSyntax xmlEs) {
-                return InterpolatedStringText(LiteralConversions.EscapeVerbatimQuotes(xmlEs.StartTag.ToString())).Yield()
-                .Concat(await xmlEs.Content.SelectManyAsync(AcceptXmlInterpolatedAsync))
-                .Concat(InterpolatedStringText(LiteralConversions.EscapeVerbatimQuotes(xmlEs.EndTag.ToString())));
-            }
-            var expression = await n.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            return new[] { SyntaxFactory.Interpolation(expression) };
-        }
+        public override async Task<CSharpSyntaxNode> VisitXmlString(VBasic.Syntax.XmlStringSyntax node) =>
+            CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
 
         public override async Task<CSharpSyntaxNode> VisitXmlText(VBSyntax.XmlTextSyntax node) =>
             CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
-
-        public async override Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node) =>
-            CommonConversions.Literal(LiteralConversions.EscapeVerbatimQuotes(node.ToString()));
-
-
 
         /// <summary>
         /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/accessing-xml
@@ -152,11 +167,14 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var xElementMethodName = GetXElementMethodName(node);
 
-            var elements = SyntaxFactory.MemberAccessExpression(
+            ExpressionSyntax elements = node.Base != null ? SyntaxFactory.MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
                 await node.Base.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
                 SyntaxFactory.IdentifierName(xElementMethodName)
+            ) : SyntaxFactory.MemberBindingExpression(
+                SyntaxFactory.IdentifierName(xElementMethodName)
             );
+
             return SyntaxFactory.InvocationExpression(elements,
                 ExpressionSyntaxExtensions.CreateArgList(
                     await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))
