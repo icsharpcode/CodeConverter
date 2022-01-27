@@ -146,8 +146,12 @@ namespace ICSharpCode.CodeConverter.Util
 
         public static SyntaxTokenList RemoveOnly(this SyntaxTokenList list, Func<SyntaxToken, bool> where)
         {
-            var toRemove = list.OnlyOrDefault(where);
-            if (toRemove != default) list = list.Remove(toRemove);
+            for (int i = 0; i < list.Count; ++i) {
+                if (!where(list[i])) continue;
+
+                list = list.RemoveAt(i--);
+            }
+
             return list;
         }
     }
