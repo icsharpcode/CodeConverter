@@ -655,7 +655,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
             var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
-            var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(propSymbol) || IsRenamedInterfaceMember(propSymbol, directlyConvertedCsIdentifier, csIdentifier)
+            var explicitInterfaceSpecifier = IsNonPublicInterfaceImplementation(propSymbol) || IsRenamedInterfaceMember(propSymbol, directlyConvertedCsIdentifier, csIdentifier)
                 ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(propSymbol.ExplicitInterfaceImplementations.First().ContainingType))
                 : null;
 
@@ -666,7 +666,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : ImmutableArray<IPropertySymbol>.Empty;
 
             var originalModifiers = modifiers;
-            var filteredModifiers = modifiers.RemoveOnly(m => m.IsCsMemberVisibility());
+            var filteredModifiers = modifiers.RemoveOnly(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword));
             var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };
 
             var shouldConvertToMethods = ShouldConvertAsParameterizedProperty(node);
@@ -744,16 +744,19 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations, interfaceMemberIdentifiers, interfaceDeclParams);
 
-            var renamedInterfaceImplDeclParams = new PropertyDeclarationParameters(attributes, originalModifiers,
-                rawType, accessorList, directlyConvertedCsIdentifier);
+            if (isExplicitInterfaceImplementation) 
+            {
+                var renamedInterfaceImplDeclParams = new PropertyDeclarationParameters(attributes, originalModifiers,
+                    rawType, accessorList, directlyConvertedCsIdentifier);
 
-            AddInterfaceMemberDeclaration(interfaceMemberIdentifiers, propSymbol, additionalDeclarations, renamedInterfaceImplDeclParams);
+                AddInterfaceMemberDeclaration(additionalDeclarations, renamedInterfaceImplDeclParams);
+            }
 
             if (accessedThroughMyClass) {
 
                 var realModifiers = modifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
                 string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, realModifiers, rawType);
-                modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VirtualKeyword)));
+                modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(CSSyntaxKind.VirtualKeyword)));
                 csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
             } else if (explicitInterfaceSpecifier != null) {
                 modifiers = filteredModifiers;
@@ -948,7 +951,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var declaredPropSymbol = containingPropertyStmt != null ? _semanticModel.GetDeclaredSymbol(containingPropertyStmt) : null;
 
             string potentialMethodId;
-            var explicitInterfaceSpecifier = declaredPropSymbol is { } propSymbol && IsPrivateInterfaceImplementation(propSymbol)
+            var explicitInterfaceSpecifier = declaredPropSymbol is { } propSymbol && IsNonPublicInterfaceImplementation(propSymbol)
                 ? SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.IdentifierName(propSymbol.ExplicitInterfaceImplementations.First().ContainingType.Name))
                 : null;
 
@@ -1148,137 +1151,135 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = await CommonConversions.ConvertAttributesAsync(node.AttributeLists);
             bool hasBody = node.Parent is VBSyntax.MethodBlockBaseSyntax;
 
-            if ("Finalize".Equals(node.Identifier.ValueText, StringComparison.OrdinalIgnoreCase)
-                && node.Modifiers.Any(m => VBasic.VisualBasicExtensions.Kind(m) == VBasic.SyntaxKind.OverridesKeyword)) {
-                var decl = SyntaxFactory.DestructorDeclaration(CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier)
-                ).WithAttributeLists(attributes);
-                if (hasBody) return decl;
-                return decl.WithSemicolonToken(SemicolonToken);
-            } else {
-                var tokenContext = GetMemberContext(node);
-                var declaredSymbol = (IMethodSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
-                var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { Microsoft.CodeAnalysis.CSharp.SyntaxKind.ExternKeyword } : Array.Empty<Microsoft.CodeAnalysis.CSharp.SyntaxKind>();
-                var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
+            if ("Finalize".Equals(node.Identifier.ValueText, StringComparison.OrdinalIgnoreCase) && 
+                node.Modifiers.Any(m => VBasic.VisualBasicExtensions.Kind(m) == VBasic.SyntaxKind.OverridesKeyword)) 
+            {
+                var declaration = SyntaxFactory.
+                    DestructorDeclaration(CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier)).
+                    WithAttributeLists(attributes);
+                return hasBody ? declaration : declaration.WithSemicolonToken(SemicolonToken);
+            } 
+            
+            var tokenContext = GetMemberContext(node);
+            var declaredSymbol = (IMethodSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
+            var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { CSSyntaxKind.ExternKeyword } : Array.Empty<CSSyntaxKind>();
+            var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
 
-                bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
+            bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
-                var isPartialDefinition = declaredSymbol.IsPartialMethodDefinition();
-
-                if (declaredSymbol.IsPartialMethodImplementation() || isPartialDefinition) {
-                    var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PrivateKeyword));
-                    if (privateModifier != default) {
-                        convertedModifiers = convertedModifiers.Remove(privateModifier);
-                    }
-                    if (!HasPartialKeyword(node.Modifiers)) {
-                        convertedModifiers = convertedModifiers.Add(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword));
-                    }
+            if (declaredSymbol.IsPartialMethodImplementation() || declaredSymbol.IsPartialMethodDefinition()) 
+            {
+                var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
+                if (privateModifier != default) {
+                    convertedModifiers = convertedModifiers.Remove(privateModifier);
                 }
-                var (typeParameters, constraints) = await SplitTypeParametersAsync(node.TypeParameterList);
+                if (!HasPartialKeyword(node.Modifiers)) {
+                    convertedModifiers = convertedModifiers.Add(SyntaxFactory.Token(CSSyntaxKind.PartialKeyword));
+                }
+            }
+            var (typeParameters, constraints) = await SplitTypeParametersAsync(node.TypeParameterList);
 
-                var returnType = (declaredSymbol != null ? CommonConversions.GetTypeSyntax(declaredSymbol.ReturnType) :
-                    await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VoidKeyword)));
+            var returnType = (declaredSymbol != null ? CommonConversions.GetTypeSyntax(declaredSymbol.ReturnType) :
+                await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)));
 
-                var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
-                var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
-                var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList();
-                var additionalDeclarations = new List<MemberDeclarationSyntax>();
+            var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
+            var csIdentifier = CommonConversions.ConvertIdentifier(node.Identifier);
+            var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList();
+            var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
-                var explicitInterfaceSpecifier = IsPrivateInterfaceImplementation(declaredSymbol) || IsRenamedInterfaceMember(declaredSymbol, directlyConvertedCsIdentifier, csIdentifier)
-                    ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(declaredSymbol.ExplicitInterfaceImplementations.First().ContainingType))
-                    : null;
+            var explicitInterfaceSpecifier = IsNonPublicInterfaceImplementation(declaredSymbol) || IsRenamedInterfaceMember(declaredSymbol, directlyConvertedCsIdentifier, csIdentifier)
+                ? SyntaxFactory.ExplicitInterfaceSpecifier(CommonConversions.GetFullyQualifiedNameSyntax(declaredSymbol.ExplicitInterfaceImplementations.First().ContainingType))
+                : null;
 
-                var additionalInterfaceImplements = explicitInterfaceSpecifier != null
-                    ? declaredSymbol.ExplicitInterfaceImplementations.Skip(1)
-                    : ImmutableArray<IMethodSymbol>.Empty;
+            var additionalInterfaceImplements = explicitInterfaceSpecifier != null
+                ? declaredSymbol.ExplicitInterfaceImplementations.Skip(1)
+                : ImmutableArray<IMethodSymbol>.Empty;
 
-                var originalConvertedModifiers = convertedModifiers;
-                var originalParameterList = parameterList;
+            var originalConvertedModifiers = convertedModifiers;
+            var originalParameterList = parameterList;
 
-                var filteredModifiers = convertedModifiers.RemoveOnly(m => m.IsCsMemberVisibility());
-                var requiredParameterList = MakeOptionalParametersRequired(parameterList);
+            var filteredModifiers = convertedModifiers.RemoveOnly(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword));
+            var requiredParameterList = MakeOptionalParametersRequired(parameterList);
 
-                var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };
+            var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };
 
-                var clause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier,
-                    requiredParameterList, false);
+            var clause = GetDelegatingClause(explicitInterfaceSpecifier, csIdentifier,
+                requiredParameterList, false);
 
-                var interfaceDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers, returnType, typeParameters, requiredParameterList, constraints, clause);
+            var interfaceDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers, returnType, typeParameters, requiredParameterList, constraints, clause);
 
-                AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations, interfaceMemberIdentifiers, interfaceDeclParams);
+            AddInterfaceMemberDeclarations(additionalInterfaceImplements, additionalDeclarations, interfaceMemberIdentifiers, interfaceDeclParams);
 
+            if (explicitInterfaceSpecifier != null) 
+            {
                 var renamedInterfaceImplDeclParams = new MethodDeclarationParameters(attributes, originalConvertedModifiers,
                     returnType, typeParameters, originalParameterList, constraints, clause, directlyConvertedCsIdentifier);
 
-                AddInterfaceMemberDeclaration(interfaceMemberIdentifiers, declaredSymbol, additionalDeclarations, renamedInterfaceImplDeclParams);
+                AddInterfaceMemberDeclaration(additionalDeclarations, renamedInterfaceImplDeclParams);
+            }
 
-                // If the method is virtual, and there is a MyClass.SomeMethod() call,
-                // we need to emit a non-virtual method for it to call
-                if (accessedThroughMyClass) {
-                    var identifierName = "MyClass" + directlyConvertedCsIdentifier.ValueText;
-                    var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(identifierName), CreateDelegatingArgList(parameterList)));
-                    var declModifiers = convertedModifiers;
+            // If the method is virtual, and there is a MyClass.SomeMethod() call,
+            // we need to emit a non-virtual method for it to call
+            if (accessedThroughMyClass) {
+                var identifierName = "MyClass" + directlyConvertedCsIdentifier.ValueText;
+                var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(identifierName), CreateDelegatingArgList(parameterList)));
+                var declModifiers = convertedModifiers;
 
-                    // If an extra delegate method is emitted already because of interface method renaming,
-                    // don't emit the virtual and accessor modifiers on the explicit implementation. 
-                    if (interfaceMemberIdentifiers.Any(identifier => IsRenamedInterfaceMember(declaredSymbol,
-                        renamedInterfaceImplDeclParams.Identifier, identifier))) {
-                        declModifiers = declModifiers.RemoveOnly(m => m.IsCsMemberVisibility())
-                           .RemoveOnly(m => m.IsKind(CSSyntaxKind.VirtualKeyword));
-                    }
-
-                    var originalNameDecl = SyntaxFactory.MethodDeclaration(
-                        attributes,
-                        declModifiers,
-                        returnType,
-                        explicitInterfaceSpecifier,
-                        csIdentifier,
-                        typeParameters,
-                        parameterList,
-                        constraints,
-                        null,
-                        arrowClause,
-                        SyntaxFactory.Token(CSSyntaxKind.SemicolonToken)
-                    );
-
-                    additionalDeclarations.Add(originalNameDecl);
-                    convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(CSSyntaxKind.VirtualKeyword)));
-                    csIdentifier = SyntaxFactory.Identifier(identifierName);
-                    explicitInterfaceSpecifier = null;
-                } else if (explicitInterfaceSpecifier != null) {
-                    convertedModifiers = filteredModifiers;
-                    parameterList = requiredParameterList;
+                // If an extra delegate method is emitted already because of interface method renaming,
+                // don't emit the virtual and accessor modifiers on the explicit implementation. 
+                if (explicitInterfaceSpecifier != null) 
+                {
+                    declModifiers = declModifiers
+                        .RemoveOnly(m => m.IsCsMemberVisibility())
+                        .RemoveOnly(m => m.IsKind(CSSyntaxKind.VirtualKeyword));
                 }
 
-                if (additionalDeclarations.Any()) {
-                    var declNode = (VBSyntax.StatementSyntax)node.Parent;
-                    _additionalDeclarations.Add(declNode, additionalDeclarations.ToArray());
-                }
-
-                var decl = SyntaxFactory.MethodDeclaration(
+                var originalNameDecl = SyntaxFactory.MethodDeclaration(
                     attributes,
-                    convertedModifiers,
+                    declModifiers,
                     returnType,
                     explicitInterfaceSpecifier,
                     csIdentifier,
                     typeParameters,
                     parameterList,
                     constraints,
-                    null,//Body added by surrounding method block if appropriate
-                    null
+                    null,
+                    arrowClause,
+                    SyntaxFactory.Token(CSSyntaxKind.SemicolonToken)
                 );
-                return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
+
+                additionalDeclarations.Add(originalNameDecl);
+                convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(CSSyntaxKind.VirtualKeyword)));
+                csIdentifier = SyntaxFactory.Identifier(identifierName);
+                explicitInterfaceSpecifier = null;
+            } else if (explicitInterfaceSpecifier != null) {
+                convertedModifiers = filteredModifiers;
+                parameterList = requiredParameterList;
             }
+
+            if (additionalDeclarations.Any()) {
+                var declNode = (VBSyntax.StatementSyntax)node.Parent;
+                _additionalDeclarations.Add(declNode, additionalDeclarations.ToArray());
+            }
+
+            var decl = SyntaxFactory.MethodDeclaration(
+                attributes,
+                convertedModifiers,
+                returnType,
+                explicitInterfaceSpecifier,
+                csIdentifier,
+                typeParameters,
+                parameterList,
+                constraints,
+                null,//Body added by surrounding method block if appropriate
+                null
+            );
+
+            return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
         }
 
-        private static void AddInterfaceMemberDeclaration(IEnumerable<SyntaxToken> interfaceMemberIdentifiers, ISymbol symbol,
-            ICollection<MemberDeclarationSyntax> additionalDeclarations, DeclarationParameters interfaceImplDeclParams)
+        private static void AddInterfaceMemberDeclaration(ICollection<MemberDeclarationSyntax> additionalDeclarations, DeclarationParameters interfaceImplDeclParams)
         {
-            // If we had to rename the method to match the interface, emit a method for external references with the old name to point to
-            if (!interfaceMemberIdentifiers.Any(identifier => IsRenamedInterfaceMember(symbol,
-                interfaceImplDeclParams.Identifier, identifier))) {
-                return;
-            }
-
             var semicolonToken = SyntaxFactory.Token(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SemicolonToken);
 
             Func<MemberDeclarationSyntax>
@@ -1428,12 +1429,12 @@ namespace ICSharpCode.CodeConverter.CSharp
             return simpleMemberAccess;
         }
 
-        private static bool IsPrivateInterfaceImplementation(ISymbol declaredSymbol)
+        private static bool IsNonPublicInterfaceImplementation(ISymbol declaredSymbol)
         {
             return declaredSymbol switch {
-                IMethodSymbol methodSymbol => methodSymbol.DeclaredAccessibility == Accessibility.Private &&
+                IMethodSymbol methodSymbol => methodSymbol.DeclaredAccessibility != Accessibility.Public &&
                                               methodSymbol.ExplicitInterfaceImplementations.Any(),
-                IPropertySymbol propertySymbol => propertySymbol.DeclaredAccessibility == Accessibility.Private &&
+                IPropertySymbol propertySymbol => propertySymbol.DeclaredAccessibility != Accessibility.Public &&
                                                   propertySymbol.ExplicitInterfaceImplementations.Any(),
                 _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
             };

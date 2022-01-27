@@ -2061,6 +2061,8 @@ public partial class Foo : IFoo
         return 5;
     }
 
+    private int ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
+
     int IFoo.get_ExplicitProp(string str)
     {
         return 5;
@@ -2068,6 +2070,68 @@ public partial class Foo : IFoo
 
     void IFoo.set_ExplicitProp(string str, int value)
     {
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task PropertyInterfaceImplementationKeepsVirtualModifierAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Property PropParams(str As String) As Integer
+    Property Prop() As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Public Overridable Property PropParams(str As String) As Integer Implements IFoo.PropParams
+        Get
+            Return 5
+        End Get
+        Set(value As Integer)
+        End Set
+    End Property
+
+    Public Overridable Property Prop As Integer Implements IFoo.Prop
+        Get
+            Return 5
+        End Get
+        Set(value As Integer)
+        End Set
+    End Property
+End Class", @"
+public partial interface IFoo
+{
+    int get_PropParams(string str);
+    void set_PropParams(string str, int value);
+
+    int Prop { get; set; }
+}
+
+public partial class Foo : IFoo
+{
+    public virtual int get_PropParams(string str)
+    {
+        return 5;
+    }
+
+    public virtual void set_PropParams(string str, int value)
+    {
+    }
+
+    public virtual int Prop
+    {
+        get
+        {
+            return 5;
+        }
+
+        set
+        {
+        }
     }
 }
 ");
@@ -2104,6 +2168,11 @@ public partial class Foo : IFoo, IBar
 {
     int IFoo.ExplicitProp { get; set; }
     int IBar.ExplicitProp
+    {
+        get => ((IFoo)this).ExplicitProp;
+        set => ((IFoo)this).ExplicitProp = value;
+    }
+    private int ExplicitProp
     {
         get => ((IFoo)this).ExplicitProp;
         set => ((IFoo)this).ExplicitProp = value;
@@ -2161,11 +2230,121 @@ public partial class Foo : IFoo, IBar
     int IBar.ExplicitProp
     {
         get => ((IFoo)this).ExplicitProp;
+        set => ((IFoo)this).ExplicitProp = value;
+    }
+    private int ExplicitProp
+    {
+        get => ((IFoo)this).ExplicitProp;
         set => ((IFoo)this).ExplicitProp = value; // Comment moves because this line gets split
     }
 }");
         }
 
+        [Fact]
+        public async Task NonPublicImplementsInterfacesAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Property FriendProp As Integer
+    Sub ProtectedSub()
+    Function PrivateFunc() As Integer
+    Sub ProtectedInternalSub()
+End Interface
+
+Public Interface IBar
+    Property FriendProp As Integer
+    Sub ProtectedSub()
+    Function PrivateFunc() As Integer
+    Sub ProtectedInternalSub()
+End Interface
+
+Public Class Foo
+    Implements IFoo, IBar
+    
+    Friend Overridable Property FriendProp As Integer Implements IFoo.FriendProp, IBar.FriendProp ' Comment moves because this line gets split
+        Get
+          Return 5
+        End Get
+        Set
+        End Set
+    End Property
+
+    Protected Sub ProtectedSub() Implements IFoo.ProtectedSub, IBar.ProtectedSub
+    End Sub
+
+    Private Function PrivateFunc() As Integer Implements IFoo.PrivateFunc, IBar.PrivateFunc
+    End Function
+
+    Protected Friend Overridable Sub ProtectedInternalSub() Implements IFoo.ProtectedInternalSub, IBar.ProtectedInternalSub
+    End Sub
+End Class", @"
+public partial interface IFoo
+{
+    int FriendProp { get; set; }
+
+    void ProtectedSub();
+    int PrivateFunc();
+    void ProtectedInternalSub();
+}
+
+public partial interface IBar
+{
+    int FriendProp { get; set; }
+
+    void ProtectedSub();
+    int PrivateFunc();
+    void ProtectedInternalSub();
+}
+
+public partial class Foo : IFoo, IBar
+{
+    int IFoo.FriendProp
+    {
+        get
+        {
+            return 5;
+        }
+
+        set
+        {
+        }
+    }
+
+    int IBar.FriendProp
+    {
+        get => ((IFoo)this).FriendProp;
+        set => ((IFoo)this).FriendProp = value;
+    }
+    internal virtual int FriendProp
+    {
+        get => ((IFoo)this).FriendProp;
+        set => ((IFoo)this).FriendProp = value; // Comment moves because this line gets split
+    }
+
+    void IFoo.ProtectedSub()
+    {
+    }
+
+    void IBar.ProtectedSub() => ((IFoo)this).ProtectedSub();
+    protected void ProtectedSub() => ((IFoo)this).ProtectedSub();
+
+    int IFoo.PrivateFunc()
+    {
+        return default;
+    }
+
+    int IBar.PrivateFunc() => ((IFoo)this).PrivateFunc();
+    private int PrivateFunc() => ((IFoo)this).PrivateFunc();
+
+    void IFoo.ProtectedInternalSub()
+    {
+    }
+
+    void IBar.ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
+    protected internal virtual void ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
+}");
+        }
+        
         [Fact]
         public async Task ReadonlyRenamedPropertyImplementsMultipleInterfacesAsync()
         {
@@ -2308,6 +2487,7 @@ public partial class Foo : IFoo, IBar
     }
 
     int IBar.ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
+    private int ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
 
     int IFoo.get_ExplicitProp(string str)
     {
@@ -2360,6 +2540,8 @@ public partial class Foo : IFoo
     {
         return 5;
     }
+
+    private int ExplicitFunc(string str = """", int i2 = 1) => ((IFoo)this).ExplicitFunc(str, i2);
 
     int IFoo.get_ExplicitProp(string str)
     {
