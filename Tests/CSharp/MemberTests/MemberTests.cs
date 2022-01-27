@@ -2076,6 +2076,68 @@ public partial class Foo : IFoo
         }
 
         [Fact]
+        public async Task PropertyInterfaceImplementationKeepsVirtualModifierAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Property PropParams(str As String) As Integer
+    Property Prop() As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Public Overridable Property PropParams(str As String) As Integer Implements IFoo.PropParams
+        Get
+            Return 5
+        End Get
+        Set(value As Integer)
+        End Set
+    End Property
+
+    Public Overridable Property Prop As Integer Implements IFoo.Prop
+        Get
+            Return 5
+        End Get
+        Set(value As Integer)
+        End Set
+    End Property
+End Class", @"
+public partial interface IFoo
+{
+    int get_PropParams(string str);
+    void set_PropParams(string str, int value);
+
+    int Prop { get; set; }
+}
+
+public partial class Foo : IFoo
+{
+    public virtual int get_PropParams(string str)
+    {
+        return 5;
+    }
+
+    public virtual void set_PropParams(string str, int value)
+    {
+    }
+
+    public virtual int Prop
+    {
+        get
+        {
+            return 5;
+        }
+
+        set
+        {
+        }
+    }
+}
+");
+        }
+
+        [Fact]
         public async Task PrivateAutoPropertyImplementsMultipleInterfacesAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
@@ -2282,7 +2344,7 @@ public partial class Foo : IFoo, IBar
     protected internal virtual void ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
 }");
         }
-
+        
         [Fact]
         public async Task ReadonlyRenamedPropertyImplementsMultipleInterfacesAsync()
         {
