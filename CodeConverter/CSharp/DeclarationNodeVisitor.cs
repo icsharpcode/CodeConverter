@@ -666,7 +666,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 : ImmutableArray<IPropertySymbol>.Empty;
 
             var originalModifiers = modifiers;
-            var filteredModifiers = modifiers.RemoveOnly(m => m.IsCsMemberVisibility());
+            var filteredModifiers = modifiers.RemoveOnly(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword));
             var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };
 
             var shouldConvertToMethods = ShouldConvertAsParameterizedProperty(node);
@@ -756,7 +756,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 var realModifiers = modifiers.RemoveOnly(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
                 string csIndentifierName = AddRealPropertyDelegatingToMyClassVersion(node, csIdentifier, attributes, realModifiers, rawType);
-                modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.VirtualKeyword)));
+                modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(CSSyntaxKind.VirtualKeyword)));
                 csIdentifier = SyntaxFactory.Identifier(csIndentifierName);
             } else if (explicitInterfaceSpecifier != null) {
                 modifiers = filteredModifiers;
@@ -1198,7 +1198,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             var originalConvertedModifiers = convertedModifiers;
             var originalParameterList = parameterList;
 
-            var filteredModifiers = convertedModifiers.RemoveOnly(m => m.IsCsMemberVisibility());
+            var filteredModifiers = convertedModifiers.RemoveOnly(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword));
             var requiredParameterList = MakeOptionalParametersRequired(parameterList);
 
             var interfaceMemberIdentifiers = new List<SyntaxToken> { csIdentifier };

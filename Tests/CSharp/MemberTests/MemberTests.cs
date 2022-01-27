@@ -2179,7 +2179,7 @@ public partial class Foo : IFoo, IBar
         }
 
         [Fact]
-        public async Task NonPublicPropertyImplementsInterfacesAsync()
+        public async Task NonPublicImplementsInterfacesAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Public Interface IFoo
@@ -2199,7 +2199,7 @@ End Interface
 Public Class Foo
     Implements IFoo, IBar
     
-    Friend Property FriendProp As Integer Implements IFoo.FriendProp, IBar.FriendProp ' Comment moves because this line gets split
+    Friend Overridable Property FriendProp As Integer Implements IFoo.FriendProp, IBar.FriendProp ' Comment moves because this line gets split
         Get
           Return 5
         End Get
@@ -2253,7 +2253,7 @@ public partial class Foo : IFoo, IBar
         get => ((IFoo)this).FriendProp;
         set => ((IFoo)this).FriendProp = value;
     }
-    internal int FriendProp
+    internal virtual int FriendProp
     {
         get => ((IFoo)this).FriendProp;
         set => ((IFoo)this).FriendProp = value; // Comment moves because this line gets split
