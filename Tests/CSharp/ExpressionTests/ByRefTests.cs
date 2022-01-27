@@ -331,6 +331,8 @@ public partial class Foo : IFoo
     {
         return 5;
     }
+
+    private int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str) => ((IFoo)this).ExplicitFunc(ref str);
 }");
         }
 

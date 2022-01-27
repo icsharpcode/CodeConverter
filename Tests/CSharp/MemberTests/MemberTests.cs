@@ -2061,6 +2061,8 @@ public partial class Foo : IFoo
         return 5;
     }
 
+    private int ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
+
     int IFoo.get_ExplicitProp(string str)
     {
         return 5;
@@ -2104,6 +2106,11 @@ public partial class Foo : IFoo, IBar
 {
     int IFoo.ExplicitProp { get; set; }
     int IBar.ExplicitProp
+    {
+        get => ((IFoo)this).ExplicitProp;
+        set => ((IFoo)this).ExplicitProp = value;
+    }
+    private int ExplicitProp
     {
         get => ((IFoo)this).ExplicitProp;
         set => ((IFoo)this).ExplicitProp = value;
@@ -2161,8 +2168,118 @@ public partial class Foo : IFoo, IBar
     int IBar.ExplicitProp
     {
         get => ((IFoo)this).ExplicitProp;
+        set => ((IFoo)this).ExplicitProp = value;
+    }
+    private int ExplicitProp
+    {
+        get => ((IFoo)this).ExplicitProp;
         set => ((IFoo)this).ExplicitProp = value; // Comment moves because this line gets split
     }
+}");
+        }
+
+        [Fact]
+        public async Task NonPublicPropertyImplementsInterfacesAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Interface IFoo
+    Property FriendProp As Integer
+    Sub ProtectedSub()
+    Function PrivateFunc() As Integer
+    Sub ProtectedInternalSub()
+End Interface
+
+Public Interface IBar
+    Property FriendProp As Integer
+    Sub ProtectedSub()
+    Function PrivateFunc() As Integer
+    Sub ProtectedInternalSub()
+End Interface
+
+Public Class Foo
+    Implements IFoo, IBar
+    
+    Friend Property FriendProp As Integer Implements IFoo.FriendProp, IBar.FriendProp ' Comment moves because this line gets split
+        Get
+          Return 5
+        End Get
+        Set
+        End Set
+    End Property
+
+    Protected Sub ProtectedSub() Implements IFoo.ProtectedSub, IBar.ProtectedSub
+    End Sub
+
+    Private Function PrivateFunc() As Integer Implements IFoo.PrivateFunc, IBar.PrivateFunc
+    End Function
+
+    Protected Friend Overridable Sub ProtectedInternalSub() Implements IFoo.ProtectedInternalSub, IBar.ProtectedInternalSub
+    End Sub
+End Class", @"
+public partial interface IFoo
+{
+    int FriendProp { get; set; }
+
+    void ProtectedSub();
+    int PrivateFunc();
+    void ProtectedInternalSub();
+}
+
+public partial interface IBar
+{
+    int FriendProp { get; set; }
+
+    void ProtectedSub();
+    int PrivateFunc();
+    void ProtectedInternalSub();
+}
+
+public partial class Foo : IFoo, IBar
+{
+    int IFoo.FriendProp
+    {
+        get
+        {
+            return 5;
+        }
+
+        set
+        {
+        }
+    }
+
+    int IBar.FriendProp
+    {
+        get => ((IFoo)this).FriendProp;
+        set => ((IFoo)this).FriendProp = value;
+    }
+    internal int FriendProp
+    {
+        get => ((IFoo)this).FriendProp;
+        set => ((IFoo)this).FriendProp = value; // Comment moves because this line gets split
+    }
+
+    void IFoo.ProtectedSub()
+    {
+    }
+
+    void IBar.ProtectedSub() => ((IFoo)this).ProtectedSub();
+    protected void ProtectedSub() => ((IFoo)this).ProtectedSub();
+
+    int IFoo.PrivateFunc()
+    {
+        return default;
+    }
+
+    int IBar.PrivateFunc() => ((IFoo)this).PrivateFunc();
+    private int PrivateFunc() => ((IFoo)this).PrivateFunc();
+
+    void IFoo.ProtectedInternalSub()
+    {
+    }
+
+    void IBar.ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
+    protected internal virtual void ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
 }");
         }
 
@@ -2308,6 +2425,7 @@ public partial class Foo : IFoo, IBar
     }
 
     int IBar.ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
+    private int ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
 
     int IFoo.get_ExplicitProp(string str)
     {
@@ -2360,6 +2478,8 @@ public partial class Foo : IFoo
     {
         return 5;
     }
+
+    private int ExplicitFunc(string str = """", int i2 = 1) => ((IFoo)this).ExplicitFunc(str, i2);
 
     int IFoo.get_ExplicitProp(string str)
     {
