@@ -10,10 +10,23 @@ Namespace [Aaa]
     End Class
     Partial Class z
     End Class
+	
+	Public Interface IBase
+		Sub UPper()
+		Property Foo As Boolean
+		
+		Function Fun() As Integer
+		Property Bar As Integer
+	End Interface
 
     MustInherit Class Base
-        MustOverride Sub UPPER()
-        MustOverride Property FOO As Boolean
+		Implements IBase
+		
+        MustOverride Sub UPPER() Implements IBase.UPPER
+        MustOverride Property FOO As Boolean Implements IBase.FOO
+		
+		MustOverride Function FunRenamed() As Integer Implements IBase.Fun
+		MustOverride Property BarRenamed As Integer Implements IBase.Bar
     End Class
     Class NotBase
         Inherits Base
@@ -21,6 +34,10 @@ Namespace [Aaa]
         Public Overrides Sub upper()
         End Sub
         Public Overrides Property foo As Boolean
+		
+		Public Overrides Function funRENAMED() As Integer
+		End Function
+		Public Overrides Property barRENAMED As Integer
     End Class
 End Namespace
 
@@ -50,5 +67,22 @@ Public Class NamespaceCasing
         Aaa.A.Foo()
         aaa.b.bar()
         Aaa.B.Bar()
+
+        Dim notBase As New Aaa.NotBase
+        Dim base As Aaa.Base = notBase
+		Dim interf As Aaa.IBase = notBase
+        notBase.upper()
+        base.UPPER()
+		interf.UPper()
+        notBase.foo = True
+        base.FOO = True
+		interf.Foo = True
+		
+		base.FunRenamed()
+		base.BarRenamed = 5
+		notBase.funRENAMED()
+		notBase.barRENAMED = 5
+		interf.Fun()
+		interf.Bar = 5
     End Sub
 End Class
