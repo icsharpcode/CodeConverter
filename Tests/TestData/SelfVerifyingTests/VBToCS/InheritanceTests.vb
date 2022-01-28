@@ -48,7 +48,7 @@ Module Program
             Dim nonVirtualMethodGood2 = Me.F2() = 2
             Dim sharedMethodGood1 = MyClass.F3() = 3
             Dim sharedMethodGood2 = A.F3() = 3
-            Dim interfaceMethodGood = CType(Me, IA).F4() = 11
+            Dim interfaceMethodGood = CType(Me, IA).F4() = 44
 
             Dim virtualPropertyGood1 = MyClass.P1 = 1
             Dim virtualPropertyGood2 = Me.P1 = 11
