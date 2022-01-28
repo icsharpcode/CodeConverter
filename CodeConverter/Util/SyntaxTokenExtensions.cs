@@ -144,7 +144,7 @@ namespace ICSharpCode.CodeConverter.Util
             return token.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind);
         }
 
-        public static SyntaxTokenList RemoveOnly(this SyntaxTokenList list, Func<SyntaxToken, bool> where)
+        public static SyntaxTokenList RemoveWhere(this SyntaxTokenList list, Func<SyntaxToken, bool> where)
         {
             for (int i = 0; i < list.Count; ++i) {
                 if (!where(list[i])) continue;

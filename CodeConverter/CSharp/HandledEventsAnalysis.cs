@@ -80,7 +80,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private PropertyDeclarationSyntax GetDeclarationsForHandlingBaseMembers((EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods) basePropertyEventSubscription)
         {
             var prop = (PropertyDeclarationSyntax) _commonConversions.CsSyntaxGenerator.Declaration(basePropertyEventSubscription.PropertyDetails.Property);
-            var modifiers = prop.Modifiers.RemoveOnly(m => m.IsKind(SyntaxKind.VirtualKeyword)).Add(SyntaxFactory.Token(SyntaxKind.OverrideKeyword));
+            var modifiers = prop.Modifiers.RemoveWhere(m => m.IsKind(SyntaxKind.VirtualKeyword)).Add(SyntaxFactory.Token(SyntaxKind.OverrideKeyword));
             //TODO Stash away methodwithandles in constructor that don't match any symbol from that type, to match here against base symbols
             return GetDeclarationsForFieldBackedProperty(basePropertyEventSubscription.HandledMethods, SyntaxFactory.List<SyntaxNode>(), modifiers, 
                 prop.Type, prop.Identifier, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.BaseExpression(), SyntaxFactory.IdentifierName(prop.Identifier)));
@@ -136,7 +136,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static SyntaxTokenList MakePrivate(SyntaxTokenList convertedModifiers)
         {
             var noVisibility = convertedModifiers
-                .RemoveOnly(m => m.IsCsVisibility(false, false))
+                .RemoveWhere(m => m.IsCsVisibility(false, false))
                 .Insert(0, SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
             return noVisibility;
         }
