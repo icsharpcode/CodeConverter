@@ -461,6 +461,278 @@ internal abstract partial class TestClass
         }
 
         [Fact]
+        public async Task TestAbstractReadOnlyAndWriteOnlyPropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"MustInherit Class TestClass
+        Public MustOverride ReadOnly Property ReadOnlyProp As String
+        Public MustOverride WriteOnly Property WriteOnlyProp As String
+End Class
+
+Class ChildClass
+    Inherits TestClass
+
+    Public Overrides ReadOnly Property ReadOnlyProp As String
+    Public Overrides WriteOnly Property WriteOnlyProp As String
+        Set
+        End Set
+    End Property
+End Class
+", @"
+internal abstract partial class TestClass
+{
+    public abstract string ReadOnlyProp { get; }
+    public abstract string WriteOnlyProp { set; }
+}
+
+internal partial class ChildClass : TestClass
+{
+    public override string ReadOnlyProp { get; }
+
+    public override string WriteOnlyProp
+    {
+        set
+        {
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestReadOnlyAndWriteOnlyParametrizedPropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Interface IClass
+    ReadOnly Property ReadOnlyProp(i as Integer) As String
+    WriteOnly Property WriteOnlyProp(i as Integer) As String
+End Interface
+
+Class ChildClass
+    Implements IClass
+
+    Public Overridable ReadOnly Property ReadOnlyProp(i As Integer) As String Implements IClass.ReadOnlyProp
+        Get
+            Throw New NotImplementedException
+        End Get
+    End Property
+
+    Public Overridable WriteOnly Property WriteOnlyProp(i As Integer) As String Implements IClass.WriteOnlyProp
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+End Class
+", @"using System;
+
+internal partial interface IClass
+{
+    string get_ReadOnlyProp(int i);
+    void set_WriteOnlyProp(int i, string value);
+}
+
+internal partial class ChildClass : IClass
+{
+    public virtual string get_ReadOnlyProp(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void set_WriteOnlyProp(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestExplicitImplementationOfParametrizedPropertyAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Interface IClass
+    ReadOnly Property ReadOnlyPropToRename(i as Integer) As String
+    WriteOnly Property WriteOnlyPropToRename(i as Integer) As String
+    Property PropToRename(i as Integer) As String
+
+    ReadOnly Property ReadOnlyPropNonPublic(i as Integer) As String
+    WriteOnly Property WriteOnlyPropNonPublic(i as Integer) As String
+    Property PropNonPublic(i as Integer) As String
+
+    ReadOnly Property ReadOnlyPropToRenameNonPublic(i as Integer) As String
+    WriteOnly Property WriteOnlyPropToRenameNonPublic(i as Integer) As String
+    Property PropToRenameNonPublic(i as Integer) As String
+
+End Interface
+
+Class ChildClass
+    Implements IClass
+
+    Public ReadOnly Property ReadOnlyPropRenamed(i As Integer) As String Implements IClass.ReadOnlyPropToRename
+        Get
+            Throw New NotImplementedException
+        End Get
+    End Property
+
+    Public Overridable WriteOnly Property WriteOnlyPropRenamed(i As Integer) As String Implements IClass.WriteOnlyPropToRename
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+
+    Public Overridable Property PropRenamed(i As Integer) As String Implements IClass.PropToRename
+        Get
+            Throw New NotImplementedException
+        End Get
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+
+    Private ReadOnly Property ReadOnlyPropNonPublic(i As Integer) As String Implements IClass.ReadOnlyPropNonPublic
+        Get
+            Throw New NotImplementedException
+        End Get
+    End Property
+
+    Protected Friend Overridable WriteOnly Property WriteOnlyPropNonPublic(i As Integer) As String Implements IClass.WriteOnlyPropNonPublic
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+
+    Friend Overridable Property PropNonPublic(i As Integer) As String Implements IClass.PropNonPublic
+        Get
+            Throw New NotImplementedException
+        End Get
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+
+    Protected Friend Overridable ReadOnly Property ReadOnlyPropRenamedNonPublic(i As Integer) As String Implements IClass.ReadOnlyPropToRenameNonPublic
+        Get
+            Throw New NotImplementedException
+        End Get
+    End Property
+
+    Private WriteOnly Property WriteOnlyPropRenamedNonPublic(i As Integer) As String Implements IClass.WriteOnlyPropToRenameNonPublic
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+
+    Friend Overridable Property PropToRenameNonPublic(i As Integer) As String Implements IClass.PropToRenameNonPublic
+        Get
+            Throw New NotImplementedException
+        End Get
+        Set
+            Throw New NotImplementedException
+        End Set
+    End Property
+End Class
+", @"using System;
+
+internal partial interface IClass
+{
+    string get_ReadOnlyPropToRename(int i);
+    void set_WriteOnlyPropToRename(int i, string value);
+    string get_PropToRename(int i);
+    void set_PropToRename(int i, string value);
+    string get_ReadOnlyPropNonPublic(int i);
+    void set_WriteOnlyPropNonPublic(int i, string value);
+    string get_PropNonPublic(int i);
+    void set_PropNonPublic(int i, string value);
+    string get_ReadOnlyPropToRenameNonPublic(int i);
+    void set_WriteOnlyPropToRenameNonPublic(int i, string value);
+    string get_PropToRenameNonPublic(int i);
+    void set_PropToRenameNonPublic(int i, string value);
+}
+
+internal partial class ChildClass : IClass
+{
+    public string get_ReadOnlyPropRenamed(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    string IClass.get_ReadOnlyPropToRename(int i) => get_ReadOnlyPropRenamed(i);
+
+    public virtual void set_WriteOnlyPropRenamed(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    void IClass.set_WriteOnlyPropToRename(int i, string value) => set_WriteOnlyPropRenamed(i, value);
+
+    public virtual string get_PropRenamed(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void set_PropRenamed(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    string IClass.get_PropToRename(int i) => get_PropRenamed(i);
+    void IClass.set_PropToRename(int i, string value) => set_PropRenamed(i, value);
+
+    private string get_ReadOnlyPropNonPublic(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    string IClass.get_ReadOnlyPropNonPublic(int i) => get_ReadOnlyPropNonPublic(i);
+
+    protected internal virtual void set_WriteOnlyPropNonPublic(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    void IClass.set_WriteOnlyPropNonPublic(int i, string value) => set_WriteOnlyPropNonPublic(i, value);
+
+    internal virtual string get_PropNonPublic(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal virtual void set_PropNonPublic(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    string IClass.get_PropNonPublic(int i) => get_PropNonPublic(i);
+    void IClass.set_PropNonPublic(int i, string value) => set_PropNonPublic(i, value);
+
+    protected internal virtual string get_ReadOnlyPropRenamedNonPublic(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    string IClass.get_ReadOnlyPropToRenameNonPublic(int i) => get_ReadOnlyPropRenamedNonPublic(i);
+
+    private void set_WriteOnlyPropRenamedNonPublic(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    void IClass.set_WriteOnlyPropToRenameNonPublic(int i, string value) => set_WriteOnlyPropRenamedNonPublic(i, value);
+
+    internal virtual string get_PropToRenameNonPublic(int i)
+    {
+        throw new NotImplementedException();
+    }
+
+    internal virtual void set_PropToRenameNonPublic(int i, string value)
+    {
+        throw new NotImplementedException();
+    }
+
+    string IClass.get_PropToRenameNonPublic(int i) => get_PropToRenameNonPublic(i);
+    void IClass.set_PropToRenameNonPublic(int i, string value) => set_PropToRenameNonPublic(i, value);
+}");
+        }
+
+        [Fact]
         public async Task TestSealedMethodAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
