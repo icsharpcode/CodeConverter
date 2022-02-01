@@ -15,6 +15,7 @@ Module Program
     Public Interface IA
         Function F4() As Integer
         Property P4() As Integer
+        ReadOnly Property P5() As Integer
     End Interface
 
     Public Class A
@@ -40,6 +41,11 @@ Module Program
         Property P2 As Integer = 2
         Shared Property P3 As Integer = 3
         Protected Overridable Property P4 As Integer = 4 Implements IA.P4
+        Protected Friend Overridable ReadOnly Property P5Renamed As Integer = 5 Implements IA.P5
+
+        Sub ChangeP5ViaDirectAccess()
+            MyClass._P5Renamed = 555
+        End Sub
 
         Public Function TestMethod() As Boolean
             Dim virtualMethodGood1 = MyClass.F1() = 1
@@ -52,11 +58,19 @@ Module Program
 
             Dim virtualPropertyGood1 = MyClass.P1 = 1
             Dim virtualPropertyGood2 = Me.P1 = 11
+            Dim virtualPropertyGood3 = Me.P5Renamed = 55
+            Dim virtualPropertyGood4 = MyClass.P5Renamed = 5
             Dim nonVirtualPropertyGood1 = MyClass.P2 = 2
             Dim nonVirtualPropertyGood2 = Me.P2 = 2
             Dim sharedPropertyGood1 = MyClass.P3 = 3
             Dim sharedPropertyGood2 = A.P3 = 3
-            Dim interfacePropertyGood = CType(Me, IA).P4() = 44
+            Dim interfacePropertyGood1 = CType(Me, IA).P4 = 44
+            Dim interfacePropertyGood2 = CType(Me, IA).P5 = 55
+
+            ChangeP5ViaDirectAccess()
+            Dim p5MyClassGood = MyClass.P5Renamed = 555
+            Dim p5MeGood = Me.P5Renamed = 55
+            Dim p5InterfaceGood =  CType(Me, IA).P5 = 55
 
             Dim methodsGood = virtualMethodGood1 AndAlso virtualMethodGood2 AndAlso
                               nonVirtualMethodGood1 AndAlso nonVirtualMethodGood2 AndAlso
@@ -64,7 +78,9 @@ Module Program
 
             Dim propertiesGood = virtualPropertyGood1 AndAlso virtualPropertyGood2 AndAlso
                                  nonVirtualPropertyGood1 AndAlso nonVirtualPropertyGood2 AndAlso
-                                 sharedPropertyGood1 AndAlso sharedPropertyGood2 AndAlso interfacePropertyGood
+                                 sharedPropertyGood1 AndAlso sharedPropertyGood2 AndAlso interfacePropertyGood1 AndAlso 
+                                 virtualPropertyGood3 AndAlso virtualPropertyGood4 AndAlso interfacePropertyGood2 AndAlso 
+                                 p5MyClassGood AndAlso p5MeGood AndAlso p5InterfaceGood
 
             Return methodsGood AndAlso propertiesGood
         End Function
@@ -89,5 +105,6 @@ Module Program
         End Function
 
         Protected Overrides Property P4 As Integer = 44
+        Protected Friend Overrides ReadOnly Property P5Renamed As Integer = 55
     End Class
 End Module

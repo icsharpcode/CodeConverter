@@ -2547,6 +2547,51 @@ public partial class Foo : IFoo, IBar
 }");
         }
 
+        
+        [Fact]
+        public async Task ImplementMultipleRenamedPropertiesFromInterfaceAsAbstract()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Property ExplicitProp As Integer
+End Interface
+Public Interface IBar
+    Property ExplicitProp As Integer
+End Interface
+Public MustInherit Class Foo
+    Implements IFoo, IBar
+
+    Protected MustOverride Property ExplicitPropRenamed1 As Integer Implements IFoo.ExplicitProp
+    Protected MustOverride Property ExplicitPropRenamed2 As Integer Implements IBar.ExplicitProp
+End Class", @"
+public partial interface IFoo
+{
+    int ExplicitProp { get; set; }
+}
+
+public partial interface IBar
+{
+    int ExplicitProp { get; set; }
+}
+
+public abstract partial class Foo : IFoo, IBar
+{
+    protected abstract int ExplicitPropRenamed1 { get; set; }
+    int IFoo.ExplicitProp
+    {
+        get => ExplicitPropRenamed1;
+        set => ExplicitPropRenamed1 = value;
+    }
+    protected abstract int ExplicitPropRenamed2 { get; set; }
+    int IBar.ExplicitProp
+    {
+        get => ExplicitPropRenamed2;
+        set => ExplicitPropRenamed2 = value;
+    }
+}");
+        }
+
         [Fact]
         public async Task PrivatePropertyAccessorBlocksImplementsMultipleInterfacesAsync()
         {
