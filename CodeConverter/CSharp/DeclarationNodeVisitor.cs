@@ -678,8 +678,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                             .Zip(propertyBlock.Accessors, Tuple.Create)
                             .Do(x => {
                                 var (method, accessor) = x;
-                                AddRemainingInterfaceDeclarations(method, attributes,
-                                    filteredModifiers, additionalInterfaceImplements, additionalDeclarations, accessor.Kind());
+                                AddRemainingInterfaceDeclarations(method, attributes, filteredModifiers, additionalInterfaceImplements, additionalDeclarations, accessor.Kind());
                             });
                     }
                     
@@ -709,9 +708,9 @@ namespace ICSharpCode.CodeConverter.CSharp
 
                 return methodDeclarationSyntaxs[0];
             } else {
-                bool isVirtualOrOverrides = !node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.MustOverrideKeyword, VBasic.SyntaxKind.OverridesKeyword)) && 
-                                         node.GetAncestor<VBSyntax.InterfaceBlockSyntax>() == null;
-                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, isVirtualOrOverrides, propSymbol.DeclaredAccessibility, hasExplicitInterfaceImplementation);
+                bool allowPrivateAccessorForDirectAccess = node.Modifiers.All(m => !m.IsKind(VBasic.SyntaxKind.MustOverrideKeyword, VBasic.SyntaxKind.OverridesKeyword)) && 
+                                                           node.GetAncestor<VBSyntax.InterfaceBlockSyntax>() == null;
+                accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, allowPrivateAccessorForDirectAccess, propSymbol.DeclaredAccessibility);
             }
 
             if (isIndexer) {
@@ -899,8 +898,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         }
 
         private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly,
-            bool hasImplementation, Accessibility declaredAccessibility,
-            bool isExplicitInterfaceImplementation)
+            bool allowPrivateAccessorForDirectAccess, Accessibility declaredAccessibility)
         {
             var getAccessor = SyntaxFactory.AccessorDeclaration(CSSyntaxKind.GetAccessorDeclaration)
                 .WithSemicolonToken(SemicolonToken);
@@ -915,8 +913,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(CSSyntaxKind.PrivateKeyword));
             }
 
-            var isReadOnlyInterface = (!hasImplementation || isExplicitInterfaceImplementation) && isReadonly;
-            var isWriteOnlyInterface = (!hasImplementation || isExplicitInterfaceImplementation) && isWriteOnly;
+            // this could be improved by looking if there is actually a direct access somewhere
+            // if not we could skip generating private property accessor
+            var isReadOnlyInterface = !allowPrivateAccessorForDirectAccess && isReadonly;
+            var isWriteOnlyInterface = !allowPrivateAccessorForDirectAccess && isWriteOnly;
 
             if (isReadOnlyInterface)
                 return SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor }));

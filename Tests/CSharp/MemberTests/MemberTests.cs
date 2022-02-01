@@ -545,7 +545,7 @@ internal partial class ChildClass : IClass
         }
 
         [Fact]
-        public async Task TestExplicitImplementationOfParametrizedPropertyAsync()
+        public async Task TestExplicitInterfaceOfParametrizedPropertyAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"Interface IClass
@@ -2742,6 +2742,56 @@ public partial class Foo : BaseFoo
     }
 }");
         }
+
+        [Fact]
+        public async Task ExplicitPropertyImplementationWithDirectAccessAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Property ExplicitProp As Integer
+    ReadOnly Property ExplicitReadOnlyProp As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+    
+    Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp
+    ReadOnly Property ExplicitRenamedReadOnlyProp As Integer Implements IFoo.ExplicitReadOnlyProp
+
+    Private Sub Consumer()
+        _ExplicitPropRenamed = 5
+        _ExplicitRenamedReadOnlyProp = 10
+    End Sub
+
+End Class", @"
+public partial interface IFoo
+{
+    int ExplicitProp { get; set; }
+    int ExplicitReadOnlyProp { get; }
+}
+
+public partial class Foo : IFoo
+{
+    public int ExplicitPropRenamed { get; set; }
+    int IFoo.ExplicitProp
+    {
+        get => ExplicitPropRenamed;
+        set => ExplicitPropRenamed = value;
+    }
+    public int ExplicitRenamedReadOnlyProp { get; private set; }
+    int IFoo.ExplicitReadOnlyProp
+    {
+        get => ExplicitRenamedReadOnlyProp;
+    }
+
+    private void Consumer()
+    {
+        ExplicitPropRenamed = 5;
+        ExplicitRenamedReadOnlyProp = 10;
+    }
+}");
+        }
         
         [Fact]
         public async Task ReadonlyRenamedPropertyImplementsMultipleInterfacesAsync()
@@ -2772,7 +2822,7 @@ public partial interface IBar
 
 public partial class Foo : IFoo, IBar
 {
-    public int ExplicitPropRenamed { get; }
+    public int ExplicitPropRenamed { get; private set; }
     int IFoo.ExplicitProp
     {
         get => ExplicitPropRenamed;
