@@ -316,22 +316,22 @@ namespace ICSharpCode.CodeConverter.CSharp
             //proxy property
             var baseClassSymbol = GetBaseSymbol(idSymbol, s => s.ContainingType.IsClassType());
             var baseSymbol = GetBaseSymbol(baseClassSymbol, s => true);
-
-            var isCasingDiffOnly = StringComparer.Ordinal.Equals(text, baseClassSymbol.Name) !=
-                                   StringComparer.OrdinalIgnoreCase.Equals(text, baseClassSymbol.Name);
-            var isInterfaceImplRef =
-                baseSymbol.ContainingType.IsInterfaceType() && !(id.Parent is VBSyntax.StatementSyntax);
+            var isInterfaceImplRef = baseSymbol.ContainingType.IsInterfaceType();
             var isDeclaration = isInterfaceImplRef || baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
+            var isCasingDiffOnly = StringComparer.OrdinalIgnoreCase.Equals(text, baseSymbol.Name) &&
+                                   !StringComparer.Ordinal.Equals(text, baseSymbol.Name);
 
             var isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                             baseSymbol.IsPartialMethodImplementation();
 
             if (isInterfaceImplRef && isCasingDiffOnly) {
+                return baseSymbol.Name;
+            }
+            if (isInterfaceImplRef) {
                 return baseClassSymbol.Name;
             }
-
-            if ((isPartial || !isDeclaration)) {
-                text = baseSymbol.Name;
+            if (isPartial || !isDeclaration) {
+                return baseSymbol.Name;
             }
 
             return text;
