@@ -1365,13 +1365,11 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.FooDifferentCase(out string str2)
+    public int FooDifferentCase(out string str2)
     {
         str2 = 2.ToString();
         return 3;
     }
-
-    public int fooDifferentCase(out string str2) => ((IFoo)this).FooDifferentCase(out str2);
 }
 ");
         }
@@ -1398,12 +1396,12 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.FooDifferentName(ref string str, int i)
+    public int BarDifferentName(ref string str, int i)
     {
         return 4;
     }
 
-    public int BarDifferentName(ref string str, int i) => ((IFoo)this).FooDifferentName(ref str, i);
+    int IFoo.FooDifferentName(ref string str, int i) => BarDifferentName(ref str, i);
 }
 ");
         }
@@ -1444,19 +1442,19 @@ public partial interface IBar
 
 public partial class FooBar : IFoo, IBar
 {
-    int IFoo.DoFooBar(ref string str, int i)
+    public int Foo(ref string str, int i)
     {
         return 4;
     }
 
-    public int Foo(ref string str, int i) => ((IFoo)this).DoFooBar(ref str, i);
+    int IFoo.DoFooBar(ref string str, int i) => Foo(ref str, i);
 
-    int IBar.DoFooBar(ref string str, int i)
+    public int Bar(ref string str, int i)
     {
         return 2;
     }
 
-    public int Bar(ref string str, int i) => ((IBar)this).DoFooBar(ref str, i);
+    int IBar.DoFooBar(ref string str, int i) => Bar(ref str, i);
 }
 ");
         }
@@ -1493,13 +1491,13 @@ public partial interface IBar
 
 public partial class FooBar : IFoo, IBar
 {
-    int IFoo.DoFooBar(ref string str, int i)
+    public int Foo(ref string str, int i)
     {
         return 4;
     }
 
-    int IBar.DoFooBar(ref string str, int i) => ((IFoo)this).DoFooBar(ref str, i);
-    public int Foo(ref string str, int i) => ((IFoo)this).DoFooBar(ref str, i);
+    int IFoo.DoFooBar(ref string str, int i) => Foo(ref str, i);
+    int IBar.DoFooBar(ref string str, int i) => Foo(ref str, i);
 }");
         }
 
@@ -1535,17 +1533,17 @@ public partial interface IBar
 
 public partial class FooBar : IFoo, IBar
 {
-    int IFoo.FooBarProp { get; set; }
-    public int Foo
+    public int Foo { get; set; }
+    int IFoo.FooBarProp
     {
-        get => ((IFoo)this).FooBarProp;
-        set => ((IFoo)this).FooBarProp = value;
+        get => Foo;
+        set => Foo = value;
     }
-    int IBar.FooBarProp { get; set; }
-    public int Bar
+    public int Bar { get; set; }
+    int IBar.FooBarProp
     {
-        get => ((IBar)this).FooBarProp;
-        set => ((IBar)this).FooBarProp = value;
+        get => Bar;
+        set => Bar = value;
     }
 }");
         }
@@ -1576,12 +1574,12 @@ namespace TestNamespace
 
 public partial class Foo : TestNamespace.IFoo
 {
-    int TestNamespace.IFoo.DoFoo(ref string str, int i)
+    public int DoFooRenamed(ref string str, int i)
     {
         return 4;
     }
 
-    public int DoFooRenamed(ref string str, int i) => ((TestNamespace.IFoo)this).DoFoo(ref str, i);
+    int TestNamespace.IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
 }");
         }
 
@@ -1610,11 +1608,11 @@ namespace TestNamespace
 
 public partial class Foo : TestNamespace.IFoo
 {
-    int TestNamespace.IFoo.FooProp { get; set; }
-    public int FooPropRenamed
+    public int FooPropRenamed { get; set; }
+    int TestNamespace.IFoo.FooProp
     {
-        get => ((TestNamespace.IFoo)this).FooProp;
-        set => ((TestNamespace.IFoo)this).FooProp = value;
+        get => FooPropRenamed;
+        set => FooPropRenamed = value;
     }
 }");
         }
@@ -1637,7 +1635,8 @@ End Class
 Public Class FooConsumer
     Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
         Dim foo As New Foo
-        Return foo.DOFOORENAMED(str, i)
+        Dim bar As IFoo = foo
+        Return foo.DOFOORENAMED(str, i) + bar.DoFoo(str, i)
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1647,12 +1646,12 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.DoFoo(ref string str, int i)
+    public int DoFooRenamed(ref string str, int i)
     {
         return 4;
     }
 
-    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+    int IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
 }
 
 public partial class FooConsumer
@@ -1660,7 +1659,8 @@ public partial class FooConsumer
     public int DoFooRenamedConsumer(ref string str, int i)
     {
         var foo = new Foo();
-        return foo.DoFooRenamed(ref str, i);
+        IFoo bar = foo;
+        return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
 }");
         }
@@ -1682,7 +1682,8 @@ End Class
 Public Class FooConsumer
     Function GetFooRenamed() As Integer
         Dim foo As New Foo
-        Return foo.FOOPROPRENAMED
+        Dim bar As IFoo = foo
+        Return foo.FOOPROPRENAMED + bar.FooProp
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1692,11 +1693,11 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.FooProp { get; set; }
-    public int FooPropRenamed
+    public int FooPropRenamed { get; set; }
+    int IFoo.FooProp
     {
-        get => ((IFoo)this).FooProp;
-        set => ((IFoo)this).FooProp = value;
+        get => FooPropRenamed;
+        set => FooPropRenamed = value;
     }
 }
 
@@ -1705,7 +1706,8 @@ public partial class FooConsumer
     public int GetFooRenamed()
     {
         var foo = new Foo();
-        return foo.FooPropRenamed;
+        IFoo bar = foo;
+        return foo.FooPropRenamed + bar.FooProp;
     }
 }");
         }
@@ -1728,7 +1730,8 @@ End Class
 Public Class FooConsumer
     Function DoFooRenamedConsumer(str As String, i As Integer) As Integer
         Dim foo As New Foo
-        Return foo.dofoo(str, i)
+        Dim bar As IFoo = foo
+        Return foo.dofoo(str, i) + bar.DoFoo(str, i)
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1738,12 +1741,10 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.DoFoo(string str, int i)
+    public int DoFoo(string str, int i)
     {
         return 4;
     }
-
-    public int dofoo(string str, int i) => ((IFoo)this).DoFoo(str, i);
 }
 
 public partial class FooConsumer
@@ -1751,7 +1752,8 @@ public partial class FooConsumer
     public int DoFooRenamedConsumer(string str, int i)
     {
         var foo = new Foo();
-        return foo.dofoo(str, i);
+        IFoo bar = foo;
+        return foo.DoFoo(str, i) + bar.DoFoo(str, i);
     }
 }");
         }
@@ -1773,7 +1775,8 @@ End Class
 Public Class FooConsumer
     Function GetFooRenamed() As Integer
         Dim foo As New Foo
-        Return foo.fooprop
+        Dim bar As IFoo = foo
+        Return foo.fooprop + bar.FooProp
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1783,12 +1786,7 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.FooProp { get; set; }
-    public int fooprop
-    {
-        get => ((IFoo)this).FooProp;
-        set => ((IFoo)this).FooProp = value;
-    }
+    public int FooProp { get; set; }
 }
 
 public partial class FooConsumer
@@ -1796,7 +1794,8 @@ public partial class FooConsumer
     public int GetFooRenamed()
     {
         var foo = new Foo();
-        return foo.fooprop;
+        IFoo bar = foo;
+        return foo.FooProp + bar.FooProp;
     }
 }");
         }
@@ -1819,7 +1818,8 @@ End Class
 Public Class FooConsumer
     Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
         Dim foo As New Foo
-        Return foo.DoFooRenamed(str, i)
+        Dim bar As IFoo = foo
+        Return foo.DoFooRenamed(str, i) + bar.DoFoo(str, i)
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1829,12 +1829,12 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.DoFoo(ref string str, int i)
+    public int DoFooRenamed(ref string str, int i)
     {
         return 4;
     }
 
-    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+    int IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
 }
 
 public partial class FooConsumer
@@ -1842,7 +1842,8 @@ public partial class FooConsumer
     public int DoFooRenamedConsumer(ref string str, int i)
     {
         var foo = new Foo();
-        return foo.DoFooRenamed(ref str, i);
+        IFoo bar = foo;
+        return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
 }");
         }
@@ -1864,7 +1865,8 @@ End Class
 Public Class FooConsumer
     Function GetFooRenamed() As Integer
         Dim foo As New Foo
-        Return foo.FooPropRenamed
+        Dim bar As IFoo = foo
+        Return foo.FooPropRenamed + bar.FooProp
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1874,11 +1876,11 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.FooProp { get; set; }
-    public int FooPropRenamed
+    public int FooPropRenamed { get; set; }
+    int IFoo.FooProp
     {
-        get => ((IFoo)this).FooProp;
-        set => ((IFoo)this).FooProp = value;
+        get => FooPropRenamed;
+        set => FooPropRenamed = value;
     }
 }
 
@@ -1887,7 +1889,8 @@ public partial class FooConsumer
     public int GetFooRenamed()
     {
         var foo = new Foo();
-        return foo.FooPropRenamed;
+        IFoo bar = foo;
+        return foo.FooPropRenamed + bar.FooProp;
     }
 }");
         }
@@ -1910,7 +1913,8 @@ End Class
 Public Class FooConsumer
     Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
         Dim foo As New Foo
-        Return foo.DoFooRenamed(str, i)
+        Dim bar As IFoo = foo
+        Return foo.DoFooRenamed(str, i) + bar.DoFoo(str, i)
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1920,12 +1924,12 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.DoFoo(ref string str, int i)
+    public int DoFooRenamed(ref string str, int i)
     {
         return 4;
     }
 
-    public int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
+    int IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
 }
 
 public partial class FooConsumer
@@ -1933,7 +1937,8 @@ public partial class FooConsumer
     public int DoFooRenamedConsumer(ref string str, int i)
     {
         var foo = new Foo();
-        return foo.DoFooRenamed(ref str, i);
+        IFoo bar = foo;
+        return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
 }");
         }
@@ -1955,7 +1960,8 @@ End Class
 Public Class FooConsumer
     Function GetFooRenamed() As Integer
         Dim foo As New Foo
-        Return foo.FooPropRenamed
+        Dim bar As IFoo = foo
+        Return foo.FooPropRenamed + bar.FooProp
     End Function
 End Class", @"
 public partial interface IFoo
@@ -1965,11 +1971,11 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.FooProp { get; set; }
-    public int FooPropRenamed
+    public int FooPropRenamed { get; set; }
+    int IFoo.FooProp
     {
-        get => ((IFoo)this).FooProp;
-        set => ((IFoo)this).FooProp = value;
+        get => FooPropRenamed;
+        set => FooPropRenamed = value;
     }
 }
 
@@ -1978,7 +1984,8 @@ public partial class FooConsumer
     public int GetFooRenamed()
     {
         var foo = new Foo();
-        return foo.FooPropRenamed;
+        IFoo bar = foo;
+        return foo.FooPropRenamed + bar.FooProp;
     }
 }");
         }
@@ -2013,12 +2020,97 @@ public partial class Foo : IFoo
         return 4;
     }
 
-    public virtual int DoFooRenamed(ref string str, int i) => ((IFoo)this).DoFoo(ref str, i);
-    int IFoo.DoFoo(ref string str, int i) => MyClassDoFooRenamed(ref str, i); // Comment ends up out of order, but attached to correct method
+    int IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
+    public virtual int DoFooRenamed(ref string str, int i) => MyClassDoFooRenamed(ref str, i); // Comment ends up out of order, but attached to correct method
 
     public int DoFooRenamedConsumer(ref string str, int i)
     {
         return MyClassDoFooRenamed(ref str, i);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task RenamedInterfacePropertyMyClassConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        ReadOnly Property DoFoo As Integer
+        WriteOnly Property DoBar As Integer
+    End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Overridable ReadOnly Property DoFooRenamed As Integer Implements IFoo.DoFoo  ' Comment ends up out of order, but attached to correct method
+        Get
+            Return 4
+        End Get
+    End Property
+
+    Overridable WriteOnly Property DoBarRenamed As Integer Implements IFoo.DoBar  ' Comment ends up out of order, but attached to correct method
+        Set
+            Throw New Exception()
+        End Set
+    End Property
+
+    Sub DoFooRenamedConsumer()
+        MyClass.DoBarRenamed = MyClass.DoFooRenamed
+    End Sub
+End Class", @"using System;
+
+public partial interface IFoo
+{
+    int DoFoo { get; }
+    int DoBar { set; }
+}
+
+public partial class Foo : IFoo
+{
+    public int MyClassDoFooRenamed
+    {
+        get
+        {
+            return 4;
+        }
+    }
+
+    int IFoo.DoFoo
+    {
+        get => DoFooRenamed;
+    }
+
+    public virtual int DoFooRenamed  // Comment ends up out of order, but attached to correct method
+    {
+        get
+        {
+            return MyClassDoFooRenamed;
+        }
+    }
+
+    public int MyClassDoBarRenamed
+    {
+        set
+        {
+            throw new Exception();
+        }
+    }
+
+    int IFoo.DoBar
+    {
+        set => DoBarRenamed = value;
+    }
+
+    public virtual int DoBarRenamed  // Comment ends up out of order, but attached to correct method
+    {
+        set
+        {
+            MyClassDoBarRenamed = value;
+        }
+    }
+
+    public void DoFooRenamedConsumer()
+    {
+        MyClassDoBarRenamed = MyClassDoFooRenamed;
     }
 }");
         }
@@ -2056,21 +2148,24 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.ExplicitFunc(ref string str, int i)
+    private int ExplicitFunc(ref string str, int i)
     {
         return 5;
     }
 
-    private int ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
+    int IFoo.ExplicitFunc(ref string str, int i) => ExplicitFunc(ref str, i);
 
-    int IFoo.get_ExplicitProp(string str)
+    private int get_ExplicitProp(string str)
     {
         return 5;
     }
 
-    void IFoo.set_ExplicitProp(string str, int value)
+    private void set_ExplicitProp(string str, int value)
     {
     }
+
+    int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
+    void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }
 ");
         }
@@ -2166,16 +2261,16 @@ public partial interface IBar
 
 public partial class Foo : IFoo, IBar
 {
-    int IFoo.ExplicitProp { get; set; }
+    private int ExplicitProp { get; set; }
+    int IFoo.ExplicitProp
+    {
+        get => ExplicitProp;
+        set => ExplicitProp = value;
+    }
     int IBar.ExplicitProp
     {
-        get => ((IFoo)this).ExplicitProp;
-        set => ((IFoo)this).ExplicitProp = value;
-    }
-    private int ExplicitProp
-    {
-        get => ((IFoo)this).ExplicitProp;
-        set => ((IFoo)this).ExplicitProp = value;
+        get => ExplicitProp;
+        set => ExplicitProp = value;
     }
 }");
         }
@@ -2215,7 +2310,7 @@ public partial interface IBar
 
 public partial class Foo : IFoo, IBar
 {
-    int IFoo.ExplicitProp
+    private int ExplicitProp
     {
         get
         {
@@ -2227,15 +2322,15 @@ public partial class Foo : IFoo, IBar
         }
     }
 
-    int IBar.ExplicitProp
+    int IFoo.ExplicitProp
     {
-        get => ((IFoo)this).ExplicitProp;
-        set => ((IFoo)this).ExplicitProp = value;
+        get => ExplicitProp;
+        set => ExplicitProp = value;
     }
-    private int ExplicitProp
+    int IBar.ExplicitProp // Comment moves because this line gets split
     {
-        get => ((IFoo)this).ExplicitProp;
-        set => ((IFoo)this).ExplicitProp = value; // Comment moves because this line gets split
+        get => ExplicitProp;
+        set => ExplicitProp = value;
     }
 }");
         }
@@ -2249,6 +2344,7 @@ public partial class Foo : IFoo, IBar
     Sub ProtectedSub()
     Function PrivateFunc() As Integer
     Sub ProtectedInternalSub()
+    Sub AbstractSub()
 End Interface
 
 Public Interface IBar
@@ -2256,9 +2352,10 @@ Public Interface IBar
     Sub ProtectedSub()
     Function PrivateFunc() As Integer
     Sub ProtectedInternalSub()
+    Sub AbstractSub()
 End Interface
 
-Public Class Foo
+Public MustInherit Class BaseFoo
     Implements IFoo, IBar
     
     Friend Overridable Property FriendProp As Integer Implements IFoo.FriendProp, IBar.FriendProp ' Comment moves because this line gets split
@@ -2277,7 +2374,20 @@ Public Class Foo
 
     Protected Friend Overridable Sub ProtectedInternalSub() Implements IFoo.ProtectedInternalSub, IBar.ProtectedInternalSub
     End Sub
-End Class", @"
+
+    Protected MustOverride Sub AbstractSubRenamed() Implements IFoo.AbstractSub, IBar.AbstractSub
+End Class
+
+Public Class Foo
+    Inherits BaseFoo
+
+    Protected Friend Overrides Sub ProtectedInternalSub()
+    End Sub
+
+    Protected Overrides Sub AbstractSubRenamed()
+    End Sub
+End Class
+", @"
 public partial interface IFoo
 {
     int FriendProp { get; set; }
@@ -2285,6 +2395,7 @@ public partial interface IFoo
     void ProtectedSub();
     int PrivateFunc();
     void ProtectedInternalSub();
+    void AbstractSub();
 }
 
 public partial interface IBar
@@ -2294,11 +2405,12 @@ public partial interface IBar
     void ProtectedSub();
     int PrivateFunc();
     void ProtectedInternalSub();
+    void AbstractSub();
 }
 
-public partial class Foo : IFoo, IBar
+public abstract partial class BaseFoo : IFoo, IBar
 {
-    int IFoo.FriendProp
+    internal virtual int FriendProp
     {
         get
         {
@@ -2310,38 +2422,52 @@ public partial class Foo : IFoo, IBar
         }
     }
 
-    int IBar.FriendProp
+    int IFoo.FriendProp
     {
-        get => ((IFoo)this).FriendProp;
-        set => ((IFoo)this).FriendProp = value;
+        get => FriendProp;
+        set => FriendProp = value;
     }
-    internal virtual int FriendProp
+    int IBar.FriendProp // Comment moves because this line gets split
     {
-        get => ((IFoo)this).FriendProp;
-        set => ((IFoo)this).FriendProp = value; // Comment moves because this line gets split
-    }
-
-    void IFoo.ProtectedSub()
-    {
+        get => FriendProp;
+        set => FriendProp = value;
     }
 
-    void IBar.ProtectedSub() => ((IFoo)this).ProtectedSub();
-    protected void ProtectedSub() => ((IFoo)this).ProtectedSub();
+    protected void ProtectedSub()
+    {
+    }
 
-    int IFoo.PrivateFunc()
+    void IFoo.ProtectedSub() => ProtectedSub();
+    void IBar.ProtectedSub() => ProtectedSub();
+
+    private int PrivateFunc()
     {
         return default;
     }
 
-    int IBar.PrivateFunc() => ((IFoo)this).PrivateFunc();
-    private int PrivateFunc() => ((IFoo)this).PrivateFunc();
+    int IFoo.PrivateFunc() => PrivateFunc();
+    int IBar.PrivateFunc() => PrivateFunc();
 
-    void IFoo.ProtectedInternalSub()
+    protected internal virtual void ProtectedInternalSub()
     {
     }
 
-    void IBar.ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
-    protected internal virtual void ProtectedInternalSub() => ((IFoo)this).ProtectedInternalSub();
+    void IFoo.ProtectedInternalSub() => ProtectedInternalSub();
+    void IBar.ProtectedInternalSub() => ProtectedInternalSub();
+    protected abstract void AbstractSubRenamed();
+    void IFoo.AbstractSub() => AbstractSubRenamed();
+    void IBar.AbstractSub() => AbstractSubRenamed();
+}
+
+public partial class Foo : BaseFoo
+{
+    protected internal override void ProtectedInternalSub()
+    {
+    }
+
+    protected override void AbstractSubRenamed()
+    {
+    }
 }");
         }
         
@@ -2374,14 +2500,14 @@ public partial interface IBar
 
 public partial class Foo : IFoo, IBar
 {
-    int IFoo.ExplicitProp { get; }
+    public int ExplicitPropRenamed { get; }
+    int IFoo.ExplicitProp
+    {
+        get => ExplicitPropRenamed;
+    }
     int IBar.ExplicitProp
     {
-        get => ((IFoo)this).ExplicitProp;
-    }
-    public int ExplicitPropRenamed
-    {
-        get => ((IFoo)this).ExplicitProp;
+        get => ExplicitPropRenamed;
     }
 }");
         }
@@ -2418,20 +2544,20 @@ public partial interface IBar
 
 public partial class Foo : IFoo, IBar
 {
-    int IFoo.ExplicitProp
+    public int ExplicitPropRenamed
     {
         set
         {
         }
     }
 
-    int IBar.ExplicitProp
+    int IFoo.ExplicitProp
     {
-        set => ((IFoo)this).ExplicitProp = value;
+        set => ExplicitPropRenamed = value;
     }
-    public int ExplicitPropRenamed
+    int IBar.ExplicitProp // Comment moves because this line gets split
     {
-        set => ((IFoo)this).ExplicitProp = value; // Comment moves because this line gets split
+        set => ExplicitPropRenamed = value;
     }
 }");
         }
@@ -2481,25 +2607,27 @@ public partial interface IBar
 
 public partial class Foo : IFoo, IBar
 {
-    int IFoo.ExplicitFunc(ref string str, int i)
+    private int ExplicitFunc(ref string str, int i)
     {
         return 5;
     }
 
-    int IBar.ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
-    private int ExplicitFunc(ref string str, int i) => ((IFoo)this).ExplicitFunc(ref str, i);
+    int IFoo.ExplicitFunc(ref string str, int i) => ExplicitFunc(ref str, i);
+    int IBar.ExplicitFunc(ref string str, int i) => ExplicitFunc(ref str, i);
 
-    int IFoo.get_ExplicitProp(string str)
+    private int get_ExplicitProp(string str)
     {
         return 5;
     }
 
-    void IFoo.set_ExplicitProp(string str, int value)
+    private void set_ExplicitProp(string str, int value)
     {
     }
 
-    int IBar.get_ExplicitProp(string str) => ((IFoo)this).get_ExplicitProp(str);
-    void IBar.set_ExplicitProp(string str, int value) => ((IFoo)this).set_ExplicitProp(str, value);
+    int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
+    int IBar.get_ExplicitProp(string str) => get_ExplicitProp(str);
+    void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
+    void IBar.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }");
         }
 
@@ -2536,21 +2664,24 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.ExplicitFunc(string str, int i2)
+    private int ExplicitFunc(string str = """", int i2 = 1)
     {
         return 5;
     }
 
-    private int ExplicitFunc(string str = """", int i2 = 1) => ((IFoo)this).ExplicitFunc(str, i2);
+    int IFoo.ExplicitFunc(string str, int i2) => ExplicitFunc(str, i2);
 
-    int IFoo.get_ExplicitProp(string str)
+    private int get_ExplicitProp(string str = """")
     {
         return 5;
     }
 
-    void IFoo.set_ExplicitProp(string str, int value)
+    private void set_ExplicitProp(string str = """", int value = default)
     {
     }
+
+    int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
+    void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }
 ");
         }
@@ -2581,12 +2712,12 @@ public partial interface IFoo
 
 internal partial class Foo : IFoo
 {
-    int IFoo.FooDifferentName(ref string str, int i)
+    public int BarDifferentName(ref string str, int i)
     {
         return 4;
     }
 
-    public int BarDifferentName(ref string str, int i) => ((IFoo)this).FooDifferentName(ref str, i);
+    int IFoo.FooDifferentName(ref string str, int i) => BarDifferentName(ref str, i);
 }
 ");
         }

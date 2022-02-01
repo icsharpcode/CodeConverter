@@ -327,12 +327,12 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.ExplicitFunc(ref string str)
+    private int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str)
     {
         return 5;
     }
 
-    private int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str) => ((IFoo)this).ExplicitFunc(ref str);
+    int IFoo.ExplicitFunc(ref string str) => ExplicitFunc(ref str);
 }");
         }
 
