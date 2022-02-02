@@ -2593,6 +2593,187 @@ public abstract partial class Foo : IFoo, IBar
         }
 
         [Fact]
+        public async Task ExplicitInterfaceImplementationForVirtualMemberFromAnotherClass()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Sub Save()
+    Property Prop As Integer
+End Interface
+
+Public MustInherit Class BaseFoo
+    Protected Overridable Sub OnSave()
+    End Sub
+
+    Protected Overridable Property MyProp As Integer = 5
+End Class
+
+Public Class Foo
+    Inherits BaseFoo
+    Implements IFoo
+
+    Protected Overrides Sub OnSave() Implements IFoo.Save
+    End Sub
+
+    Protected Overrides Property MyProp As Integer = 6 Implements IFoo.Prop
+
+End Class", @"
+public partial interface IFoo
+{
+    void Save();
+
+    int Prop { get; set; }
+}
+
+public abstract partial class BaseFoo
+{
+    protected virtual void OnSave()
+    {
+    }
+
+    protected virtual int MyProp { get; set; } = 5;
+}
+
+public partial class Foo : BaseFoo, IFoo
+{
+    protected override void OnSave()
+    {
+    }
+
+    void IFoo.Save() => OnSave();
+
+    protected override int MyProp { get; set; } = 6;
+    int IFoo.Prop
+    {
+        get => MyProp;
+        set => MyProp = value;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ExplicitInterfaceImplementationWhereOnlyOneInterfaceMemberIsRenamed()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Sub Save()
+    Property A As Integer
+End Interface
+
+Public Interface IBar
+    Sub OnSave()
+    Property B As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo, IBar
+
+    Public Overridable Sub Save() Implements IFoo.Save, IBar.OnSave
+    End Sub
+
+    Public Overridable Property A As Integer Implements IFoo.A, IBar.B
+
+End Class", @"
+public partial interface IFoo
+{
+    void Save();
+
+    int A { get; set; }
+}
+
+public partial interface IBar
+{
+    void OnSave();
+
+    int B { get; set; }
+}
+
+public partial class Foo : IFoo, IBar
+{
+    public virtual void Save()
+    {
+    }
+
+    void IFoo.Save() => Save();
+    void IBar.OnSave() => Save();
+
+    public virtual int A { get; set; }
+    int IFoo.A
+    {
+        get => A;
+        set => A = value;
+    }
+    int IBar.B
+    {
+        get => A;
+        set => A = value;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task ExplicitInterfaceImplementationWhereMemberShadowsBase()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Sub Save()
+    Property Prop As Integer
+End Interface
+
+Public MustInherit Class BaseFoo
+    Public Overridable Sub OnSave()
+    End Sub
+
+    Public Overridable Property MyProp As Integer = 5
+End Class
+
+Public Class Foo
+    Inherits BaseFoo
+    Implements IFoo
+
+    Public Shadows Sub OnSave() Implements IFoo.Save
+    End Sub
+
+    Public Shadows Property MyProp As Integer = 6 Implements IFoo.Prop
+
+End Class", @"
+public partial interface IFoo
+{
+    void Save();
+
+    int Prop { get; set; }
+}
+
+public abstract partial class BaseFoo
+{
+    public virtual void OnSave()
+    {
+    }
+
+    public virtual int MyProp { get; set; } = 5;
+}
+
+public partial class Foo : BaseFoo, IFoo
+{
+    public new void OnSave()
+    {
+    }
+
+    void IFoo.Save() => OnSave();
+
+    public new int MyProp { get; set; } = 6;
+    int IFoo.Prop
+    {
+        get => MyProp;
+        set => MyProp = value;
+    }
+}");
+        }
+
+        [Fact]
         public async Task PrivatePropertyAccessorBlocksImplementsMultipleInterfacesAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
