@@ -803,12 +803,18 @@ namespace ICSharpCode.CodeConverter.CSharp
             var clause = GetDelegatingClause(method.Identifier, method.ParameterList, false);
 
             additionalInterfaceImplements.Do(interfaceImplement => {
-                var identifier = SyntaxFactory.Identifier(accessorKind == VBasic.SyntaxKind.GetAccessorBlock ? 
+                var isGetterMethodForParametrizedProperty = accessorKind == VBasic.SyntaxKind.GetAccessorBlock;
+
+                if (interfaceImplement.IsReadOnly && !isGetterMethodForParametrizedProperty)
+                    return;
+                if (interfaceImplement.IsWriteOnly && isGetterMethodForParametrizedProperty)
+                    return;
+
+                var identifier = SyntaxFactory.Identifier(isGetterMethodForParametrizedProperty ? 
                     GetMethodId(interfaceImplement.Name) : 
                     SetMethodId(interfaceImplement.Name));
                 var interfaceMethodDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers,
-                    method.ReturnType, method.TypeParameterList,
-                    MakeOptionalParametersRequired(method.ParameterList), method.ConstraintClauses, clause, identifier);
+                    method.ReturnType, method.TypeParameterList, MakeOptionalParametersRequired(method.ParameterList), method.ConstraintClauses, clause, identifier);
 
                 AddInterfaceMemberDeclarations(interfaceImplement, additionalDeclarations, interfaceMethodDeclParams);
             });
