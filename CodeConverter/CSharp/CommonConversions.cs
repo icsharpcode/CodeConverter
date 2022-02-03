@@ -324,12 +324,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             var isPartial = baseSymbol.IsPartialClassDefinition() || baseSymbol.IsPartialMethodDefinition() ||
                             baseSymbol.IsPartialMethodImplementation();
 
-            if (isInterfaceImplRef && isCasingDiffOnly) {
-                return baseSymbol.Name;
-            }
             if (isInterfaceImplRef) {
+                if (isCasingDiffOnly && baseClassSymbol.DeclaredAccessibility == Accessibility.Public)
+                    return baseSymbol.Name;
+
                 return baseClassSymbol.Name;
             }
+
             if (isPartial || !isDeclaration) {
                 return baseSymbol.Name;
             }

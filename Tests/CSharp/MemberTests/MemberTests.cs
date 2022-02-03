@@ -1852,6 +1852,242 @@ public partial class FooBar : IFoo, IBar
         }
 
         [Fact]
+        public async Task RenamedInterfaceCasingOnlyDifferenceConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Function DoFoo() As Integer
+    Property Prop As Integer
+End Interface
+
+Public Class Foo
+    Implements IFoo
+
+    Private Function doFoo() As Integer Implements IFoo.DoFoo
+        Return 4
+    End Function
+
+    Private Property prop As Integer Implements IFoo.Prop
+
+    Private Function Consumer() As Integer
+        Dim foo As New Foo()
+        Dim interfaceInstance As IFoo = foo
+        Return foo.doFoo() + foo.DoFoo() +
+               interfaceInstance.doFoo() + interfaceInstance.DoFoo() +
+               foo.prop + foo.Prop +
+               interfaceInstance.prop + interfaceInstance.Prop
+    End Function
+
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo();
+
+    int Prop { get; set; }
+}
+
+public partial class Foo : IFoo
+{
+    private int doFoo()
+    {
+        return 4;
+    }
+
+    int IFoo.DoFoo() => doFoo();
+
+    private int prop { get; set; }
+    int IFoo.Prop
+    {
+        get => prop;
+        set => prop = value;
+    }
+
+    private int Consumer()
+    {
+        var foo = new Foo();
+        IFoo interfaceInstance = foo;
+        return foo.doFoo() + foo.doFoo() + interfaceInstance.DoFoo() + interfaceInstance.DoFoo() + foo.prop + foo.prop + interfaceInstance.Prop + interfaceInstance.Prop;
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task RenamedInterfaceCasingOnlyDifferenceForVirtualMemberConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Function DoFoo() As Integer
+    Property Prop As Integer
+End Interface
+
+Public MustInherit Class BaseFoo
+    Implements IFoo
+
+    Protected Friend Overridable Function doFoo() As Integer Implements IFoo.DoFoo
+        Return 4
+    End Function
+
+    Protected Friend Overridable Property prop As Integer Implements IFoo.Prop
+
+End Class
+
+Public Class Foo
+    Inherits BaseFoo
+
+    Protected Friend Overrides Function DoFoo() As Integer
+        Return 5
+    End Function
+
+    Protected Friend Overrides Property Prop As Integer
+
+    Private Function Consumer() As Integer
+        Dim foo As New Foo()
+        Dim interfaceInstance As IFoo = foo
+        Dim baseClass As BaseFoo = foo
+        Return foo.doFoo() +  foo.DoFoo() +
+               interfaceInstance.doFoo() + interfaceInstance.DoFoo() + 
+               baseClass.doFoo() + baseClass.DoFoo() +
+               foo.prop + foo.Prop +
+               interfaceInstance.prop + interfaceInstance.Prop +
+               baseClass.prop + baseClass.Prop
+    End Function
+End Class", @"
+public partial interface IFoo
+{
+    int DoFoo();
+
+    int Prop { get; set; }
+}
+
+public abstract partial class BaseFoo : IFoo
+{
+    protected internal virtual int doFoo()
+    {
+        return 4;
+    }
+
+    int IFoo.DoFoo() => doFoo();
+
+    protected internal virtual int prop { get; set; }
+    int IFoo.Prop
+    {
+        get => prop;
+        set => prop = value;
+    }
+}
+
+public partial class Foo : BaseFoo
+{
+    protected internal override int doFoo()
+    {
+        return 5;
+    }
+
+    protected internal override int prop { get; set; }
+
+    private int Consumer()
+    {
+        var foo = new Foo();
+        IFoo interfaceInstance = foo;
+        BaseFoo baseClass = foo;
+        return foo.doFoo() + foo.doFoo() + interfaceInstance.DoFoo() + interfaceInstance.DoFoo() + baseClass.doFoo() + baseClass.doFoo() + foo.prop + foo.prop + interfaceInstance.Prop + interfaceInstance.Prop + baseClass.prop + baseClass.prop;
+    }
+}
+");
+        }
+
+        [Fact]
+        public async Task RenamedInterfaceCasingOnlyDifferenceWithOverloadedPropertyConsumerAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IUserContext
+    ReadOnly Property GroupID As String
+End Interface
+
+Public Interface IFoo
+    ReadOnly Property ConnectedGroupId As String
+End Interface
+
+Public MustInherit Class BaseFoo
+    Implements IUserContext
+
+    Protected Friend ReadOnly Property ConnectedGroupID() As String Implements IUserContext.GroupID
+
+End Class
+
+Public Class Foo
+    Inherits BaseFoo
+    Implements IFoo
+
+    Protected Friend Overloads ReadOnly Property ConnectedGroupID As String Implements IFoo.ConnectedGroupId ' Comment moves because this line gets split
+        Get
+            Return If("""", MyBase.ConnectedGroupID())
+        End Get
+    End Property
+
+    Private Function Consumer() As String
+        Dim foo As New Foo()
+        Dim ifoo As IFoo = foo
+        Dim baseFoo As BaseFoo = foo
+        Dim iUserContext As IUserContext = foo
+        Return foo.ConnectedGroupID & foo.ConnectedGroupId & 
+               iFoo.ConnectedGroupID & iFoo.ConnectedGroupId &
+               baseFoo.ConnectedGroupID & baseFoo.ConnectedGroupId &
+               iUserContext.GroupId & iUserContext.GroupID
+    End Function
+
+End Class", @"
+public partial interface IUserContext
+{
+    string GroupID { get; }
+}
+
+public partial interface IFoo
+{
+    string ConnectedGroupId { get; }
+}
+
+public abstract partial class BaseFoo : IUserContext
+{
+    protected internal string ConnectedGroupID { get; private set; }
+    string IUserContext.GroupID
+    {
+        get => ConnectedGroupID;
+    }
+}
+
+public partial class Foo : BaseFoo, IFoo
+{
+    protected internal new string ConnectedGroupID
+    {
+        get
+        {
+            return """" ?? base.ConnectedGroupID;
+        }
+    }
+
+    string IFoo.ConnectedGroupId // Comment moves because this line gets split
+    {
+        get => ConnectedGroupID;
+    }
+
+    private string Consumer()
+    {
+        var foo = new Foo();
+        IFoo ifoo = foo;
+        BaseFoo baseFoo = foo;
+        IUserContext iUserContext = foo;
+        return foo.ConnectedGroupID + foo.ConnectedGroupID + ifoo.ConnectedGroupId + ifoo.ConnectedGroupId + baseFoo.ConnectedGroupID + baseFoo.ConnectedGroupID + iUserContext.GroupID + iUserContext.GroupID;
+    }
+}
+");
+        }
+
+        [Fact]
         public async Task RenamedMethodImplementsMultipleInterfacesAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
