@@ -325,8 +325,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                             baseSymbol.IsPartialMethodImplementation();
 
             if (isInterfaceImplRef) {
-                if (isCasingDiffOnly && baseClassSymbol.DeclaredAccessibility == Accessibility.Public)
+                if (isCasingDiffOnly && baseClassSymbol.DeclaredAccessibility == Accessibility.Public) {
                     return baseSymbol.Name;
+                }
 
                 return baseClassSymbol.Name;
             }
