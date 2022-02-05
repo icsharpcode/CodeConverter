@@ -395,7 +395,8 @@ namespace ICSharpCode.CodeConverter.CSharp
                     left = CommonConversions.GetTypeSyntax(typeInfo.Type);
                 } else {
                     left = SyntaxFactory.ThisExpression();
-                    if (nodeSymbol.IsVirtual && !nodeSymbol.IsAbstract) {
+                    if (nodeSymbol.IsVirtual && !nodeSymbol.IsAbstract ||
+                        nodeSymbol.IsImplicitlyDeclared && nodeSymbol is IFieldSymbol { AssociatedSymbol: IPropertySymbol { IsVirtual: true, IsAbstract: false } }) {
                         simpleNameSyntax =
                             SyntaxFactory.IdentifierName(
                                 $"MyClass{ConvertIdentifier(node.Name.Identifier).ValueText}");
