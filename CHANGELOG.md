@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Improve snippet detection [#825](https://github.com/icsharpcode/CodeConverter/issues/825)
 
 ## [8.4.5] - 2022-01-26
 
