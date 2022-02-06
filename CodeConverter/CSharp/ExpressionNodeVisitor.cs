@@ -851,7 +851,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
         {
-            if (invocationSymbol.ContainingType.Name != nameof(Conversions) ||
+            if (invocationSymbol?.ContainingNamespace.MetadataName != nameof(Microsoft.VisualBasic) ||
+                invocationSymbol.ContainingType.Name != nameof(Conversions) ||
                 !invocationSymbol.Name.StartsWith("To") ||
                 conversionNode.ArgumentList.Arguments.Count != 1) {
                 return null;

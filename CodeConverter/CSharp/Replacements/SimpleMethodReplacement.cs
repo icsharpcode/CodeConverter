@@ -48,7 +48,11 @@ internal record SimpleMethodReplacement
             : SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(replaceWith.Split('.')));
     }
 
-    public static bool TryGet(ISymbol symbol, out SimpleMethodReplacement r) => MethodReplacements.TryGetValue(symbol.Name, out r);
+    public static bool TryGet(ISymbol symbol, out SimpleMethodReplacement r)
+    {
+        r = null;
+        return symbol != null && MethodReplacements.TryGetValue(symbol.Name, out r);
+    }
 
     public ExpressionSyntax ReplaceIfMatches(ISymbol symbol, ExpressionSyntax cSharpSyntaxNode, IEnumerable<ArgumentSyntax> args)
     {
