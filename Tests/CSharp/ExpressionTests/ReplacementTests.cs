@@ -117,9 +117,49 @@ public partial class SimpleMyProjectMethodReplacementsWork
         public async Task AddressOfMyProjectMethodReplacementsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Dim y As Func(Of DateTime, Integer) = AddressOf Microsoft.VisualBasic.DateAndTime.Year",
-                @"{
-    Func<DateTime, int> y = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar.GetYear;
-}");
+                @"Func<DateTime, int> y = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar.GetYear;",
+                expectSurroundingBlock: true
+            );
+        }
+
+        [Fact]
+        public async Task IsArrayReplacementsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Dim x = Microsoft.VisualBasic.Information.IsArray(New Integer(3))",
+                @"bool x = new int(3) is Array;",
+                expectSurroundingBlock: true
+            );
+        }
+
+        [Fact]
+        public async Task IsDbNullReplacementsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Dim x = Microsoft.VisualBasic.Information.IsDBNull(New Object())",
+                @"bool x = new object() is DBNull;",
+                expectSurroundingBlock: true
+            );
+        }
+
+        [Fact]
+        public async Task IsNothingReplacementAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Dim x = Microsoft.VisualBasic.Information.IsNothing(New Object())",
+                @"bool x = new object() == null;",
+                expectSurroundingBlock: true
+            );
+        }
+
+        [Fact]
+        public async Task IsErrorReplacementAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Dim x = Microsoft.VisualBasic.Information.IsError(New Object())",
+                @"bool x = new object() is Exception;",
+                expectSurroundingBlock: true
+            );
         }
     }
 }

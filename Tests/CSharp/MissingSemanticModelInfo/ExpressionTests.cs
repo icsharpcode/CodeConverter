@@ -389,15 +389,14 @@ CS0103: The name 'MyEvent' does not exist in the current context");
 
         End If
     End Sub
-End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
-
+End Class", @"
 internal partial class A
 {
     public void Test()
     {
         SomeUnknownType x = default;
         int y = 3;
-        if (Information.IsNothing(x) || Information.IsNothing(y))
+        if (x == null || (object)y == null)
         {
         }
     }
