@@ -46,6 +46,7 @@ public partial class TestSimpleMethodReplacements
     }
 }");
         }
+
         [Fact]
         public async Task SimpleMyProjectMethodReplacementsWorkAsync()
         {
