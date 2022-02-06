@@ -161,5 +161,15 @@ public partial class SimpleMyProjectMethodReplacementsWork
                 expectSurroundingBlock: true
             );
         }
+
+        [Fact]
+        public async Task MyDocumentsReplacementAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Dim x = Microsoft.VisualBasic.MyServices.SpecialDirectoriesProxy.MyDocuments",
+                @"string x = Environment.GetFolderPath(Environment.SpecialFolder.Personal);",
+                expectSurroundingBlock: true
+            );
+        }
     }
 }
