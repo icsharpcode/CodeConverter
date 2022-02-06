@@ -389,7 +389,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             if (!node.IsParentKind(VBasic.SyntaxKind.InvocationExpression) &&
                 SimpleMethodReplacement.TryGet(nodeSymbol, out var methodReplacement) &&
-                methodReplacement.ReplaceIfMatches(nodeSymbol, null, Array.Empty<ArgumentSyntax>()) is {} replacement) {
+                methodReplacement.ReplaceIfMatches(nodeSymbol, Array.Empty<ArgumentSyntax>(), node.IsParentKind(VBasic.SyntaxKind.AddressOfExpression)) is {} replacement) {
                 return replacement;
             }
 
@@ -1731,8 +1731,9 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
-            if (SimpleMethodReplacement.TryGet(symbol, out var methodReplacement)) {
-                cSharpSyntaxNode = methodReplacement.ReplaceIfMatches(symbol, cSharpSyntaxNode, await ConvertArgumentsAsync(node.ArgumentList));
+            if (SimpleMethodReplacement.TryGet(symbol, out var methodReplacement) &&
+                methodReplacement.ReplaceIfMatches(symbol, await ConvertArgumentsAsync(node.ArgumentList), false) is {} csExpression) {
+                cSharpSyntaxNode = csExpression;
             }
 
             return cSharpSyntaxNode;

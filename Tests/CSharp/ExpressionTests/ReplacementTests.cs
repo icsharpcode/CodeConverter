@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
     public class ReplacementTests : ConverterTestBase
     {
         [Fact]
-        public async Task SimpleMethodReplacementsWorkAsync()
+        public async Task SimpleMethodReplacementsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
 Public Class TestSimpleMethodReplacements
@@ -48,7 +48,7 @@ public partial class TestSimpleMethodReplacements
         }
 
         [Fact]
-        public async Task SimpleMyProjectMethodReplacementsWorkAsync()
+        public async Task SimpleMyProjectMethodReplacementsAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
 Imports System
@@ -110,6 +110,15 @@ public partial class SimpleMyProjectMethodReplacementsWork
         x = Computer.Info.OSPlatform;
         x = Environment.OSVersion.Version.ToString();
     }
+}");
+        }
+
+        [Fact]
+        public async Task AddressOfMyProjectMethodReplacementsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Dim y As Func(Of DateTime, Integer) = AddressOf Microsoft.VisualBasic.DateAndTime.Year",
+                @"{
+    Func<DateTime, int> y = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar.GetYear;
 }");
         }
     }

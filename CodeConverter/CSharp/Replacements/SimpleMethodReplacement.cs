@@ -54,19 +54,19 @@ internal record SimpleMethodReplacement
         return symbol != null && MethodReplacements.TryGetValue(symbol.Name, out r);
     }
 
-    public ExpressionSyntax ReplaceIfMatches(ISymbol symbol, ExpressionSyntax cSharpSyntaxNode, IEnumerable<ArgumentSyntax> args)
+    public ExpressionSyntax ReplaceIfMatches(ISymbol symbol, IEnumerable<ArgumentSyntax> args, bool isAddressOf)
     {
         if (QualifiedMethodNameMatches(symbol, _toReplace))
         {
             var argumentListSyntax = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(args));
             return _replaceWith switch {
-                ObjectCreationExpressionSyntax oces => oces.WithArgumentList(argumentListSyntax),
-                InvocationExpressionSyntax ies => ies.WithArgumentList(argumentListSyntax),
+                ObjectCreationExpressionSyntax oces => isAddressOf ? null : oces.WithArgumentList(argumentListSyntax),
+                InvocationExpressionSyntax ies => isAddressOf ? ies.Expression : ies.WithArgumentList(argumentListSyntax),
                 var x => x
             };
         }
 
-        return cSharpSyntaxNode;
+        return null;
     }
 
     private static bool QualifiedMethodNameMatches(ISymbol symbol, params string[] parts)
