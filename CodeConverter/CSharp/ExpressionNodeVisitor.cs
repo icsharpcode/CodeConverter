@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -384,9 +385,16 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitMemberAccessExpression(VBasic.Syntax.MemberAccessExpressionSyntax node)
         {
+            var nodeSymbol = GetSymbolInfoInDocument<ISymbol>(node.Name);
+
+            if (!node.IsParentKind(VBasic.SyntaxKind.InvocationExpression) &&
+                SimpleMethodReplacement.TryGet(nodeSymbol, out var methodReplacement) &&
+                methodReplacement.ReplaceIfMatches(nodeSymbol, Array.Empty<ArgumentSyntax>(), node.IsParentKind(VBasic.SyntaxKind.AddressOfExpression)) is {} replacement) {
+                return replacement;
+            }
+
             var simpleNameSyntax = await node.Name.AcceptAsync<SimpleNameSyntax>(TriviaConvertingExpressionVisitor);
 
-            var nodeSymbol = GetSymbolInfoInDocument<ISymbol>(node.Name);
             var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
             ExpressionSyntax left = null;
             if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax && nodeSymbol != null) {
@@ -843,7 +851,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
         {
-            if (invocationSymbol.ContainingType.Name != nameof(Conversions) ||
+            if (invocationSymbol?.ContainingNamespace.MetadataName != nameof(Microsoft.VisualBasic) ||
+                invocationSymbol.ContainingType.Name != nameof(Conversions) ||
                 !invocationSymbol.Name.StartsWith("To") ||
                 conversionNode.ArgumentList.Arguments.Count != 1) {
                 return null;
@@ -895,8 +904,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSharpSyntaxNode> ConvertOrReplaceInvocationAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol)
         {
             var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
-            if (expressionSymbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) &&
-                (await SubstituteVisualBasicMethodOrNullAsync(node, invocationSymbol, expressionSymbol) ?? await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
+            if ((await SubstituteVisualBasicMethodOrNullAsync(node, invocationSymbol, expressionSymbol) ??
+                 await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
                 return csEquivalent;
             }
 
@@ -1710,11 +1719,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                    );
         }
 
-        private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol, ISymbol expressionSymbol)
+        private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol, ISymbol symbol)
         {
             ExpressionSyntax cSharpSyntaxNode = null;
-            var symbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
-            if (symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
+            if (symbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
                 var vbArg = node.ArgumentList.Arguments.Single().GetExpression();
                 var constValue = _semanticModel.GetConstantValue(vbArg);
                 if (IsCultureInvariant(symbol, constValue)) {
@@ -1723,8 +1731,14 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
             }
 
+            if (SimpleMethodReplacement.TryGet(symbol, out var methodReplacement) &&
+                methodReplacement.ReplaceIfMatches(symbol, await ConvertArgumentsAsync(node.ArgumentList), false) is {} csExpression) {
+                cSharpSyntaxNode = csExpression;
+            }
+
             return cSharpSyntaxNode;
         }
+
 
         private static bool RequiresStringCompareMethodToBeAppended(ISymbol symbol) =>
             symbol?.ContainingType.Name == nameof(Strings) &&

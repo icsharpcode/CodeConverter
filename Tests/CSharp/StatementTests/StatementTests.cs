@@ -1627,7 +1627,6 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
         Return True
     End Function
 End Class", @"using System;
-using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class TestClass2
 {
@@ -1635,7 +1634,7 @@ public partial class TestClass2
     {
         switch (true)
         {
-            case object _ when DateAndTime.Today.DayOfWeek == DayOfWeek.Saturday | DateAndTime.Today.DayOfWeek == DayOfWeek.Sunday:
+            case object _ when DateTime.Today.DayOfWeek == DayOfWeek.Saturday | DateTime.Today.DayOfWeek == DayOfWeek.Sunday:
                 {
                     // we do not work on weekends
                     return false;

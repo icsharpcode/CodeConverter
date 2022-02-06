@@ -1716,13 +1716,14 @@ public partial class Foo
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
-End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
     public void Foo()
     {
-        var x = DateAndTime.DateAdd(""m"", 5d, DateAndTime.Now);
+        var x = DateAndTime.DateAdd(""m"", 5d, DateTime.Now);
     }
 }");
         }
