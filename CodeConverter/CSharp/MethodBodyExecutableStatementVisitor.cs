@@ -765,8 +765,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var csBlockStatements = (await ConvertStatementsAsync(block.Statements)).ToList();
-                if (csBlockStatements.LastOrDefault()
-                        ?.IsKind(SyntaxKind.ReturnStatement, SyntaxKind.BreakStatement) != true) {
+                if (!WillLastStatementExit(csBlockStatements.LastOrDefault())) {
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
                 }
                 var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
@@ -775,6 +774,42 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var switchStatementSyntax = ValidSyntaxFactory.SwitchStatement(csSwitchExpr, sections);
             return SingleStatement(switchStatementSyntax);
+        }
+
+        private static bool WillLastStatementExit(StatementSyntax statement)
+        {
+            if (statement == null) {
+                return false;
+            }
+
+            StatementSyntax GetLastStatement(StatementSyntax node) => node is BlockSyntax block ? block.Statements.LastOrDefault() : node;
+            bool IsExitStatement(StatementSyntax node)
+            {
+                node = GetLastStatement(node);
+                return node != null && node.IsKind(SyntaxKind.ReturnStatement, SyntaxKind.BreakStatement, SyntaxKind.ThrowStatement, SyntaxKind.ContinueStatement);
+            }
+
+            if (IsExitStatement(statement)) {
+                return true;
+            }
+
+            if (statement is not IfStatementSyntax ifStatement) {
+                return false;
+            }
+
+            while(ifStatement.Else != null) {
+                if (!IsExitStatement(ifStatement.Statement)) {
+                    return false;
+                }
+
+                if (ifStatement.Else.Statement is IfStatementSyntax x) {
+                    ifStatement = x;
+                } else {
+                    return IsExitStatement(ifStatement.Else.Statement);
+                }
+            }
+
+            return false;
         }
 
         private static bool IsEnumOrNullableEnum(ITypeSymbol convertedType) =>

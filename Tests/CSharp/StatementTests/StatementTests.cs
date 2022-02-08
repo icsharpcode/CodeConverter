@@ -1709,7 +1709,6 @@ public partial class TestClass2
             default:
                 {
                     throw new Exception();
-                    break;
                 }
         }
     }
