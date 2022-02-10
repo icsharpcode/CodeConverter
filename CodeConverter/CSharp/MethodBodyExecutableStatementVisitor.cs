@@ -765,7 +765,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 }
 
                 var csBlockStatements = (await ConvertStatementsAsync(block.Statements)).ToList();
-                if (!WillLastStatementExit(csBlockStatements.LastOrDefault())) {
+                if (!DefinitelyExits(csBlockStatements.LastOrDefault())) {
                     csBlockStatements.Add(SyntaxFactory.BreakStatement());
                 }
                 var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
@@ -776,7 +776,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SingleStatement(switchStatementSyntax);
         }
 
-        private static bool WillLastStatementExit(StatementSyntax statement)
+        private static bool DefinitelyExits(StatementSyntax statement)
         {
             if (statement == null) {
                 return false;
