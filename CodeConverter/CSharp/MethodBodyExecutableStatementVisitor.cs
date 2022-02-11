@@ -113,18 +113,22 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var variable = decl.Declaration.Variables.Single();
                         var initializeValue = variable.Initializer?.Value;
                         string methodName;
-                        VBSyntax.MethodBaseSyntax methodOrSubNewStatement;
+                        VBSyntax.MethodBaseSyntax blockStatement;
                         if (_methodNode is VBSyntax.MethodBlockSyntax methodBlock) {
-                            var methodStatement = methodBlock.BlockStatement as VBSyntax.MethodStatementSyntax;
-                            methodOrSubNewStatement = methodStatement;
+                            blockStatement = methodBlock.BlockStatement;
+                            var methodStatement = blockStatement as VBSyntax.MethodStatementSyntax;
                             methodName = methodStatement.Identifier.Text;
                         } else if (_methodNode is VBSyntax.ConstructorBlockSyntax constructorBlock) {
-                            methodOrSubNewStatement = constructorBlock.BlockStatement as VBSyntax.SubNewStatementSyntax;
+                            blockStatement = constructorBlock.BlockStatement;
                             methodName = null;
+                        } else if (_methodNode is VBSyntax.AccessorBlockSyntax accessorBlock) {
+                            blockStatement = accessorBlock.BlockStatement;
+                            var propertyBlock = _methodNode.Parent as VBSyntax.PropertyBlockSyntax;
+                            methodName = propertyBlock.PropertyStatement.Identifier.Text;
                         } else {
                             throw new NotImplementedException(_methodNode.GetType() + " not implemented!");
                         }
-                        var isVbShared = methodOrSubNewStatement.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
+                        var isVbShared = blockStatement.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
                         _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
                     }
                 } else {
