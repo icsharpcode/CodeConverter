@@ -1661,6 +1661,276 @@ public partial class EnumTest
         }
 
         [Fact]
+        public async Task SelectCaseDoesntGenerateBreakWhenLastStatementWillExitAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"Public Class Test
+    Public Function OnLoad() As Integer
+        Dim x = 5
+        While True
+            Select Case x
+                Case 0
+                    Continue While
+                Case 1
+                    x = 1
+                Case 2
+                    Return 2
+                Case 3
+                    Throw New Exception()
+                Case 4
+                    If True Then
+                        x = 4
+                    Else
+                        Return x
+                    End If
+                Case 5
+                    If True Then
+                        Return x
+                    Else
+                        x = 5
+                    End If
+                Case 6
+                    If True Then
+                        Return x
+                    Else If False Then
+                        x = 6
+                    Else
+                        Return x
+                    End If
+                Case 7
+                    If True Then
+                        Return x
+                    End If
+                Case 8
+                    If True Then Return x
+                Case 9
+                    If True Then x = 9
+                Case 10
+                    If True Then Return x Else x = 10
+                Case 11
+                    If True Then x = 11 Else Return x
+                Case 12
+                    If True Then Return x Else Return x
+                Case 13
+                    If True Then
+                        Return x
+                    Else If False Then
+                        Continue While
+                    Else If False Then
+                        Throw New Exception()
+                    Else If False Then
+                        Exit Select
+                    Else
+                        Return x
+                    End If
+                Case 14
+                    If True Then
+                        Return x
+                    Else If False Then
+                        Return x
+                    Else If False Then
+                        Exit Select
+                    End If
+                Case Else
+                    If True Then
+                        Return x
+                    Else
+                        Return x
+                    End If
+            End Select
+        End While
+        Return x
+    End Function
+End Class", @"using System;
+
+public partial class Test
+{
+    public int OnLoad()
+    {
+        int x = 5;
+        while (true)
+        {
+            switch (x)
+            {
+                case 0:
+                    {
+                        continue;
+                    }
+
+                case 1:
+                    {
+                        x = 1;
+                        break;
+                    }
+
+                case 2:
+                    {
+                        return 2;
+                    }
+
+                case 3:
+                    {
+                        throw new Exception();
+                    }
+
+                case 4:
+                    {
+                        if (true)
+                        {
+                            x = 4;
+                        }
+                        else
+                        {
+                            return x;
+                        }
+
+                        break;
+                    }
+
+                case 5:
+                    {
+                        if (true)
+                        {
+                            return x;
+                        }
+                        else
+                        {
+                            x = 5;
+                        }
+
+                        break;
+                    }
+
+                case 6:
+                    {
+                        if (true)
+                        {
+                            return x;
+                        }
+                        else if (false)
+                        {
+                            x = 6;
+                        }
+                        else
+                        {
+                            return x;
+                        }
+
+                        break;
+                    }
+
+                case 7:
+                    {
+                        if (true)
+                        {
+                            return x;
+                        }
+
+                        break;
+                    }
+
+                case 8:
+                    {
+                        if (true)
+                            return x;
+                        break;
+                    }
+
+                case 9:
+                    {
+                        if (true)
+                            x = 9;
+                        break;
+                    }
+
+                case 10:
+                    {
+                        if (true)
+                            return x;
+                        else
+                            x = 10;
+                        break;
+                    }
+
+                case 11:
+                    {
+                        if (true)
+                            x = 11;
+                        else
+                            return x;
+                        break;
+                    }
+
+                case 12:
+                    {
+                        if (true)
+                            return x;
+                        else
+                            return x;
+                    }
+
+                case 13:
+                    {
+                        if (true)
+                        {
+                            return x;
+                        }
+                        else if (false)
+                        {
+                            continue;
+                        }
+                        else if (false)
+                        {
+                            throw new Exception();
+                        }
+                        else if (false)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            return x;
+                        }
+                    }
+
+                case 14:
+                    {
+                        if (true)
+                        {
+                            return x;
+                        }
+                        else if (false)
+                        {
+                            return x;
+                        }
+                        else if (false)
+                        {
+                            break;
+                        }
+
+                        break;
+                    }
+
+                default:
+                    {
+                        if (true)
+                        {
+                            return x;
+                        }
+                        else
+                        {
+                            return x;
+                        }
+                    }
+            }
+        }
+
+        return x;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TupleAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
