@@ -985,6 +985,55 @@ internal partial class TestClass
 }");
         }
 
+        
+        [Fact]
+        public async Task ExternalReferenceToOutParameterFromInterfaceImplementationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Class TestClass
+    Implements IReadOnlyDictionary(Of Integer, Integer)
+    Public Function TryGetValue(key as Integer, ByRef value As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).TryGetValue
+        value = key
+    End Function
+
+    Private Sub TestMethod()
+        Dim value As Integer
+        Me.TryGetValue(5, value)
+    End Sub
+End Class", @"using System.Collections.Generic;
+
+internal partial class TestClass : IReadOnlyDictionary<int, int>
+{
+    public bool TryGetValue(int key, out int value)
+    {
+        value = key;
+        return default;
+    }
+
+    private void TestMethod()
+    {
+        var value = default(int);
+        TryGetValue(5, out value);
+    }
+}
+7 source compilation errors:
+BC30149: Class 'TestClass' must implement 'Function ContainsKey(key As Integer) As Boolean' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Default Property Item(key As Integer) As Integer' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property Keys As IEnumerable(Of Integer)' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property Values As IEnumerable(Of Integer)' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property Count As Integer' for interface 'IReadOnlyCollection(Of KeyValuePair(Of Integer, Integer))'.
+BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of Integer, Integer))' for interface 'IEnumerable(Of KeyValuePair(Of Integer, Integer))'.
+BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator' for interface 'IEnumerable'.
+7 target compilation errors:
+CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.ContainsKey(int)'
+CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.this[int]'
+CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.Keys'
+CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.Values'
+CS0535: 'TestClass' does not implement interface member 'IReadOnlyCollection<KeyValuePair<int, int>>.Count'
+CS0535: 'TestClass' does not implement interface member 'IEnumerable<KeyValuePair<int, int>>.GetEnumerator()'
+CS0535: 'TestClass' does not implement interface member 'IEnumerable.GetEnumerator()'");
+        }
+
         [Fact]
         public async Task ElvisOperatorExpressionAsync()
         {

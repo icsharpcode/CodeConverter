@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util
@@ -15,6 +13,14 @@ namespace ICSharpCode.CodeConverter.Util
 
         public const string ForcePartialTypesAssemblyName = "ProjectToBeConvertedWithPartialTypes";
 
+        public static ISymbol GetBaseSymbol(this ISymbol symbol) => GetBaseSymbol(symbol, _ => true);
+
+        public static ISymbol GetBaseSymbol(this ISymbol symbol, Func<ISymbol, bool> selector)
+        {
+            return symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Property)
+                ? (symbol.FollowProperty(s => s.BaseMember()).LastOrDefault(selector)) ?? symbol
+                : symbol;
+        }
 
         public static bool IsDefinedInSource(this ISymbol symbol)
         {

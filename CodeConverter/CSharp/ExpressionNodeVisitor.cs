@@ -471,7 +471,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken token = default(SyntaxToken);
             var convertedArgExpression = (await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).SkipIntoParens();
             var typeConversionAnalyzer = CommonConversions.TypeConversionAnalyzer;
-            var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(symbol?.OriginalDefinition) ?? symbol)?.GetParameters();
+            var baseSymbol = symbol?.OriginalDefinition.GetBaseSymbol();
+            var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(baseSymbol) ?? symbol)?.GetParameters();
             if (possibleParameters.HasValue) {
                 var refType = GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
                 token = GetRefToken(refKind);
@@ -1208,7 +1209,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync)).ToList();
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
             var vbSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
-            var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(vbSymbol) as IParameterSymbol;
+            var baseParameters = vbSymbol?.ContainingSymbol.OriginalDefinition.GetBaseSymbol().GetParameters();
+            var baseParameter = baseParameters?[vbSymbol.Ordinal];
+
+            var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(baseParameter ?? vbSymbol) as IParameterSymbol;
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
                 modifiers = SyntaxFactory.TokenList(modifiers
                     .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
