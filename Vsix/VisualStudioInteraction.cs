@@ -77,7 +77,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 var filesPath = files.Select(t => t.Properties.Item("FullPath").Value as string).Where(fileFilter);
                 allSelectedFiles.AddRange(filesPath);
 
-                projectItems = folders.SelectMany(t => t.ProjectItems?.OfType<ProjectItem>() ?? Enumerable.Empty<ProjectItem>()).ToList();
+                projectItems = folders.Concat(files).SelectMany(t => t.ProjectItems?.OfType<ProjectItem>() ?? Enumerable.Empty<ProjectItem>()).ToList();
             }
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
