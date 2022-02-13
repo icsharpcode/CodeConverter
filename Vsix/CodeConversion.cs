@@ -71,8 +71,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public async Task ConvertDocumentsAsync<TLanguageConversion>(IReadOnlyCollection<string> documentsFilePath, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
-                var containingProjects = await VisualStudioInteraction.GetProjectsContainingAsync(documentsFilePath);
-                await EnsureBuiltAsync(containingProjects);
+                var containingProject = await VisualStudioInteraction.GetFirstProjectContainingAsync(documentsFilePath.First());
+                await EnsureBuiltAsync(containingProject is null ? Array.Empty<Project>() : new[]{containingProject});
                 await _joinableTaskFactory.RunAsync(async () => {
                     var result = ConvertDocumentsUnhandled<TLanguageConversion>(documentsFilePath, cancellationToken);
                     await WriteConvertedFilesAndShowSummaryAsync(result);

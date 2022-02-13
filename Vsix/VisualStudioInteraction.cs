@@ -74,7 +74,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
             while (projectItems.Count > 0) {
                 var folders = projectItems.Where(t => string.Equals(t.Kind, folderKind, StringComparison.OrdinalIgnoreCase));
                 var files = projectItems.Where(t => string.Equals(t.Kind, fileKind, StringComparison.OrdinalIgnoreCase));
-                allSelectedFiles.AddRange(files.Select(t => t.Properties.Item("FullPath").Value as string).Where(fileFilter));
+                var filesPath = files.Select(t => t.Properties.Item("FullPath").Value as string).Where(fileFilter);
+                allSelectedFiles.AddRange(filesPath);
 
                 projectItems = folders.SelectMany(t => t.ProjectItems?.OfType<ProjectItem>() ?? Enumerable.Empty<ProjectItem>()).ToList();
             }
@@ -265,21 +266,6 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var containingProject = Dte.Solution.FindProjectItem(documentFilePath)?.ContainingProject;
             await TaskScheduler.Default;
             return containingProject;
-        }
-
-        public static async Task<List<Project>> GetProjectsContainingAsync(IEnumerable<string> documentsFilePath)
-        {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-            var containingProjects = documentsFilePath
-                .Select(t => Dte.Solution.FindProjectItem(t)?.ContainingProject)
-                .Where(t => t != null)
-                .GroupBy(t => t.UniqueName)
-                .Select(t => t.First())
-                .ToList();
-#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
-            await TaskScheduler.Default;
-            return containingProjects;
         }
 
         internal class CaretPosition
