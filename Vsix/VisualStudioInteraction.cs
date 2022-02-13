@@ -61,13 +61,16 @@ namespace ICSharpCode.CodeConverter.VsExtension
             CancelAllToken = packageCancellation.CancelAll;
         }
 
-        public static async Task<string> GetSingleSelectedItemPathOrDefaultAsync()
+        public static async Task<List<string>> GetSelectedItemsPathAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-            var selectedItem = await GetSingleSelectedItemOrDefaultAsync();
-            var itemPath = selectedItem?.ItemPath;
+
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+            var itemPaths = GetSelectedSolutionExplorerItems<ProjectItem>().Select(t => t.Properties.Item("FullPath").Value as string).ToList();
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+
             await TaskScheduler.Default;
-            return itemPath;
+            return itemPaths;
         }
 
         public static async Task<Window> OpenFileAsync(FileInfo fileInfo)
@@ -84,6 +87,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             ((TextSelection)window?.Document?.Selection)?.SelectAll(); // https://github.com/icsharpcode/CodeConverter/issues/770
             await TaskScheduler.Default;
         }
+
         public static async Task<IReadOnlyCollection<Project>> GetSelectedProjectsAsync(string projectExtension)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
@@ -159,7 +163,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         }
 
         /// <returns>true iff the user answers "OK"</returns>
-        public static async Task<bool> ShowMessageBoxAsync(IAsyncServiceProvider serviceProvider, string title, string msg, bool showCancelButton, bool defaultOk = true)
+        public static async Task<bool> ShowMessageBoxAsync(string title, string msg, bool showCancelButton, bool defaultOk = true)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
             if (CancelAllToken.IsCancellationRequested) return false;
@@ -169,6 +173,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 defaultOk || !showCancelButton ? MessageBoxResult.OK : MessageBoxResult.Cancel);
             return userAnswer == MessageBoxResult.OK;
         }
+
+        public static async Task ShowMessageBoxAsync(string msg) => await ShowMessageBoxAsync(m_Title, msg, showCancelButton: false);
 
         public static async Task EnsureBuiltAsync(IReadOnlyCollection<Project> projects, Func<string, Task> writeMessageAsync)
         {
@@ -250,6 +256,21 @@ namespace ICSharpCode.CodeConverter.VsExtension
             return containingProject;
         }
 
+        public static async Task<List<Project>> GetProjectsContainingAsync(IEnumerable<string> documentsFilePath)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
+            var containingProjects = documentsFilePath
+                .Select(t => Dte.Solution.FindProjectItem(t)?.ContainingProject)
+                .Where(t => t != null)
+                .GroupBy(t => t.UniqueName)
+                .Select(t => t.First())
+                .ToList();
+#pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+            await TaskScheduler.Default;
+            return containingProjects;
+        }
+
         internal class CaretPosition
         {
             private readonly ITextEdit _textEdit;
@@ -270,37 +291,6 @@ namespace ICSharpCode.CodeConverter.VsExtension
             }
         }
 
-        private static async Task<VsDocument> GetSingleSelectedItemOrDefaultAsync()
-        {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-            var monitorSelection = Package.GetGlobalService(typeof(SVsShellMonitorSelection)) as IVsMonitorSelection;
-            var solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
-
-            if ((monitorSelection == null) || (solution == null))
-                return null;
-
-            var hResult = monitorSelection.GetCurrentSelection(out var hierarchyPtr, out uint itemId, out var multiItemSelect, out var selectionContainerPtr);
-            try {
-                if (ErrorHandler.Failed(hResult) || hierarchyPtr == IntPtr.Zero || itemId == VSConstants.VSITEMID_NIL ||
-                    multiItemSelect != null || itemId == VSConstants.VSITEMID_ROOT ||
-                    !(Marshal.GetObjectForIUnknown(hierarchyPtr) is IVsHierarchy hierarchy)) {
-                    return null;
-                }
-
-                int result = solution.GetGuidOfProject(hierarchy, out Guid guidProjectId);
-                // ReSharper disable once SuspiciousTypeConversion.Global - COM Object
-                return ErrorHandler.Succeeded(result) ? new VsDocument((IVsProject) hierarchy, guidProjectId, itemId) : null;
-
-            } finally {
-                if (selectionContainerPtr != IntPtr.Zero) {
-                    Marshal.Release(selectionContainerPtr);
-                }
-
-                if (hierarchyPtr != IntPtr.Zero) {
-                    Marshal.Release(hierarchyPtr);
-                }
-            }
-        }
         private static IEnumerable<T> GetSelectedSolutionExplorerItems<T>() where T: class
         {
             ThreadHelper.ThrowIfNotOnUIThread();

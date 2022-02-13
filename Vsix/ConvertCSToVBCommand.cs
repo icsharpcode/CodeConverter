@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading;
+using System.Windows;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -133,8 +135,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 menuItem.Visible = false;
                 menuItem.Enabled = false;
 
-                string itemPath = await VisualStudioInteraction.GetSingleSelectedItemPathOrDefaultAsync();
-                if (itemPath == null || !CodeConversion.IsCSFileName(itemPath)) {
+                var itemsPath = await VisualStudioInteraction.GetSelectedItemsPathAsync();
+                if (itemsPath == null || !CodeConversion.IsCSFileName(itemsPath)) {
                     return;
                 }
 
@@ -163,8 +165,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         private async Task ProjectItemMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
-            string itemPath = await VisualStudioInteraction.GetSingleSelectedItemPathOrDefaultAsync();
-            await ConvertDocumentAsync(itemPath, new Span(0, 0), cancellationToken);
+            var itemsPath = await VisualStudioInteraction.GetSelectedItemsPathAsync();
+            await ConvertDocumentsAsync(itemsPath, cancellationToken);
         }
 
         private async Task SolutionOrProjectMenuItemCallbackAsync(CancellationToken cancellationToken)
@@ -185,6 +187,20 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
             try {
                 await _codeConversion.ConvertDocumentAsync<CSToVBConversion>(documentPath, selected, cancellationToken);
+            } catch (Exception ex) {
+                await _package.ShowExceptionAsync(ex);
+            }
+        }
+
+        private async Task ConvertDocumentsAsync(IReadOnlyCollection<string> documentsPath, CancellationToken cancellationToken)
+        {
+            if (documentsPath == null || !CodeConversion.IsCSFileName(documentsPath)) {
+                await VisualStudioInteraction.ShowMessageBoxAsync("At least one selected file is already in VB language.");
+                return;
+            }
+
+            try {
+                await _codeConversion.ConvertDocumentsAsync<CSToVBConversion>(documentsPath, cancellationToken);
             } catch (Exception ex) {
                 await _package.ShowExceptionAsync(ex);
             }

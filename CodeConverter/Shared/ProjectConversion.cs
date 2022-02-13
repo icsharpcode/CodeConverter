@@ -71,6 +71,25 @@ namespace ICSharpCode.CodeConverter.Shared
             return GetSingleResultForDocument(conversionResults, document);
         }
 
+        public static async IAsyncEnumerable<ConversionResult> ConvertDocumentsAsync<TLanguageConversion>(
+            IReadOnlyCollection<Document> documents, 
+            ConversionOptions conversionOptions, 
+            IProgress<ConversionProgress> progress = null, 
+            [EnumeratorCancellation] CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
+        {
+            progress ??= new Progress<ConversionProgress>();
+            using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
+
+            var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
+            var project = documents.First().Project;
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
+
+            documents = documents.Select(doc => projectContentsConverter.SourceProject.GetDocument(doc.Id)).ToList();
+
+            var conversion = new ProjectConversion(projectContentsConverter, documents, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken, false);
+            await foreach (var result in conversion.Convert(progress).WithCancellation(cancellationToken)) yield return result;
+        }
+
         private static ConversionResult GetSingleResultForDocument(ConversionResult[] conversionResults, Document document)
         {
             var codeResult = conversionResults.First(r => r.SourcePathOrNull == document.FilePath);
