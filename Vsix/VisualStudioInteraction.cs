@@ -61,16 +61,27 @@ namespace ICSharpCode.CodeConverter.VsExtension
             CancelAllToken = packageCancellation.CancelAll;
         }
 
-        public static async Task<List<string>> GetSelectedItemsPathAsync()
+        public static async Task<List<string>> GetSelectedItemsPathAsync(Func<string, bool> fileFilter)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            const string folderKind = "{6BB5F8EF-4483-11D3-8BCF-00C04F8EC28C}";
+            const string fileKind = "{6BB5F8EE-4483-11D3-8BCF-00C04F8EC28C}";
 
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
-            var itemPaths = GetSelectedSolutionExplorerItems<ProjectItem>().Select(t => t.Properties.Item("FullPath").Value as string).ToList();
+            var allSelectedFiles = new List<string>();
+            var projectItems = GetSelectedSolutionExplorerItems<ProjectItem>().ToList();
+
+            while (projectItems.Count > 0) {
+                var folders = projectItems.Where(t => string.Equals(t.Kind, folderKind, StringComparison.OrdinalIgnoreCase));
+                var files = projectItems.Where(t => string.Equals(t.Kind, fileKind, StringComparison.OrdinalIgnoreCase));
+                allSelectedFiles.AddRange(files.Select(t => t.Properties.Item("FullPath").Value as string).Where(fileFilter));
+
+                projectItems = folders.SelectMany(t => t.ProjectItems?.OfType<ProjectItem>() ?? Enumerable.Empty<ProjectItem>()).ToList();
+            }
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
 
             await TaskScheduler.Default;
-            return itemPaths;
+            return allSelectedFiles;
         }
 
         public static async Task<Window> OpenFileAsync(FileInfo fileInfo)

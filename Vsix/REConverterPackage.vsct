@@ -15,6 +15,9 @@
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectItemCtxMenuGroup" priority="0x0300">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
       </Group>
+      <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterNodeItemCtxMenuGroup" priority="0x0300">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
+      </Group>
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectCtxMenuGroup" priority="0x0300" />
       <Group guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterSolutionCtxMenuGroup" priority="0x0300" />
  </Groups>
@@ -39,6 +42,12 @@
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" type="Button" priority="0x0300">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectItemCtxMenuGroup" />
+        <Strings>
+          <ButtonText>Convert to VB</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBNodeItemCtxCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterNodeItemCtxMenuGroup" />
         <Strings>
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
@@ -87,6 +96,12 @@
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" type="Button" priority="0x0300">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectItemCtxMenuGroup" />
+        <Strings>
+          <ButtonText>Convert to C#</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSNodeItemCtxCommandId" type="Button" priority="0x0300">
+        <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterNodeItemCtxMenuGroup" />
         <Strings>
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
@@ -161,16 +176,19 @@
       <IDSymbol name="CodeConverterProjectItemCtxMenuGroup" value="0x1022" />
       <IDSymbol name="CodeConverterProjectCtxMenuGroup" value="0x1023" />
       <IDSymbol name="CodeConverterSolutionCtxMenuGroup" value="0x1024" />
+      <IDSymbol name="CodeConverterNodeItemCtxMenuGroup" value="0x1025" />
       <IDSymbol name="ConvertCSToVBCommandId" value="0x0100" />
       <IDSymbol name="ConvertCSToVBCtxCommandId" value="0x0101" />
       <IDSymbol name="ConvertCSToVBProjectItemCtxCommandId" value="0x0102" />
       <IDSymbol name="ConvertCSToVBProjectCtxCommandId" value="0x0103" />
       <IDSymbol name="ConvertCSToVBSolutionCtxCommandId" value="0x0104" />
+      <IDSymbol name="ConvertCSToVBNodeItemCtxCommandId" value="0x0105" />
       <IDSymbol name="ConvertVBToCSCommandId" value="0x0200" />
       <IDSymbol name="ConvertVBToCSCtxCommandId" value="0x0201" />
       <IDSymbol name="ConvertVBToCSProjectItemCtxCommandId" value="0x0202" />
       <IDSymbol name="ConvertVBToCSProjectCtxCommandId" value="0x0203" />
       <IDSymbol name="ConvertVBToCSSolutionCtxCommandId" value="0x0204" />
+      <IDSymbol name="ConvertVBToCSNodeItemCtxCommandId" value="0x0205" />
       <IDSymbol name="PasteAsVBCommandId" value="0x0300" />
       <IDSymbol name="PasteAsCSCommandId" value="0x0400" />
     </GuidSymbol>

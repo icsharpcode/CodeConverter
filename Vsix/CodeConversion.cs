@@ -325,8 +325,6 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             return fileName.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
         }
 
-        public static bool IsCSFileName(IEnumerable<string> fileNames) => fileNames.All(IsCSFileName);
-
         /// <remarks>https://github.com/dotnet/roslyn/blob/91571a3bb038e05e7bf2ab87510273a1017faed0/src/VisualStudio/VisualBasic/Impl/LanguageService/VisualBasicPackage.vb#L45-L52</remarks>
         public static bool IsVBFileName(string fileName)
         {
@@ -343,8 +341,6 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             }
             return false;
         }
-
-        public static bool IsVBFileName(IEnumerable<string> fileNames) => fileNames.All(IsVBFileName);
 
         public async Task PasteAsAsync<TLanguageConversion>(CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
