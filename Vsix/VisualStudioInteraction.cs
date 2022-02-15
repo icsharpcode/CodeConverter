@@ -67,19 +67,19 @@ namespace ICSharpCode.CodeConverter.VsExtension
             const string folderKind = "{6BB5F8EF-4483-11D3-8BCF-00C04F8EC28C}";
             const string fileKind = "{6BB5F8EE-4483-11D3-8BCF-00C04F8EC28C}";
 
-#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
             var allSelectedFiles = new List<string>();
             var projectItems = GetSelectedSolutionExplorerItems<ProjectItem>().ToList();
 
             while (projectItems.Count > 0) {
+#pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 var folders = projectItems.Where(t => string.Equals(t.Kind, folderKind, StringComparison.OrdinalIgnoreCase));
                 var files = projectItems.Where(t => string.Equals(t.Kind, fileKind, StringComparison.OrdinalIgnoreCase));
                 var filesPath = files.Select(t => t.Properties.Item("FullPath").Value as string).Where(fileFilter);
                 allSelectedFiles.AddRange(filesPath);
 
                 projectItems = folders.Concat(files).SelectMany(t => t.ProjectItems?.OfType<ProjectItem>() ?? Enumerable.Empty<ProjectItem>()).ToList();
-            }
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
+            }
 
             await TaskScheduler.Default;
             return allSelectedFiles;
