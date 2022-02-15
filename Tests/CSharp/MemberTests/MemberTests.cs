@@ -3691,6 +3691,50 @@ internal partial class StaticLocalConvertedToField
         }
 
         [Fact]
+        public async Task TestPropertyStaticLocalConvertedToFieldAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+@"Class StaticLocalConvertedToField
+    Readonly Property OtherName() As Integer
+        Get
+            Static sPrevPosition As Integer = 3 ' Comment moves with declaration
+            Console.WriteLine(sPrevPosition)
+            Return sPrevPosition
+        End Get
+    End Property
+    Readonly Property OtherName(x As Integer) as Integer
+        Get
+            Static sPrevPosition As Integer
+            sPrevPosition += 1
+            Return sPrevPosition
+        End Get
+    End Property
+End Class", @"using System;
+
+internal partial class StaticLocalConvertedToField
+{
+    private int _OtherName_sPrevPosition = 3; // Comment moves with declaration
+
+    public int OtherName
+    {
+        get
+        {
+            Console.WriteLine(_OtherName_sPrevPosition);
+            return _OtherName_sPrevPosition;
+        }
+    }
+
+    private int _OtherName_sPrevPosition1 = default;
+
+    public int get_OtherName(int x)
+    {
+        _OtherName_sPrevPosition1 += 1;
+        return _OtherName_sPrevPosition1;
+    }
+}");
+        }
+
+        [Fact]
         public async Task TestStaticLocalConvertedToFieldAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
