@@ -2905,7 +2905,7 @@ public partial class Foo : IFoo, IBar
 
         
         [Fact]
-        public async Task ImplementMultipleRenamedPropertiesFromInterfaceAsAbstract()
+        public async Task ImplementMultipleRenamedPropertiesFromInterfaceAsAbstractAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"
@@ -2949,7 +2949,7 @@ public abstract partial class Foo : IFoo, IBar
         }
 
         [Fact]
-        public async Task ExplicitInterfaceImplementationForVirtualMemberFromAnotherClass()
+        public async Task ExplicitInterfaceImplementationForVirtualMemberFromAnotherClassAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"
@@ -3009,7 +3009,7 @@ public partial class Foo : BaseFoo, IFoo
         }
 
         [Fact]
-        public async Task ExplicitInterfaceImplementationWhereOnlyOneInterfaceMemberIsRenamed()
+        public async Task ExplicitInterfaceImplementationWhereOnlyOneInterfaceMemberIsRenamedAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"
@@ -3070,7 +3070,7 @@ public partial class Foo : IFoo, IBar
         }
 
         [Fact]
-        public async Task ExplicitInterfaceImplementationWhereMemberShadowsBase()
+        public async Task ExplicitInterfaceImplementationWhereMemberShadowsBaseAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
                 @"
