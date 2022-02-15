@@ -990,7 +990,7 @@ internal partial class TestClass
         public async Task ExternalReferenceToOutParameterFromInterfaceImplementationAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
-Class TestClass
+MustInherit Class TestClass
     Implements IReadOnlyDictionary(Of Integer, Integer)
     Public Function TryGetValue(key as Integer, ByRef value As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).TryGetValue
         value = key
@@ -1000,9 +1000,18 @@ Class TestClass
         Dim value As Integer
         Me.TryGetValue(5, value)
     End Sub
-End Class", @"using System.Collections.Generic;
 
-internal partial class TestClass : IReadOnlyDictionary<int, int>
+    Public MustOverride Function ContainsKey(key As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).ContainsKey
+    Public MustOverride Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of Integer, Integer)) Implements IEnumerable(Of KeyValuePair(Of Integer, Integer)).GetEnumerator
+    Public MustOverride Function IEnumerable_GetEnumerator() As IEnumerator Implements IEnumerable.GetEnumerator
+    Default Public MustOverride ReadOnly Property Item(key As Integer) As Integer Implements IReadOnlyDictionary(Of Integer, Integer).Item
+    Public MustOverride ReadOnly Property Keys As IEnumerable(Of Integer) Implements IReadOnlyDictionary(Of Integer, Integer).Keys
+    Public MustOverride ReadOnly Property Values As IEnumerable(Of Integer) Implements IReadOnlyDictionary(Of Integer, Integer).Values
+    Public MustOverride ReadOnly Property Count As Integer Implements IReadOnlyCollection(Of KeyValuePair(Of Integer, Integer)).Count
+End Class", @"using System.Collections;
+using System.Collections.Generic;
+
+internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
 {
     public bool TryGetValue(int key, out int value)
     {
@@ -1015,23 +1024,18 @@ internal partial class TestClass : IReadOnlyDictionary<int, int>
         var value = default(int);
         TryGetValue(5, out value);
     }
-}
-7 source compilation errors:
-BC30149: Class 'TestClass' must implement 'Function ContainsKey(key As Integer) As Boolean' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
-BC30149: Class 'TestClass' must implement 'ReadOnly Default Property Item(key As Integer) As Integer' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
-BC30149: Class 'TestClass' must implement 'ReadOnly Property Keys As IEnumerable(Of Integer)' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
-BC30149: Class 'TestClass' must implement 'ReadOnly Property Values As IEnumerable(Of Integer)' for interface 'IReadOnlyDictionary(Of Integer, Integer)'.
-BC30149: Class 'TestClass' must implement 'ReadOnly Property Count As Integer' for interface 'IReadOnlyCollection(Of KeyValuePair(Of Integer, Integer))'.
-BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of Integer, Integer))' for interface 'IEnumerable(Of KeyValuePair(Of Integer, Integer))'.
-BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator' for interface 'IEnumerable'.
-7 target compilation errors:
-CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.ContainsKey(int)'
-CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.this[int]'
-CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.Keys'
-CS0535: 'TestClass' does not implement interface member 'IReadOnlyDictionary<int, int>.Values'
-CS0535: 'TestClass' does not implement interface member 'IReadOnlyCollection<KeyValuePair<int, int>>.Count'
-CS0535: 'TestClass' does not implement interface member 'IEnumerable<KeyValuePair<int, int>>.GetEnumerator()'
-CS0535: 'TestClass' does not implement interface member 'IEnumerable.GetEnumerator()'");
+
+    public abstract bool ContainsKey(int key);
+    public abstract IEnumerator<KeyValuePair<int, int>> GetEnumerator();
+    public abstract IEnumerator IEnumerable_GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => IEnumerable_GetEnumerator();
+
+    public abstract int this[int key] { get; }
+
+    public abstract IEnumerable<int> Keys { get; }
+    public abstract IEnumerable<int> Values { get; }
+    public abstract int Count { get; }
+}");
         }
 
         [Fact]
