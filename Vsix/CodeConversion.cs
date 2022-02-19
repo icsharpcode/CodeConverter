@@ -270,6 +270,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
                 await _outputWindow.WriteToOutputWindowAsync("One or more file is not part of a compiling project, using best effort text conversion (less accurate).");
                 var convertedTexts = documentsPath.Select(t => ConvertFileTextAsync<TLanguageConversion>(t, Span.FromBounds(0, 0), cancellationToken));
                 foreach (var convertedText in convertedTexts) yield return await convertedText;
+                yield break;
             }
 
             var documents = documentsIds.Select(t => _visualStudioWorkspace.CurrentSolution.GetDocument(t)).ToList();
