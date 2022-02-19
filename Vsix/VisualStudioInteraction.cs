@@ -73,7 +73,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             while (projectItems.Count > 0) {
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
                 var folders = projectItems.Where(t => string.Equals(t.Kind, folderKind, StringComparison.OrdinalIgnoreCase));
-                var files = projectItems.Where(t => string.Equals(t.Kind, fileKind, StringComparison.OrdinalIgnoreCase));
+                var files = projectItems.Where(t => string.Equals(t.Kind, fileKind, StringComparison.OrdinalIgnoreCase)).ToList();
                 var filesPath = files.Select(t => t.Properties.Item("FullPath").Value as string).Where(fileFilter);
                 allSelectedFiles.AddRange(filesPath);
 
