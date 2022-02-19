@@ -265,17 +265,22 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         {
             await _outputWindow.WriteToOutputWindowAsync($"Converting {documentsPath.Count} files...", true, true);
 
-            var documentsIds = documentsPath.Select(t => _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(t).FirstOrDefault()).ToList();
-            if (documentsIds.Any(t => t == null)) {
-                await _outputWindow.WriteToOutputWindowAsync("One or more file is not part of a compiling project, using best effort text conversion (less accurate).");
-                var convertedTexts = documentsPath.Select(t => ConvertFileTextAsync<TLanguageConversion>(t, Span.FromBounds(0, 0), cancellationToken));
-                foreach (var convertedText in convertedTexts) yield return await convertedText;
-                yield break;
+            var (documentsWithoutIds, documentsWithIds) = documentsPath
+                .Select(t => (Path: t, Id: _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(t).FirstOrDefault()))
+                .SplitOn(t => t.Id != null);
+
+            if (documentsWithIds.Any()) {
+                var documents = documentsWithIds.Select(t => _visualStudioWorkspace.CurrentSolution.GetDocument(t.Id)).ToList();
+                var convertedDocuments = ProjectConversion.ConvertDocumentsAsync<TLanguageConversion>(documents,
+                    new ConversionOptions {AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()}, CreateOutputWindowProgress(), cancellationToken);
+                await foreach (var convertedDocument in convertedDocuments.WithCancellation(cancellationToken)) yield return convertedDocument;
             }
 
-            var documents = documentsIds.Select(t => _visualStudioWorkspace.CurrentSolution.GetDocument(t)).ToList();
-            var convertedDocuments = ProjectConversion.ConvertDocumentsAsync<TLanguageConversion>(documents, new ConversionOptions {AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()}, CreateOutputWindowProgress(), cancellationToken);
-            await foreach (var convertedDocument in convertedDocuments.WithCancellation(cancellationToken)) yield return convertedDocument;
+            if (documentsWithoutIds.Any()) {
+                await _outputWindow.WriteToOutputWindowAsync("One or more file is not part of a compiling project, using best effort text conversion (less accurate).");
+                var convertedTexts = documentsWithoutIds.Select(t => ConvertFileTextAsync<TLanguageConversion>(t.Path, Span.FromBounds(0, 0), cancellationToken));
+                foreach (var convertedText in convertedTexts) yield return await convertedText;
+            }
         }
 
         private async Task<ConversionResult> ConvertFileTextAsync<TLanguageConversion>(string documentPath,

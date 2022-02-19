@@ -20,10 +20,5 @@ namespace ICSharpCode.CodeConverter.CommandLine.Util
             dictionary[key] = element;
             return true;
         }
-
-        public static IEnumerable<T> Yield<T>(this T singleElement)
-        {
-            yield return singleElement;
-        }
     }
 }
