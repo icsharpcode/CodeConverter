@@ -42,12 +42,16 @@
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" type="Button" priority="0x0300">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectItemCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBNodeItemCtxCommandId" type="Button" priority="0x0300">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterNodeItemCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Convert to VB</ButtonText>
         </Strings>
@@ -96,12 +100,16 @@
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" type="Button" priority="0x0300">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterProjectItemCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSNodeItemCtxCommandId" type="Button" priority="0x0300">
         <Parent guid="guidCodeConverterCommandPackageCmdSet" id="CodeConverterNodeItemCtxMenuGroup" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
         <Strings>
           <ButtonText>Convert to C#</ButtonText>
         </Strings>
@@ -139,6 +147,10 @@
     <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="PasteAsVBCommandId" context="VbEditorMenuVisibilityGuid" />
     <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBCtxCommandId" context="CsEditorMenuVisibilityGuid" />
     <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSCtxCommandId" context="VbEditorMenuVisibilityGuid" />
+    <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBProjectItemCtxCommandId" context="CsFileMenuVisibilityGuid" />
+    <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSProjectItemCtxCommandId" context="VbFileMenuVisibilityGuid" />
+    <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBNodeItemCtxCommandId" context="CsNodeMenuVisibilityGuid" />
+    <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSNodeItemCtxCommandId" context="VbNodeMenuVisibilityGuid" />
     <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBProjectCtxCommandId" context="CsProjMenuVisibilityGuid" />
     <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertVBToCSProjectCtxCommandId" context="VbProjMenuVisibilityGuid" />
     <VisibilityItem guid="guidCodeConverterCommandPackageCmdSet" id="ConvertCSToVBSolutionCtxCommandId" context="CsSolutionMenuVisibilityGuid" />
@@ -164,6 +176,10 @@
 
     <GuidSymbol name="CsEditorMenuVisibilityGuid" value="{64448be3-dcfe-467c-8659-408d672a9909}" />
     <GuidSymbol name="VbEditorMenuVisibilityGuid" value="{8eb86734-0b20-4986-9f20-9ed22824d0e2}" />
+    <GuidSymbol name="CsFileMenuVisibilityGuid" value="{e32d529f-034b-4fe8-8e27-33a8ecf8f9ca}" />
+    <GuidSymbol name="VbFileMenuVisibilityGuid" value="{207ed41c-1bf3-4e92-ad4f-f910b461acfc}" />
+    <GuidSymbol name="CsNodeMenuVisibilityGuid" value="{1c92cd03-4bcc-4426-8c66-d34b081df30c}" />
+    <GuidSymbol name="VbNodeMenuVisibilityGuid" value="{3151fbb3-0dd3-4804-8371-3340f65fd05d}" />
     <GuidSymbol name="CsProjMenuVisibilityGuid" value="{045a3ed1-4cb2-4c47-95be-0d99948e854f}" />
     <GuidSymbol name="VbProjMenuVisibilityGuid" value="{11700acc-38d7-4fc1-88dd-9e316aa5d6d5}" />
     <GuidSymbol name="CsSolutionMenuVisibilityGuid" value="{cbe34396-af03-49ab-8945-3611a641abf6}" />

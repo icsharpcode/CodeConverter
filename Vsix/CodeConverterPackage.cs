@@ -46,6 +46,18 @@ namespace ICSharpCode.CodeConverter.VsExtension
     [ProvideUIContextRule(VbEditorMenuVisibilityGuid, name: nameof(VbEditorMenuVisibilityGuid),
         expression: "Vb", termNames: new[] { "Vb" },
         termValues: new[] { "ActiveEditorContentType:Basic" })]
+    [ProvideUIContextRule(CsFileMenuVisibilityGuid, name: nameof(CsFileMenuVisibilityGuid),
+        expression: "Csproj", termNames: new[] { "Csproj" },
+        termValues: new[] { "ActiveProjectCapability:CSharp"})]
+    [ProvideUIContextRule(VbFileMenuVisibilityGuid, name: nameof(VbFileMenuVisibilityGuid),
+        expression: "Vbproj", termNames: new[] { "Vbproj" },
+        termValues: new[] { "ActiveProjectCapability:VB"})]
+    [ProvideUIContextRule(CsNodeMenuVisibilityGuid, name: nameof(CsNodeMenuVisibilityGuid),
+        expression: "Csproj", termNames: new[] { "Csproj" },
+        termValues: new[] { "ActiveProjectCapability:CSharp"})]
+    [ProvideUIContextRule(VbNodeMenuVisibilityGuid, name: nameof(VbNodeMenuVisibilityGuid),
+        expression: "Vbproj", termNames: new[] { "Vbproj" },
+        termValues: new[] { "ActiveProjectCapability:VB"})]
     [ProvideUIContextRule(CsProjMenuVisibilityGuid, name: nameof(CsProjMenuVisibilityGuid),
         expression: "Csproj", termNames: new[] { "Csproj" },
         termValues: new[] { "ActiveProjectCapability:CSharp" })]
@@ -68,6 +80,10 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         public const string CsEditorMenuVisibilityGuid = "64448be3-dcfe-467c-8659-408d672a9909";
         public const string VbEditorMenuVisibilityGuid = "8eb86734-0b20-4986-9f20-9ed22824d0e2";
+        public const string CsFileMenuVisibilityGuid = "e32d529f-034b-4fe8-8e27-33a8ecf8f9ca";
+        public const string VbFileMenuVisibilityGuid = "207ed41c-1bf3-4e92-ad4f-f910b461acfc";
+        public const string CsNodeMenuVisibilityGuid = "1c92cd03-4bcc-4426-8c66-d34b081df30c";
+        public const string VbNodeMenuVisibilityGuid = "3151fbb3-0dd3-4804-8371-3340f65fd05d";
         public const string CsProjMenuVisibilityGuid = "045a3ed1-4cb2-4c47-95be-0d99948e854f";
         public const string VbProjMenuVisibilityGuid = "11700acc-38d7-4fc1-88dd-9e316aa5d6d5";
         public const string CsSolutionMenuVisibilityGuid = "cbe34396-af03-49ab-8945-3611a641abf6";
