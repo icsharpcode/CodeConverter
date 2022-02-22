@@ -9,8 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
+using Document = Microsoft.CodeAnalysis.Document;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -26,21 +28,23 @@ namespace ICSharpCode.CodeConverter.Shared
         private readonly CancellationToken _cancellationToken;
 
         private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert, IEnumerable<TextDocument> additionalDocumentsToConvert,
-            ILanguageConversion languageConversion, CancellationToken cancellationToken, bool showCompilationErrors, bool returnSelectedNode = false)
+            ILanguageConversion languageConversion, CancellationToken cancellationToken)
         {
             _projectContentsConverter = projectContentsConverter;
             _languageConversion = languageConversion;
             _documentsToConvert = documentsToConvert.ToList();
             _additionalDocumentsToConvert = additionalDocumentsToConvert.ToList();
-            _showCompilationErrors = showCompilationErrors;
-            _returnSelectedNode = returnSelectedNode;
+            if (languageConversion.ConversionOptions is SingleConversionOptions singleOptions) {
+                _returnSelectedNode = singleOptions.SelectedTextSpan.Length > 0;
+                _showCompilationErrors = singleOptions.ShowCompilationErrors;
+            }
+
             _cancellationToken = cancellationToken;
         }
 
         public static async Task<ConversionResult> ConvertTextAsync<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            progress ??= new Progress<ConversionProgress>();
-            using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
+            using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
 
             var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
             var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
@@ -52,30 +56,32 @@ namespace ICSharpCode.CodeConverter.Shared
 
         public static async Task<ConversionResult> ConvertSingleAsync<TLanguageConversion>(Document document, SingleConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
         {
-            progress ??= new Progress<ConversionProgress>();
-            using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
-
-            var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
-
-            bool returnSelectedNode = conversionOptions.SelectedTextSpan.Length > 0;
-            if (returnSelectedNode) {
-                document = await WithAnnotatedSelectionAsync(document, conversionOptions.SelectedTextSpan);
+            if (conversionOptions.SelectedTextSpan is { Length: > 0 } span) {
+                document = await WithAnnotatedSelectionAsync(document, span);
             }
-
-            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(document.Project, progress, cancellationToken);
-
-            document = projectContentsConverter.SourceProject.GetDocument(document.Id);
-
-            var conversion = new ProjectConversion(projectContentsConverter, new[] { document }, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken, conversionOptions.ShowCompilationErrors, returnSelectedNode);
-            var conversionResults = await conversion.Convert(progress).ToArrayAsync(cancellationToken);
-            return GetSingleResultForDocument(conversionResults, document);
-        }
-
-        private static ConversionResult GetSingleResultForDocument(ConversionResult[] conversionResults, Document document)
-        {
+            var conversionResults = await ConvertDocumentsAsync<TLanguageConversion>(new[] {document}, conversionOptions, progress, cancellationToken).ToArrayAsync(cancellationToken);
             var codeResult = conversionResults.First(r => r.SourcePathOrNull == document.FilePath);
             codeResult.Exceptions = conversionResults.SelectMany(x => x.Exceptions).ToArray();
             return codeResult;
+        }
+
+        public static async IAsyncEnumerable<ConversionResult> ConvertDocumentsAsync<TLanguageConversion>(
+            IReadOnlyCollection<Document> documents, 
+            ConversionOptions conversionOptions, 
+            IProgress<ConversionProgress> progress = null, 
+            [EnumeratorCancellation] CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
+        {
+            using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
+
+            var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
+            
+            var project = documents.First().Project;
+            var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
+
+            documents = documents.Select(doc => projectContentsConverter.SourceProject.GetDocument(doc.Id)).ToList();
+
+            var conversion = new ProjectConversion(projectContentsConverter, documents, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken);
+            await foreach (var result in conversion.Convert(progress).WithCancellation(cancellationToken)) yield return result;
         }
 
         public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
@@ -84,8 +90,7 @@ namespace ICSharpCode.CodeConverter.Shared
             [EnumeratorCancellation] CancellationToken cancellationToken,
             params (string Find, string Replace, bool FirstOnly)[] replacements)
         {
-            progress ??= new Progress<ConversionProgress>();
-            using var roslynEntryPoint = await RoslynEntryPointAsync(progress);
+            using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
             var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
             var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
             var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
@@ -172,7 +177,7 @@ namespace ICSharpCode.CodeConverter.Shared
             //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
             var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
 
-            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, projectContentsConverter.SourceProject.AdditionalDocuments, languageConversion, cancellationToken, false);
+            var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, projectContentsConverter.SourceProject.AdditionalDocuments, languageConversion, cancellationToken);
 
             var results = projectConversion.Convert(progress);
             await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;

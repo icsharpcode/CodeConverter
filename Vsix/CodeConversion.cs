@@ -68,6 +68,22 @@ namespace ICSharpCode.CodeConverter.VsExtension
             }
         }
 
+        public async Task ConvertDocumentsAsync<TLanguageConversion>(IReadOnlyCollection<string> documentsFilePath, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        {
+            try {
+                var containingProject = await VisualStudioInteraction.GetFirstProjectContainingAsync(documentsFilePath.First());
+                await EnsureBuiltAsync(containingProject is null ? Array.Empty<Project>() : new[]{containingProject});
+                await _joinableTaskFactory.RunAsync(async () => {
+                    var result = ConvertDocumentsUnhandled<TLanguageConversion>(documentsFilePath, cancellationToken);
+                    await WriteConvertedFilesAndShowSummaryAsync(result);
+                });
+            } catch (OperationCanceledException) {
+                if (!_packageCancellation.CancelAll.IsCancellationRequested) {
+                    await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Previous conversion cancelled", forceShow: true);
+                }
+            }
+        }
+
         public async Task ConvertDocumentAsync<TLanguageConversion>(string documentFilePath, Span selected, CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
         {
             try {
@@ -82,7 +98,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
                 if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
                     await SetClipboardTextOnUiThreadAsync(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
                     await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Conversion result copied to clipboard.");
-                    await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider, "Conversion result copied to clipboard.", $"Conversion result copied to clipboard. {conversionResult.GetExceptionsAsString()}", false);
+                    await VisualStudioInteraction.ShowMessageBoxAsync("Conversion result copied to clipboard.", $"Conversion result copied to clipboard. {conversionResult.GetExceptionsAsString()}", false);
                 }
             } catch (OperationCanceledException) {
                 if (!_packageCancellation.CancelAll.IsCancellationRequested) {
@@ -180,8 +196,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
             var maxExamples = 30; // Avoid a huge unreadable dialog going off the screen
             var exampleText = pathsToOverwrite.Count > maxExamples ? $". First {maxExamples} examples" : "";
             await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Awaiting user confirmation for overwrite....", forceShow: true);
-            bool shouldOverwrite = await VisualStudioInteraction.ShowMessageBoxAsync(_serviceProvider,
-                "Overwrite solution and referencing projects?",
+            bool shouldOverwrite = await VisualStudioInteraction.ShowMessageBoxAsync("Overwrite solution and referencing projects?",
                 $@"The current solution file and any referencing projects will be overwritten to reference the new project(s){exampleText}:
 * {string.Join(Environment.NewLine + "* ", pathsToOverwrite.Take(maxExamples))}
 
@@ -242,6 +257,30 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             var document = _visualStudioWorkspace.CurrentSolution.GetDocument(documentId);
             var selectedTextSpan = new TextSpan(selected.Start, selected.Length);
             return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan, AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()}, CreateOutputWindowProgress(), cancellationToken);
+        }
+
+        private async IAsyncEnumerable<ConversionResult> ConvertDocumentsUnhandled<TLanguageConversion>(
+            IReadOnlyCollection<string> documentsPath,
+            [EnumeratorCancellation] CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
+        {
+            await _outputWindow.WriteToOutputWindowAsync($"Converting {documentsPath.Count} files...", true, true);
+
+            var (documentsWithoutIds, documentsWithIds) = documentsPath
+                .Select(t => (Path: t, Id: _visualStudioWorkspace.CurrentSolution.GetDocumentIdsWithFilePath(t).FirstOrDefault()))
+                .SplitOn(t => t.Id != null);
+
+            if (documentsWithIds.Any()) {
+                var documents = documentsWithIds.Select(t => _visualStudioWorkspace.CurrentSolution.GetDocument(t.Id)).ToList();
+                var convertedDocuments = ProjectConversion.ConvertDocumentsAsync<TLanguageConversion>(documents,
+                    new ConversionOptions {AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()}, CreateOutputWindowProgress(), cancellationToken);
+                await foreach (var convertedDocument in convertedDocuments.WithCancellation(cancellationToken)) yield return convertedDocument;
+            }
+
+            if (documentsWithoutIds.Any()) {
+                await _outputWindow.WriteToOutputWindowAsync("One or more file is not part of a compiling project, using best effort text conversion (less accurate).");
+                var convertedTexts = documentsWithoutIds.Select(t => ConvertFileTextAsync<TLanguageConversion>(t.Path, Span.FromBounds(0, 0), cancellationToken));
+                foreach (var convertedText in convertedTexts) yield return await convertedText;
+            }
         }
 
         private async Task<ConversionResult> ConvertFileTextAsync<TLanguageConversion>(string documentPath,
