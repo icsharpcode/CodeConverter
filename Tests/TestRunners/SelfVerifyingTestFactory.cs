@@ -17,7 +17,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
         /// <summary>
         /// Returns facts which when executed, ensure the source Fact succeeds, then convert it, and ensure the target Fact succeeds too.
         /// </summary>
-        public static IEnumerable<NamedFact> GetSelfVerifyingFacts<TSourceCompiler, TTargetCompiler, TLanguageConversion>(string testFilepath)
+        public static IEnumerable<NamedTest> GetSelfVerifyingFacts<TSourceCompiler, TTargetCompiler, TLanguageConversion>(string testFilepath)
             where TSourceCompiler : ICompiler, new() where TTargetCompiler : ICompiler, new() where TLanguageConversion : ILanguageConversion, new()
         {
             var sourceFileText = File.ReadAllText(testFilepath, Encoding.UTF8);
@@ -30,8 +30,8 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
             return GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(sourceFileText, runnableTestsInSource);
         }
 
-        private static IEnumerable<NamedFact> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
-                List<NamedFact> runnableTestsInSource) where TTargetCompiler : ICompiler, new()
+        private static IEnumerable<NamedTest> GetSelfVerifyingFacts<TTargetCompiler, TLanguageConversion>(string sourceFileText,
+                List<NamedTest> runnableTestsInSource) where TTargetCompiler : ICompiler, new()
             where TLanguageConversion : ILanguageConversion, new()
         {
             // Lazy to avoid confusing test runner on error, but also avoid calculating multiple times
@@ -39,11 +39,11 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
                 ProjectConversion.ConvertTextAsync<TLanguageConversion>(sourceFileText, new TextConversionOptions(DefaultReferences.NetStandard2))
             );
 
-            var runnableTestsInTarget = new AsyncLazy<Dictionary<string, NamedFact>>(async () => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,
+            var runnableTestsInTarget = new AsyncLazy<Dictionary<string, NamedTest>>(async () => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,
                 await conversionResultAsync.GetValueAsync()));
 
             return runnableTestsInSource.Select(sourceFact =>
-                new NamedFact(sourceFact.Name, async () =>
+                new NamedTest(sourceFact.Name, async () =>
                 {
                     try
                     {
@@ -68,7 +68,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
             );
         }
 
-        private static Dictionary<string, NamedFact> GetConvertedNamedFacts<TTargetCompiler>(List<NamedFact> runnableTestsInSource, ConversionResult convertedText)
+        private static Dictionary<string, NamedTest> GetConvertedNamedFacts<TTargetCompiler>(List<NamedTest> runnableTestsInSource, ConversionResult convertedText)
             where TTargetCompiler : ICompiler, new()
         {
             string code = convertedText.ConvertedCode;
