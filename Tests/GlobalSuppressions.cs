@@ -5,4 +5,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Usage", "VSTHRD012:Provide JoinableTaskFactory where allowed", Justification = "I don't have or want a reference to VS Shell", Scope = "member", Target = "~M:ICSharpCode.CodeConverter.Tests.TestRunners.SelfVerifyingTestFactory.GetSelfVerifyingFacts``2(System.String,System.Collections.Generic.List{ICSharpCode.CodeConverter.Tests.TestRunners.NamedFact})~System.Collections.Generic.IEnumerable{ICSharpCode.CodeConverter.Tests.TestRunners.NamedFact}")]
+[assembly: SuppressMessage("Usage", "VSTHRD012:Provide JoinableTaskFactory where allowed", Justification = "I don't have or want a reference to VS Shell", Scope = "member", Target = "~M:ICSharpCode.CodeConverter.Tests.TestRunners.SelfVerifyingTestFactory.GetSelfVerifyingFacts``2(System.String,System.Collections.Generic.List{ICSharpCode.CodeConverter.Tests.TestRunners.NamedTest})~System.Collections.Generic.IEnumerable{ICSharpCode.CodeConverter.Tests.TestRunners.NamedTest}")]
