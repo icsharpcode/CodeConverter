@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.4.6] - 2022-03-02
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Fix method arguments when calling a parametrized property with named arguments. [#833](https://github.com/icsharpcode/CodeConverter/issues/833)
 * Fix access modifiers for explicit interface implementations. [#819](https://github.com/icsharpcode/CodeConverter/issues/819)
 * Fix code generation for explicit interface implementations. [#813](https://github.com/icsharpcode/CodeConverter/issues/813)
