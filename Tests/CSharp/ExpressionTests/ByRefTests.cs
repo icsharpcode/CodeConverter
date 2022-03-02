@@ -363,6 +363,65 @@ public partial class Class1
         }
 
         [Fact]
+        public async Task ReadOnlyPropertyRef_Issue843Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+
+    Public Class TestClass
+        Public ReadOnly Property Foo As String
+
+        Public Sub New()
+            Foo = ""abc""
+        End Sub
+    End Class
+
+    Sub Main()
+        Test02()
+    End Sub
+
+    Private Sub Test02()
+        Dim t As New TestClass
+        Test02Sub(t.Foo)
+    End Sub
+
+    Private Sub Test02Sub(ByRef value As String)
+        Console.WriteLine(value)
+    End Sub
+
+End Module", @"using System;
+
+internal static partial class Module1
+{
+    public partial class TestClass
+    {
+        public string Foo { get; private set; }
+
+        public TestClass()
+        {
+            Foo = ""abc"";
+        }
+    }
+
+    public static void Main()
+    {
+        Test02();
+    }
+
+    private static void Test02()
+    {
+        var t = new TestClass();
+        string argvalue = t.Foo;
+        Test02Sub(ref argvalue);
+    }
+
+    private static void Test02Sub(ref string value)
+    {
+        Console.WriteLine(value);
+    }
+}");
+        }
+
+        [Fact]
         public async Task AssignsBackToPropertyAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Imports System
