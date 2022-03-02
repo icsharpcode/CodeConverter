@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Replace VB-specific library methods with idiomatic framework alternatives [#814](https://github.com/icsharpcode/CodeConverter/pull/814)
 * Remove redundant break expressions in switch-case statements. [#432](https://github.com/icsharpcode/CodeConverter/issues/432)
 * Generate out parameter instead of ref for implementations of external methods. [#831](https://github.com/icsharpcode/CodeConverter/issues/831)
+* When passing a property ByRef, don't try to assign it back afterwards [#843](https://github.com/icsharpcode/CodeConverter/issues/843)
 
 ### C# -> VB
 

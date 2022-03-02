@@ -1626,7 +1626,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
             {
                 var symbolInfo = GetSymbolInfoInDocument<ISymbol>(expression);
-                if (symbolInfo.IsKind(SymbolKind.Property)) return RefConversion.PreAndPostAssignment;
+                if (symbolInfo is IPropertySymbol propertySymbol) {
+                    return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
+                }
 
                 var typeInfo = _semanticModel.GetTypeInfo(expression);
                 bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
