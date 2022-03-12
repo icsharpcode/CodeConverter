@@ -14,6 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [8.4.7] - 2022-03-12
+
+* Command line no longer silently exits for dot net framework projects
+
+
 ## [8.4.6] - 2022-03-02
 
 
