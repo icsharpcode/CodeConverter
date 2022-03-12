@@ -96,7 +96,7 @@ namespace ICSharpCode.CodeConverter.Shared
         private IAsyncEnumerable<ConversionResult> ConvertProject(Project project)
         {
             var replacements = _projectReferenceReplacements.ToArray();
-            _progress.Report(new ConversionProgress($"Begin converting {project.Name} at {DateTime.Now:hh:mm}..."));
+            _progress.Report(new ConversionProgress($"Begin converting {project.Name} at {DateTime.Now:HH:mm:ss}..."));
             return ProjectConversion.ConvertProject(project, _languageConversion, _textReplacementConverter, _progress, _cancellationToken, replacements);
         }
 

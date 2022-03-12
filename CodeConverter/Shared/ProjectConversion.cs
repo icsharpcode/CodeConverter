@@ -98,7 +98,7 @@ namespace ICSharpCode.CodeConverter.Shared
             var results = WithProjectFile(projectContentsConverter, textReplacementConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
             await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
 
-            progress.Report(new ConversionProgress($"Finished converting {project.Name} at {DateTime.Now:hh:mm}..."));
+            progress.Report(new ConversionProgress($"Finished converting {project.Name} at {DateTime.Now:HH:mm:ss}..."));
         }
 
         /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
