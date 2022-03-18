@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -503,7 +501,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             SyntaxToken token = default(SyntaxToken);
             var convertedArgExpression = (await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).SkipIntoParens();
             var typeConversionAnalyzer = CommonConversions.TypeConversionAnalyzer;
-            var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(symbol?.OriginalDefinition) ?? symbol)?.GetParameters();
+            var baseSymbol = symbol?.OriginalDefinition.GetBaseSymbol();
+            var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(baseSymbol) ?? symbol)?.GetParameters();
             if (possibleParameters.HasValue) {
                 var refType = GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
                 token = GetRefToken(refKind);
@@ -1067,9 +1066,17 @@ namespace ICSharpCode.CodeConverter.CSharp
                 expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
 
                 var args = await ConvertArgumentListOrEmptyAsync(node, optionalArgumentList);
-                if (extraArg != null)
-                {
-                    args = args.WithArguments(args.Arguments.Add(SyntaxFactory.Argument(extraArg)));
+                if (extraArg != null) {
+                    var extraArgSyntax = SyntaxFactory.Argument(extraArg);
+                    var propertySymbol = ((IPropertyReferenceOperation)operation).Property;
+                    var forceNamedExtraArg = args.Arguments.Count != propertySymbol.GetParameters().Length || 
+                                             args.Arguments.Any(t => t.NameColon != null);
+
+                    if (forceNamedExtraArg) {
+                        extraArgSyntax = extraArgSyntax.WithNameColon(SyntaxFactory.NameColon("value"));
+                    }
+
+                    args = args.WithArguments(args.Arguments.Add(extraArgSyntax));
                 }
 
                 return SyntaxFactory.InvocationExpression((ExpressionSyntax)expr, args);
@@ -1240,7 +1247,10 @@ namespace ICSharpCode.CodeConverter.CSharp
             var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync)).ToList();
             var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
             var vbSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
-            var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(vbSymbol) as IParameterSymbol;
+            var baseParameters = vbSymbol?.ContainingSymbol.OriginalDefinition.GetBaseSymbol().GetParameters();
+            var baseParameter = baseParameters?[vbSymbol.Ordinal];
+
+            var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(baseParameter ?? vbSymbol) as IParameterSymbol;
             if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
                 modifiers = SyntaxFactory.TokenList(modifiers
                     .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
@@ -1604,24 +1614,28 @@ namespace ICSharpCode.CodeConverter.CSharp
         private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(ISymbol invocationSymbol, IReadOnlyCollection<VBasic.Syntax.ArgumentSyntax> existingArgs)
         {
             int vbPositionalArgs = existingArgs.TakeWhile(a => !a.IsNamed).Count();
-            var namedArgNames = new HashSet<string>(existingArgs.OfType<VBasic.Syntax.SimpleArgumentSyntax>().Where(a => a.IsNamed).Select(a => a.NameColonEquals.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+            var namedArgNames = existingArgs
+                .OfType<VBasic.Syntax.SimpleArgumentSyntax>()
+                .Where(a => a.IsNamed)
+                .Select(a => a.NameColonEquals.Name.Identifier.Text)
+                .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
 
             var requiresCompareMethod = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive && RequiresStringCompareMethodToBeAppended(invocationSymbol);
 
-            if (invocationSymbol != null) {
-                var requiredInCs = invocationSymbol.GetParameters()
-                    .Select((p, i) => CreateExtraArgOrNull(invocationSymbol, p, i, vbPositionalArgs, namedArgNames, requiresCompareMethod));
-                return requiredInCs.Where(x => x != null);
+            if (invocationSymbol == null) {
+                return Enumerable.Empty<ArgumentSyntax>();
             }
 
-            return Enumerable.Empty<ArgumentSyntax>();
+            var requiredInCs = invocationSymbol.GetParameters()
+                .Select((p, i) => CreateExtraArgOrNull(p, i, vbPositionalArgs, namedArgNames, requiresCompareMethod));
+            return requiredInCs.Where(x => x != null);
+
         }
 
-        private ArgumentSyntax CreateExtraArgOrNull(ISymbol invocationSymbol, IParameterSymbol p, int i, int vbPositionalArgs, HashSet<string> namedArgNames, bool requiresCompareMethod)
+        private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, int i, int vbPositionalArgs, ImmutableHashSet<string> namedArgNames, bool requiresCompareMethod)
         {
             if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) return null;
             if (p.RefKind != RefKind.None) return CreateOptionalRefArg(p);
-            if (invocationSymbol is IPropertySymbol)  return SyntaxFactory.Argument(CommonConversions.Literal(p.ExplicitDefaultValue));
             if (requiresCompareMethod && p.Type.Name == "CompareMethod") return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
             return null;
         }
@@ -1644,7 +1658,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
             {
                 var symbolInfo = GetSymbolInfoInDocument<ISymbol>(expression);
-                if (symbolInfo.IsKind(SymbolKind.Property)) return RefConversion.PreAndPostAssignment;
+                if (symbolInfo is IPropertySymbol propertySymbol) {
+                    return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
+                }
 
                 var typeInfo = _semanticModel.GetTypeInfo(expression);
                 bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);

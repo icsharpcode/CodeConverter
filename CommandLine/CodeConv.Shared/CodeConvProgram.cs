@@ -110,10 +110,16 @@ Remarks:
         private static async Task<int> RunNetFrameworkExeAsync(string latestMsBuildExePath)
         {
             Console.WriteLine($"Using .NET Framework MSBuild from {latestMsBuildExePath}");
-            var assemblyPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
+            var assemblyDirectoryPath = Path.GetDirectoryName(Environment.GetCommandLineArgs()[0]);
             var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
-            if (string.IsNullOrWhiteSpace(assemblyPath)) throw new InvalidOperationException("Could not retrieve executing assembly directory");
-            var netFrameworkExe = Path.Combine(assemblyPath, "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
+            if (string.IsNullOrWhiteSpace(assemblyDirectoryPath)) throw new InvalidOperationException("Could not retrieve executing assembly directory");
+            var netFrameworkExe = Path.Combine(assemblyDirectoryPath, "..", "..", "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
+            if (!File.Exists(netFrameworkExe)) {
+                
+                var debugAssemblyDirectoryPath = Path.GetDirectoryName(assemblyDirectoryPath).Replace("CommandLine\\CodeConv\\", "CommandLine\\CodeConv.NetFramework\\");
+                var debugNetFrameworkExe = Path.Combine(debugAssemblyDirectoryPath, "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
+                netFrameworkExe = File.Exists(debugNetFrameworkExe) ? debugNetFrameworkExe : throw new FileNotFoundException($"Cannot find net framework exe at `{netFrameworkExe}`. Using the --core-only flag to get work around this.");
+            }
             var exitCode = await ProcessRunner.ConnectConsoleGetExitCodeAsync(netFrameworkExe, args);
             return exitCode;
         }

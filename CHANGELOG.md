@@ -10,13 +10,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
-* Fix access modifiers for explicit interface implementations. [#819](https://github.com/icsharpcode/CodeConverter/issues/819)
-* Fix code generation for explicit interface implementations. [#813](https://github.com/icsharpcode/CodeConverter/issues/813)
-* Replace VB-specific library methods with idiomatic framework alternatives [#814](https://github.com/icsharpcode/CodeConverter/pull/814)
-* Remove redundant break expressions in switch-case statements. [#432](https://github.com/icsharpcode/CodeConverter/issues/432)
 
 ### C# -> VB
 
+
+## [8.4.7] - 2022-03-12
+
+* Command line no longer silently exits for dot net framework projects
+* Log messages now include timestamps
+
+## [8.4.6] - 2022-03-02
+
+
+### Vsix
+
+
+### VB -> C#
+
+* Fix method arguments when calling a parametrized property with named arguments. [#833](https://github.com/icsharpcode/CodeConverter/issues/833)
+* Fix access modifiers for explicit interface implementations. [#819](https://github.com/icsharpcode/CodeConverter/issues/819)
+* Fix code generation for explicit interface implementations. [#813](https://github.com/icsharpcode/CodeConverter/issues/813)
+* Add support for converting multiple selected files and folders. [#485](https://github.com/icsharpcode/CodeConverter/issues/485)
+* Replace VB-specific library methods with idiomatic framework alternatives [#814](https://github.com/icsharpcode/CodeConverter/pull/814)
+* Remove redundant break expressions in switch-case statements. [#432](https://github.com/icsharpcode/CodeConverter/issues/432)
+* Generate out parameter instead of ref for implementations of external methods. [#831](https://github.com/icsharpcode/CodeConverter/issues/831)
+* When passing a property ByRef, don't try to assign it back afterwards [#843](https://github.com/icsharpcode/CodeConverter/issues/843)
+
+### C# -> VB
+
+* Improve snippet detection [#825](https://github.com/icsharpcode/CodeConverter/issues/825)
 
 ## [8.4.5] - 2022-01-26
 

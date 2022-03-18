@@ -162,7 +162,8 @@ namespace ICSharpCode.CodeConverter.VB
         public bool MustBeContainedByClass(SyntaxNode node)
         {
             return node is CSSyntax.BaseMethodDeclarationSyntax || node is CSSyntax.BaseFieldDeclarationSyntax ||
-                   node is CSSyntax.BasePropertyDeclarationSyntax;
+                   node is CSSyntax.BasePropertyDeclarationSyntax ||
+                   node is CSSyntax.GlobalStatementSyntax; //https://github.com/icsharpcode/CodeConverter/issues/825
         }
 
         private static bool ParsedAsFieldButCouldBeLocalVariableDeclaration(SyntaxNode node)

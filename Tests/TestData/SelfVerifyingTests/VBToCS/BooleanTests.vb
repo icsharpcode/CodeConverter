@@ -9,6 +9,132 @@ Imports Xunit
 ''' </summary>
 Public Class BooleanTests
 
+    <Theory>
+    <InlineData(True, True, False)>
+    <InlineData(True, False, True)>
+    <InlineData(False, True, True)>
+    <InlineData(False, False, False)>
+    Public Sub NotEqualOperatorsOnNullableBoolean(a As Boolean?, b As Boolean?, result As Boolean?)
+        Dim actualResult = a <> b
+        Assert.Equal(actualResult, result)
+        Assert.Equal(Not actualResult, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, True, False)>
+    <InlineData(True, False, True)>
+    <InlineData(False, True, True)>
+    <InlineData(False, False, False)>
+    Public Sub NotEqualOperatorsOnNormalAndNullableBooleans(a As Boolean, b As Boolean?, result As Boolean?)
+        Dim actualResult = a <> b
+        Assert.Equal(actualResult, result)
+        Assert.Equal(Not actualResult, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, True, False)>
+    <InlineData(True, False, True)>
+    <InlineData(False, True, True)>
+    <InlineData(False, False, False)>
+    Public Sub NotEqualOperatorsOnNullableAndNormalBoolean(a As Boolean?, b As Boolean, result As Boolean?)
+        Dim actualResult = a <> b
+        Assert.Equal(actualResult, result)
+        Assert.Equal(Not actualResult, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, False)>
+    <InlineData(False, True, False)>
+    <InlineData(False, False, True)>
+    Public Sub EqualOperatorsOnNullableBoolean(a As Boolean?, b As Boolean?, result As Boolean?)
+        Dim actualResult = a = b
+        Assert.Equal(actualResult, result)
+        Assert.Equal(Not actualResult, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, False)>
+    <InlineData(False, True, False)>
+    <InlineData(False, False, True)>
+    Public Sub EqualOperatorsOnNormalAndNullableBooleans(a As Boolean, b As Boolean?, result As Boolean?)
+        Dim actualResult = a = b
+        Assert.Equal(actualResult, result)
+        Assert.Equal(Not actualResult, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, False)>
+    <InlineData(False, True, False)>
+    <InlineData(False, False, True)>
+    Public Sub EqualOperatorsOnNullableAndNormalBoolean(a As Boolean?, b As Boolean, result As Boolean?)
+        Dim actualResult = a = b
+        Assert.Equal(actualResult, result)
+        Assert.Equal(Not actualResult, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, False)>
+    <InlineData(False, Nothing, False)>
+    <InlineData(False, True, False)>
+    <InlineData(False, False, False)>
+    Public Sub AndOperatorsOnNormalAndNullableBooleans(a As Boolean, b As Boolean?, result As Boolean?)
+        Dim actualResultAnd = a And b
+        Dim actualResultAndAlso = a AndAlso b
+        Assert.Equal(actualResultAnd, result)
+        Assert.Equal(actualResultAndAlso, result)
+        Assert.Equal(Not actualResultAnd, Not result)
+        Assert.Equal(Not actualResultAndAlso, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(Nothing, False, False)>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, False)>
+    <InlineData(False, True, False)>
+    <InlineData(False, False, False)>
+    Public Sub AndOperatorsOnNullableAndNormalBoolean(a As Boolean?, b As Boolean, result As Boolean?)
+        Dim actualResultAnd = a And b
+        Dim actualResultAndAlso = a AndAlso b
+        Assert.Equal(actualResultAnd, result)
+        Assert.Equal(actualResultAndAlso, result)
+        Assert.Equal(Not actualResultAnd, Not result)
+        Assert.Equal(Not actualResultAndAlso, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(True, Nothing, True)>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, True)>
+    <InlineData(False, True, True)>
+    <InlineData(False, False, False)>
+    Public Sub OrOperatorsOnNormalAndNullableBooleans(a As Boolean, b As Boolean?, result As Boolean?)
+        Dim actualResultOr = a Or b
+        Dim actualResultOrElse = a OrElse b
+        Assert.Equal(actualResultOr, result)
+        Assert.Equal(actualResultOrElse, result)
+        Assert.Equal(Not actualResultOr, Not result)
+        Assert.Equal(Not actualResultOrElse, Not result)
+    End Sub
+
+    <Theory>
+    <InlineData(Nothing, True, True)>
+    <InlineData(True, True, True)>
+    <InlineData(True, False, True)>
+    <InlineData(False, True, True)>
+    <InlineData(False, False, False)>
+    Public Sub OrOperatorsOnNullableAndNormalBoolean(a As Boolean?, b As Boolean, result As Boolean?)
+        Dim actualResultOr = a Or b
+        Dim actualResultOrElse = a OrElse b
+        Assert.Equal(actualResultOr, result)
+        Assert.Equal(actualResultOrElse, result)
+        Assert.Equal(Not actualResultOr, Not result)
+        Assert.Equal(Not actualResultOrElse, Not result)
+    End Sub
+
     <Fact>
     Public Sub NullableBoolsOnNothing()
         Dim x As Object = Nothing

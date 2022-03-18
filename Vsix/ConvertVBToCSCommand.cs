@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading;
@@ -19,6 +20,7 @@ namespace ICSharpCode.CodeConverter.VsExtension
         public const int ProjectItemCtxMenuCommandId = 0x0202;
         public const int ProjectCtxMenuCommandId = 0x0203;
         public const int SolutionCtxMenuCommandId = 0x0204;
+        public const int NodeItemCtxMenuCommandId = 0x0205;
         private const string ProjectExtension = ".vbproj";
 
         /// <summary>
@@ -81,6 +83,11 @@ namespace ICSharpCode.CodeConverter.VsExtension
                     package.CreateCommand(SolutionOrProjectMenuItemCallbackAsync, solutionCtxMenuCommandId);
                 solutionCtxMenuItem.BeforeQueryStatus += SolutionOrProjectMenuItem_BeforeQueryStatusAsync;
                 commandService.AddCommand(solutionCtxMenuItem);
+
+                var nodeItemCtxMenuCommandId = new CommandID(CommandSet, NodeItemCtxMenuCommandId);
+                var nodeItemCtxMenuItem = package.CreateCommand(ProjectItemMenuItemCallbackAsync, nodeItemCtxMenuCommandId);
+                nodeItemCtxMenuItem.BeforeQueryStatus += ProjectItemMenuItem_BeforeQueryStatusAsync;
+                commandService.AddCommand(nodeItemCtxMenuItem);
             }
         }
 
@@ -127,16 +134,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
         private async Task ProjectItemMenuItem_BeforeQueryStatusAsync(object sender, EventArgs e)
         {
             if (sender is OleMenuCommand menuItem) {
-                menuItem.Visible = false;
-                menuItem.Enabled = false;
-
-                string itemPath = await VisualStudioInteraction.GetSingleSelectedItemPathOrDefaultAsync();
-                if (itemPath == null || !CodeConversion.IsVBFileName(itemPath)) {
-                    return;
-                }
-
-                menuItem.Visible = true;
-                menuItem.Enabled = true;
+                var itemsPath = await VisualStudioInteraction.GetSelectedItemsPathAsync(CodeConversion.IsVBFileName);
+                menuItem.Visible = menuItem.Enabled = itemsPath.Count != 0;
             }
         }
 
@@ -160,8 +159,8 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
         private async Task ProjectItemMenuItemCallbackAsync(CancellationToken cancellationToken)
         {
-            string itemPath = await VisualStudioInteraction.GetSingleSelectedItemPathOrDefaultAsync();
-            await ConvertDocumentAsync(itemPath, new Span(0, 0), cancellationToken);
+            var itemsPath = await VisualStudioInteraction.GetSelectedItemsPathAsync(CodeConversion.IsVBFileName);
+            await ConvertDocumentsAsync(itemsPath, cancellationToken);
         }
 
         private async Task SolutionOrProjectMenuItemCallbackAsync(CancellationToken cancellationToken)
@@ -182,6 +181,20 @@ namespace ICSharpCode.CodeConverter.VsExtension
 
             try {
                 await _codeConversion.ConvertDocumentAsync<VBToCSConversion>(documentPath, selected, cancellationToken);
+            } catch (Exception ex) {
+                await _package.ShowExceptionAsync(ex);
+            }
+        }
+        
+        private async Task ConvertDocumentsAsync(IReadOnlyCollection<string> documentsPath, CancellationToken cancellationToken)
+        {
+            if (documentsPath.Count == 0) {
+                await VisualStudioInteraction.ShowMessageBoxAsync("Unable to find any files valid for conversion.");
+                return;
+            }
+
+            try {
+                await _codeConversion.ConvertDocumentsAsync<VBToCSConversion>(documentsPath, cancellationToken);
             } catch (Exception ex) {
                 await _package.ShowExceptionAsync(ex);
             }

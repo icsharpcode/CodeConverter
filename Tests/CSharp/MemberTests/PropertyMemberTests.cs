@@ -209,9 +209,9 @@ internal partial class TestClass
     public override string ToString()
     {
         set_FullName(true, ""hello2"");
-        set_FullName(false, ""hello3"");
-        set_FullName(false, ""hello4"");
-        return get_FullName(false);
+        set_FullName(value: ""hello3"");
+        set_FullName(value: ""hello4"");
+        return get_FullName();
     }
 }",
 hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
@@ -467,6 +467,186 @@ public partial class SomeClass
     public void SetValue(int value1, int value2)
     {
         SomeValue = value1 + value2;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestParametrizedPropertyCalledWithNamedArgumentsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Property Prop(Optional x As Integer = 1, Optional y as Integer = 2) As Integer
+End Interface
+Public Class SomeClass
+    Implements IFoo
+    Friend Property Prop2(Optional x As Integer = 1, Optional y as Integer = 2) As Integer Implements IFoo.Prop
+        Get
+        End Get
+        Set
+        End Set
+    End Property
+
+    Sub TestGet()
+        Dim foo As IFoo = Me
+        Dim a = Prop2() + Prop2(y := 20) + Prop2(x := 10) + Prop2(y := -2, x := -1) + Prop2(x := -1, y := -2)
+        Dim b = foo.Prop() + foo.Prop(y := 20) + foo.Prop(x := 10) + foo.Prop(y := -2, x := -1) + foo.Prop(x := -1, y := -2)
+    End Sub
+
+    Sub TestSet()
+        Prop2() = 1
+        Prop2(-1, -2) = 1
+        Prop2(-1) = 1
+        Prop2(y := 20) = 1
+        Prop2(x := 10) = 1
+        Prop2(y := -2, x := -1) = 1
+        Prop2(x := -1, y := -2) = 1
+
+        Dim foo As IFoo = Me
+        foo.Prop() = 1
+        foo.Prop(-1, -2) = 1
+        foo.Prop(-1) = 1
+        foo.Prop(y := 20) = 1
+        foo.Prop(x := 10) = 1
+        foo.Prop(y := -2, x := -1) = 1
+        foo.Prop(x := -1, y := -2) = 1
+    End Sub
+End Class", @"
+public partial interface IFoo
+{
+    int get_Prop(int x = 1, int y = 2);
+    void set_Prop(int x = 1, int y = 2, int value = default);
+}
+
+public partial class SomeClass : IFoo
+{
+    internal int get_Prop2(int x = 1, int y = 2)
+    {
+        return default;
+    }
+
+    internal void set_Prop2(int x = 1, int y = 2, int value = default)
+    {
+    }
+
+    int IFoo.get_Prop(int x, int y) => get_Prop2(x, y);
+    void IFoo.set_Prop(int x, int y, int value) => set_Prop2(x, y, value);
+
+    public void TestGet()
+    {
+        IFoo foo = this;
+        int a = get_Prop2() + get_Prop2(y: 20) + get_Prop2(x: 10) + get_Prop2(y: -2, x: -1) + get_Prop2(x: -1, y: -2);
+        int b = foo.get_Prop() + foo.get_Prop(y: 20) + foo.get_Prop(x: 10) + foo.get_Prop(y: -2, x: -1) + foo.get_Prop(x: -1, y: -2);
+    }
+
+    public void TestSet()
+    {
+        set_Prop2(value: 1);
+        set_Prop2(-1, -2, 1);
+        set_Prop2(-1, value: 1);
+        set_Prop2(y: 20, value: 1);
+        set_Prop2(x: 10, value: 1);
+        set_Prop2(y: -2, x: -1, value: 1);
+        set_Prop2(x: -1, y: -2, value: 1);
+        IFoo foo = this;
+        foo.set_Prop(value: 1);
+        foo.set_Prop(-1, -2, 1);
+        foo.set_Prop(-1, value: 1);
+        foo.set_Prop(y: 20, value: 1);
+        foo.set_Prop(x: 10, value: 1);
+        foo.set_Prop(y: -2, x: -1, value: 1);
+        foo.set_Prop(x: -1, y: -2, value: 1);
+    }
+}");
+        }
+
+        [Fact]
+        public async Task TestParametrizedPropertyCalledWithOmittedArgumentsAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Public Interface IFoo
+    Property Prop(Optional x As Integer = 1, Optional y as Integer = 2, Optional z as Integer = 3) As Integer
+End Interface
+Public Class SomeClass
+    Implements IFoo
+    Friend Property Prop2(Optional x As Integer = 1, Optional y as Integer = 2, Optional z as Integer = 3) As Integer Implements IFoo.Prop
+        Get
+        End Get
+        Set
+        End Set
+    End Property
+
+    Sub TestGet()
+        Dim foo As IFoo = Me
+        Dim a = Prop2(,) + Prop2(, 20) + Prop2(10,) + Prop2(,20,) + Prop2(,,30) + Prop2(10,,) + Prop2(,,)
+        Dim b = foo.Prop(,) + foo.Prop(, 20) + foo.Prop(10,) + foo.Prop(,20,) + foo.Prop(,,30) + foo.Prop(10,,) + foo.Prop(,,)
+    End Sub
+
+    Sub TestSet()
+        Prop2(,) = 1
+        Prop2(, 20) = 1
+        Prop2(10, ) = 1
+        Prop2(,20,) = 1
+        Prop2(,,30) = 1
+        Prop2(10,,) = 1
+        Prop2(,,) = 1
+
+        Dim foo As IFoo = Me
+        foo.Prop(,) = 1
+        foo.Prop(, 20) = 1
+        foo.Prop(10, ) = 1
+        foo.Prop(,20,) = 1
+        foo.Prop(,,30) = 1
+        foo.Prop(10,,) = 1
+        foo.Prop(,,) = 1
+    End Sub
+End Class", @"
+public partial interface IFoo
+{
+    int get_Prop(int x = 1, int y = 2, int z = 3);
+    void set_Prop(int x = 1, int y = 2, int z = 3, int value = default);
+}
+
+public partial class SomeClass : IFoo
+{
+    internal int get_Prop2(int x = 1, int y = 2, int z = 3)
+    {
+        return default;
+    }
+
+    internal void set_Prop2(int x = 1, int y = 2, int z = 3, int value = default)
+    {
+    }
+
+    int IFoo.get_Prop(int x, int y, int z) => get_Prop2(x, y, z);
+    void IFoo.set_Prop(int x, int y, int z, int value) => set_Prop2(x, y, z, value);
+
+    public void TestGet()
+    {
+        IFoo foo = this;
+        int a = get_Prop2() + get_Prop2(y: 20) + get_Prop2(10) + get_Prop2(y: 20) + get_Prop2(z: 30) + get_Prop2(10) + get_Prop2();
+        int b = foo.get_Prop() + foo.get_Prop(y: 20) + foo.get_Prop(10) + foo.get_Prop(y: 20) + foo.get_Prop(z: 30) + foo.get_Prop(10) + foo.get_Prop();
+    }
+
+    public void TestSet()
+    {
+        set_Prop2(value: 1);
+        set_Prop2(y: 20, value: 1);
+        set_Prop2(10, value: 1);
+        set_Prop2(y: 20, value: 1);
+        set_Prop2(z: 30, value: 1);
+        set_Prop2(10, value: 1);
+        set_Prop2(value: 1);
+        IFoo foo = this;
+        foo.set_Prop(value: 1);
+        foo.set_Prop(y: 20, value: 1);
+        foo.set_Prop(10, value: 1);
+        foo.set_Prop(y: 20, value: 1);
+        foo.set_Prop(z: 30, value: 1);
+        foo.set_Prop(10, value: 1);
+        foo.set_Prop(value: 1);
     }
 }");
         }

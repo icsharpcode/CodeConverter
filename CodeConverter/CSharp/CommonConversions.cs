@@ -314,8 +314,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             //This only renames references to interface member implementations for casing differences.
             //Interface member renaming is covered by emitting explicit interface implementations with a delegating
             //proxy property
-            var baseClassSymbol = GetBaseSymbol(idSymbol, s => s.ContainingType.IsClassType());
-            var baseSymbol = GetBaseSymbol(baseClassSymbol, s => true);
+            var baseClassSymbol = idSymbol.GetBaseSymbol(s => s.ContainingType.IsClassType());
+            var baseSymbol = baseClassSymbol.GetBaseSymbol();
             var isInterfaceImplRef = baseSymbol.ContainingType.IsInterfaceType();
             var isDeclaration = isInterfaceImplRef || baseSymbol.Locations.Any(l => l.SourceSpan == id.Span);
             var isCasingDiffOnly = StringComparer.OrdinalIgnoreCase.Equals(text, baseSymbol.Name) &&
@@ -337,13 +337,6 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
 
             return text;
-        }
-
-        private static ISymbol GetBaseSymbol(ISymbol symbol, Func<ISymbol, bool> selector)
-        {
-            return symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Property)
-                ? (symbol.FollowProperty(s => s.BaseMember()).LastOrDefault(selector)) ?? symbol
-                : symbol;
         }
 
         public static SyntaxToken CsEscapedIdentifier(string text)
