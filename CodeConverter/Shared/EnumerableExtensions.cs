@@ -93,6 +93,12 @@ namespace ICSharpCode.CodeConverter.Shared
             yield return singleElement;
         }
 
+        public static IEnumerable<T> YieldNotNull<T>(this T singleElement)
+        {
+            if (singleElement == null) yield break;
+            else yield return singleElement;
+        }
+
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
         {
             foreach (var item in items) {

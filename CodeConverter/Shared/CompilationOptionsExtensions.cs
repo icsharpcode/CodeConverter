@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.Shared
     internal static class CompilationOptionsExtensions
     {
         public static Document AddDocumentFromTree(this Project project, SyntaxTree tree)
-        {
+        {            
             return project.AddDocument("CodeToConvert", tree.GetRoot(), filePath: string.IsNullOrEmpty(tree.FilePath) ? TempFilePath(tree.Options.Language) : tree.FilePath);
         }
 

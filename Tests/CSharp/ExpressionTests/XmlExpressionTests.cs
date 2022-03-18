@@ -208,6 +208,77 @@ internal partial class TestClass
         var elements1 = xDocument.Elements(""Something"").SingleOrDefault()?.Elements(""SomethingElse"");
     }
 }");
+
+        }
+
+
+
+        [Fact]
+        public async Task NamespaceImportAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"' Place Imports statements at the top of your program.  
+Imports <xmlns=""http://DefaultNamespace"">
+Imports <xmlns:ns=""http://NewNamespace"">
+
+Module Module1
+
+  Sub Main()
+    ' Create element by using the default global XML namespace. 
+    Dim inner = <innerElement/>
+
+    ' Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
+    Dim outer = <ns:outer><ns:innerElement></ns:innerElement><siblingElement></siblingElement><%= inner %></ns:outer>
+
+    ' Display element to see its final form. 
+    Console.WriteLine(outer)
+  End Sub
+
+End Module", @"using System;
+using System.Xml.Linq;
+using XmlImports = XmlImportsCodeToConvert;
+
+internal static class XmlImportsCodeToConvert
+{
+    // Place Imports statements at the top of your program.  
+    internal static readonly XNamespace Default = ""http://DefaultNamespace"";
+    internal static readonly XNamespace ns = ""http://NewNamespace"";
+    private static XAttribute[] namespaceAttributes = {
+        new XAttribute(""xmlns"", Default.NamespaceName),
+        new XAttribute(XNamespace.Xmlns + ""ns"", ns.NamespaceName)
+    };
+
+    internal static TContainer Apply<TContainer>(TContainer x) where TContainer : XContainer
+    {
+        foreach (var d in x.Descendants())
+        {
+            foreach (var n in namespaceAttributes)
+            {
+                var a = d.Attribute(n.Name);
+                if (a != null && a.Value == n.Value)
+                {
+                    a.Remove();
+                }
+            }
+        }
+        x.Add(namespaceAttributes);
+        return x;
+    }
+}
+
+internal static partial class Module1
+{
+    public static void Main()
+    {
+        // Create element by using the default global XML namespace. 
+        XElement inner = XmlImports.Apply(new XElement(XmlImports.Default + ""innerElement""));
+
+        // Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
+        XElement outer = XmlImports.Apply(new XElement(XmlImports.ns + ""outer"", new XElement(XmlImports.ns + ""innerElement""), new XElement(XmlImports.Default + ""siblingElement""), inner));
+
+        // Display element to see its final form. 
+        Console.WriteLine(outer);
+    }
+}");
         }
     }
 }

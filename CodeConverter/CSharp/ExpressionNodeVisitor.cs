@@ -36,6 +36,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
         private readonly SemanticModel _semanticModel;
         private readonly HashSet<string> _extraUsingDirectives;
+        private readonly XmlImportContext _xmlImportContext;
         private readonly IOperatorConverter _operatorConverter;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private readonly Stack<ExpressionSyntax> _withBlockLhs = new();
@@ -47,7 +48,7 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public ExpressionNodeVisitor(SemanticModel semanticModel,
             VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
-            HashSet<string> extraUsingDirectives)
+            HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext)
         {
             CommonConversions = commonConversions;
             _semanticModel = semanticModel;
@@ -57,6 +58,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
             _typeContext = typeContext;
             _extraUsingDirectives = extraUsingDirectives;
+            _xmlImportContext = xmlImportContext;
             _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
             // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
             _convertMethodsLookupByReturnType =
@@ -102,28 +104,36 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .Concat(SyntaxFactory.Argument(await node.Root.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield())
                 .Concat(await node.FollowingMisc.SelectAsync(async misc => SyntaxFactory.Argument(await misc.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
                 );
-            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XDocument")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+            return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XDocument")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
         }
 
         public override async Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
             var arguments = SyntaxFactory.SeparatedList(
-                SyntaxFactory.Argument(CommonConversions.Literal(node.StartTag.Name.ToString())).Yield()
+                SyntaxFactory.Argument(await node.StartTag.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield()
                 .Concat(await node.StartTag.Attributes.SelectAsync(async attribute => SyntaxFactory.Argument(await attribute.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
                 .Concat(await node.Content.SelectAsync(async content => SyntaxFactory.Argument(await content.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
                 );
-            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+            return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
         }
 
         public async override Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node)
         {
             _extraUsingDirectives.Add("System.Xml.Linq");
             var arguments = SyntaxFactory.SeparatedList(
-                SyntaxFactory.Argument(CommonConversions.Literal(node.Name.ToString())).Yield()
+                SyntaxFactory.Argument(await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield()
                 .Concat(await node.Attributes.SelectAsync(async attribute => SyntaxFactory.Argument(await attribute.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))))
                 );
-            return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+            return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
+        }
+
+        private CSharpSyntaxNode ApplyXmlImportsIfNecessary(VBSyntax.XmlNodeSyntax vbNode, ObjectCreationExpressionSyntax creation)
+        {
+            if (!_xmlImportContext.HasImports || vbNode.Parent is VBSyntax.XmlNodeSyntax) return creation;
+            return SyntaxFactory.InvocationExpression(
+                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, _xmlImportContext.HelperClassShortIdentifierName, SyntaxFactory.IdentifierName("Apply")), 
+                SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(creation))));
         }
 
         public override async Task<CSharpSyntaxNode> VisitXmlAttribute(VBasic.Syntax.XmlAttributeSyntax node)
@@ -199,7 +209,29 @@ namespace ICSharpCode.CodeConverter.CSharp
 
         public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
         {
-            return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression,SyntaxFactory.Literal(node.LocalName.Text));
+            if (node.Prefix != null) {
+                return SyntaxFactory.BinaryExpression(
+                    SyntaxKind.AddExpression,
+                    SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        _xmlImportContext.HelperClassShortIdentifierName,
+                        SyntaxFactory.IdentifierName(node.Prefix.Name.ValueText)
+                    ),
+                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
+                    );
+            } else if (_xmlImportContext.HasDefaultImport) {
+                return SyntaxFactory.BinaryExpression(
+                    SyntaxKind.AddExpression,
+                    SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        _xmlImportContext.HelperClassShortIdentifierName,
+                        _xmlImportContext.DefaultIdentifierName
+                    ),
+                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
+                    );
+            } else {
+                return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text));
+            }
         }
 
         public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)

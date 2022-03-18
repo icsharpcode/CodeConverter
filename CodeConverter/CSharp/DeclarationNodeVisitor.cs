@@ -40,6 +40,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         private readonly TypeContext _typeContext = new TypeContext();
         private uint _failedMemberConversionMarkerCount;
         private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
+        private readonly XmlImportContext _xmlImportContext;
         private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
         private HashSet<string> _accessedThroughMyClass;
         public CommentConvertingVisitorWrapper TriviaConvertingDeclarationVisitor { get; }
@@ -58,12 +59,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             _semanticModel = semanticModel;
             _csSyntaxGenerator = csSyntaxGenerator;
             _typeToInheritors = typeToInheritors;
+            _xmlImportContext = new XmlImportContext(document);
             _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
             TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
             var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
             var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator);
             CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
-            var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives);
+            var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext);
             _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
             _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitorAsync;
             CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
@@ -91,6 +93,8 @@ namespace ICSharpCode.CodeConverter.CSharp
 
             var attributes = SyntaxFactory.List(await node.Attributes.SelectMany(a => a.AttributeLists).SelectManyAsync(CommonConversions.ConvertAttributeAsync));
 
+            var xmlImportHelperClassDeclarationOrNull = (await _xmlImportContext.HandleImportsAsync(importsClauses, x => x.AcceptAsync<FieldDeclarationSyntax>(TriviaConvertingDeclarationVisitor))).GenerateHelper();
+            
             var sourceAndConverted = await node.Members
                 .Where(m => !(m is VBSyntax.OptionStatementSyntax))
                 .SelectAsync(async m => (Source: m, Converted: await ConvertMemberAsync(m)));
@@ -99,20 +103,21 @@ namespace ICSharpCode.CodeConverter.CSharp
             var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
                 ? sourceAndConverted.Select(sd => sd.Converted)
                 : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
-
+            
             var usings = await importsClauses
-                .SelectAsync(async c => await c.AcceptAsync<UsingDirectiveSyntax>(TriviaConvertingDeclarationVisitor));
+.SelectAsync(async c => await c.AcceptAsync<UsingDirectiveSyntax>(TriviaConvertingDeclarationVisitor));
             var usingDirectiveSyntax = usings
                 .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
                 .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
                 .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
-                .Select(g => g.First());
+                .Select(g => g.First())
+                .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(x => SyntaxFactory.UsingDirective(SyntaxFactory.NameEquals(_xmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
 
             return SyntaxFactory.CompilationUnit(
                 SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
                 SyntaxFactory.List(usingDirectiveSyntax),
                 attributes,
-                SyntaxFactory.List(convertedMembers)
+                SyntaxFactory.List(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Concat(convertedMembers))
             );
         }
 
@@ -1607,5 +1612,34 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.TypeConstraint(await node.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor));
         }
 
+        public override async Task<CSharpSyntaxNode> VisitXmlNamespaceImportsClause(VBSyntax.XmlNamespaceImportsClauseSyntax node)
+        {
+            var identifierName = await node.XmlNamespace.Name.AcceptAsync<IdentifierNameSyntax>(TriviaConvertingDeclarationVisitor);
+            var valueLiteral = await node.XmlNamespace.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingDeclarationVisitor);
+            var declarator = SyntaxFactory.VariableDeclarator(identifierName.Identifier, null, SyntaxFactory.EqualsValueClause(valueLiteral));
+            return SyntaxFactory.FieldDeclaration(
+                SyntaxFactory.List<AttributeListSyntax>(),
+                SyntaxFactory.TokenList(SyntaxFactory.Token(CSSyntaxKind.InternalKeyword), 
+                                        SyntaxFactory.Token(CSSyntaxKind.StaticKeyword), 
+                                        SyntaxFactory.Token(CSSyntaxKind.ReadOnlyKeyword)),
+                SyntaxFactory.VariableDeclaration(SyntaxFactory.IdentifierName("XNamespace"), SyntaxFactory.SingletonSeparatedList(declarator)));
+        }
+
+        public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
+        {
+            if (node.Prefix == null && node.LocalName.ValueText == "xmlns") {
+                // default namespace             
+                return _xmlImportContext.DefaultIdentifierName;
+            } else if (node.Prefix.Name.ValueText == "xmlns") { 
+                // namespace alias
+                return SyntaxFactory.IdentifierName(node.LocalName.ValueText);
+            } else {
+                // Having this case in VB would cause error BC31187: Namespace declaration must start with 'xmlns'
+                throw new NotImplementedException($"Cannot convert non-xmlns attribute in XML namespace import").WithNodeInformation(node);
+            }
+        }
+
+        public override async Task<CSharpSyntaxNode> VisitXmlString(VBSyntax.XmlStringSyntax node) =>
+            CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
     }
 }
