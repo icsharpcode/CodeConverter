@@ -1,8 +1,6 @@
 ﻿using System.Threading.Tasks;
 
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter.VB;
-
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.VB
@@ -61,7 +59,7 @@ public partial class VBIsCaseInsensitive
             }
         }
     }
-}", hasLineCommentConversionIssue: true /*Fields re-ordered*/);
+}");
         }
 
 
