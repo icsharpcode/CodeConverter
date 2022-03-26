@@ -217,7 +217,7 @@ End Class
 
 Class Class1
     Shared WithEvents SharedEventClassInstance As New MyEventClass
-    WithEvents NonSharedEventClassInstance As New MyEventClass
+    WithEvents NonSharedEventClassInstance As New MyEventClass 'Comment moves to initialization in c# constructor
 
     Public Sub New(num As Integer)
     End Sub
@@ -262,7 +262,7 @@ internal partial class Class1
 
     public Class1(int num)
     {
-        NonSharedEventClassInstance = new MyEventClass();
+        NonSharedEventClassInstance = new MyEventClass(); // Comment moves to initialization in c# constructor
     }
 
     public Class1(object obj) : this(7)
@@ -284,7 +284,7 @@ internal partial class Class1
 
 public partial class ShouldNotGainConstructor
 {
-}", incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for events
+}");
         }
 
         [Fact]
@@ -300,7 +300,7 @@ public partial class ShouldNotGainConstructor
 End Class
 
 Partial Class Class1
-    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass
+    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass 'Comment moves to initialization in c# constructor
 
     Public Sub New()
     End Sub
@@ -345,7 +345,7 @@ public partial class Class1
     public Class1(int num)
     {
         EventClassInstance = new MyEventClass();
-        EventClassInstance2 = new MyEventClass();
+        EventClassInstance2 = new MyEventClass(); // Comment moves to initialization in c# constructor
     }
 
     public Class1(object obj) : this()
@@ -362,7 +362,7 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}", incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for events
+}");
         }
 
         [Fact]

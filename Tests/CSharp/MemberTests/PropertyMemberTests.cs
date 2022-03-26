@@ -86,7 +86,7 @@ BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide bot
                 Return FirstName & "" "" & LastName
             End If
         End Get
-
+        ' Bug: Comment moves inside generated method
         Friend Set
             If isFirst Then FirstName = Value
         End Set
@@ -112,6 +112,7 @@ internal partial class TestClass
         {
             return FirstName + "" "" + LastName;
         }
+        // Bug: Comment moves inside generated method
     }
 
     internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
@@ -125,7 +126,7 @@ internal partial class TestClass
         set_FullName(false, true, ""hello"");
         return get_FullName(false, true);
     }
-}", incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for parameterized property
+}");
         }
 
         [Fact]
@@ -177,7 +178,7 @@ public partial class Class1
         Get
             Return FirstName & "" "" & LastName
         End Get
-
+'Bug: Comment moves inside generated get method
         Friend Set
             If isFirst Then FirstName = Value
         End Set
@@ -198,6 +199,7 @@ internal partial class TestClass
     public string get_FullName(bool isFirst = false)
     {
         return FirstName + "" "" + LastName;
+        // Bug: Comment moves inside generated get method
     }
 
     internal void set_FullName(bool isFirst = false, string value = default)
@@ -213,8 +215,7 @@ internal partial class TestClass
         set_FullName(value: ""hello4"");
         return get_FullName();
     }
-}",
-incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for parameterized property
+}");
         }
 
         [Fact]
