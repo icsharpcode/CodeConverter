@@ -64,7 +64,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners
 
         /// <summary>
         /// Lines that already have comments aren't automatically tested, so if a line changes order in a conversion, just add a comment to that line.
-        /// If there's a comment conversion issue, set the optional hasLineCommentConversionIssue to true
+        /// If there's a comment conversion issue, set the optional incompatibleWithAutomatedCommentTesting to true
         /// </summary>
         private async Task AssertLineCommentsConvertedInSameOrderAsync<TLanguageConversion>(string source, TextConversionOptions conversion, string singleLineCommentStart, Func<string, bool> lineCanHaveComment) where TLanguageConversion : ILanguageConversion, new()
         {
@@ -101,11 +101,11 @@ End Sub";
         /// <summary>
         /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation,
         /// and in future will be used to decide whether to check if the input/output compiles
-        /// By default tests run a second time with a comment each line and ensure the comments come out in the same order. If you see an issue that is out of scope to fix, you can use: <paramref name="hasLineCommentConversionIssue"/>
+        /// By default tests run a second time with a comment added to each line and ensure the comments come out in the same order. For some complicated transformations, the order changes, in which case you can use <paramref name="incompatibleWithAutomatedCommentTesting"/> to skip the check
         /// </summary>
         public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode,
             bool expectSurroundingBlock = false, bool missingSemanticInfo = false,
-            bool hasLineCommentConversionIssue = false)
+            bool incompatibleWithAutomatedCommentTesting = false)
         {
             if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
             var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2)
@@ -122,10 +122,10 @@ End Sub";
                 try {
                     await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
                         "'", LineCanHaveVisualBasicComment);
-                } catch when (hasLineCommentConversionIssue) {
+                } catch when (incompatibleWithAutomatedCommentTesting) {
                     return; // We expect this to fail, we ran the check anyway so that we can warn when the setting is used improperly 
                 }
-                Assert.True(!hasLineCommentConversionIssue, nameof(hasLineCommentConversionIssue) + " is set to true, but comment conversion succeeds. Please remove that parameter.");
+                Assert.True(!incompatibleWithAutomatedCommentTesting, nameof(incompatibleWithAutomatedCommentTesting) + " is set to true, but comment conversion succeeds. Please remove that parameter.");
             }
         }
 

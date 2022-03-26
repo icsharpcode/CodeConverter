@@ -284,7 +284,7 @@ internal partial class Class1
 
 public partial class ShouldNotGainConstructor
 {
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+}", incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]
@@ -362,7 +362,7 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for events
+}", incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for events
         }
 
         [Fact]

@@ -125,7 +125,7 @@ internal partial class TestClass
         set_FullName(false, true, ""hello"");
         return get_FullName(false, true);
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
+}", incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for parameterized property
         }
 
         [Fact]
@@ -214,7 +214,7 @@ internal partial class TestClass
         return get_FullName();
     }
 }",
-hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
+incompatibleWithAutomatedCommentTesting: true);//TODO: Improve comment mapping for parameterized property
         }
 
         [Fact]
