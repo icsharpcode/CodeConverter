@@ -94,10 +94,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                 .SelectMany(mss => mss.HandlesClause.Events, (_, e) => {
                 var eventSymbol = semanticModel.GetSymbolInfo(e.EventMember).Symbol as IEventSymbol;
                 // TODO: Need to either use the semantic model containing the event symbol, or bundle up the Event member with the possible symbol here for later use (otherwise it's null)
-                return (CreateEventContainer(e.EventContainer), new EventDescriptor(e.EventMember, eventSymbol), HandlingMethod: methodSymbol);
+                return (CreateEventContainer(e.EventContainer, semanticModel), new EventDescriptor(e.EventMember, eventSymbol), HandlingMethod: methodSymbol);
             });
         }
-        private HandledEventsAnalysis.EventContainer CreateEventContainer(Microsoft.CodeAnalysis.VisualBasic.Syntax.EventContainerSyntax p)
+        private HandledEventsAnalysis.EventContainer CreateEventContainer(Microsoft.CodeAnalysis.VisualBasic.Syntax.EventContainerSyntax p, SemanticModel semanticModel)
         {
             switch (p) {
                 //For me, trying to use "MyClass" in a Handles expression is a syntax error. Events aren't overridable anyway so I'm not sure how this would get used.
@@ -106,7 +106,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 case Microsoft.CodeAnalysis.VisualBasic.Syntax.KeywordEventContainerSyntax _:
                     return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.This, null);
                 case Microsoft.CodeAnalysis.VisualBasic.Syntax.WithEventsEventContainerSyntax weecs:
-                    return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, weecs.Identifier.Text);
+                    return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, semanticModel.GetSymbolInfo(weecs).Symbol.Name);
                 case Microsoft.CodeAnalysis.VisualBasic.Syntax.WithEventsPropertyEventContainerSyntax wepecs:
                     return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, wepecs.Property.Identifier.Text);
                 default:
