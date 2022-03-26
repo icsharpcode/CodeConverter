@@ -101,7 +101,7 @@ End Sub";
         /// <summary>
         /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation,
         /// and in future will be used to decide whether to check if the input/output compiles
-        /// By default tests run a second time with a comment added to each line and ensure the comments come out in the same order. For some complicated transformations, the order changes, in which case you can use <paramref name="incompatibleWithAutomatedCommentTesting"/> to skip the check
+        /// By default tests run a second time with a numbered comment added to each line (that doesn't already have a comment) and checks the comments come out in the same order. If the order significantly changes, or there are input lines where a line comment is invalid (e.g. multiline xml literal) you can use <paramref name="incompatibleWithAutomatedCommentTesting"/> to skip the check.
         /// </summary>
         public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode,
             bool expectSurroundingBlock = false, bool missingSemanticInfo = false,
