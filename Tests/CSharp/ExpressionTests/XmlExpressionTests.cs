@@ -1,7 +1,14 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
+using System.Web.UI.WebControls;
+using System.Windows.Forms;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using Microsoft.Build.Tasks;
+using NuGet.Protocol.Plugins;
 using Xunit;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
 {
@@ -55,28 +62,29 @@ internal partial class TestClass
         [Fact]
         public async Task MultiLineXmlExpressionsAsync()
         {
-            //BUG: Newlines appear as \r\n
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+
+Class TestClass
     Private Sub TestMethod()
-Dim catalog =
-  <?xml version=""1.0""?>
-    <Catalog>
-      <Book id=""bk101"">
-        <Author>Garghentini, Davide</Author>
-        <Title>XML Developer's Guide</Title>
-        <Price>44.95</Price>
-        <Description>
+        Dim catalog =
+          <?xml version=""1.0""?>
+          <Catalog>
+              <Book id=""bk101"">
+                  <Author>Garghentini, Davide</Author>
+                  <Title>XML Developer's Guide</Title>
+                  <Price>44.95</Price>
+                  <Description>
           An in-depth look at creating applications
           with <technology>XML</technology>. For
           <audience>beginners</audience> or
           <audience>advanced</audience> developers.
         </Description>
-      </Book>
-      <Book id=""bk331"">
-        <Author>Spencer, Phil</Author>
-        <Title>Developing Applications with Visual Basic .NET</Title>
-        <Price>45.95</Price>
-        <Description>
+              </Book>
+              <Book id=""bk331"">
+                  <Author>Spencer, Phil</Author>
+                  <Title>Developing Applications with Visual Basic .NET</Title>
+                  <Price>45.95</Price>
+                  <Description>
           Get the expert insights, practical code samples,
           and best practices you need
           to advance your expertise with <technology>Visual
@@ -85,24 +93,28 @@ Dim catalog =
           based on professional,
           pragmatic guidance by today's top <audience>developers</audience>.
         </Description>
-      </Book>
-    </Catalog>
+              </Book>
+          </Catalog>
 
-Dim htmlOutput =
-  <html>
-    <body>
-      <%= From book In catalog.<Catalog>.<Book>
-          Select <div>
-                   <h1><%= book.<Title>.Value %></h1>
-                   <h3><%= ""By "" & book.<Author>.Value %></h3>
-                    <h3><%= ""Price = "" & book.<Price>.Value %></h3>
-                    <h2>Description</h2>
-                    <%= TransformDescription(book.<Description>(0)) %>
-                    <hr/>
-                  </div> %>
-    </body>
-  </html>
+        Dim htmlOutput =
+          <html>
+              <body>
+                  <%= From book In catalog.<Catalog>.<Book>
+                      Select <div>
+                                 <h1><%= book.<Title>.Value %></h1>
+                                 <h3><%= ""By "" & book.<Author>.Value %></h3>
+                                 <h3><%= ""Price = "" & book.<Price>.Value %></h3>
+                                 <h2>Description</h2>
+                                 <%= TransformDescription(book.<Description>(0)) %>
+                                 <hr/>
+                             </div> %>
+              </body>
+          </html>
     End Sub
+                        
+    Public Function TransformDescription(s As String) As String
+        Return s
+    End Function
 End Class", @"using System.Linq;
 using System.Xml.Linq;
 
@@ -112,15 +124,17 @@ internal partial class TestClass
     {
         XDocument catalog = new XDocument(new XElement(""Catalog"", new XElement(""Book"", new XAttribute(""id"", ""bk101""), new XElement(""Author"", ""Garghentini, Davide""), new XElement(""Title"", ""XML Developer's Guide""), new XElement(""Price"", ""44.95""), new XElement(""Description"", ""\r\n          An in-depth look at creating applications\r\n          with "", new XElement(""technology"", ""XML""), "". For\r\n          "", new XElement(""audience"", ""beginners""), "" or\r\n          "", new XElement(""audience"", ""advanced""), "" developers.\r\n        "")), new XElement(""Book"", new XAttribute(""id"", ""bk331""), new XElement(""Author"", ""Spencer, Phil""), new XElement(""Title"", ""Developing Applications with Visual Basic .NET""), new XElement(""Price"", ""45.95""), new XElement(""Description"", ""\r\n          Get the expert insights, practical code samples,\r\n          and best practices you need\r\n          to advance your expertise with "", new XElement(""technology"", ""Visual\r\n          Basic .NET""), "".\r\n          Learn how to create faster, more reliable applications\r\n          based on professional,\r\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\r\n        ""))));
         XElement htmlOutput = new XElement(""html"", new XElement(""body"", from book in catalog.Elements(""Catalog"").Elements(""Book"")
-                                                                        select new XElement(""div"", new XElement(""h1"", book.Elements(""Title"").Value), new XElement(""h3"", ""By "" + book.Elements(""Author"").Value), new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value), new XElement(""h2"", ""Description""), TransformDescription(book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr""))));
+                                                                        select new XElement(""div"", new XElement(""h1"", book.Elements(""Title"").Value), new XElement(""h3"", ""By "" + book.Elements(""Author"").Value), new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value), new XElement(""h2"", ""Description""), TransformDescription((string)book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr""))));
+    }
+
+    public string TransformDescription(string s)
+    {
+        return s;
     }
 }
-1 source compilation errors:
-BC36610: Name 'TransformDescription' is either not declared or not in the current scope.
-2 target compilation errors:
-CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'IEnumerable<XElement>' could be found (are you missing a using directive or an assembly reference?)
-CS0103: The name 'TransformDescription' does not exist in the current context",
-hasLineCommentConversionIssue: true);
+1 target compilation errors:
+CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'IEnumerable<XElement>' could be found (are you missing a using directive or an assembly reference?)", hasLineCommentConversionIssue: true /* auto-testing of comments doesn't work because it tries to put VB comments inside the xml literal */);
+            //BUG: See compilation error
         }
 
 
