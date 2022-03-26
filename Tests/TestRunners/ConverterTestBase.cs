@@ -117,10 +117,15 @@ End Sub";
             await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(visualBasicCode,
                 expectedCsharpCode, conversionOptions);
 
-            if (_testVbtoCsCommentsByDefault && !hasLineCommentConversionIssue)
-            {
-                await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
-                    "'", LineCanHaveVisualBasicComment);
+            if (_testVbtoCsCommentsByDefault) {
+
+                try {
+                    await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
+                        "'", LineCanHaveVisualBasicComment);
+                } catch when (hasLineCommentConversionIssue) {
+                    return; // We expect this to fail, we ran the check anyway so that we can warn when the setting is used improperly 
+                }
+                Assert.True(!hasLineCommentConversionIssue, nameof(hasLineCommentConversionIssue) + " is set to true, but comment conversion succeeds. Please remove that parameter.");
             }
         }
 

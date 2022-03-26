@@ -37,7 +37,7 @@ public partial class Issue635
                           where 1 == 2
                           select t;
     }
-}", hasLineCommentConversionIssue: true /*Fields re-ordered*/);
+}");
         }
         [Fact]
         public async Task Issue635_LinqDistinctOrderByAsync()
