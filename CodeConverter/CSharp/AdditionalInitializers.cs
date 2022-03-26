@@ -83,8 +83,8 @@ namespace ICSharpCode.CodeConverter.CSharp
             }
             else
             {
-                int constructorIndex = convertedMembers.FindIndex(c => c is ConstructorDeclarationSyntax);
-                convertedMembers.Insert(constructorIndex > -1 ? constructorIndex : 0, newConstructor);
+                int constructorIndex = convertedMembers.FindIndex(c => c is ConstructorDeclarationSyntax or MethodDeclarationSyntax);
+                convertedMembers.Insert(constructorIndex > -1 ? constructorIndex : convertedMembers.Count, newConstructor);
             }
         }
 

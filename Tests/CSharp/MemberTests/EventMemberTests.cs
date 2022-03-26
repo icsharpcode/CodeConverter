@@ -155,13 +155,13 @@ internal partial class MyEventClass
 
 internal static partial class Module1
 {
+    private static MyEventClass EventClassInstance, EventClassInstance2;
+
     static Module1()
     {
         EventClassInstance = new MyEventClass();
         EventClassInstance2 = new MyEventClass();
     }
-
-    private static MyEventClass EventClassInstance, EventClassInstance2;
 
     public static void PrintTestMessage2()
     {
@@ -476,12 +476,6 @@ using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.Visua
 
 internal partial class BaseForm : Form
 {
-    public BaseForm()
-    {
-        InitializeComponent();
-        BaseButton = _BaseButton;
-    }
-
     private Button _BaseButton;
 
     internal virtual Button BaseButton
@@ -498,6 +492,12 @@ internal partial class BaseForm : Form
             _BaseButton = value;
         }
     }
+
+    public BaseForm()
+    {
+        InitializeComponent();
+        BaseButton = _BaseButton;
+    }
 }
 
 [DesignerGenerated]
@@ -512,11 +512,6 @@ internal partial class BaseForm : Form
 [DesignerGenerated]
 internal partial class Form1 : BaseForm
 {
-    public Form1()
-    {
-        InitializeComponent();
-    }
-
     internal override Button BaseButton
     {
         [MethodImpl(MethodImplOptions.Synchronized)]
@@ -539,6 +534,11 @@ internal partial class Form1 : BaseForm
                 base.BaseButton.Click += MultiClickHandler;
             }
         }
+    }
+
+    public Form1()
+    {
+        InitializeComponent();
     }
 
     private void InitializeComponent()

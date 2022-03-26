@@ -6,12 +6,6 @@ namespace Prefix.VbLibrary
 {
     internal partial class AClass
     {
-        public AClass()
-        {
-            anIntWithNonStaticInitializerReferencingOtherPart = anArrayWithNonStaticInitializerReferencingOtherPart.Length;
-            anArrayWithNonStaticInitializerReferencingOtherPart = initialAnArrayWithNonStaticInitializerReferencingOtherPart();
-        }
-
         public enum NestedEnum
         {
             First
@@ -20,6 +14,12 @@ namespace Prefix.VbLibrary
         private Dictionary<int, int> dict = new Dictionary<int, int>();
         private int anInt = 2;
         private int anIntWithNonStaticInitializerReferencingOtherPart;
+
+        public AClass()
+        {
+            anIntWithNonStaticInitializerReferencingOtherPart = anArrayWithNonStaticInitializerReferencingOtherPart.Length;
+            anArrayWithNonStaticInitializerReferencingOtherPart = initialAnArrayWithNonStaticInitializerReferencingOtherPart();
+        }
 
         private void UseOutParameterInClass()
         {

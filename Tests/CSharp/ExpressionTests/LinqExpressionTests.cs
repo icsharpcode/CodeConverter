@@ -25,6 +25,10 @@ using System.Linq;
 
 public partial class Issue635
 {
+    private object foo;
+    private List<Issue635> l;
+    private object listSelectWhere;
+
     public Issue635()
     {
         listSelectWhere = from t in
@@ -33,10 +37,6 @@ public partial class Issue635
                           where 1 == 2
                           select t;
     }
-
-    private object foo;
-    private List<Issue635> l;
-    private object listSelectWhere;
 }", hasLineCommentConversionIssue: true /*Fields re-ordered*/);
         }
         [Fact]
@@ -55,15 +55,15 @@ using System.Linq;
 
 public partial class Issue635
 {
+    private List<int> l;
+    private object listSortedDistinct;
+
     public Issue635()
     {
         listSortedDistinct = (from x in l
                               orderby x
                               select x).Distinct();
     }
-
-    private List<int> l;
-    private object listSortedDistinct;
 }");
         }
 

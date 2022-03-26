@@ -1360,13 +1360,13 @@ internal partial class TestClass
 End Class", @"
 public partial class A
 {
+    private int x = 2;
+    private int[] y;
+
     public A()
     {
         y = new int[x + 1];
     }
-
-    private int x = 2;
-    private int[] y;
 }");
         }
 
@@ -1387,13 +1387,13 @@ using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue281
 {
+    private Delegate lambda = new ErrorEventHandler((a, b) => Strings.Len(0));
+    private Delegate nonShared;
+
     public Issue281()
     {
         nonShared = new ErrorEventHandler(OnError);
     }
-
-    private Delegate lambda = new ErrorEventHandler((a, b) => Strings.Len(0));
-    private Delegate nonShared;
 
     public void OnError(object s, ErrorEventArgs e)
     {
