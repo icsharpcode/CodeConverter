@@ -97,7 +97,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek()) && !EndsInSelect(querySectionsReversed)) {
                     var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
                     while (IsPartOfSegment(vbBodyClauses)) {
-                        convertedClauses.Add(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
+                        convertedClauses.AddRange(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
                     }
 
                     var convertQueryBodyClauses = (SyntaxFactory.List(convertedClauses),
@@ -305,18 +305,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(reusableCsFromId));
         }
 
-        private Task<CSSyntax.QueryClauseSyntax> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
+        private Task<IEnumerable<CSSyntax.QueryClauseSyntax>> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
         {
             return node switch {
-                VBSyntax.FromClauseSyntax x => ConvertFromQueryClauseSyntaxAsync(x),
-                VBSyntax.JoinClauseSyntax x => ConvertJoinClauseAsync(x),
-                VBSyntax.SelectClauseSyntax x => ConvertSelectClauseAsync(x),
-                VBSyntax.LetClauseSyntax x => ConvertLetClauseAsync(x),
-                VBSyntax.OrderByClauseSyntax x => ConvertOrderByClauseAsync(x),
-                VBSyntax.WhereClauseSyntax x => ConvertWhereClauseAsync(x),
+                VBSyntax.FromClauseSyntax x => ConvertFromQueryClauseSyntaxAsync(x).YieldAsync(),
+                VBSyntax.JoinClauseSyntax x => ConvertJoinClauseAsync(x).YieldAsync(),
+                VBSyntax.SelectClauseSyntax x => ConvertSelectClauseAsync(x).YieldAsync(),
+                VBSyntax.LetClauseSyntax x => ConvertLetClauseAsync(x).YieldAsync(),
+                VBSyntax.OrderByClauseSyntax x => ConvertOrderByClauseAsync(x).YieldAsync(),
+                VBSyntax.WhereClauseSyntax x => ConvertWhereClauseAsync(x).YieldAsync(),
                 _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented")
             };
-
             async Task<CSSyntax.QueryClauseSyntax> ConvertFromQueryClauseSyntaxAsync(VBSyntax.FromClauseSyntax x) => await ConvertFromClauseSyntaxAsync(x);
         }
 
