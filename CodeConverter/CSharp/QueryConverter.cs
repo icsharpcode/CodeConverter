@@ -33,7 +33,7 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<CSharpSyntaxNode> ConvertClausesAsync(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
         {
             var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
-            var vbStartClause = vbBodyClauses.Dequeue();
+            var vbStartClause = vbBodyClauses.Peek();
             var agg = vbStartClause as VBSyntax.AggregateClauseSyntax;
             if (agg != null) {
                 foreach (var queryOperators in agg.AdditionalQueryOperators) {
@@ -45,6 +45,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             if (vbBodyClauses.Any()) {
                 var querySegments = await GetQuerySegmentsAsync(vbBodyClauses);
                 rootExpression = await ConvertQuerySegmentsAsync(querySegments, fromClauseSyntax);
+                if (vbStartClause is VBSyntax.FromClauseSyntax {Variables.Count: > 1} && rootExpression is CSSyntax.FromClauseSyntax duplicateFcs) {
+                    return duplicateFcs.Expression;
+                }
             } else {
                 rootExpression = fromClauseSyntax.Expression;
             }
