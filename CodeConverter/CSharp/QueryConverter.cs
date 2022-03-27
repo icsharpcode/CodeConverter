@@ -255,6 +255,11 @@ namespace ICSharpCode.CodeConverter.CSharp
         private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseSyntaxAsync(VBSyntax.FromClauseSyntax vbFromClause)
         {
             var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
+            return await ConvertFromClauseVariable(collectionRangeVariableSyntax);
+        }
+
+        private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseVariable(CollectionRangeVariableSyntax collectionRangeVariableSyntax)
+        {
             var expression = await collectionRangeVariableSyntax.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
             var parentOperation = _semanticModel.GetOperation(collectionRangeVariableSyntax.Expression)?.Parent;
             if (parentOperation != null && parentOperation.IsImplicit && parentOperation is IInvocationOperation io &&
