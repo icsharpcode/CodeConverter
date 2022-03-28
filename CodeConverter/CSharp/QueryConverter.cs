@@ -34,22 +34,24 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
             var vbStartClause = vbBodyClauses.Peek();
-            var agg = vbStartClause as VBSyntax.AggregateClauseSyntax;
-            if (agg != null) {
+            CSSyntax.FromClauseSyntax fromClauseSyntaxFromAggregate = null;
+            if (vbStartClause is VBSyntax.AggregateClauseSyntax agg) {
+                vbBodyClauses.Dequeue();
                 foreach (var queryOperators in agg.AdditionalQueryOperators) {
                     vbBodyClauses.Enqueue(queryOperators);
                 }
+
+                fromClauseSyntaxFromAggregate = await ConvertAggregateToFromClauseSyntaxAsync(agg);
+            } else {
+                agg = null;
             }
-            var fromClauseSyntax = vbStartClause is VBSyntax.FromClauseSyntax fcs ? (await ConvertFromClauseSyntaxAsync(fcs)).Single() : await ConvertAggregateToFromClauseSyntaxAsync((VBSyntax.AggregateClauseSyntax) vbStartClause);
+            
             CSharpSyntaxNode rootExpression;
             if (vbBodyClauses.Any()) {
                 var querySegments = await GetQuerySegmentsAsync(vbBodyClauses);
-                rootExpression = await ConvertQuerySegmentsAsync(querySegments, fromClauseSyntax);
-                if (vbStartClause is VBSyntax.FromClauseSyntax {Variables.Count: > 1} && rootExpression is CSSyntax.FromClauseSyntax duplicateFcs) {
-                    return duplicateFcs.Expression;
-                }
+                rootExpression = await ConvertQuerySegmentsAsync(querySegments, fromClauseSyntaxFromAggregate);
             } else {
-                rootExpression = fromClauseSyntax.Expression;
+                rootExpression = fromClauseSyntaxFromAggregate.Expression;
             }
 
             if (agg != null) {
@@ -118,16 +120,22 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static bool RequiredContinuation(Queue<QueryClauseSyntax> vbBodyClauses) =>
             RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1);
 
-        private async Task<CSharpSyntaxNode> ConvertQuerySegmentsAsync(IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, CSSyntax.FromClauseSyntax fromClauseSyntax)
+        private async Task<CSharpSyntaxNode> ConvertQuerySegmentsAsync(IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, CSSyntax.FromClauseSyntax fromClauseSyntax = null)
         {
             CSSyntax.ExpressionSyntax query = null;
             foreach (var (queryContinuation, queryEnd) in querySegments) {
-                query = (CSSyntax.ExpressionSyntax)await ConvertQueryWithContinuationsAsync(queryContinuation, fromClauseSyntax);
-                var reusableFromCsId = fromClauseSyntax.Identifier.WithoutSourceMapping();
-                if (queryEnd is not null) {
-                    query = await ConvertQueryToLinqAsync(reusableFromCsId, queryEnd, query);
+                var reusableFromCsId = fromClauseSyntax?.Identifier.WithoutSourceMapping();
+                var subQuery = await ConvertQueryWithContinuationAsync(queryContinuation, reusableFromCsId);
+                if (fromClauseSyntax == null) {
+                    fromClauseSyntax = subQuery.Clauses.OfType<CSSyntax.FromClauseSyntax>().First();
+                    reusableFromCsId = fromClauseSyntax?.Identifier.WithoutSourceMapping();
+                    subQuery = subQuery.WithClauses(subQuery.Clauses.Remove(fromClauseSyntax));
                 }
-                fromClauseSyntax = SyntaxFactory.FromClause(reusableFromCsId, query);
+                query = subQuery != null ? SyntaxFactory.QueryExpression(fromClauseSyntax, subQuery) : fromClauseSyntax.Expression;
+                if (queryEnd is not null) {
+                    query = await ConvertQueryToLinqAsync(reusableFromCsId.Value, queryEnd, query);
+                }
+                fromClauseSyntax = SyntaxFactory.FromClause(reusableFromCsId.Value, query);
             }
 
             return query ?? throw new ArgumentOutOfRangeException(nameof(querySegments), querySegments, null);
@@ -147,19 +155,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return invocationExpressionSyntax;
         }
 
-        private async Task<CSharpSyntaxNode> ConvertQueryWithContinuationsAsync(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> queryContinuation, CSSyntax.FromClauseSyntax fromClauseSyntax)
-        {
-            var subQuery = await ConvertQueryWithContinuationAsync(queryContinuation, fromClauseSyntax.Identifier.WithoutSourceMapping());
-            return subQuery != null ? SyntaxFactory.QueryExpression(fromClauseSyntax, subQuery) : fromClauseSyntax.Expression;
-        }
-
-        private async Task<CSSyntax.QueryBodySyntax> ConvertQueryWithContinuationAsync(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> querySectionsReversed, SyntaxToken reusableCsFromId)
+        private async Task<CSSyntax.QueryBodySyntax> ConvertQueryWithContinuationAsync(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> querySectionsReversed, SyntaxToken? reusableCsFromId)
         {
             if (!querySectionsReversed.Any()) return null;
             var (convertedClauses, clauseEnd) = querySectionsReversed.Dequeue();
-
+            reusableCsFromId ??= convertedClauses.OfType<CSSyntax.FromClauseSyntax>().FirstOrDefault()?.Identifier.WithoutSourceMapping();
             var nestedClause = await ConvertQueryWithContinuationAsync(querySectionsReversed, reusableCsFromId);
-            return await ConvertSubQueryAsync(reusableCsFromId, clauseEnd, nestedClause, convertedClauses); ;
+            return await ConvertSubQueryAsync(reusableCsFromId.Value, clauseEnd, nestedClause, convertedClauses);
         }
 
         private async Task<CSSyntax.QueryBodySyntax> ConvertSubQueryAsync(SyntaxToken reusableCsFromId, VBSyntax.QueryClauseSyntax clauseEnd,
