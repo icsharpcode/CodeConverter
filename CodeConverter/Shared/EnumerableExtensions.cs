@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ICSharpCode.CodeConverter.Shared
 {
@@ -92,6 +93,8 @@ namespace ICSharpCode.CodeConverter.Shared
         {
             yield return singleElement;
         }
+
+        public static async Task<IEnumerable<T>> YieldAsync<T>(this Task<T> task) => (await task).Yield();
 
         public static IEnumerable<T> YieldNotNull<T>(this T singleElement)
         {

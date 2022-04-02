@@ -20,6 +20,7 @@ namespace ICSharpCode.CodeConverter.CSharp
     {
         private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
         private readonly SemanticModel _semanticModel;
+        private static readonly SyntaxAnnotation DefaultSelectAnnotation = new SyntaxAnnotation("DefaultSelect");
 
         public QueryConverter(CommonConversions commonConversions, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
         {
@@ -33,20 +34,30 @@ namespace ICSharpCode.CodeConverter.CSharp
         public async Task<CSharpSyntaxNode> ConvertClausesAsync(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
         {
             var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
-            var vbStartClause = vbBodyClauses.Dequeue();
-            var agg = vbStartClause as VBSyntax.AggregateClauseSyntax;
-            if (agg != null) {
+            var vbStartClause = vbBodyClauses.Peek();
+            CSSyntax.FromClauseSyntax fromClauseSyntaxFromAggregate = null;
+            SyntaxToken reusableFromCsId;
+            if (vbStartClause is VBSyntax.AggregateClauseSyntax agg) {
+                vbBodyClauses.Dequeue();
                 foreach (var queryOperators in agg.AdditionalQueryOperators) {
                     vbBodyClauses.Enqueue(queryOperators);
                 }
+
+                fromClauseSyntaxFromAggregate = await ConvertAggregateToFromClauseSyntaxAsync(agg);
+                reusableFromCsId = fromClauseSyntaxFromAggregate.Identifier.WithoutSourceMapping();
+            } else if (vbStartClause is VBSyntax.FromClauseSyntax fcs) {
+                reusableFromCsId = CommonConversions.ConvertIdentifier(fcs.Variables.First().Identifier.Identifier).WithoutSourceMapping();
+                agg = null;
+            } else {
+                throw new NotImplementedException($"Start clause type '{vbStartClause.GetType()}' not yet implemented");
             }
-            var fromClauseSyntax = vbStartClause is VBSyntax.FromClauseSyntax fcs ? await ConvertFromClauseSyntaxAsync(fcs) : await ConvertAggregateToFromClauseSyntaxAsync((VBSyntax.AggregateClauseSyntax) vbStartClause);
+            
             CSharpSyntaxNode rootExpression;
             if (vbBodyClauses.Any()) {
                 var querySegments = await GetQuerySegmentsAsync(vbBodyClauses);
-                rootExpression = await ConvertQuerySegmentsAsync(querySegments, fromClauseSyntax);
+                rootExpression = await ConvertQuerySegmentsAsync(querySegments, reusableFromCsId, fromClauseSyntaxFromAggregate);
             } else {
-                rootExpression = fromClauseSyntax.Expression;
+                rootExpression = fromClauseSyntaxFromAggregate.Expression;
             }
 
             if (agg != null) {
@@ -94,7 +105,7 @@ namespace ICSharpCode.CodeConverter.CSharp
                 while (vbBodyClauses.Any() && !RequiresMethodInvocation(vbBodyClauses.Peek()) && !EndsInSelect(querySectionsReversed)) {
                     var convertedClauses = new List<CSSyntax.QueryClauseSyntax>();
                     while (IsPartOfSegment(vbBodyClauses)) {
-                        convertedClauses.Add(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
+                        convertedClauses.AddRange(await ConvertQueryBodyClauseAsync(vbBodyClauses.Dequeue()));
                     }
 
                     var convertQueryBodyClauses = (SyntaxFactory.List(convertedClauses),
@@ -115,12 +126,20 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static bool RequiredContinuation(Queue<QueryClauseSyntax> vbBodyClauses) =>
             RequiredContinuation(vbBodyClauses.Peek(), vbBodyClauses.Count - 1);
 
-        private async Task<CSharpSyntaxNode> ConvertQuerySegmentsAsync(IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, CSSyntax.FromClauseSyntax fromClauseSyntax)
+        private async Task<CSharpSyntaxNode> ConvertQuerySegmentsAsync(IEnumerable<(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)>, VBSyntax.QueryClauseSyntax)> querySegments, SyntaxToken reusableFromCsId, CSSyntax.FromClauseSyntax fromClauseSyntax = null)
         {
             CSSyntax.ExpressionSyntax query = null;
             foreach (var (queryContinuation, queryEnd) in querySegments) {
-                query = (CSSyntax.ExpressionSyntax)await ConvertQueryWithContinuationsAsync(queryContinuation, fromClauseSyntax);
-                var reusableFromCsId = fromClauseSyntax.Identifier.WithoutSourceMapping();
+                var subQuery = await ConvertQueryWithContinuationAsync(queryContinuation, reusableFromCsId);
+                if (fromClauseSyntax == null) {
+                    fromClauseSyntax = subQuery.Clauses.OfType<CSSyntax.FromClauseSyntax>().First();
+                    subQuery = subQuery.WithClauses(subQuery.Clauses.Remove(fromClauseSyntax));
+                }
+
+                // e.g. `from x in xs select x` is not useful, so just use `xs` directly
+                bool isUsefulQuery = subQuery is not null && (!subQuery.SelectOrGroup.HasAnnotation(DefaultSelectAnnotation) || subQuery.Clauses.Any());
+                query = isUsefulQuery ? SyntaxFactory.QueryExpression(fromClauseSyntax, subQuery) : fromClauseSyntax.Expression;
+
                 if (queryEnd is not null) {
                     query = await ConvertQueryToLinqAsync(reusableFromCsId, queryEnd, query);
                 }
@@ -144,19 +163,13 @@ namespace ICSharpCode.CodeConverter.CSharp
             return invocationExpressionSyntax;
         }
 
-        private async Task<CSharpSyntaxNode> ConvertQueryWithContinuationsAsync(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> queryContinuation, CSSyntax.FromClauseSyntax fromClauseSyntax)
-        {
-            var subQuery = await ConvertQueryWithContinuationAsync(queryContinuation, fromClauseSyntax.Identifier.WithoutSourceMapping());
-            return subQuery != null ? SyntaxFactory.QueryExpression(fromClauseSyntax, subQuery) : fromClauseSyntax.Expression;
-        }
-
         private async Task<CSSyntax.QueryBodySyntax> ConvertQueryWithContinuationAsync(Queue<(SyntaxList<CSSyntax.QueryClauseSyntax>, VBSyntax.QueryClauseSyntax)> querySectionsReversed, SyntaxToken reusableCsFromId)
         {
             if (!querySectionsReversed.Any()) return null;
             var (convertedClauses, clauseEnd) = querySectionsReversed.Dequeue();
-
             var nestedClause = await ConvertQueryWithContinuationAsync(querySectionsReversed, reusableCsFromId);
-            return await ConvertSubQueryAsync(reusableCsFromId, clauseEnd, nestedClause, convertedClauses); ;
+            var convertSubQueryAsync = await ConvertSubQueryAsync(reusableCsFromId, clauseEnd, nestedClause, convertedClauses);
+            return convertSubQueryAsync;
         }
 
         private async Task<CSSyntax.QueryBodySyntax> ConvertSubQueryAsync(SyntaxToken reusableCsFromId, VBSyntax.QueryClauseSyntax clauseEnd,
@@ -166,7 +179,7 @@ namespace ICSharpCode.CodeConverter.CSharp
             CSSyntax.QueryContinuationSyntax queryContinuation = null;
             switch (clauseEnd) {
                 case null:
-                    selectOrGroup = CreateDefaultSelectClause(reusableCsFromId);
+                    selectOrGroup = CreateDefaultSelectClause(reusableCsFromId).WithAdditionalAnnotations(DefaultSelectAnnotation);
                     break;
                 case VBSyntax.GroupByClauseSyntax gcs:
                     var groupKeyIds = GetGroupKeyIdentifiers(gcs).ToList();
@@ -185,13 +198,10 @@ namespace ICSharpCode.CodeConverter.CSharp
                         var keyExpression = await gcs.Keys.Single().Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
                         selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                     }
-                    queryContinuation = nestedClause != null ? CreateGroupByContinuation(gcs, continuationClauses, nestedClause) : null;
+                    queryContinuation = nestedClause != null ? CreateGroupByContinuation(gcs, continuationClauses, nestedClause.SelectOrGroup) : null;
                     break;
                 case VBSyntax.SelectClauseSyntax scs:
                     selectOrGroup = await ConvertSelectClauseSyntaxAsync(scs);
-                    if (nestedClause != null) {
-                        var newId = SyntaxFactory.Identifier("inner");
-                    }
                     break;
                 default:
                     throw new NotImplementedException($"Clause kind '{clauseEnd.Kind()}' is not yet implemented");
@@ -200,9 +210,9 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.QueryBody(convertedClauses, selectOrGroup, queryContinuation);
         }
 
-        private CSSyntax.QueryContinuationSyntax CreateGroupByContinuation(VBSyntax.GroupByClauseSyntax gcs, SyntaxList<CSSyntax.QueryClauseSyntax> convertedClauses, CSSyntax.QueryBodySyntax body)
+        private CSSyntax.QueryContinuationSyntax CreateGroupByContinuation(VBSyntax.GroupByClauseSyntax gcs, SyntaxList<CSSyntax.QueryClauseSyntax> convertedClauses, CSSyntax.SelectOrGroupClauseSyntax selectOrGroupClauseSyntax)
         {
-            var queryBody = convertedClauses.Any() ? SyntaxFactory.QueryBody(convertedClauses, body?.SelectOrGroup, null) : SyntaxFactory.QueryBody(body?.SelectOrGroup);
+            var queryBody = convertedClauses.Any() ? SyntaxFactory.QueryBody(convertedClauses, selectOrGroupClauseSyntax, null) : SyntaxFactory.QueryBody(selectOrGroupClauseSyntax);
             SyntaxToken groupName = GetGroupIdentifier(gcs);
             return SyntaxFactory.QueryContinuation(groupName, queryBody);
         }
@@ -252,9 +262,10 @@ namespace ICSharpCode.CodeConverter.CSharp
         private static bool RequiredContinuation(VBSyntax.QueryClauseSyntax queryClauseSyntax, int clausesAfter) => queryClauseSyntax is VBSyntax.GroupByClauseSyntax
                 || queryClauseSyntax is VBSyntax.SelectClauseSyntax sc && (sc.Variables.Any(v => v.NameEquals is null) || clausesAfter == 0);
 
-        private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseSyntaxAsync(VBSyntax.FromClauseSyntax vbFromClause)
+        private async Task<IEnumerable<CSSyntax.FromClauseSyntax>> ConvertFromClauseSyntaxAsync(VBSyntax.FromClauseSyntax vbFromClause) => await vbFromClause.Variables.SelectAsync(ConvertFromClauseVariable);
+
+        private async Task<CSSyntax.FromClauseSyntax> ConvertFromClauseVariable(CollectionRangeVariableSyntax collectionRangeVariableSyntax)
         {
-            var collectionRangeVariableSyntax = vbFromClause.Variables.Single();
             var expression = await collectionRangeVariableSyntax.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
             var parentOperation = _semanticModel.GetOperation(collectionRangeVariableSyntax.Expression)?.Parent;
             if (parentOperation != null && parentOperation.IsImplicit && parentOperation is IInvocationOperation io &&
@@ -297,19 +308,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(reusableCsFromId));
         }
 
-        private Task<CSSyntax.QueryClauseSyntax> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
+        private async Task<IEnumerable<CSSyntax.QueryClauseSyntax>> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
         {
             return node switch {
-                VBSyntax.FromClauseSyntax x => ConvertFromQueryClauseSyntaxAsync(x),
-                VBSyntax.JoinClauseSyntax x => ConvertJoinClauseAsync(x),
-                VBSyntax.SelectClauseSyntax x => ConvertSelectClauseAsync(x),
-                VBSyntax.LetClauseSyntax x => ConvertLetClauseAsync(x),
-                VBSyntax.OrderByClauseSyntax x => ConvertOrderByClauseAsync(x),
-                VBSyntax.WhereClauseSyntax x => ConvertWhereClauseAsync(x),
+                VBSyntax.FromClauseSyntax x => await ConvertFromClauseSyntaxAsync(x),
+                VBSyntax.JoinClauseSyntax x => await ConvertJoinClauseAsync(x).YieldAsync(),
+                VBSyntax.SelectClauseSyntax x => await ConvertSelectClauseAsync(x).YieldAsync(),
+                VBSyntax.LetClauseSyntax x => await ConvertLetClauseAsync(x).YieldAsync(),
+                VBSyntax.OrderByClauseSyntax x => await ConvertOrderByClauseAsync(x).YieldAsync(),
+                VBSyntax.WhereClauseSyntax x => await ConvertWhereClauseAsync(x).YieldAsync(),
                 _ => throw new NotImplementedException($"Conversion for query clause with kind '{node.Kind()}' not implemented")
             };
-
-            async Task<CSSyntax.QueryClauseSyntax> ConvertFromQueryClauseSyntaxAsync(VBSyntax.FromClauseSyntax x) => await ConvertFromClauseSyntaxAsync(x);
         }
 
         private async Task<CSSyntax.ExpressionSyntax> GetGroupExpressionAsync(VBSyntax.GroupByClauseSyntax gs)
