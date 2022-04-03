@@ -134,7 +134,7 @@ internal class CommonConversions
             if (isField && !declaredSymbol.IsStatic && !SemanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
                 if (!_typeContext.Initializers.HasInstanceConstructorsOutsideThisPart) {
                     var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
-                    _typeContext.Initializers.AdditionalInstanceInitializers.Add((lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
+                    _typeContext.Initializers.AdditionalInstanceInitializers.Add(new(lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr));
                     equalsValueClauseSyntax = null;
                 } else {
                     var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
