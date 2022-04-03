@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.VB
+namespace ICSharpCode.CodeConverter.Tests.VB;
+
+public class TriviaTests : ConverterTestBase
 {
-    public class TriviaTests : ConverterTestBase
+    [Fact]
+    public async Task MethodWithCommentsAsync()
     {
-        [Fact]
-        public async Task MethodWithCommentsAsync()
-        {
-            await TestConversionCSharpToVisualBasicAsync(
-                @"using System;
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
 using System.Diagnostics; //Using statement
 
 //blank line
@@ -84,13 +84,13 @@ Namespace ANamespace 'namespace
         End Sub 'End of method
     End Class 'End of class
 End Namespace' Last line comment");
-        }
+    }
 
-        [Fact]
-        public async Task TrailingAndEndOfFileLineCommentsAsync()
-        {
-            await TestConversionCSharpToVisualBasicAsync(
-                @"//leading
+    [Fact]
+    public async Task TrailingAndEndOfFileLineCommentsAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"//leading
 namespace ANamespace //namespace
 { // start of block - namespace
 } //end namespace
@@ -99,6 +99,5 @@ Namespace ANamespace 'namespace
     ' start of block - namespace
 End Namespace 'end namespace
 ' Last line comment");
-        }
     }
 }

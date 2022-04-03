@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp;
+
+public class SpecialConversionTests : ConverterTestBase
 {
-    public class SpecialConversionTests : ConverterTestBase
+    [Fact]
+    public async Task RaiseEventAsync()
     {
-        [Fact]
-        public async Task RaiseEventAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
@@ -27,13 +27,13 @@ internal partial class TestClass
         MyEvent?.Invoke(this, EventArgs.Empty);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestCustomEventAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass45
+    [Fact]
+    public async Task TestCustomEventAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass45
     Private Event backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
@@ -80,13 +80,13 @@ internal partial class TestClass45
         OnMyEvent(this, EventArgs.Empty);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestFullWidthCharacterCustomEventAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Ｃｌａｓｓ　ＴｅｓｔＣｌａｓｓ４５
+    [Fact]
+    public async Task TestFullWidthCharacterCustomEventAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Ｃｌａｓｓ　ＴｅｓｔＣｌａｓｓ４５
 　　　　Ｐｒｉｖａｔｅ　Ｅｖｅｎｔ　ｂａｃｋｉｎｇＦｉｅｌｄ　Ａｓ　EventHandler
 
 　　　　Ｐｕｂｌｉｃ　Ｃｕｓｔｏｍ　Ｅｖｅｎｔ　ＭｙＥｖｅｎｔ　Ａｓ　EventHandler
@@ -133,26 +133,26 @@ internal partial class ＴｅｓｔＣｌａｓｓ４５
         OnＭｙＥｖｅｎｔ(this, EventArgs.Empty);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task HexAndBinaryLiteralsAsync()
-        {
+    [Fact]
+    public async Task HexAndBinaryLiteralsAsync()
+    {
         await TestConversionVisualBasicToCSharpAsync(
-        @"Class Test
+            @"Class Test
     Public CR As Integer = &HD * &B1
 End Class", @"
 internal partial class Test
 {
     public int CR = 0xD * 0b1;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task HexAndBinaryLiterals754Async()
-        {
+    [Fact]
+    public async Task HexAndBinaryLiterals754Async()
+    {
         await TestConversionVisualBasicToCSharpAsync(
-        @"Class Test754
+            @"Class Test754
     Private value As Integer = &H80000000
     Private value2 As Integer = &HF1234567
 End Class", @"
@@ -161,13 +161,13 @@ internal partial class Test754
     private int value = int.MinValue + 0x00000000;
     private int value2 = int.MinValue + 0x71234567;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue483_HexAndBinaryLiteralsAsync()
-        {
+    [Fact]
+    public async Task Issue483_HexAndBinaryLiteralsAsync()
+    {
         await TestConversionVisualBasicToCSharpAsync(
-        @"Public Class Issue483
+            @"Public Class Issue483
     Public Test1 as Integer = &H7A
     Public Test2 as Integer = &H7B
     Public Test3 as Integer = &H7C
@@ -184,13 +184,13 @@ public partial class Issue483
     public int Test5 = 0x7E;
     public int Test6 = 0x7F;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue544_AssignUsingMidAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-        @"Public Class Issue483
+    [Fact]
+    public async Task Issue544_AssignUsingMidAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Issue483
     Private Function numstr(ByVal aDouble As Double) As String
         Dim str_Txt As String = Format(aDouble, ""0.000000"")
         Mid(str_Txt, Len(str_Txt) - 6, 1) = "".""
@@ -222,12 +222,12 @@ public partial class Issue483
         return str_Txt;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestConstCharacterConversionsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+    [Fact]
+    public async Task TestConstCharacterConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Class TestConstCharacterConversions
     Function GetItem(dr As DataRow) As Object
@@ -259,13 +259,13 @@ internal partial class TestConstCharacterConversions
         return default;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UsingBoolInToExpressionAsync()
-        {
-            // Beware, this will never enter the loop, it's buggy input due to the "i <", but it compiles and runs, so the output should too (and do the same thing)
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    [Fact]
+    public async Task UsingBoolInToExpressionAsync()
+    {
+        // Beware, this will never enter the loop, it's buggy input due to the "i <", but it compiles and runs, so the output should too (and do the same thing)
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
     Public Sub M(OldWords As String(), NewWords As String(), HTMLCode As String)
         For i As Integer = 0 To i < OldWords.Length - 1
             HTMLCode = HTMLCode.Replace(OldWords(i), NewWords(i))
@@ -281,12 +281,12 @@ public partial class C
             HTMLCode = HTMLCode.Replace(OldWords[i], NewWords[i]);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringOperatorsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"     Sub DummyMethod(target As String)
+    [Fact]
+    public async Task StringOperatorsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"     Sub DummyMethod(target As String)
         If target < ""Z""c OrElse New Char(){} <= target OrElse target = """" OrElse target <> """" OrElse target >= New Char(){} OrElse target > """" Then
             Console.WriteLine(""It must be one of those"")
         End If
@@ -297,6 +297,5 @@ public partial class C
         Console.WriteLine(""It must be one of those"");
     }
 }");
-        }
     }
 }

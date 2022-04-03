@@ -2,17 +2,17 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
+
+public class PropertyMemberTests : ConverterTestBase
 {
-    public class PropertyMemberTests : ConverterTestBase
+
+
+    [Fact]
+    public async Task TestPropertyAsync()
     {
-
-
-        [Fact]
-        public async Task TestPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Property Test As Integer
 
     Public Property Test2 As Integer
@@ -67,13 +67,13 @@ internal partial class TestClass
 }
 1 source compilation errors:
 BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide both a 'Get' and a 'Set'.");
-        }
+    }
 
-        [Fact]
-        public async Task TestParameterizedPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestParameterizedPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
 
@@ -126,13 +126,13 @@ internal partial class TestClass
         return get_FullName(false, true);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestParameterizedPropertyRequiringConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Class1
+    [Fact]
+    public async Task TestParameterizedPropertyRequiringConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Class1
     Public Property SomeProp(ByVal index As Integer) As Single
         Get
             Return 1.5
@@ -163,13 +163,13 @@ public partial class Class1
         set_SomeProp(123, (float)someDecimal);
     }
 }");
-        }
+    }
 
-        [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
-        public async Task TestOptionalParameterizedPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
+    public async Task TestOptionalParameterizedPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
 
@@ -215,13 +215,13 @@ internal partial class TestClass
         return get_FullName();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCasesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class ParameterizedPropertiesAndEnumTest
+    [Fact]
+    public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCasesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class ParameterizedPropertiesAndEnumTest
     Public Enum MyEnum
         First
     End Enum
@@ -288,13 +288,13 @@ public partial class ParameterizedPropertiesAndEnumTest
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PropertyWithMissingTypeDeclarationAsync()//TODO Check object is the inferred type
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class MissingPropertyType
+    [Fact]
+    public async Task PropertyWithMissingTypeDeclarationAsync()//TODO Check object is the inferred type
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MissingPropertyType
                 ReadOnly Property Max
                     Get
                         Dim mx As Double = 0
@@ -313,13 +313,13 @@ internal partial class MissingPropertyType
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestReadWriteOnlyInterfacePropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Interface Foo
+    [Fact]
+    public async Task TestReadWriteOnlyInterfacePropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
 End Interface", @"
@@ -328,12 +328,12 @@ public partial interface Foo
     string P1 { get; }
     string P2 { set; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SynthesizedBackingFieldAccessAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task SynthesizedBackingFieldAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
@@ -344,12 +344,12 @@ internal partial class TestClass
 
     private int Second = First;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PropertyInitializersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task PropertyInitializersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private ReadOnly Property First As New List(Of String)
     Private Property Second As Integer = 0
 End Class", @"using System.Collections.Generic;
@@ -359,13 +359,13 @@ internal partial class TestClass
     private List<string> First { get; set; } = new List<string>();
     private int Second { get; set; } = 0;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestIndexerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestIndexerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Private _Items As Integer()
 
     Default Public Property Item(ByVal index As Integer) As Integer
@@ -434,26 +434,26 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestWriteOnlyPropertiesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Interface TestInterface
+    [Fact]
+    public async Task TestWriteOnlyPropertiesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Interface TestInterface
     WriteOnly Property Items As Integer()
 End Interface", @"
 internal partial interface TestInterface
 {
     int[] Items { set; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestImplicitPrivateSetterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class SomeClass
+    [Fact]
+    public async Task TestImplicitPrivateSetterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class SomeClass
     Public ReadOnly Property SomeValue As Integer
 
     Public Sub SetValue(value1 As Integer, value2 As Integer)
@@ -469,13 +469,13 @@ public partial class SomeClass
         SomeValue = value1 + value2;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestParametrizedPropertyCalledWithNamedArgumentsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task TestParametrizedPropertyCalledWithNamedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Property Prop(Optional x As Integer = 1, Optional y as Integer = 2) As Integer
 End Interface
@@ -559,13 +559,13 @@ public partial class SomeClass : IFoo
         foo.set_Prop(x: -1, y: -2, value: 1);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestParametrizedPropertyCalledWithOmittedArgumentsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task TestParametrizedPropertyCalledWithOmittedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Property Prop(Optional x As Integer = 1, Optional y as Integer = 2, Optional z as Integer = 3) As Integer
 End Interface
@@ -649,13 +649,13 @@ public partial class SomeClass : IFoo
         foo.set_Prop(value: 1);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestSetWithNamedParameterPropertiesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestSetWithNamedParameterPropertiesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Private _Items As Integer()
     Property Items As Integer()
         Get
@@ -683,13 +683,13 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestPropertyAssignmentReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Class1
+    [Fact]
+    public async Task TestPropertyAssignmentReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Class1
     Public ReadOnly Property Foo() As String
         Get
             Foo = """"
@@ -755,13 +755,13 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestGetIteratorDoesNotGainReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class VisualBasicClass
+    [Fact]
+    public async Task TestGetIteratorDoesNotGainReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class VisualBasicClass
   Public Shared ReadOnly Iterator Property SomeObjects As IEnumerable(Of Object())
     Get
       Yield New Object(2) {}
@@ -781,6 +781,5 @@ public partial class VisualBasicClass
         }
     }
 }");
-        }
     }
 }

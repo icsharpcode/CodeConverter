@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
+
+public class IndexerTests : ConverterTestBase
 {
-    public class IndexerTests : ConverterTestBase
+    [Fact]
+    public async Task InterfaceImplementationOfIndexerAsync()
     {
-                [Fact]
-        public async Task InterfaceImplementationOfIndexerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Default Property Item(str As String) As Integer
 End Interface
@@ -46,13 +46,13 @@ public partial class Foo : IFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task InterfaceImplementationOfIndexerAsAbstractAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task InterfaceImplementationOfIndexerAsAbstractAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Default Property Item(str As String) As Integer
 End Interface
@@ -99,13 +99,13 @@ public partial class FooChild : Foo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedImplementationOfIndexerWithAbstractAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task RenamedImplementationOfIndexerWithAbstractAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Default Property Item(str As String) As Integer
 End Interface
@@ -152,13 +152,13 @@ public partial class FooChild : Foo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task ReadOnlyImplementationOfIndexerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task ReadOnlyImplementationOfIndexerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Default ReadOnly Property Item(str As String) As Integer
 End Interface
@@ -188,13 +188,13 @@ public partial class Foo : IFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task WriteOnlyImplementationOfIndexerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task WriteOnlyImplementationOfIndexerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Default WriteOnly Property Item(str As String) As Integer
 End Interface
@@ -222,6 +222,5 @@ public partial class Foo : IFoo
     }
 }
 ");
-        }
     }
 }

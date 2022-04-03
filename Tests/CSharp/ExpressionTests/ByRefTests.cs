@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
-{
-    public class ByRefTests : ConverterTestBase
-    {
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 
-        [Fact]
-        public async Task OptionalRefDateConstsWithOmittedArgListAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
+public class ByRefTests : ConverterTestBase
+{
+
+    [Fact]
+    public async Task OptionalRefDateConstsWithOmittedArgListAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
     Const x As Date = #1990-1-1#
 
     Private Sub Y(Optional ByRef opt As Date = x)
@@ -37,12 +37,12 @@ public partial class Issue213
         Y(opt: ref argopt);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NullInlineRefArgumentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    [Fact]
+    public async Task NullInlineRefArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
   Public Sub UseStuff()
     Stuff(Nothing)
   End Sub
@@ -62,12 +62,12 @@ public partial class VisualBasicClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefArgumentRValueAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task RefArgumentRValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Property C1 As Class1
     Private _c2 As Class1
     Private _o1 As Object
@@ -116,12 +116,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefArgumentRValue2Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task RefArgumentRValue2Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = True
         Bar(x = True)
@@ -239,12 +239,12 @@ public partial class Class1
         return """";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefArgumentUsingAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
+    [Fact]
+    public async Task RefArgumentUsingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
 
 Public Class Class1
     Sub Foo()
@@ -272,12 +272,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefOptionalArgumentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class OptionalRefIssue91
+    [Fact]
+    public async Task RefOptionalArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class OptionalRefIssue91
     Public Shared Function TestSub(Optional ByRef IsDefault As Boolean = False) As Boolean
     End Function
 
@@ -300,13 +300,13 @@ public partial class OptionalRefIssue91
         return TestSub(IsDefault: ref argIsDefault) && TestSub(ref argIsDefault1);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationOptionalRefParametersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task ExplicitInterfaceImplementationOptionalRefParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
   Function ExplicitFunc(Optional ByRef str2 As String = """") As Integer
 End Interface
 
@@ -332,12 +332,12 @@ public partial class Foo : IFoo
 
     int IFoo.ExplicitFunc(ref string str) => ExplicitFunc(ref str);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefArgumentPropertyInitializerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task RefArgumentPropertyInitializerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private _p1 As Class1 = Foo(New Class1)
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
@@ -358,12 +358,12 @@ public partial class Class1
         return c1;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ReadOnlyPropertyRef_Issue843Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+    [Fact]
+    public async Task ReadOnlyPropertyRef_Issue843Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
 
     Public Class TestClass
         Public ReadOnly Property Foo As String
@@ -417,12 +417,12 @@ internal static partial class Module1
         Console.WriteLine(value);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AssignsBackToPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task AssignsBackToPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class MyTestClass
 
@@ -510,12 +510,12 @@ public partial class MyTestClass
         Console.WriteLine(someInt);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue567Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
+    [Fact]
+    public async Task Issue567Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
     Dim arr() As String
     Dim arr2(,) As String
 
@@ -550,12 +550,12 @@ public partial class Issue567
         Debug.Assert(arr2[2, 2] == ""test"");
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue567ExtendedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
+    [Fact]
+    public async Task Issue567ExtendedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
     Sub DoSomething(ByRef str As String)
         lst = New List(Of String)({4.ToString(), 5.ToString(), 6.ToString()})
         lst2 = New List(Of Object)({4.ToString(), 5.ToString(), 6.ToString()})
@@ -607,12 +607,12 @@ internal static partial class Other
     public static List<string> lst = new List<string>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
     public static List<object> lst2 = new List<object>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue856Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue856
+    [Fact]
+    public async Task Issue856Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue856
     Sub Main()
         Dim decimalTarget As Decimal
         Double.TryParse(""123"", decimalTarget)
@@ -643,12 +643,12 @@ public partial class Issue856
         intTarget = (int)argresult2;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task OutParameterIsEnforcedByCSharpCompileErrorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' Statement removed so comment removed too
+    [Fact]
+    public async Task OutParameterIsEnforcedByCSharpCompileErrorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' Statement removed so comment removed too
 
 Public Class OutParameterIsEnforcedByCSharpCompileError
     Shared Sub LogAndReset(<Out> ByRef arg As Integer)
@@ -666,13 +666,13 @@ public partial class OutParameterIsEnforcedByCSharpCompileError
 2 target compilation errors:
 CS0269: Use of unassigned out parameter 'arg'
 CS0177: The out parameter 'arg' must be assigned to before control leaves the current method");
-            // These compile errors are the correct conversion - VB doesn't enforce out parameters not being used for input, or being assigned before output
-        }
+        // These compile errors are the correct conversion - VB doesn't enforce out parameters not being used for input, or being assigned before output
+    }
 
-        [Fact]
-        public async Task BinaryExpressionOutParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' BUG: Comment lost because overwritten
+    [Fact]
+    public async Task BinaryExpressionOutParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' BUG: Comment lost because overwritten
 
 Public Class BinaryExpressionOutParameter
     Shared Sub Main()
@@ -709,12 +709,12 @@ public partial class BinaryExpressionOutParameter
         arg = 0;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task BinaryExpressionRefParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class BinaryExpressionRefParameter
+    [Fact]
+    public async Task BinaryExpressionRefParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class BinaryExpressionRefParameter
     Shared Sub Main()
         Dim wide As Object = 7
         LogAndReset(wide)
@@ -759,7 +759,6 @@ public partial class BinaryExpressionRefParameter
         arg = 0;
     }
 }");
-        }
-
     }
+
 }

@@ -2,14 +2,14 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+public class StringExpressionTests : ConverterTestBase
 {
-    public class StringExpressionTests : ConverterTestBase
+    [Fact]
+    public async Task MultilineStringAsync()
     {
-        [Fact]
-        public async Task MultilineStringAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
@@ -27,12 +27,12 @@ World!"";
 World!"";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task QuotesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task QuotesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Shared Function GetTextFeedInput(pStream As String, pTitle As String, pText As String) As String
         Return ""{"" & AccessKey() & "",""""streamName"""": """""" & pStream & """""",""""point"""": ["" & GetTitleTextPair(pTitle, pText) & ""]}""
     End Function
@@ -88,12 +88,12 @@ internal partial class TestClass
         return ""{\""delta\"": \"""" + pDelta + ""\""}"";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringCompareAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task StringCompareAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
         Dim s2 As String = """"
@@ -147,12 +147,12 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringCompareTextAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+    [Fact]
+    public async Task StringCompareTextAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
 Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
@@ -208,12 +208,12 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringCompareDefaultInstrAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic
+    [Fact]
+    public async Task StringCompareDefaultInstrAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic
 
 Class Issue655
     Dim s1 = InStr(1, ""obj"", ""object '"")
@@ -228,7 +228,7 @@ Class Issue655
         Return c = CompareMethod.Binary
     End Function
 End Class", 
-                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+            @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Issue655
@@ -251,12 +251,12 @@ internal partial class Issue655
         return c == CompareMethod.Binary;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringCompareTextInstrAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text ' Comment omitted since line has no conversion
+    [Fact]
+    public async Task StringCompareTextInstrAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text ' Comment omitted since line has no conversion
 Imports Microsoft.VisualBasic
 
 Class Issue655
@@ -272,7 +272,7 @@ Class Issue655
         Return c = CompareMethod.Binary
     End Function
 End Class", 
-                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+            @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Issue655
@@ -295,12 +295,12 @@ internal partial class Issue655
         return c == CompareMethod.Binary;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringConcatPrecedenceAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task StringConcatPrecedenceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = ""x "" & 5 - 4 & "" y""
     End Sub
@@ -312,12 +312,12 @@ public partial class Class1
         string x = ""x "" + (5 - 4) + "" y"";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringConcatenationAssignmentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task StringConcatenationAssignmentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim str = ""Hello, ""
         str &= ""World""
@@ -331,26 +331,26 @@ internal partial class TestClass
         str += ""World"";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringInterpolationWithConditionalOperatorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Function GetString(yourBoolean as Boolean) As String
+    [Fact]
+    public async Task StringInterpolationWithConditionalOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Function GetString(yourBoolean as Boolean) As String
     Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
 End Function",
-                @"public string GetString(bool yourBoolean)
+            @"public string GetString(bool yourBoolean)
 {
     return $""You {(yourBoolean ? ""do"" : ""do not"")} have a true value"";
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringInterpolationWithDoubleQuotesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Imports System
+    [Fact]
+    public async Task StringInterpolationWithDoubleQuotesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
 
 Namespace Global.InnerNamespace
     Public Class Test
@@ -365,7 +365,7 @@ Namespace Global.InnerNamespace
         End Function
     End Class
 End Namespace",
-@"using System;
+            @"using System;
 
 namespace InnerNamespace
 {
@@ -383,13 +383,13 @@ namespace InnerNamespace
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task StringInterpolationWithDateFormatAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Imports System
+    [Fact]
+    public async Task StringInterpolationWithDateFormatAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
 
 Namespace Global.InnerNamespace
     Public Class Test
@@ -399,7 +399,7 @@ Namespace Global.InnerNamespace
             End function
     End Class
 End Namespace",
-                @"using System;
+            @"using System;
 
 namespace InnerNamespace
 {
@@ -412,17 +412,17 @@ namespace InnerNamespace
         }
     }
 }");
-        }
-        [Fact]
-        public async Task NoConversionRequiredWithinConcatenationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Issue508
+    }
+    [Fact]
+    public async Task NoConversionRequiredWithinConcatenationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Issue508
     Sub Foo()
         Dim x = ""x"" & 4 & ""y""
     End Sub
 End Class",
-@"
+            @"
 public partial class Issue508
 {
     public void Foo()
@@ -430,13 +430,13 @@ public partial class Issue508
         string x = ""x"" + 4 + ""y"";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task EmptyStringCoalesceSkippedForLiteralComparisonAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class VisualBasicClass
+    [Fact]
+    public async Task EmptyStringCoalesceSkippedForLiteralComparisonAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class VisualBasicClass
 
     Sub Foo()
         Dim x = """"
@@ -444,7 +444,7 @@ public partial class Issue508
     End Sub
 
 End Class",
-@"
+            @"
 public partial class VisualBasicClass
 {
     public void Foo()
@@ -453,17 +453,17 @@ public partial class VisualBasicClass
         bool y = x == ""something"";
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue396ComparisonOperatorForStringsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Issue396ComparisonOperatorForStringsAsync
+    [Fact]
+    public async Task Issue396ComparisonOperatorForStringsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Issue396ComparisonOperatorForStringsAsync
     Private str = 1.ToString()
     Private b = str > """"
 End Class",
-@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue396ComparisonOperatorForStringsAsync
 {
@@ -475,13 +475,13 @@ public partial class Issue396ComparisonOperatorForStringsAsync
         b = Operators.ConditionalCompareObjectGreater(str, """", false);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue590EnumConvertsToNumericStringAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class EnumTests
+    [Fact]
+    public async Task Issue590EnumConvertsToNumericStringAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class EnumTests
     Private Enum RankEnum As SByte
         First = 1
         Second = 2
@@ -491,7 +491,7 @@ public partial class Issue396ComparisonOperatorForStringsAsync
         Console.Write(RankEnum.First & RankEnum.Second)
     End Sub
 End Class",
-@"using System;
+            @"using System;
 
 public partial class EnumTests
 {
@@ -508,18 +508,18 @@ public partial class EnumTests
 }
 1 target compilation errors:
 CS0019: Operator '+' cannot be applied to operands of type 'EnumTests.RankEnum' and 'EnumTests.RankEnum'");
-        }
+    }
 
-        [Fact]
-        public async Task Issue806DateTimeConvertsToStringWithinConcatenationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Issue806
+    [Fact]
+    public async Task Issue806DateTimeConvertsToStringWithinConcatenationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Issue806
     Sub Foo()
         Dim x = #2022-01-01# & "" 15:00""
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue806
@@ -529,6 +529,5 @@ public partial class Issue806
         string x = Conversions.ToString(DateTime.Parse(""2022-01-01"")) + "" 15:00"";
     }
 }");
-        }
     }
 }

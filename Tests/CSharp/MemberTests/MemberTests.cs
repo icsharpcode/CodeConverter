@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
+
+public class MemberTests : ConverterTestBase
 {
-    public class MemberTests : ConverterTestBase
+    [Fact]
+    public async Task TestFieldAsync()
     {
-        [Fact]
-        public async Task TestFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Const answer As Integer = 42
     Private value As Integer = 10
     ReadOnly v As Integer = 15
@@ -21,13 +21,13 @@ internal partial class TestClass
     private int value = 10;
     private readonly int v = 15;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMultiArrayFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestMultiArrayFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Dim Parts(), Taxes(), Deposits()(), Prepaid()(), FromDate, ToDate As String
 End Class", @"
 internal partial class TestClass
@@ -36,25 +36,25 @@ internal partial class TestClass
     private string[][] Deposits, Prepaid;
     private string FromDate, ToDate;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestConstantFieldInModuleAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Module TestModule
+    [Fact]
+    public async Task TestConstantFieldInModuleAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module TestModule
     Const answer As Integer = 42
 End Module", @"
 internal static partial class TestModule
 {
     private const int answer = 42;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestConstructorVisibilityAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class Class1
+    [Fact]
+    public async Task TestConstructorVisibilityAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Class1
     Sub New(x As Boolean)
     End Sub
 End Class", @"
@@ -64,13 +64,13 @@ internal partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestModuleConstructorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Module Module1
+    [Fact]
+    public async Task TestModuleConstructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Module1
     Sub New()
         Dim someValue As Integer = 0
     End Sub
@@ -82,13 +82,13 @@ internal static partial class Module1
         int someValue = 0;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestTypeInferredConstAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestTypeInferredConstAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Const someConstField = 42
     Sub TestMethod()
         Const someConst = System.DateTimeKind.Local
@@ -104,13 +104,13 @@ internal partial class TestClass
         const DateTimeKind someConst = DateTimeKind.Local;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestTypeInferredVarAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestTypeInferredVarAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Enum TestEnum As Integer
         Test1
     End Enum
@@ -135,13 +135,13 @@ internal partial class TestClass
         int t1 = Conversions.ToInteger(EnumVariable);" /* VB compiler uses Conversions rather than any plainer casting */ + @"
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -163,13 +163,13 @@ internal partial class TestClass
         Console.WriteLine(Enumerable.Empty<string>());
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodAssignmentReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class Class1
+    [Fact]
+    public async Task TestMethodAssignmentReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Class1
     Function TestMethod(x As Integer) As Integer
         If x = 1 Then
             TestMethod = 1
@@ -203,13 +203,13 @@ internal partial class Class1
         return TestMethodRet;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodAssignmentReturn293Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Class1
+    [Fact]
+    public async Task TestMethodAssignmentReturn293Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Class1
     Public Event MyEvent As EventHandler
     Protected Overrides Function Foo() As String
         AddHandler MyEvent, AddressOf Foo
@@ -235,13 +235,13 @@ public partial class Class1
 BC30284: function 'Foo' cannot be declared 'Overrides' because it does not override a function in a base class.
 1 target compilation errors:
 CS0115: 'Class1.Foo()': no suitable method found to override");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodAssignmentAdditionReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class Class1
+    [Fact]
+    public async Task TestMethodAssignmentAdditionReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Class1
     Function TestMethod(x As Integer) As Integer
         If x = 1 Then
             TestMethod += 1
@@ -275,13 +275,13 @@ internal partial class Class1
         return TestMethodRet;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodMissingReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class Class1
+    [Fact]
+    public async Task TestMethodMissingReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Class1
     Function TestMethod() As Integer
 
     End Function
@@ -293,13 +293,13 @@ internal partial class Class1
         return default;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodWithOutParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass
+    [Fact]
+    public async Task TestMethodWithOutParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Function TryGet(<System.Runtime.InteropServices.Out> ByRef strs As List(Of String)) As Boolean
         strs = New List(Of String)
         Return False
@@ -314,13 +314,13 @@ internal partial class TestClass
         return false;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestHoistedOutParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class ClassWithProperties
+    [Fact]
+    public async Task TestHoistedOutParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class ClassWithProperties
    Public Property Property1 As String
 End Class
 
@@ -355,13 +355,13 @@ public partial class VisualBasicClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodWithReturnTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestMethodWithReturnTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
         Return 0
     End Function
@@ -377,15 +377,15 @@ internal partial class TestClass
 }
 1 target compilation errors:
 CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
-        }
+    }
 
-        [Fact]
-        public async Task TestFunctionWithNoReturnTypeSpecifiedAsync()
-        {
-            // Note: "Inferred" type is always object except with local variables
-            // https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/variables/local-type-inference
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestFunctionWithNoReturnTypeSpecifiedAsync()
+    {
+        // Note: "Inferred" type is always object except with local variables
+        // https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/variables/local-type-inference
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Private Function TurnFirstToUp(ByVal Text As String)
         Dim firstCharacter = Text.Substring(0, 1).ToUpper()
         Return firstCharacter + Text.Substring(1)
@@ -399,13 +399,13 @@ internal partial class TestClass
         return firstCharacter + Text.Substring(1);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestFunctionReturningTypeRequiringConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestFunctionReturningTypeRequiringConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Function Four() As String
         Return 4
     End Function
@@ -417,13 +417,13 @@ internal partial class TestClass
         return 4.ToString();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestStaticMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestStaticMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -441,13 +441,13 @@ internal partial class TestClass
         argument3 = default;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestAbstractMethodAndPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"MustInherit Class TestClass
+    [Fact]
+    public async Task TestAbstractMethodAndPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"MustInherit Class TestClass
     Public MustOverride Sub TestMethod()
     Public MustOverride ReadOnly Property AbstractProperty As String
 End Class", @"
@@ -457,13 +457,13 @@ internal abstract partial class TestClass
 
     public abstract string AbstractProperty { get; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestAbstractReadOnlyAndWriteOnlyPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"MustInherit Class TestClass
+    [Fact]
+    public async Task TestAbstractReadOnlyAndWriteOnlyPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"MustInherit Class TestClass
         Public MustOverride ReadOnly Property ReadOnlyProp As String
         Public MustOverride WriteOnly Property WriteOnlyProp As String
 End Class
@@ -495,13 +495,13 @@ internal partial class ChildClass : TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestReadOnlyOrWriteOnlyPropertyImplementedByNormalPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task TestReadOnlyOrWriteOnlyPropertyImplementedByNormalPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Interface IClass
     ReadOnly Property ReadOnlyPropParam(i as Integer) As Integer
     ReadOnly Property ReadOnlyProp As Integer
@@ -615,13 +615,13 @@ internal partial class ChildClass : IClass
         set => RenamedWriteOnlyProperty = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestReadOnlyAndWriteOnlyParametrizedPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Interface IClass
+    [Fact]
+    public async Task TestReadOnlyAndWriteOnlyParametrizedPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Interface IClass
     ReadOnly Property ReadOnlyProp(i as Integer) As String
     WriteOnly Property WriteOnlyProp(i as Integer) As String
 End Interface
@@ -661,13 +661,13 @@ internal partial class ChildClass : IClass
         throw new NotImplementedException();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExplicitInterfaceOfParametrizedPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Interface IClass
+    [Fact]
+    public async Task TestExplicitInterfaceOfParametrizedPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Interface IClass
     ReadOnly Property ReadOnlyPropToRename(i as Integer) As String
     WriteOnly Property WriteOnlyPropToRename(i as Integer) As String
     Property PropToRename(i as Integer) As String
@@ -849,13 +849,13 @@ internal partial class ChildClass : IClass
     string IClass.get_PropToRenameNonPublic(int i) => get_PropToRenameNonPublic(i);
     void IClass.set_PropToRenameNonPublic(int i, string value) => set_PropToRenameNonPublic(i, value);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestSealedMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestSealedMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
@@ -877,13 +877,13 @@ internal partial class TestClass
 BC31088: 'NotOverridable' cannot be specified for methods that do not override another method.
 1 target compilation errors:
 CS0238: 'TestClass.TestMethod<T, T2, T3>(out T, ref T2, T3)' cannot be sealed because it is not an override");
-        }
+    }
 
-        [Fact]
-        public async Task TestShadowedMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass
+    [Fact]
+    public async Task TestShadowedMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Sub TestMethod()
     End Sub
 
@@ -919,13 +919,13 @@ internal partial class TestSubclass : TestClass
         Console.WriteLine(""New implementation"");
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExtensionMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Module TestClass
+    [Fact]
+    public async Task TestExtensionMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
@@ -944,13 +944,13 @@ internal static partial class TestClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExtensionMethodWithExistingImportAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Imports System.Runtime.CompilerServices ' Removed by simplifier
+    [Fact]
+    public async Task TestExtensionMethodWithExistingImportAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Module TestClass
     <Extension()>
@@ -963,13 +963,13 @@ internal static partial class TestClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestRefExtensionMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Imports System
+    [Fact]
+    public async Task TestRefExtensionMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
 Imports System.Runtime.CompilerServices ' Removed since the extension attribute is removed
 
 Public Module MyExtensions
@@ -1006,13 +1006,13 @@ public static partial class UsagePoint
         Console.WriteLine(arr[3]);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExtensionWithinExtendedTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Extensions
+    [Fact]
+    public async Task TestExtensionWithinExtendedTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As ExtendedClass)
     End Sub
@@ -1037,13 +1037,13 @@ internal partial class ExtendedClass
         this.TestExtension();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExtensionWithinTypeDerivedFromExtendedTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Extensions
+    [Fact]
+    public async Task TestExtensionWithinTypeDerivedFromExtendedTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As ExtendedClass)
     End Sub
@@ -1077,13 +1077,13 @@ internal partial class DerivedClass : ExtendedClass
         this.TestExtension();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExtensionWithinNestedExtendedTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Extensions
+    [Fact]
+    public async Task TestExtensionWithinNestedExtendedTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As NestingClass.ExtendedClass)
     End Sub
@@ -1113,13 +1113,13 @@ internal partial class NestingClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExtensionWithMeWithinExtendedTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Extensions
+    [Fact]
+    public async Task TestExtensionWithMeWithinExtendedTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As ExtendedClass)
     End Sub
@@ -1144,13 +1144,13 @@ internal partial class ExtendedClass
         this.TestExtension();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestConstructorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
+    [Fact]
+    public async Task TestConstructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
 End Class", @"
@@ -1164,33 +1164,33 @@ internal partial class TestClass<T, T2, T3>
 }
 1 target compilation errors:
 CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
-        }
+    }
 
-        [Fact]
-        public async Task TestConstructorWithImplicitPublicAccessibilityAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Sub New()
+    [Fact]
+    public async Task TestConstructorWithImplicitPublicAccessibilityAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub New()
 End Sub", @"public SurroundingClass()
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestStaticConstructorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Shared Sub New()
+    [Fact]
+    public async Task TestStaticConstructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Shared Sub New()
 End Sub", @"static SurroundingClass()
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestDestructorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestDestructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Protected Overrides Sub Finalize()
     End Sub
 End Class", @"
@@ -1200,13 +1200,13 @@ internal partial class TestClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue681_OverloadsOverridesPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class C 
+    [Fact]
+    public async Task Issue681_OverloadsOverridesPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class C 
     Inherits B
 
     Public ReadOnly Overloads Overrides Property X()
@@ -1244,13 +1244,13 @@ public partial class B
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PartialFriendClassWithOverloadsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Partial Friend MustInherit Class TestClass1
+    [Fact]
+    public async Task PartialFriendClassWithOverloadsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Partial Friend MustInherit Class TestClass1
     Public Shared Sub CreateStatic()
     End Sub
 
@@ -1280,7 +1280,7 @@ Friend Class TestClass2
     Public Overloads Sub CreateVirtualInstance(o As Object)
     End Sub
 End Class",
-@"
+            @"
 internal abstract partial class TestClass1
 {
     public static void CreateStatic()
@@ -1320,12 +1320,12 @@ internal partial class TestClass2 : TestClass1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ClassWithGloballyQualifiedAttributeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
+    [Fact]
+    public async Task ClassWithGloballyQualifiedAttributeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
 Class TestClass
 End Class", @"using System.Diagnostics;
 
@@ -1333,12 +1333,12 @@ End Class", @"using System.Diagnostics;
 internal partial class TestClass
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task FieldWithAttributeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task FieldWithAttributeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     <ThreadStatic>
     Private Shared First As Integer
 End Class", @"using System;
@@ -1348,12 +1348,12 @@ internal partial class TestClass
     [ThreadStatic]
     private static int First;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task FieldWithNonStaticInitializerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+    [Fact]
+    public async Task FieldWithNonStaticInitializerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Private x As Integer = 2
     Private y(x) As Integer
 End Class", @"
@@ -1367,12 +1367,12 @@ public partial class A
         y = new int[x + 1];
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue281FieldWithNonStaticLambdaInitializerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.IO
+    [Fact]
+    public async Task Issue281FieldWithNonStaticLambdaInitializerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.IO
 
 Public Class Issue281
     Private lambda As System.Delegate = New ErrorEventHandler(Sub(a, b) Len(0))
@@ -1398,12 +1398,12 @@ public partial class Issue281
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ParamArrayAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ParamArrayAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub SomeBools(ParamArray anyName As Boolean())
     End Sub
 End Class", @"
@@ -1413,12 +1413,12 @@ internal partial class TestClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ParamNamedBoolAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ParamNamedBoolAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub SomeBools(ParamArray bool As Boolean())
     End Sub
 End Class", @"
@@ -1428,18 +1428,18 @@ internal partial class TestClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MethodWithNameArrayParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task MethodWithNameArrayParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Sub DoNothing(ByVal strs() As String)
         Dim moreStrs() As String
     End Sub
 End Class",
-@"
+            @"
 internal partial class TestClass
 {
     public void DoNothing(string[] strs)
@@ -1447,30 +1447,30 @@ internal partial class TestClass
         string[] moreStrs;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UntypedParametersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task UntypedParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Sub DoNothing(obj, objs())
     End Sub
 End Class",
-@"
+            @"
 internal partial class TestClass
 {
     public void DoNothing(object obj, object[] objs)
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PartialClassAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Partial Class TestClass
+    [Fact]
+    public async Task PartialClassAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Partial Class TestClass
     Private Sub DoNothing()
         Console.WriteLine(""Hello"")
     End Sub
@@ -1480,7 +1480,7 @@ Class TestClass ' VB doesn't require partial here (when just a single class omit
     Partial Private Sub DoNothing()
     End Sub
 End Class",
-@"using System;
+            @"using System;
 
 public partial class TestClass
 {
@@ -1494,12 +1494,12 @@ public partial class TestClass // VB doesn't require partial here (when just a s
 {
     partial void DoNothing();
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NestedClassAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class ClA
+    [Fact]
+    public async Task NestedClassAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class ClA
     Public Shared Sub MA()
         ClA.ClassB.MB()
         MyClassC.MC()
@@ -1547,12 +1547,12 @@ internal partial class MyClassC
         ClA.ClassB.MB();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LessQualifiedNestedClassAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class ClA
+    [Fact]
+    public async Task LessQualifiedNestedClassAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class ClA
     Public Shared Sub MA()
         ClassB.MB()
         MyClassC.MC()
@@ -1600,13 +1600,13 @@ internal partial class MyClassC
         ClA.ClassB.MB();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestAsyncMethodsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"    Class AsyncCode
+    [Fact]
+    public async Task TestAsyncMethodsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"    Class AsyncCode
         Public Sub NotAsync()
             Dim a1 = Async Function() 3
             Dim a2 = Async Function()
@@ -1650,13 +1650,13 @@ internal partial class AsyncCode
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task TestAsyncMethodsWithNoReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Friend Partial Module TaskExtensions
+    [Fact]
+    public async Task TestAsyncMethodsWithNoReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Friend Partial Module TaskExtensions
     <Extension()>
     Async Function [Then](Of T)(ByVal task As Task, ByVal f As Func(Of Task(Of T))) As Task(Of T)
         Await task
@@ -1717,13 +1717,13 @@ internal static partial class TaskExtensions
         return;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestExternDllImportAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"<DllImport(""kernel32.dll"", SetLastError:=True)>
+    [Fact]
+    public async Task TestExternDllImportAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
 End Function", @"[DllImport(""kernel32.dll"", SetLastError = true)]
 private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
@@ -1732,13 +1732,13 @@ private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInher
 BC30002: Type 'AccessMask' is not defined.
 1 target compilation errors:
 CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)");
-        }
+    }
 
-        [Fact]
-        public async Task Issue443_FixCaseForInterfaceMembersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task Issue443_FixCaseForInterfaceMembersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Function FooDifferentCase(<Out> ByRef str2 As String) As Integer
 End Interface
 
@@ -1763,13 +1763,13 @@ public partial class Foo : IFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Issue444_FixNameForRenamedInterfaceMembersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task Issue444_FixNameForRenamedInterfaceMembersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Function FooDifferentName(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -1795,13 +1795,13 @@ public partial class Foo : IFoo
     int IFoo.FooDifferentName(ref string str, int i) => BarDifferentName(ref str, i);
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task IdenticalInterfaceMethodsWithRenamedInterfaceMembersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task IdenticalInterfaceMethodsWithRenamedInterfaceMembersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Function DoFooBar(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -1848,13 +1848,13 @@ public partial class FooBar : IFoo, IBar
     int IBar.DoFooBar(ref string str, int i) => Bar(ref str, i);
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfaceCasingOnlyDifferenceConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task RenamedInterfaceCasingOnlyDifferenceConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Function DoFoo() As Integer
     Property Prop As Integer
@@ -1910,13 +1910,13 @@ public partial class Foo : IFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfaceCasingOnlyDifferenceForVirtualMemberConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task RenamedInterfaceCasingOnlyDifferenceForVirtualMemberConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Function DoFoo() As Integer
     Property Prop As Integer
@@ -1996,13 +1996,13 @@ public partial class Foo : BaseFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfaceCasingOnlyDifferenceWithOverloadedPropertyConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task RenamedInterfaceCasingOnlyDifferenceWithOverloadedPropertyConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IUserContext
     ReadOnly Property GroupID As String
 End Interface
@@ -2084,13 +2084,13 @@ public partial class Foo : BaseFoo, IFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedMethodImplementsMultipleInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task RenamedMethodImplementsMultipleInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Function DoFooBar(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -2126,13 +2126,13 @@ public partial class FooBar : IFoo, IBar
     int IFoo.DoFooBar(ref string str, int i) => Foo(ref str, i);
     int IBar.DoFooBar(ref string str, int i) => Foo(ref str, i);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task IdenticalInterfacePropertiesWithRenamedInterfaceMembersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task IdenticalInterfacePropertiesWithRenamedInterfaceMembersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
         Property FooBarProp As Integer
     End Interface
 
@@ -2173,12 +2173,12 @@ public partial class FooBar : IFoo, IBar
         set => Bar = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfaceMethodFullyQualifiedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+    [Fact]
+    public async Task RenamedInterfaceMethodFullyQualifiedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
     Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
@@ -2208,12 +2208,12 @@ public partial class Foo : TestNamespace.IFoo
 
     int TestNamespace.IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfacePropertyFullyQualifiedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+    [Fact]
+    public async Task RenamedInterfacePropertyFullyQualifiedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
     Public Interface IFoo
         Property FooProp As Integer
     End Interface
@@ -2242,12 +2242,12 @@ public partial class Foo : TestNamespace.IFoo
         set => FooPropRenamed = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfaceMethodConsumerCasingRenamedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task RenamedInterfaceMethodConsumerCasingRenamedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -2290,12 +2290,12 @@ public partial class FooConsumer
         return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfacePropertyConsumerCasingRenamedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task RenamedInterfacePropertyConsumerCasingRenamedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -2337,12 +2337,12 @@ public partial class FooConsumer
         return foo.FooPropRenamed + bar.FooProp;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task InterfaceMethodCasingRenamedConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task InterfaceMethodCasingRenamedConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Function DoFoo(str As String, i As Integer) As Integer
     End Interface
 
@@ -2383,12 +2383,12 @@ public partial class FooConsumer
         return foo.DoFoo(str, i) + bar.DoFoo(str, i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task InterfacePropertyCasingRenamedConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task InterfacePropertyCasingRenamedConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -2425,12 +2425,12 @@ public partial class FooConsumer
         return foo.FooProp + bar.FooProp;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task InterfaceRenamedMethodConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task InterfaceRenamedMethodConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -2473,12 +2473,12 @@ public partial class FooConsumer
         return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task InterfaceRenamedPropertyConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task InterfaceRenamedPropertyConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -2520,12 +2520,12 @@ public partial class FooConsumer
         return foo.FooPropRenamed + bar.FooProp;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PartialInterfaceRenamedMethodConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
+    [Fact]
+    public async Task PartialInterfaceRenamedMethodConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -2568,12 +2568,12 @@ public partial class FooConsumer
         return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PartialInterfaceRenamedPropertyConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
+    [Fact]
+    public async Task PartialInterfaceRenamedPropertyConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -2615,12 +2615,12 @@ public partial class FooConsumer
         return foo.FooPropRenamed + bar.FooProp;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfaceMethodMyClassConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task RenamedInterfaceMethodMyClassConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -2655,12 +2655,12 @@ public partial class Foo : IFoo
         return MyClassDoFooRenamed(ref str, i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RenamedInterfacePropertyMyClassConsumerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+    [Fact]
+    public async Task RenamedInterfacePropertyMyClassConsumerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
         ReadOnly Property DoFoo As Integer
         WriteOnly Property DoBar As Integer
     End Interface
@@ -2740,13 +2740,13 @@ public partial class Foo : IFoo
         MyClassDoBarRenamed = MyClassDoFooRenamed;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task ExplicitInterfaceImplementationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Property ExplicitProp(str As String) As Integer
     Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
 End Interface
@@ -2795,13 +2795,13 @@ public partial class Foo : IFoo
     void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task PropertyInterfaceImplementationKeepsVirtualModifierAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task PropertyInterfaceImplementationKeepsVirtualModifierAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Property PropParams(str As String) As Integer
     Property Prop() As Integer
 End Interface
@@ -2857,13 +2857,13 @@ public partial class Foo : IFoo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task PrivateAutoPropertyImplementsMultipleInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task PrivateAutoPropertyImplementsMultipleInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Property ExplicitProp As Integer
 End Interface
 
@@ -2900,14 +2900,14 @@ public partial class Foo : IFoo, IBar
         set => ExplicitProp = value;
     }
 }");
-        }
+    }
 
         
-        [Fact]
-        public async Task ImplementMultipleRenamedPropertiesFromInterfaceAsAbstractAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task ImplementMultipleRenamedPropertiesFromInterfaceAsAbstractAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Property ExplicitProp As Integer
 End Interface
@@ -2945,13 +2945,13 @@ public abstract partial class Foo : IFoo, IBar
         set => ExplicitPropRenamed2 = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationForVirtualMemberFromAnotherClassAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task ExplicitInterfaceImplementationForVirtualMemberFromAnotherClassAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Sub Save()
     Property Prop As Integer
@@ -3005,13 +3005,13 @@ public partial class Foo : BaseFoo, IFoo
         set => MyProp = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationWhereOnlyOneInterfaceMemberIsRenamedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task ExplicitInterfaceImplementationWhereOnlyOneInterfaceMemberIsRenamedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Sub Save()
     Property A As Integer
@@ -3066,13 +3066,13 @@ public partial class Foo : IFoo, IBar
         set => A = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationWhereMemberShadowsBaseAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task ExplicitInterfaceImplementationWhereMemberShadowsBaseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Sub Save()
     Property Prop As Integer
@@ -3126,13 +3126,13 @@ public partial class Foo : BaseFoo, IFoo
         set => MyProp = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PrivatePropertyAccessorBlocksImplementsMultipleInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task PrivatePropertyAccessorBlocksImplementsMultipleInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Property ExplicitProp As Integer
 End Interface
 
@@ -3186,13 +3186,13 @@ public partial class Foo : IFoo, IBar
         set => ExplicitProp = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NonPublicImplementsInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task NonPublicImplementsInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Property FriendProp As Integer
     Sub ProtectedSub()
     Function PrivateFunc() As Integer
@@ -3322,13 +3322,13 @@ public partial class Foo : BaseFoo
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitPropertyImplementationWithDirectAccessAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"
+    [Fact]
+    public async Task ExplicitPropertyImplementationWithDirectAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 Public Interface IFoo
     Property ExplicitProp As Integer
     ReadOnly Property ExplicitReadOnlyProp As Integer
@@ -3372,13 +3372,13 @@ public partial class Foo : IFoo
         ExplicitRenamedReadOnlyProp = 10;
     }
 }");
-        }
+    }
         
-        [Fact]
-        public async Task ReadonlyRenamedPropertyImplementsMultipleInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task ReadonlyRenamedPropertyImplementsMultipleInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     ReadOnly Property ExplicitProp As Integer
 End Interface
 
@@ -3413,13 +3413,13 @@ public partial class Foo : IFoo, IBar
         get => ExplicitPropRenamed;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task WriteonlyPropertyImplementsMultipleInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task WriteonlyPropertyImplementsMultipleInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     WriteOnly Property ExplicitProp As Integer
 End Interface
 
@@ -3463,13 +3463,13 @@ public partial class Foo : IFoo, IBar
         set => ExplicitPropRenamed = value;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PrivateMethodAndParameterizedPropertyImplementsMultipleInterfacesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task PrivateMethodAndParameterizedPropertyImplementsMultipleInterfacesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Property ExplicitProp(str As String) As Integer
     Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
 End Interface
@@ -3532,13 +3532,13 @@ public partial class Foo : IFoo, IBar
     void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
     void IBar.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
   Property ExplicitProp(Optional str As String = """") As Integer
   Function ExplicitFunc(Optional str2 As String = """", Optional i2 As Integer = 1) As Integer
 End Interface
@@ -3587,17 +3587,17 @@ public partial class Foo : IFoo
     void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }
 ");
-        }
+    }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        [Fact]
-        public async Task Issue444_InternalMemberDelegatingMethodAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [Fact]
+    public async Task Issue444_InternalMemberDelegatingMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
     Function FooDifferentName(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -3623,13 +3623,13 @@ internal partial class Foo : IFoo
     int IFoo.FooDifferentName(ref string str, int i) => BarDifferentName(ref str, i);
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Issue420_RenameClashingClassMemberAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Main
+    [Fact]
+    public async Task Issue420_RenameClashingClassMemberAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Main
     Sub Main()
     End Sub
 End Module", @"
@@ -3640,13 +3640,13 @@ internal static partial class MainType
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Issue420_RenameClashingEnumMemberAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Enum MyEnum
+    [Fact]
+    public async Task Issue420_RenameClashingEnumMemberAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Enum MyEnum
     MyEnumFirst
 End Enum", @"
 internal enum MyEnumType
@@ -3654,13 +3654,13 @@ internal enum MyEnumType
     MyEnumFirst
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task TestConstructorStaticLocalConvertedToFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class StaticLocalConvertedToField
+    [Fact]
+    public async Task TestConstructorStaticLocalConvertedToFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class StaticLocalConvertedToField
     Sub New(x As Boolean)
         Static sPrevPosition As Integer = 7 ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
@@ -3687,13 +3687,13 @@ internal partial class StaticLocalConvertedToField
         Console.WriteLine(_sPrevPosition1);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestPropertyStaticLocalConvertedToFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class StaticLocalConvertedToField
+    [Fact]
+    public async Task TestPropertyStaticLocalConvertedToFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class StaticLocalConvertedToField
     Readonly Property OtherName() As Integer
         Get
             Static sPrevPosition As Integer = 3 ' Comment moves with declaration
@@ -3731,13 +3731,13 @@ internal partial class StaticLocalConvertedToField
         return _OtherName_sPrevPosition1;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestStaticLocalConvertedToFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class StaticLocalConvertedToField
+    [Fact]
+    public async Task TestStaticLocalConvertedToFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class StaticLocalConvertedToField
     Sub OtherName(x As Boolean)
         Static sPrevPosition As Integer = 3 ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
@@ -3764,13 +3764,13 @@ internal partial class StaticLocalConvertedToField
         return _OtherName_sPrevPosition1;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestStaticLocalWithoutDefaultInitializerConvertedToFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class StaticLocalConvertedToField
+    [Fact]
+    public async Task TestStaticLocalWithoutDefaultInitializerConvertedToFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class StaticLocalConvertedToField
     Function OtherName() as Integer
         Static sPrevPosition As Integer
         sPrevPosition = 23
@@ -3790,13 +3790,13 @@ internal partial class StaticLocalConvertedToField
         return _OtherName_sPrevPosition;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestModuleStaticLocalConvertedToStaticFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Module StaticLocalConvertedToField
+    [Fact]
+    public async Task TestModuleStaticLocalConvertedToStaticFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module StaticLocalConvertedToField
     Sub OtherName(x As Boolean)
         Static sPrevPosition As Integer = 3 ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
@@ -3823,13 +3823,13 @@ internal static partial class StaticLocalConvertedToField
         return _OtherName_sPrevPosition1;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestStaticLocalConvertedToStaticFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class StaticLocalConvertedToField
+    [Fact]
+    public async Task TestStaticLocalConvertedToStaticFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class StaticLocalConvertedToField
     Shared Sub OtherName(x As Boolean)
         Static sPrevPosition As Integer ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
@@ -3856,6 +3856,5 @@ internal partial class StaticLocalConvertedToField
         Console.WriteLine(_OtherName_sPrevPosition1);
     }
 }");
-        }
     }
 }

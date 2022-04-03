@@ -2,22 +2,22 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
+
+/// <summary>
+/// Covers:
+/// Exit { Do | For | Select | Try | While } https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/exit-statement
+/// Continue { Do | For | While } https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/continue-statement
+///
+/// Does not cover:
+/// Exit { Function | Property | Sub } since they are not MethodExecutableStatements
+/// </summary>
+public class ExitableMethodExecutableStatementTests : ConverterTestBase
 {
-    /// <summary>
-    /// Covers:
-    /// Exit { Do | For | Select | Try | While } https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/exit-statement
-    /// Continue { Do | For | While } https://docs.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/continue-statement
-    ///
-    /// Does not cover:
-    /// Exit { Function | Property | Sub } since they are not MethodExecutableStatements
-    /// </summary>
-    public class ExitableMethodExecutableStatementTests : ConverterTestBase
+    [Fact]
+    public async Task WhileStatementAsync()
     {
-        [Fact]
-        public async Task WhileStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -45,12 +45,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SimpleDoStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task SimpleDoStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -79,12 +79,12 @@ internal partial class TestClass
         while (true);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DoWhileStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task DoWhileStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -113,12 +113,12 @@ internal partial class TestClass
         while (b == 0);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithExplicitTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithExplicitTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each v As Integer In values
             If v = 2 Then Continue For
@@ -139,12 +139,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithVarAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithVarAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each v In values
             If v = 2 Then Continue For
@@ -165,12 +165,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithUsedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithUsedOuterDeclarationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         Dim val As Integer
         For Each val In values
@@ -199,12 +199,12 @@ internal partial class TestClass
         Console.WriteLine(val);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithFieldVarUsedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithFieldVarUsedOuterDeclarationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Dim val As Integer
 
     Private Sub TestMethod(ByVal values As Integer())
@@ -235,12 +235,12 @@ internal partial class TestClass
         Console.WriteLine(val);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         Dim val As Integer
         For Each val In values
@@ -262,12 +262,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithFieldVarUnusedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithFieldVarUnusedOuterDeclarationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Dim val As Integer
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
@@ -292,12 +292,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEachStatementWithUnusedNestedDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForEachStatementWithUnusedNestedDeclarationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         Dim inline1, inline2, keep1, keep2 As Integer
         For Each inline1 In values
@@ -335,12 +335,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SelectCaseWithExplicitExitAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class A
+    [Fact]
+    public async Task SelectCaseWithExplicitExitAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class A
     Public Function Add(ByVal x As Integer) As Integer
         Select Case x
             Case 1
@@ -364,12 +364,12 @@ internal partial class A
         return 3;
     }
 }");
-        }
+    }
 
-        [Fact()]
-        public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_Issue690Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+    [Fact()]
+    public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_Issue690Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
 
 Public Class VisualBasicClass
     Public Sub Test
@@ -421,12 +421,12 @@ public partial class VisualBasicClass
         Console.WriteLine(i_Total.ToString());
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExitTry_CreatesBreakableLoop_Issue779Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task ExitTry_CreatesBreakableLoop_Issue779Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -514,12 +514,12 @@ public partial class VisualBasicClass779
         throw new NotImplementedException();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task WithinNonExitedTryAndFor_ExitForGeneratesBreakAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task WithinNonExitedTryAndFor_ExitForGeneratesBreakAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -573,12 +573,12 @@ public partial class VisualBasicClass779
         throw new NotImplementedException();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task WithinForAndNonExitedTry_ExitForGeneratesBreakAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task WithinForAndNonExitedTry_ExitForGeneratesBreakAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -632,12 +632,12 @@ public partial class VisualBasicClass779
         throw new NotImplementedException();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task WithinForAndExitedTry_ExitForGeneratesIfStatementsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task WithinForAndExitedTry_ExitForGeneratesIfStatementsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -708,6 +708,5 @@ public partial class VisualBasicClass779
         throw new NotImplementedException();
     }
 }");
-        }
     }
 }

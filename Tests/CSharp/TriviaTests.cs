@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp;
+
+public class TriviaTests : ConverterTestBase
 {
-    public class TriviaTests : ConverterTestBase
+    [Fact]
+    public async Task Issue506_IfStatementAsync()
     {
-        [Fact]
-        public async Task Issue506_IfStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Imports System
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
 
 Public Class TestClass506
     Public Sub Deposit(Item As Integer, ColaOnly As Boolean, MonteCarloLogActive As Boolean, InDevEnv As Func(Of Boolean))
@@ -53,13 +53,13 @@ public partial class TestClass506
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue15_NestedRegionsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"#Region ""Whole File""
+    [Fact]
+    public async Task Issue15_NestedRegionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"#Region ""Whole File""
 #Region ""Nested""
 Imports System
 
@@ -77,7 +77,7 @@ End Module
 #End Region
 #End Region
 ",
-@"#region Whole File
+            @"#region Whole File
 #region Nested
 using System;
 
@@ -96,13 +96,13 @@ internal static partial class Program
 #endregion
 #endregion
 #endregion");
-        }
+    }
 
-        [Fact]
-        public async Task RegionsWithEventsIssue772Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class VisualBasicClass
+    [Fact]
+    public async Task RegionsWithEventsIssue772Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class VisualBasicClass
     Inherits System.Windows.Forms.Form
 
     #Region "" Members ""
@@ -128,7 +128,7 @@ internal static partial class Program
     #End Region
 
 End Class",
-@"using System;
+            @"using System;
 
 public partial class VisualBasicClass : System.Windows.Forms.Form
 {
@@ -158,19 +158,19 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
     #endregion
 
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue15_IfTrueAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class AClass
+    [Fact]
+    public async Task Issue15_IfTrueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class AClass
     #If TRUE
     Private Sub AMethod()
     End Sub
     #End If
 End Class",
-@"
+            @"
 public partial class AClass
 {
     /* TODO ERROR: Skipped IfDirectiveTrivia
@@ -184,19 +184,19 @@ public partial class AClass
 */
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Issue15_IfFalseAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class AClass
+    [Fact]
+    public async Task Issue15_IfFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class AClass
     #If FALSE
     Private Sub AMethod()
     End Sub
     #End If
 End Class",
-@"
+            @"
 public partial class AClass
 {
     /* TODO ERROR: Skipped IfDirectiveTrivia
@@ -208,49 +208,49 @@ public partial class AClass
 #End If
 */
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue771_DoNotTrimLineCommentsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"
+    [Fact]
+    public async Task Issue771_DoNotTrimLineCommentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 '>> Thomas  16.03.2021
 '                       bei BearbeitungsTyp = ""SP__unten""
 Public Class AClass
 End Class",
-@"
+            @"
 
 // >> Thomas  16.03.2021
 // bei BearbeitungsTyp = ""SP__unten""
 public partial class AClass
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue771_DoNotTrimBlockCommentsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"
+    [Fact]
+    public async Task Issue771_DoNotTrimBlockCommentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 ''' >> Thomas  16.03.2021
 '''                       bei BearbeitungsTyp = ""SP__unten""
 Public Class AClass
 End Class",
-@"
+            @"
 
 /// >> Thomas  16.03.2021
 ///                       bei BearbeitungsTyp = ""SP__unten""
 public partial class AClass
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodXmlDocAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass
+    [Fact]
+    public async Task TestMethodXmlDocAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     ''' <summary>Xml doc</summary>
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
@@ -270,13 +270,13 @@ internal partial class TestClass
         argument3 = default;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestGeneratedMethodXmlDocAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass
+    [Fact]
+    public async Task TestGeneratedMethodXmlDocAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     '''<summary>
     '''  Returns the cached ResourceManager instance used by this class.
     '''</summary>
@@ -300,6 +300,5 @@ internal partial class TestClass
         argument3 = default;
     }
 }");
-        }
     }
 }
