@@ -1151,10 +1151,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     private bool IsNameOfExpression(CSSyntax.InvocationExpressionSyntax node)
     {
-        return node.Expression is CSSyntax.IdentifierNameSyntax methodIdentifier
-               && methodIdentifier?.Identifier.Text == "nameof"
-               // nameof expressions don't have an associated method symbol, a method called nameof usually would
-               && _semanticModel.GetSymbolInfo(methodIdentifier).ExtractBestMatch<ISymbol>() == null;
+        return node.Expression is CSSyntax.IdentifierNameSyntax {Identifier.Text: "nameof"} methodIdentifier && _semanticModel.GetSymbolInfo(methodIdentifier).ExtractBestMatch<ISymbol>() == null;
     }
 
     public override VisualBasicSyntaxNode VisitConditionalExpression(CSSyntax.ConditionalExpressionSyntax node)

@@ -22,7 +22,7 @@ internal class ExpressionEvaluator
     private static Dictionary<string, MethodInfo> GetConversionsMethodsByTypeFullName()
     {
         return typeof(Conversions).GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => m.Name.StartsWith("To") && m.GetParameters().Length == 1 && m.ReturnType?.FullName != null)
+            .Where(m => m.Name.StartsWith("To") && m.GetParameters().Length == 1 && m.ReturnType.FullName != null)
             .ToLookup(m => m.ReturnType.FullName, m => m)
             .ToDictionary(kvp => kvp.Key, GetMostGeneralOverload);
     }

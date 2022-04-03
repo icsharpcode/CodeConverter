@@ -10,7 +10,7 @@ internal static class OperationExtensions
     {
         var parent = operation?.Parent;
         while (parent is IConversionOperation || parent is IParenthesizedOperation) {
-            parent = parent?.Parent;
+            parent = parent.Parent;
         }
 
         return parent;
