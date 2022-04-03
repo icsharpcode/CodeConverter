@@ -1,11 +1,9 @@
 ﻿using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
-using VB = Microsoft.CodeAnalysis.VisualBasic;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
-using VBS = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
-namespace CSharpToVBCodeConverter.DestVisualBasic;
+namespace ICSharpCode.CodeConverter.VB.Trivia;
 
-internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
+internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
 {
     private static SyntaxToken GetVBOperatorToken(string op)
     {
@@ -13,102 +11,102 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
         {
             case "==":
             {
-                return global::VisualBasicSyntaxFactory.EqualsToken;
+                return VisualBasicSyntaxFactory.EqualsToken;
             }
 
             case "!=":
             {
-                return global::VisualBasicSyntaxFactory.LessThanGreaterThanToken;
+                return VisualBasicSyntaxFactory.LessThanGreaterThanToken;
             }
 
             case ">":
             {
-                return global::VisualBasicSyntaxFactory.GreaterThanToken;
+                return VisualBasicSyntaxFactory.GreaterThanToken;
             }
 
             case ">=":
             {
-                return global::VisualBasicSyntaxFactory.GreaterThanEqualsToken;
+                return VisualBasicSyntaxFactory.GreaterThanEqualsToken;
             }
 
             case "<":
             {
-                return global::VisualBasicSyntaxFactory.LessThanToken;
+                return VisualBasicSyntaxFactory.LessThanToken;
             }
 
             case "<=":
             {
-                return global::VisualBasicSyntaxFactory.LessThanEqualsToken;
+                return VisualBasicSyntaxFactory.LessThanEqualsToken;
             }
 
             case "|":
             {
-                return global::VisualBasicSyntaxFactory.OrKeyword;
+                return VisualBasicSyntaxFactory.OrKeyword;
             }
 
             case "||":
             {
-                return global::VisualBasicSyntaxFactory.OrElseKeyword;
+                return VisualBasicSyntaxFactory.OrElseKeyword;
             }
 
             case "&":
             {
-                return global::VisualBasicSyntaxFactory.AndKeyword;
+                return VisualBasicSyntaxFactory.AndKeyword;
             }
 
             case "&&":
             {
-                return global::VisualBasicSyntaxFactory.AndAlsoKeyword;
+                return VisualBasicSyntaxFactory.AndAlsoKeyword;
             }
 
             case "+":
             {
-                return global::VisualBasicSyntaxFactory.PlusToken;
+                return VisualBasicSyntaxFactory.PlusToken;
             }
 
             case "-":
             {
-                return global::VisualBasicSyntaxFactory.MinusToken;
+                return VisualBasicSyntaxFactory.MinusToken;
             }
 
             case "*":
             {
-                return global::VisualBasicSyntaxFactory.AsteriskToken;
+                return VisualBasicSyntaxFactory.AsteriskToken;
             }
 
             case "/":
             {
-                return global::VisualBasicSyntaxFactory.SlashToken;
+                return VisualBasicSyntaxFactory.SlashToken;
             }
 
             case "%":
             {
-                return global::VisualBasicSyntaxFactory.ModKeyword;
+                return VisualBasicSyntaxFactory.ModKeyword;
             }
 
             case "=":
             {
-                return global::VisualBasicSyntaxFactory.EqualsToken;
+                return VisualBasicSyntaxFactory.EqualsToken;
             }
 
             case "+=":
             {
-                return global::VisualBasicSyntaxFactory.PlusEqualsToken;
+                return VisualBasicSyntaxFactory.PlusEqualsToken;
             }
 
             case "-=":
             {
-                return global::VisualBasicSyntaxFactory.MinusEqualsToken;
+                return VisualBasicSyntaxFactory.MinusEqualsToken;
             }
 
             case "!":
             {
-                return global::VisualBasicSyntaxFactory.NotKeyword;
+                return VisualBasicSyntaxFactory.NotKeyword;
             }
 
             case "~":
             {
-                return global::VisualBasicSyntaxFactory.NotKeyword;
+                return VisualBasicSyntaxFactory.NotKeyword;
             }
 
             default:
@@ -120,94 +118,94 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
         throw new ArgumentOutOfRangeException(nameof(op));
     }
 
-    private SyntaxList<VBS.XmlNodeSyntax> GatherAttributes(SyntaxList<CSS.XmlAttributeSyntax> ListOfAttributes)
+    private SyntaxList<VBSyntax.XmlNodeSyntax> GatherAttributes(SyntaxList<CSS.XmlAttributeSyntax> ListOfAttributes)
     {
-        var VBAttributes = new SyntaxList<VBS.XmlNodeSyntax>();
+        var VBAttributes = new SyntaxList<VBSyntax.XmlNodeSyntax>();
         foreach (CSS.XmlAttributeSyntax a in ListOfAttributes)
-            VBAttributes = VBAttributes.Add((VBS.XmlNodeSyntax)a.Accept(this));
+            VBAttributes = VBAttributes.Add((VBSyntax.XmlNodeSyntax)a.Accept(this));
         return VBAttributes;
     }
 
-    public override VB.VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
+    public override VBasic.VisualBasicSyntaxNode DefaultVisit(SyntaxNode node)
     {
         return base.DefaultVisit(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitConversionOperatorMemberCref(CSS.ConversionOperatorMemberCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitConversionOperatorMemberCref(CSS.ConversionOperatorMemberCrefSyntax node)
     {
         return base.VisitConversionOperatorMemberCref(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitCrefBracketedParameterList(CSS.CrefBracketedParameterListSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitCrefBracketedParameterList(CSS.CrefBracketedParameterListSyntax node)
     {
         return base.VisitCrefBracketedParameterList(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitCrefParameter(CSS.CrefParameterSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitCrefParameter(CSS.CrefParameterSyntax node)
     {
         return node.Type.Accept(this);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitCrefParameterList(CSS.CrefParameterListSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitCrefParameterList(CSS.CrefParameterListSyntax node)
     {
         return base.VisitCrefParameterList(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitGenericName(CSS.GenericNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitGenericName(CSS.GenericNameSyntax node)
     {
         var Identifier = VBFactory.Identifier(node.Identifier.ToString());
-        var TypeList = new List<VBS.TypeSyntax>();
+        var TypeList = new List<VBSyntax.TypeSyntax>();
         foreach (CSS.TypeSyntax a in node.TypeArgumentList.Arguments)
         {
-            VBS.TypeSyntax TypeIdentifier = (VBS.TypeSyntax)a.Accept(this);
+            VBSyntax.TypeSyntax TypeIdentifier = (VBSyntax.TypeSyntax)a.Accept(this);
             TypeList.Add(TypeIdentifier);
         }
         return VBFactory.GenericName(Identifier, VBFactory.TypeArgumentList(TypeList.ToArray()));
     }
 
-    public override VB.VisualBasicSyntaxNode VisitIdentifierName(CSS.IdentifierNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitIdentifierName(CSS.IdentifierNameSyntax node)
     {
         var Identifier = VBFactory.IdentifierName(node.Identifier.ToString());
         return Identifier;
     }
 
-    public override VB.VisualBasicSyntaxNode VisitNameMemberCref(CSS.NameMemberCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitNameMemberCref(CSS.NameMemberCrefSyntax node)
     {
         var Name = node.Name.Accept(this);
-        var CrefParameters = new List<VBS.CrefSignaturePartSyntax>();
-        VBS.CrefSignatureSyntax Signature = null;
+        var CrefParameters = new List<VBSyntax.CrefSignaturePartSyntax>();
+        VBSyntax.CrefSignatureSyntax Signature = null;
         if (node.Parameters != null)
         {
             foreach (CSS.CrefParameterSyntax p in node.Parameters.Parameters)
             {
-                VBS.TypeSyntax TypeSyntax1 = (VBS.TypeSyntax)p.Accept(this);
+                VBSyntax.TypeSyntax TypeSyntax1 = (VBSyntax.TypeSyntax)p.Accept(this);
                 CrefParameters.Add(VBFactory.CrefSignaturePart(modifier: default(SyntaxToken), TypeSyntax1));
             }
             Signature = VBFactory.CrefSignature(CrefParameters.ToArray());
         }
-        return VBFactory.CrefReference((VBS.TypeSyntax)Name, signature: Signature, asClause: null);
+        return VBFactory.CrefReference((VBSyntax.TypeSyntax)Name, signature: Signature, asClause: null);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitOperatorMemberCref(CSS.OperatorMemberCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitOperatorMemberCref(CSS.OperatorMemberCrefSyntax node)
     {
         var CrefOperator = GetVBOperatorToken(node.OperatorToken.ValueText);
-        return VBFactory.CrefOperatorReference(CrefOperator.WithLeadingTrivia(global::VisualBasicSyntaxFactory.SpaceTrivia));
+        return VBFactory.CrefOperatorReference(CrefOperator.WithLeadingTrivia(VisualBasicSyntaxFactory.SpaceTrivia));
     }
 
-    public override VB.VisualBasicSyntaxNode VisitPredefinedType(CSS.PredefinedTypeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitPredefinedType(CSS.PredefinedTypeSyntax node)
     {
         var Token = VBUtil.ConvertTypesTokenToKind(CS.CSharpExtensions.Kind(node.Keyword), true);
         var switchExpr = Token.RawKind;
         switch (switchExpr)
         {
-            case (int)VB.SyntaxKind.EmptyToken:
+            case (int)VBasic.SyntaxKind.EmptyToken:
             {
                 return VBFactory.ParseTypeName(node.ToString());
             }
 
-            case (int)VB.SyntaxKind.NothingKeyword:
+            case (int)VBasic.SyntaxKind.NothingKeyword:
             {
-                return global::VisualBasicSyntaxFactory.NothingExpression;
+                return VisualBasicSyntaxFactory.NothingExpression;
             }
 
             default:
@@ -217,13 +215,13 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
         }
     }
 
-    public override VB.VisualBasicSyntaxNode VisitQualifiedCref(CSS.QualifiedCrefSyntax QualifiedCref)
+    public override VBasic.VisualBasicSyntaxNode VisitQualifiedCref(CSS.QualifiedCrefSyntax QualifiedCref)
     {
         var IdentifierOrTypeName = QualifiedCref.Container.Accept(this);
-        VBS.CrefReferenceSyntax Value = (VBS.CrefReferenceSyntax)QualifiedCref.Member.Accept(this);
-        VBS.NameSyntax Identifier;
-        Identifier = IdentifierOrTypeName is VBS.NameSyntax ? (VBS.NameSyntax)IdentifierOrTypeName : VBFactory.IdentifierName(IdentifierOrTypeName.ToString());
-        var QualifiedNameSyntax = VBFactory.QualifiedName(left: Identifier, global::VisualBasicSyntaxFactory.DotToken, right: (VBS.SimpleNameSyntax)Value.Name);
+        VBSyntax.CrefReferenceSyntax Value = (VBSyntax.CrefReferenceSyntax)QualifiedCref.Member.Accept(this);
+        VBSyntax.NameSyntax Identifier;
+        Identifier = IdentifierOrTypeName is VBSyntax.NameSyntax ? (VBSyntax.NameSyntax)IdentifierOrTypeName : VBFactory.IdentifierName(IdentifierOrTypeName.ToString());
+        var QualifiedNameSyntax = VBFactory.QualifiedName(left: Identifier, VisualBasicSyntaxFactory.DotToken, right: (VBSyntax.SimpleNameSyntax)Value.Name);
         if (Value.Signature == null)
         {
             return QualifiedNameSyntax;
@@ -231,51 +229,51 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
         return VBFactory.CrefReference(QualifiedNameSyntax, Value.Signature, null);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitQualifiedName(CSS.QualifiedNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitQualifiedName(CSS.QualifiedNameSyntax node)
     {
-        return VBFactory.QualifiedName((VBS.NameSyntax)node.Left.Accept(this), (VBS.SimpleNameSyntax)node.Right.Accept(this));
+        return VBFactory.QualifiedName((VBSyntax.NameSyntax)node.Left.Accept(this), (VBSyntax.SimpleNameSyntax)node.Right.Accept(this));
     }
 
-    public override VB.VisualBasicSyntaxNode VisitTypeCref(CSS.TypeCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitTypeCref(CSS.TypeCrefSyntax node)
     {
         return node.Type.Accept(this);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlCDataSection(CSS.XmlCDataSectionSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlCDataSection(CSS.XmlCDataSectionSyntax node)
     {
-        var TextTokens = DestVisualBasic.TriviaListSupport.TranslateTokenList(node.TextTokens);
-        return VBFactory.XmlCDataSection(global::VisualBasicSyntaxFactory.BeginCDataToken, TextTokens, global::VisualBasicSyntaxFactory.EndCDataToken);
+        var TextTokens = TriviaListSupport.TranslateTokenList(node.TextTokens);
+        return VBFactory.XmlCDataSection(VisualBasicSyntaxFactory.BeginCDataToken, TextTokens, VisualBasicSyntaxFactory.EndCDataToken);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlComment(CSS.XmlCommentSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlComment(CSS.XmlCommentSyntax node)
     {
         return base.VisitXmlComment(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlCrefAttribute(CSS.XmlCrefAttributeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlCrefAttribute(CSS.XmlCrefAttributeSyntax node)
     {
-        VBS.XmlNameSyntax Name = (VBS.XmlNameSyntax)node.Name.Accept(this);
+        VBSyntax.XmlNameSyntax Name = (VBSyntax.XmlNameSyntax)node.Name.Accept(this);
 
         var cref = node.Cref.Accept(this);
         var SyntaxTokens = new SyntaxTokenList();
         SyntaxTokens = SyntaxTokens.AddRange(cref.DescendantTokens());
-        VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokens, global::VisualBasicSyntaxFactory.DoubleQuoteToken);
+        VBSyntax.XmlNodeSyntax Value = VBFactory.XmlString(VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokens, VisualBasicSyntaxFactory.DoubleQuoteToken);
         return VBFactory.XmlAttribute(Name, Value);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlElement(CSS.XmlElementSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlElement(CSS.XmlElementSyntax node)
     {
-        var Content = new SyntaxList<VBS.XmlNodeSyntax>();
-        VBS.XmlElementStartTagSyntax StartTag = (VBS.XmlElementStartTagSyntax)node.StartTag.Accept(this);
+        var Content = new SyntaxList<VBSyntax.XmlNodeSyntax>();
+        VBSyntax.XmlElementStartTagSyntax StartTag = (VBSyntax.XmlElementStartTagSyntax)node.StartTag.Accept(this);
 
         bool NoEndTag = string.IsNullOrWhiteSpace(node.EndTag.Name.LocalName.ValueText);
-        var EndTag = NoEndTag ? VBFactory.XmlElementEndTag(((VBS.XmlNameSyntax)StartTag.Name)) : VBFactory.XmlElementEndTag((VBS.XmlNameSyntax)node.EndTag.Name.Accept(this));
+        var EndTag = NoEndTag ? VBFactory.XmlElementEndTag(((VBSyntax.XmlNameSyntax)StartTag.Name)) : VBFactory.XmlElementEndTag((VBSyntax.XmlNameSyntax)node.EndTag.Name.Accept(this));
         try
         {
             for (int i = 0, loopTo = node.Content.Count - 1; i <= loopTo; i++)
             {
                 var C = node.Content[i];
-                VBS.XmlNodeSyntax Node1 = (VBS.XmlNodeSyntax)C.Accept(this);
+                VBSyntax.XmlNodeSyntax Node1 = (VBSyntax.XmlNodeSyntax)C.Accept(this);
                 if (NoEndTag)
                 {
                     var LastToken = Node1.GetLastToken();
@@ -309,22 +307,22 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
         return XmlElement;
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlElementEndTag(CSS.XmlElementEndTagSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlElementEndTag(CSS.XmlElementEndTagSyntax node)
     {
-        return VBFactory.XmlElementEndTag((VBS.XmlNameSyntax)node.Name.Accept(this));
+        return VBFactory.XmlElementEndTag((VBSyntax.XmlNameSyntax)node.Name.Accept(this));
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlElementStartTag(CSS.XmlElementStartTagSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlElementStartTag(CSS.XmlElementStartTagSyntax node)
     {
         var ListOfAttributes = GatherAttributes(node.Attributes);
-        return VBFactory.XmlElementStartTag((VBS.XmlNodeSyntax)node.Name.Accept(this), ListOfAttributes);
+        return VBFactory.XmlElementStartTag((VBSyntax.XmlNodeSyntax)node.Name.Accept(this), ListOfAttributes);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlEmptyElement(CSS.XmlEmptyElementSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlEmptyElement(CSS.XmlEmptyElementSyntax node)
     {
         try
         {
-            VBS.XmlNodeSyntax Name = (VBS.XmlNodeSyntax)node.Name.Accept(this);
+            VBSyntax.XmlNodeSyntax Name = (VBSyntax.XmlNodeSyntax)node.Name.Accept(this);
             var ListOfAttributes = GatherAttributes(node.Attributes);
             return VBFactory.XmlEmptyElement(Name, ListOfAttributes);
         }
@@ -338,45 +336,45 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VB.VisualBasicSyntaxNode>
         }
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlName(CSS.XmlNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlName(CSS.XmlNameSyntax node)
     {
-        VBS.XmlPrefixSyntax Prefix;
-        Prefix = node.Prefix == null ? null : (VBS.XmlPrefixSyntax)node.Prefix.Accept(this);
-        var localName = VBFactory.XmlNameToken(node.LocalName.ValueText, default(VB.SyntaxKind));
+        VBSyntax.XmlPrefixSyntax Prefix;
+        Prefix = node.Prefix == null ? null : (VBSyntax.XmlPrefixSyntax)node.Prefix.Accept(this);
+        var localName = VBFactory.XmlNameToken(node.LocalName.ValueText, default(VBasic.SyntaxKind));
         return VBFactory.XmlName(Prefix, localName);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlNameAttribute(CSS.XmlNameAttributeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlNameAttribute(CSS.XmlNameAttributeSyntax node)
     {
-        var Name = ((VBS.XmlNodeSyntax)node.Name.Accept(this));
+        var Name = ((VBSyntax.XmlNodeSyntax)node.Name.Accept(this));
         string ValueString = node.Identifier.ToString();
-        VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokenList.Create(VBFactory.XmlTextLiteralToken(ValueString, ValueString)), global::VisualBasicSyntaxFactory.DoubleQuoteToken);
+        VBSyntax.XmlNodeSyntax Value = VBFactory.XmlString(VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokenList.Create(VBFactory.XmlTextLiteralToken(ValueString, ValueString)), VisualBasicSyntaxFactory.DoubleQuoteToken);
         return VBFactory.XmlAttribute(Name, Value);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlPrefix(CSS.XmlPrefixSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlPrefix(CSS.XmlPrefixSyntax node)
     {
         return base.VisitXmlPrefix(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlProcessingInstruction(CSS.XmlProcessingInstructionSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlProcessingInstruction(CSS.XmlProcessingInstructionSyntax node)
     {
         return base.VisitXmlProcessingInstruction(node);
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlText(CSS.XmlTextSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlText(CSS.XmlTextSyntax node)
     {
-        var TextTokens = DestVisualBasic.TriviaListSupport.TranslateTokenList(node.TextTokens);
+        var TextTokens = TriviaListSupport.TranslateTokenList(node.TextTokens);
         var XmlText = VBFactory.XmlText(TextTokens);
         return XmlText;
     }
 
-    public override VB.VisualBasicSyntaxNode VisitXmlTextAttribute(CSS.XmlTextAttributeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlTextAttribute(CSS.XmlTextAttributeSyntax node)
     {
-        VBS.XmlNodeSyntax Name = (VBS.XmlNodeSyntax)node.Name.Accept(this);
-        var TextTokens = DestVisualBasic.TriviaListSupport.TranslateTokenList(node.TextTokens);
+        VBSyntax.XmlNodeSyntax Name = (VBSyntax.XmlNodeSyntax)node.Name.Accept(this);
+        var TextTokens = TriviaListSupport.TranslateTokenList(node.TextTokens);
         var XmlText = VBFactory.XmlText(TextTokens);
-        VBS.XmlNodeSyntax Value = VBFactory.XmlString(global::VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokenList.Create(VBFactory.XmlTextLiteralToken(XmlText.ToString(), XmlText.ToString())), global::VisualBasicSyntaxFactory.DoubleQuoteToken);
+        VBSyntax.XmlNodeSyntax Value = VBFactory.XmlString(VisualBasicSyntaxFactory.DoubleQuoteToken, SyntaxTokenList.Create(VBFactory.XmlTextLiteralToken(XmlText.ToString(), XmlText.ToString())), VisualBasicSyntaxFactory.DoubleQuoteToken);
         return VBFactory.XmlAttribute(Name, Value);
     }
 }

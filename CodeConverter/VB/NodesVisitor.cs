@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.VB.Trivia;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;

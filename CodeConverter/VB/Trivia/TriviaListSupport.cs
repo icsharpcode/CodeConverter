@@ -1,8 +1,7 @@
-﻿using Microsoft.VisualBasic;
-using Constants = Microsoft.VisualBasic.Constants;
+﻿using Constants = Microsoft.VisualBasic.Constants;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 
-namespace CSharpToVBCodeConverter.DestVisualBasic;
+namespace ICSharpCode.CodeConverter.VB.Trivia;
 
 internal static class TriviaListSupport
 {
