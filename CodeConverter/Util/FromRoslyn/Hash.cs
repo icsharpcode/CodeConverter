@@ -5,7 +5,6 @@
 #nullable enable
 
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {

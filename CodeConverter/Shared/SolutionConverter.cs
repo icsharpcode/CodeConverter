@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using System.IO.Abstractions;
+﻿using System.IO.Abstractions;
 
 namespace ICSharpCode.CodeConverter.Shared
 {

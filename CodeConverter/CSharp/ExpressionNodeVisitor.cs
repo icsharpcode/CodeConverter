@@ -1,10 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Data;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
-using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;

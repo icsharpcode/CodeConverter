@@ -1,8 +1,6 @@
 ﻿using System.Collections.Immutable;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Simplification;
 

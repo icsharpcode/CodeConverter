@@ -2,8 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Document = Microsoft.CodeAnalysis.Document;
 

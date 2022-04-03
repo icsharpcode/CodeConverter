@@ -1,7 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.FindSymbols;
+﻿using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace ICSharpCode.CodeConverter.CSharp

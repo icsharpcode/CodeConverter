@@ -1,4 +1,3 @@
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Formatting;
 
 namespace ICSharpCode.CodeConverter.Shared

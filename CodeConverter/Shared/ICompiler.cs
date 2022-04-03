@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared
 {
     public interface ICompiler
     {

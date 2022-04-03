@@ -1,6 +1,4 @@
 ﻿using System.Text;
-using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 

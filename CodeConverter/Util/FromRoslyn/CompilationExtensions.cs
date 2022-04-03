@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.Util.FromRoslyn
+﻿namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {
     internal static class CompilationExtensions
     {

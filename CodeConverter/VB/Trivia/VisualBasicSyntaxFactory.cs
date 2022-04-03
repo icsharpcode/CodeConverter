@@ -1,8 +1,8 @@
 ﻿// DO NOT REORDER DOCUMENT Tokens must be defined BEFORE they are used
 using Microsoft.VisualBasic;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
+using Constants = Microsoft.VisualBasic.Constants;
 
 public static class VisualBasicSyntaxFactory
 {

@@ -1,7 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter
+﻿namespace ICSharpCode.CodeConverter
 {
     public interface ILanguageConversion
     {

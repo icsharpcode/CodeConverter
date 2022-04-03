@@ -1,6 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Editing;
+﻿using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.VisualBasic;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 

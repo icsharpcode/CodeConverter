@@ -2,8 +2,6 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
-using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {

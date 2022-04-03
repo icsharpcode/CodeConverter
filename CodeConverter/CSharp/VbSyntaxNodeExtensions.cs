@@ -1,5 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Util;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+﻿using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

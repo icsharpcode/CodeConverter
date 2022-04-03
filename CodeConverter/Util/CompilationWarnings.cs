@@ -1,5 +1,3 @@
-using Microsoft.CodeAnalysis;
-
 namespace ICSharpCode.CodeConverter.Util
 {
     public static class CompilationWarnings

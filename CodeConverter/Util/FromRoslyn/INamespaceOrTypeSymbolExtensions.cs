@@ -5,7 +5,6 @@
 #nullable enable
 
 using System.Runtime.CompilerServices;
-using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {

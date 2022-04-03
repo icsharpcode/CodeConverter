@@ -4,8 +4,6 @@
 
 ////#define TRACKDEPTH
 
-using Microsoft.CodeAnalysis;
-
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {
 

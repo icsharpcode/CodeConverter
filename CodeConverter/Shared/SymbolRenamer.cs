@@ -1,6 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.FindSymbols;
+﻿using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Rename;
 
 namespace ICSharpCode.CodeConverter.Shared

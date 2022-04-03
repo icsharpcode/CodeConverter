@@ -1,7 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;

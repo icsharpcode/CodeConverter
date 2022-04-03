@@ -1,7 +1,5 @@
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
-using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.Util
 {

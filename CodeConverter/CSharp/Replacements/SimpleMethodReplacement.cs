@@ -1,7 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp.Replacements;

@@ -4,7 +4,6 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {

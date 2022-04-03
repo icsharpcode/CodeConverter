@@ -1,11 +1,8 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using LangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using System.Xml.Linq;
 using System.Runtime.CompilerServices;
-using ICSharpCode.CodeConverter.Util;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

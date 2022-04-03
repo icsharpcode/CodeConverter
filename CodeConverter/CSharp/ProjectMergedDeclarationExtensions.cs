@@ -1,7 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Rename;
+﻿using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.VisualBasic;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis.Text;

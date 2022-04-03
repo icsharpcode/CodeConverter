@@ -1,6 +1,4 @@
 ﻿#nullable enable
-using Microsoft.CodeAnalysis;
-
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {
     /// <remarks>

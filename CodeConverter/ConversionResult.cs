@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter
 {
