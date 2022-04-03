@@ -274,7 +274,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var csId = CommonConversions.ConvertIdentifier(f.n.Identifier);
         string initializerFunctionName = CommonConversions.GetInitialValueFunctionName(f.n);
         var invocation = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(initializerFunctionName)), SyntaxFactory.ArgumentList());
-        return (SyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
+        return new(SyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
     }
 
     private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)
@@ -554,7 +554,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             ? initializerState.AdditionalStaticInitializers
             : initializerState.AdditionalInstanceInitializers;
         foreach (var initializer in initializers) {
-            initializerCollection.Add((SyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
+            initializerCollection.Add(new(SyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
         }
 
         var fieldDecls = _typeContext.HandledEventsAnalysis.GetDeclarationsForFieldBackedProperty(fieldDecl,
@@ -614,8 +614,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         // See GetInitialValueFunctionName
         var newMethodNames = methodsInfos.ToDictionary(l => l.Id, l => l.Prefix);
         for (int i = 0; i < _typeContext.Initializers.AdditionalInstanceInitializers.Count; i++) {
-            var (a, b, initializer) = _typeContext.Initializers.AdditionalInstanceInitializers[i];
-            _typeContext.Initializers.AdditionalInstanceInitializers[i] = (a, b, PerScopeState.ReplaceNames(initializer, newMethodNames));
+            var (a, b, initializer, _) = _typeContext.Initializers.AdditionalInstanceInitializers[i];
+            _typeContext.Initializers.AdditionalInstanceInitializers[i] = new(a, b, PerScopeState.ReplaceNames(initializer, newMethodNames));
         }
 
         return methodsInfos

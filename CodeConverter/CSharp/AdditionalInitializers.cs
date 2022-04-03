@@ -4,6 +4,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
+internal record struct Assignment(ExpressionSyntax Field, SyntaxKind AssignmentKind, ExpressionSyntax Initializer, bool PostAssignment = false);
+
 internal class AdditionalInitializers
 {
     private readonly bool _shouldAddInstanceConstructor;
@@ -36,7 +38,8 @@ internal class AdditionalInitializers
             .Where(cds => !cds.Initializer.IsKind(SyntaxKind.ThisConstructorInitializer))
             .SplitOn(cds => cds.IsInStaticCsContext());
 
-        convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)), rootInstanceConstructors, _shouldAddInstanceConstructor, DesignerGeneratedInitializeComponentOrNull != null);
+        convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName, AdditionalInstanceInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)),
+            rootInstanceConstructors, _shouldAddInstanceConstructor, DesignerGeneratedInitializeComponentOrNull != null);
 
         convertedMembers = WithAdditionalInitializers(convertedMembers, parentTypeName,
             AdditionalStaticInitializers, SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)), rootStaticConstructors, _shouldAddStaticConstructor, false);
@@ -56,10 +59,12 @@ internal class AdditionalInitializers
             if (addedConstructorRequiresInitializeComponent) {
                 statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName("InitializeComponent"))));
             }
+
             constructors.Add(SyntaxFactory.ConstructorDeclaration(convertIdentifier)
                 .WithBody(SyntaxFactory.Block(statements.ToArray()))
                 .WithModifiers(modifiers));
         }
+
         foreach (var constructor in constructors) {
             var newConstructor = WithAdditionalInitializers(constructor, additionalInitializers);
             ReplaceOrInsertBeforeFirstConstructor(convertedMembers, constructor, newConstructor);
@@ -71,12 +76,9 @@ internal class AdditionalInitializers
     private static void ReplaceOrInsertBeforeFirstConstructor(List<MemberDeclarationSyntax> convertedMembers, ConstructorDeclarationSyntax constructor, ConstructorDeclarationSyntax newConstructor)
     {
         int existingIndex = convertedMembers.IndexOf(constructor);
-        if (existingIndex > -1)
-        {
+        if (existingIndex > -1) {
             convertedMembers[existingIndex] = newConstructor;
-        }
-        else
-        {
+        } else {
             int constructorIndex = convertedMembers.FindIndex(c => c is ConstructorDeclarationSyntax or MethodDeclarationSyntax);
             convertedMembers.Insert(constructorIndex > -1 ? constructorIndex : convertedMembers.Count, newConstructor);
         }
