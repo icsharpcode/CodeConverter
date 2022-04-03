@@ -1,8 +1,8 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using System.Runtime.CompilerServices;
+using System.Xml.Linq;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using LangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
-using System.Xml.Linq;
-using System.Runtime.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -122,6 +122,6 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
             string newRelativePath = GetPathRelativeToProject(projDirPath, Path.GetFullPath(Path.Combine(resxDirPath, origValueParts[0])));
             fileRefValue.Value = string.Join(";", newRelativePath.Yield().Concat(origValueParts.Skip(1)));
         }
-        return xml.Declaration.ToString() + Environment.NewLine + xml.ToString();
+        return xml.Declaration + Environment.NewLine + xml;
     }
 }

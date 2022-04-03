@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -15,7 +16,7 @@ internal class AdditionalAssignment : IHoistedNode
 
     public static StatementSyntax CreateAssignment(AdditionalAssignment additionalAssignment)
     {
-        var assign = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.AssignmentExpression(Microsoft.CodeAnalysis.CSharp.SyntaxKind.SimpleAssignmentExpression, additionalAssignment.LeftHandSide, additionalAssignment.RightHandSide);
-        return Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ExpressionStatement(assign);
+        var assign = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, additionalAssignment.LeftHandSide, additionalAssignment.RightHandSide);
+        return SyntaxFactory.ExpressionStatement(assign);
     }
 }

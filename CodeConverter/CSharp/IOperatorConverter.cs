@@ -1,7 +1,10 @@
-﻿namespace ICSharpCode.CodeConverter.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using BinaryExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax;
+
+namespace ICSharpCode.CodeConverter.CSharp;
 
 public interface IOperatorConverter
 {
-    Task<Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax exprNode, bool negateExpression = false);
-    Task<Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax node, bool inExpressionLambda = false);
+    Task<ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax exprNode, bool negateExpression = false);
+    Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(BinaryExpressionSyntax node, bool inExpressionLambda = false);
 }

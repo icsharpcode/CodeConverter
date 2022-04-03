@@ -9,7 +9,6 @@ using ICSharpCode.CodeConverter.CommandLine;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Xunit;
-using SearchOption = System.IO.SearchOption;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 

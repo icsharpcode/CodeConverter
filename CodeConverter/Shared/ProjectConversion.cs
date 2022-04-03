@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis.Text;
-using Document = Microsoft.CodeAnalysis.Document;
 
 namespace ICSharpCode.CodeConverter.Shared;
 
@@ -165,7 +164,7 @@ public class ProjectConversion
     {
         var documentsWithLengths = await projectContentsConverter.SourceProject.Documents
             .Where(d => !BannedPaths.Any(d.FilePath.Contains))
-            .SelectAsync(async d => (Doc: d, Length: (await d.GetTextAsync(cancellationToken)).Length));
+            .SelectAsync(async d => (Doc: d, (await d.GetTextAsync(cancellationToken)).Length));
 
         //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594
         var documentsToConvert = documentsWithLengths.OrderByDescending(d => d.Length).Select(d => d.Doc);
@@ -186,7 +185,7 @@ public class ProjectConversion
         var warnings = await GetProjectWarningsAsync(_projectContentsConverter.SourceProject, proj1);
         if (!string.IsNullOrWhiteSpace(warnings)) {
             var warningPath = Path.Combine(_projectContentsConverter.SourceProject.GetDirectoryPath(), "ConversionWarnings.txt");
-            yield return new ConversionResult() { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } };
+            yield return new ConversionResult { SourcePathOrNull = warningPath, Exceptions = new[] { warnings } };
         }
 
         phaseProgress = StartPhase(progress, "Phase 2 of 2:");

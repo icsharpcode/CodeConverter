@@ -1,3 +1,4 @@
+using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace ICSharpCode.CodeConverter.Util;
@@ -193,7 +194,7 @@ internal static class NewLine
     /// <returns>String with Unicode NewLines replaced with SubstituteChar</returns>
     public static string WithoutNewLines(this string text, char SubstituteChar = default)
     {
-        System.Diagnostics.Contracts.Contract.Requires(text != null);
+        Contract.Requires(text != null);
         var sb = new StringBuilder();
         int length = default(int);
         UnicodeNewline type = default(UnicodeNewline);

@@ -119,7 +119,7 @@ End Sub",
 }");
     }
 
-    [Fact()]
+    [Fact]
     public async Task Linq3Async()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class Product
@@ -542,7 +542,7 @@ public partial class Class1
         // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
     }
 
-    [Fact()]
+    [Fact]
     public async Task LinqSelectVariableDeclarationAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System

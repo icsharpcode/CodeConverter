@@ -181,9 +181,13 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         if (node.Token2 == default(SyntaxToken)) {
             return "Elements";
-        } else if (node.Token2.Text == "@") {
+        }
+
+        if (node.Token2.Text == "@") {
             return "Attributes";
-        } else if (node.Token2.Text == ".") {
+        }
+
+        if (node.Token2.Text == ".") {
             return "Descendants";
         }
         throw new NotImplementedException($"Xml member access operator: '{node.Token1}{node.Token2}{node.Token3}'");
@@ -206,7 +210,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 ),
                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
             );
-        } else if (_xmlImportContext.HasDefaultImport) {
+        }
+
+        if (_xmlImportContext.HasDefaultImport) {
             return SyntaxFactory.BinaryExpression(
                 SyntaxKind.AddExpression,
                 SyntaxFactory.MemberAccessExpression(
@@ -216,9 +222,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 ),
                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
             );
-        } else {
-            return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text));
         }
+
+        return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text));
     }
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
@@ -551,7 +557,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return token;
     }
 
-    private RefConversion GetRefConversionType(VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, System.Collections.Immutable.ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
+    private RefConversion GetRefConversionType(VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
     {
         var parameter = node.IsNamed && node is VBSyntax.SimpleArgumentSyntax sas 
             ? parameters.FirstOrDefault(p => p.Name.Equals(sas.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase))
@@ -573,7 +579,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
     {
-        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList<ArgumentSyntax>(SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
+        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
     }
 
     public override async Task<CSharpSyntaxNode> VisitEqualsValue(VBasic.Syntax.EqualsValueSyntax node)
@@ -735,7 +741,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var expr = SyntaxFactory.ConditionalExpression(condition, whenTrue, whenFalse);
 
 
-        if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || VbSyntaxNodeExtensions.PrecedenceCouldChange(node))
+        if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || node.PrecedenceCouldChange())
             return SyntaxFactory.ParenthesizedExpression(expr);
 
         return expr;
@@ -780,9 +786,13 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         if (await _operatorConverter.ConvertReferenceOrNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), true) is { } nothingComparison) {
             return nothingComparison;
-        } else if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
+        }
+
+        if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
             return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, expr, LiteralConversions.GetLiteralExpression(false));
-        } else if (expr is BinaryExpressionSyntax eq && eq.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken, SyntaxKind.ExclamationEqualsToken)){
+        }
+
+        if (expr is BinaryExpressionSyntax eq && eq.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken, SyntaxKind.ExclamationEqualsToken)){
             return eq.WithOperatorToken(SyntaxFactory.Token(eq.OperatorToken.IsKind(SyntaxKind.ExclamationEqualsToken) ? SyntaxKind.EqualsEqualsToken : SyntaxKind.ExclamationEqualsToken));
         }
 
@@ -976,7 +986,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             node.Expression is VBSyntax.MemberAccessExpressionSyntax maes)
         {
             var thisArgExpression = await maes.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            var thisArg = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.Argument(thisArgExpression).WithRefKindKeyword(GetRefToken(RefKind.Ref));
+            var thisArg = SyntaxFactory.Argument(thisArgExpression).WithRefKindKeyword(GetRefToken(RefKind.Ref));
             convertedArgumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(convertedArgumentList.Arguments.Prepend(thisArg)));
             var containingType = (ExpressionSyntax) CommonConversions.CsSyntaxGenerator.TypeExpression(invocationSymbol.ContainingType);
             convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, containingType,
@@ -1440,7 +1450,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         }
 
         return leftIsGlobal ? SyntaxFactory.AliasQualifiedName((IdentifierNameSyntax)lhsSyntax, rhsSyntax) :
-            (CSharpSyntaxNode)SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
+            SyntaxFactory.QualifiedName((NameSyntax)qualifiedName, rhsSyntax);
     }
 
     public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
@@ -1659,9 +1669,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
                 if (isTypeMismatch) {
                     return RefConversion.PreAndPostAssignment;
-                } else {
-                    return RefConversion.Inline;
                 }
+
+                return RefConversion.Inline;
             }
 
             return RefConversion.PreAssigment;
@@ -1822,7 +1832,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 var qualification =
                     CommonConversions.GetTypeSyntax(containingTypeSymbol);
                 return Qualify(qualification.ToString(), left);
-            } else if (nodeSymbolInfo.IsNamespace()) {
+            }
+
+            if (nodeSymbolInfo.IsNamespace()) {
                 // Turn partial namespace qualification into full namespace qualification
                 var qualification =
                     containingSymbol.ToCSharpDisplayString();

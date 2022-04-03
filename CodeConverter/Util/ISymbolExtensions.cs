@@ -5,7 +5,7 @@ internal static class ISymbolExtensions
     // A lot of symbols in DateAndTime do not exist in DateTime, eg. DateSerial(),
     // and some have different names/arguments, eg. DateAdd(). This needs to be handled properly
     // as part of #174
-    private static readonly string[] TypesToConvertToDateTime = new[] { "DateTime" };
+    private static readonly string[] TypesToConvertToDateTime = { "DateTime" };
 
     public const string ForcePartialTypesAssemblyName = "ProjectToBeConvertedWithPartialTypes";
 
@@ -54,7 +54,9 @@ internal static class ISymbolExtensions
                     cSharpDisplayString = "DateTime";
                     return true;
                 }
-            } else if (TypesToConvertToDateTime.Contains(symbol.ContainingType?.Name)) {
+            }
+
+            if (TypesToConvertToDateTime.Contains(symbol.ContainingType?.Name)) {
                 {
                     cSharpDisplayString = "DateTime" + "." + symbol.Name;
                     return true;

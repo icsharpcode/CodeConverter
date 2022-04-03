@@ -1,9 +1,6 @@
-﻿namespace ICSharpCode.CodeConverter.Shared;
+﻿using System.Text.RegularExpressions;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
+namespace ICSharpCode.CodeConverter.Shared;
 
 public class SolutionFileTextEditor : ISolutionFileTextEditor
 {

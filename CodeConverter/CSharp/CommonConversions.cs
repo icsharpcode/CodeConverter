@@ -138,7 +138,7 @@ internal class CommonConversions
                     equalsValueClauseSyntax = null;
                 } else {
                     var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
-                    _typeContext.PerScopeState.Hoist<HoistedParameterlessFunction>(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
+                    _typeContext.PerScopeState.Hoist(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
                     equalsValueClauseSyntax = null;
                 }
             } else {
@@ -213,7 +213,7 @@ internal class CommonConversions
 
         return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, n) =>
         {
-            var originalName = originalNames.FirstOrDefault(on => string.Equals(@on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
+            var originalName = originalNames.FirstOrDefault(on => string.Equals(on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
             return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
         });
     }
@@ -282,9 +282,9 @@ internal class CommonConversions
             }
             var csId = CsEscapedIdentifier(text);
             return sourceTriviaMapKind == SourceTriviaMapKind.None ? csId : csId.WithSourceMappingFrom(id);
-        } else {
-            text = text.WithHalfWidthLatinCharacters();
         }
+
+        text = text.WithHalfWidthLatinCharacters();
 
         return CsEscapedIdentifier(text);
     }
@@ -551,7 +551,7 @@ internal class CommonConversions
     public async Task<(string, ExpressionSyntax extraArg)> GetParameterizedPropertyAccessMethodAsync(IOperation operation)
     {
         if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
-            !VBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
+            !VisualBasicExtensions.IsDefault(pro.Property)) {
             var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
             var extraArg = isSetter
                 ? await GetParameterizedSetterArgAsync(operation)
@@ -605,16 +605,18 @@ internal class CommonConversions
     {
         if (vbMethodBlock.Parent is VBSyntax.PropertyBlockSyntax pb) {
             return pb.PropertyStatement.Identifier;
-        } else if (vbMethodBlock is VBSyntax.MethodBlockSyntax mb) {
-            return mb.SubOrFunctionStatement.Identifier;
-        } else {
-            throw new NotImplementedException("MethodBlockBaseIdentifier " + VisualBasicExtensions.Kind(vbMethodBlock).ToString());
         }
+
+        if (vbMethodBlock is VBSyntax.MethodBlockSyntax mb) {
+            return mb.SubOrFunctionStatement.Identifier;
+        }
+
+        throw new NotImplementedException("MethodBlockBaseIdentifier " + VisualBasicExtensions.Kind(vbMethodBlock));
     }
 
     public static bool IsDefaultIndexer(SyntaxNode node)
     {
-        return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DefaultKeyword));
+        return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.DefaultKeyword));
     }
 
 
@@ -658,7 +660,7 @@ internal class CommonConversions
 
     public static ExpressionSyntax ThrowawayParameters(ExpressionSyntax invocable, int paramCount)
     {
-        var names = Enumerable.Range(1, paramCount).Select<int, string>(i =>
+        var names = Enumerable.Range(1, paramCount).Select(i =>
             new string(Enumerable.Repeat('_', i).ToArray())
         ).ToArray();
         var parameters = CreateParameterList(names.Select(n => SyntaxFactory.Parameter(SyntaxFactory.Identifier(n))));

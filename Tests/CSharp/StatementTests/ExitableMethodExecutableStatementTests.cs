@@ -366,7 +366,7 @@ internal partial class A
 }");
     }
 
-    [Fact()]
+    [Fact]
     public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_Issue690Async()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic

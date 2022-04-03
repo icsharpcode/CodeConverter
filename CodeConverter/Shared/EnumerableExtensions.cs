@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace ICSharpCode.CodeConverter.Shared;
 
-public static partial class EnumerableExtensions
+public static class EnumerableExtensions
 {
     public static IEnumerable<T> Do<T>(this IEnumerable<T> source, Action<T> action)
     {
@@ -95,7 +95,7 @@ public static partial class EnumerableExtensions
     public static IEnumerable<T> YieldNotNull<T>(this T singleElement)
     {
         if (singleElement == null) yield break;
-        else yield return singleElement;
+        yield return singleElement;
     }
 
     public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)

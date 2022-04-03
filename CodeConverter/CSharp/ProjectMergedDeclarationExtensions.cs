@@ -1,7 +1,7 @@
-﻿using Microsoft.CodeAnalysis.Rename;
-using Microsoft.CodeAnalysis.VisualBasic;
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
+using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

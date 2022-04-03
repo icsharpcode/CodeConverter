@@ -8,7 +8,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 
 internal class VbNameExpander : ISyntaxExpander
 {
-    private static readonly SyntaxToken _dotToken = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory.Token(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.DotToken);
+    private static readonly SyntaxToken _dotToken = SyntaxFactory.Token(SyntaxKind.DotToken);
     public static ISyntaxExpander Instance { get; } = new VbNameExpander();
 
     public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel) =>
