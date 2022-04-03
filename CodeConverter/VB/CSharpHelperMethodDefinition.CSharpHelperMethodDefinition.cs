@@ -25,8 +25,8 @@ Shared Function {ThrowMethodName}(Of T)(ByVal e As System.Exception) As T
 End Function";
 
     private static readonly ICompiler Compiler = new VisualBasicCompiler();
-    private List<INamedTypeSymbol> AssignMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
-    private List<INamedTypeSymbol> ThrowMethodTypeSymbols { get; } = new List<INamedTypeSymbol>();
+    private List<INamedTypeSymbol> AssignMethodTypeSymbols { get; } = new();
+    private List<INamedTypeSymbol> ThrowMethodTypeSymbols { get; } = new();
 
     public void AddAssignMethod(INamedTypeSymbol symbol) {
         if(AssignMethodTypeSymbols.Contains(symbol))

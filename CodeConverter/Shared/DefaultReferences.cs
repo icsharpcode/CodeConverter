@@ -34,7 +34,7 @@ public static class DefaultReferences
         new[] { Assembly.Load("System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a") }
     ).ToArray();
 
-    private static readonly Dictionary<string, (string Location, string[] ReferenceNames)> _assemblyInfoCache = new Dictionary<string, (string Location, string[] ReferenceNames)>();
+    private static readonly Dictionary<string, (string Location, string[] ReferenceNames)> _assemblyInfoCache = new();
 
     public static IReadOnlyCollection<PortableExecutableReference> NetStandard2 { get; } =
         With(Enumerable.Empty<Assembly>()).ToArray();

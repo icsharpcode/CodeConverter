@@ -26,7 +26,7 @@ internal sealed class ConvertVBToCSCommand
     /// <summary>
     ///     Command menu group (command set GUID).
     /// </summary>
-    public static readonly Guid CommandSet = new Guid("a3378a21-e939-40c9-9e4b-eb0cec7b7854");
+    public static readonly Guid CommandSet = new("a3378a21-e939-40c9-9e4b-eb0cec7b7854");
 
     private readonly CodeConversion _codeConversion;
 

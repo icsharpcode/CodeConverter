@@ -24,11 +24,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     private readonly ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
     private readonly Compilation _vbCompilation;
     private readonly SemanticModel _semanticModel;
-    private readonly HashSet<string> _generatedNames = new HashSet<string>();
-    private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]>();
-    private readonly TypeContext _typeContext = new TypeContext();
+    private readonly HashSet<string> _generatedNames = new();
+    private readonly Dictionary<VBSyntax.StatementSyntax, MemberDeclarationSyntax[]> _additionalDeclarations = new();
+    private readonly TypeContext _typeContext = new();
     private uint _failedMemberConversionMarkerCount;
-    private readonly HashSet<string> _extraUsingDirectives = new HashSet<string>();
+    private readonly HashSet<string> _extraUsingDirectives = new();
     private readonly XmlImportContext _xmlImportContext;
     private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
     private HashSet<string> _accessedThroughMyClass;
@@ -274,7 +274,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var csId = CommonConversions.ConvertIdentifier(f.n.Identifier);
         string initializerFunctionName = CommonConversions.GetInitialValueFunctionName(f.n);
         var invocation = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(initializerFunctionName)), SyntaxFactory.ArgumentList());
-        return new(SyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
+        return new Assignment(SyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
     }
 
     private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)
@@ -554,7 +554,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             ? initializerState.AdditionalStaticInitializers
             : initializerState.AdditionalInstanceInitializers;
         foreach (var initializer in initializers) {
-            initializerCollection.Add(new(SyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
+            initializerCollection.Add(new Assignment(SyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
         }
 
         var fieldDecls = _typeContext.HandledEventsAnalysis.GetDeclarationsForFieldBackedProperty(fieldDecl,
@@ -615,7 +615,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var newMethodNames = methodsInfos.ToDictionary(l => l.Id, l => l.Prefix);
         for (int i = 0; i < _typeContext.Initializers.AdditionalInstanceInitializers.Count; i++) {
             var (a, b, initializer, _) = _typeContext.Initializers.AdditionalInstanceInitializers[i];
-            _typeContext.Initializers.AdditionalInstanceInitializers[i] = new(a, b, PerScopeState.ReplaceNames(initializer, newMethodNames));
+            _typeContext.Initializers.AdditionalInstanceInitializers[i] = new Assignment(a, b, PerScopeState.ReplaceNames(initializer, newMethodNames));
         }
 
         return methodsInfos

@@ -29,8 +29,8 @@ internal class AdditionalInitializers
     public bool IsBestPartToAddTypeInit { get; }
     public IMethodSymbol DesignerGeneratedInitializeComponentOrNull { get; }
 
-    public List<Assignment> AdditionalStaticInitializers { get; } = new List<Assignment>();
-    public List<Assignment> AdditionalInstanceInitializers { get; } = new List<Assignment>();
+    public List<Assignment> AdditionalStaticInitializers { get; } = new();
+    public List<Assignment> AdditionalInstanceInitializers { get; } = new();
 
     public IReadOnlyCollection<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers, SyntaxToken parentTypeName)
     {

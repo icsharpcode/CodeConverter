@@ -40,11 +40,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     private readonly SemanticModel _semanticModel;
     private readonly VisualBasicCompilation _vbViewOfCsSymbols;
     private readonly SyntaxGenerator _vbSyntaxGenerator;
-    private readonly List<CSSyntax.UsingDirectiveSyntax> _importsToConvert = new List<CSSyntax.UsingDirectiveSyntax>();
-    private readonly HashSet<string> _extraImports = new HashSet<string>();
+    private readonly List<CSSyntax.UsingDirectiveSyntax> _importsToConvert = new();
+    private readonly HashSet<string> _extraImports = new();
     private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
     private readonly CommonConversions _commonConversions;
-    private readonly HashSet<string> _addedNames = new HashSet<string>();
+    private readonly HashSet<string> _addedNames = new();
 
     private int _placeholder = 1;
     public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }

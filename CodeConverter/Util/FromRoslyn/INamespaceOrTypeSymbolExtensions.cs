@@ -10,8 +10,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 internal static partial class INamespaceOrTypeSymbolExtensions
 {
-    private static readonly ConditionalWeakTable<INamespaceOrTypeSymbol, List<string>> s_namespaceOrTypeToNameMap =
-        new ConditionalWeakTable<INamespaceOrTypeSymbol, List<string>>();
+    private static readonly ConditionalWeakTable<INamespaceOrTypeSymbol, List<string>> s_namespaceOrTypeToNameMap = new();
     public static readonly ConditionalWeakTable<INamespaceOrTypeSymbol, List<string>>.CreateValueCallback s_getNamePartsCallBack =
         namespaceSymbol =>
         {
@@ -20,7 +19,7 @@ internal static partial class INamespaceOrTypeSymbolExtensions
             return result;
         };
 
-    private static readonly SymbolDisplayFormat s_shortNameFormat = new SymbolDisplayFormat(
+    private static readonly SymbolDisplayFormat s_shortNameFormat = new(
         miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.ExpandNullable);
 
     public static string GetShortName(this INamespaceOrTypeSymbol symbol)

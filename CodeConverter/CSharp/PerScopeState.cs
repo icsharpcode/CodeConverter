@@ -12,7 +12,7 @@ internal class PerScopeState
         public IEnumerable<T> OfType<T>() => HoistedNodes.OfType<T>();
     }
 
-    public static SyntaxAnnotation AdditionalLocalAnnotation = new SyntaxAnnotation("CodeConverter.AdditionalLocal");
+    public static SyntaxAnnotation AdditionalLocalAnnotation = new("CodeConverter.AdditionalLocal");
 
     private readonly Stack<ScopeState> _hoistedNodesPerScope;
 

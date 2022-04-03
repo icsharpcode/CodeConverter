@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 
 internal class XmlImportContext
 {
-    private readonly List<FieldDeclarationSyntax> _xNamespaceFields = new List<FieldDeclarationSyntax>();
+    private readonly List<FieldDeclarationSyntax> _xNamespaceFields = new();
     public IdentifierNameSyntax HelperClassUniqueIdentifierName { get; }
     public IdentifierNameSyntax HelperClassShortIdentifierName => SyntaxFactory.IdentifierName("XmlImports");
 

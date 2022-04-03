@@ -5,7 +5,7 @@ namespace ICSharpCode.CodeConverter.Shared;
 
 internal class CSharpCompiler : ICompiler
 {
-    private static readonly Lazy<CSharpCompilation> LazyCSharpCompilation = new Lazy<CSharpCompilation>(CreateCSharpCompilation);
+    private static readonly Lazy<CSharpCompilation> LazyCSharpCompilation = new(CreateCSharpCompilation);
 
     public SyntaxTree CreateTree(string text)
     {
@@ -33,5 +33,5 @@ internal class CSharpCompiler : ICompiler
         return new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true);
     }
 
-    public static CSharpParseOptions ParseOptions { get; } = new CSharpParseOptions(LanguageVersion.Latest);
+    public static CSharpParseOptions ParseOptions { get; } = new(LanguageVersion.Latest);
 }

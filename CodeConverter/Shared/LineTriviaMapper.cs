@@ -12,9 +12,9 @@ internal class LineTriviaMapper
     private readonly TextLineCollection _targetLines;
     private readonly IReadOnlyDictionary<int, TextLine> _targetLeadingTextLineFromSourceLine;
     private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
-    private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new List<SyntaxTriviaList>();
-    private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new List<SyntaxTriviaList>();
-    private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>>, List<IReadOnlyCollection<SyntaxTrivia>>)>();
+    private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new();
+    private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new();
+    private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new();
 
     private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, TextLineCollection targetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
     {

@@ -42,7 +42,7 @@ public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixtu
     private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
     private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");
     private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
-    private static readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter = new MSBuildWorkspaceConverter(SolutionFile, false, JoinableTaskFactorySingleton.EnsureInitialized());
+    private static readonly MSBuildWorkspaceConverter _msBuildWorkspaceConverter = new(SolutionFile, false, JoinableTaskFactorySingleton.EnsureInitialized());
 
     public async Task ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
     {
