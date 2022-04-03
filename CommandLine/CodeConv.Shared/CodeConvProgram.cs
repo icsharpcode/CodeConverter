@@ -11,10 +11,10 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using ICSharpCode.CodeConverter.CommandLine.Util;
-using CodeConv.Shared.Util;
 using System.Reflection;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Threading;
+// ReSharper disable UnassignedGetOnlyAutoProperty - Command line framework initializes these by reflection
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {
@@ -33,8 +33,11 @@ Remarks:
 
         /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/> by reflection</remarks>
         public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
-        /// <remarks>Used by reflection in CommandLineApplication.ExecuteAsync</remarks>
+        // ReSharper disable once UnusedMember.Local  - Used by reflection in CommandLineApplication.ExecuteAsync
+#pragma warning disable IDE0052 // Remove unread private members - Used by reflection in CommandLineApplication.ExecuteAsync
+        // ReSharper disable once UnusedParameter.Local - Used by reflection in CommandLineApplication.ExecuteAsync
         private async Task<int> OnExecuteAsync(CommandLineApplication _) => await ExecuteAsync();
+#pragma warning restore IDE0052 // Remove unread private members
 
         [FileExists]
         [Required]
@@ -82,7 +85,7 @@ Remarks:
             }
 
             try {
-                Progress<ConversionProgress>? progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
+                Progress<ConversionProgress> progress = new Progress<ConversionProgress>(s => Console.Out.WriteLine(s.ToString()));
                 await ConvertAsync(progress, CancellationToken.None);
             } catch (Exception ex) {
                 await Task.Delay(100); // Give any async progress updates a moment to flush so they don't clash with this:
@@ -114,9 +117,9 @@ Remarks:
             var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
             if (string.IsNullOrWhiteSpace(assemblyDirectoryPath)) throw new InvalidOperationException("Could not retrieve executing assembly directory");
             var netFrameworkExe = Path.Combine(assemblyDirectoryPath, "..", "..", "NetFramework", "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
-            if (!File.Exists(netFrameworkExe)) {
-                
-                var debugAssemblyDirectoryPath = Path.GetDirectoryName(assemblyDirectoryPath).Replace("CommandLine\\CodeConv\\", "CommandLine\\CodeConv.NetFramework\\");
+            if (!File.Exists(netFrameworkExe) && Path.GetDirectoryName(assemblyDirectoryPath) is { } assemblyDirectoryParentPath) {
+
+                var debugAssemblyDirectoryPath = assemblyDirectoryParentPath.Replace("CommandLine\\CodeConv\\", "CommandLine\\CodeConv.NetFramework\\");
                 var debugNetFrameworkExe = Path.Combine(debugAssemblyDirectoryPath, "ICSharpCode.CodeConverter.CodeConv.NetFramework.exe");
                 netFrameworkExe = File.Exists(debugNetFrameworkExe) ? debugNetFrameworkExe : throw new FileNotFoundException($"Cannot find net framework exe at `{netFrameworkExe}`. Using the --core-only flag to get work around this.");
             }
@@ -140,7 +143,7 @@ Remarks:
             var outputDirectory = new DirectoryInfo(directoryName ?? throw new InvalidOperationException("Output directory could not be determined"));
             if (await CouldOverwriteUncommittedFilesAsync(outputDirectory)) {
                 var action = string.IsNullOrWhiteSpace(OutputDirectory) ? "may be overwritten" : "will be deleted";
-                strProgress.Report($"WARNING: There are files in {outputDirectory.FullName} which {action}, and aren't comitted to git");
+                strProgress.Report($"WARNING: There are files in {outputDirectory.FullName} which {action}, and aren't committed to git");
                 if (Force) strProgress.Report("Continuing with possibility of data loss due to force option.");
                 else throw new ValidationException("Aborting to avoid data loss (see above warning). Commit the files to git, remove them, or use the --force option to override this check.");
             }
@@ -172,7 +175,7 @@ Remarks:
 
         private bool ShouldIncludeProject(Project project)
         {
-            string? projectFilePath = project.FilePath ?? "";
+            string projectFilePath = project.FilePath ?? "";
             var isIncluded = !Include.Any() || Include.Any(regex => Regex.IsMatch(projectFilePath, regex));
             return isIncluded && Exclude.All(regex => !Regex.IsMatch(projectFilePath, regex));
         }
@@ -180,8 +183,8 @@ Remarks:
         private static async Task<string?> GetLatestMsBuildExePathAsync()
         {
             // The second path here is available on github action agents: https://github.com/microsoft/setup-msbuild#how-does-this-work
-            var pathsToCheck = new[] { @"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", @"%ProgramData%\chocolatey\bin" }
-                            .Select(Environment.ExpandEnvironmentVariables);
+            var pathsToCheck = new[] {@"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe", @"%ProgramData%\chocolatey\bin"}
+                .Select(Environment.ExpandEnvironmentVariables).ToArray();
             var vsWhereExe = pathsToCheck.FirstOrDefault(File.Exists)
                 ?? throw new FileNotFoundException($"Could not find VSWhere in: {string.Join(", ", pathsToCheck.Select(p => $"`{p}`"))}");
             var args = new[] { "-latest", "-prerelease", "-products", "*", "-requires", "Microsoft.Component.MSBuild", "-version", "[16.0,]", "-find", @"MSBuild\**\Bin\MSBuild.exe" };
