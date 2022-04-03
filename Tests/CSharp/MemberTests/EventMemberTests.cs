@@ -2,16 +2,16 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests
-{
-    public class EventMemberTests : ConverterTestBase
-    {
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
 
-        [Fact]
-        public async Task TestEventAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+public class EventMemberTests : ConverterTestBase
+{
+
+    [Fact]
+    public async Task TestEventAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Event MyEvent As EventHandler
 End Class", @"using System;
 
@@ -19,13 +19,13 @@ internal partial class TestClass
 {
     public event EventHandler MyEvent;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestSharedEventAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestSharedEventAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Shared Event TestEvent(a As String)
 End Class", @"
 internal partial class TestClass
@@ -34,13 +34,13 @@ internal partial class TestClass
 
     public delegate void TestEventEventHandler(string a);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestEventWithNoDeclaredTypeOrHandlersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class TestEventWithNoType
+    [Fact]
+    public async Task TestEventWithNoDeclaredTypeOrHandlersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class TestEventWithNoType
     Public Event OnCakeChange
 
     Public Sub RaisingFlour()
@@ -58,13 +58,13 @@ public partial class TestEventWithNoType
         OnCakeChange?.Invoke();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestEventsOnInterfaceAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Interface IFileSystem
+    [Fact]
+    public async Task TestEventsOnInterfaceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFileSystem
 
     Event FileChanged(FileData As String)
     Event FileCreated(FileData As String)
@@ -116,13 +116,13 @@ public partial class FileSystemWin : IFileSystem
     public event IFileSystem.FileRenamedEventHandler FileRenamed;
     public event IFileSystem.WatcherErrorEventHandler WatcherError;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestModuleHandlesWithEventsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class MyEventClass
+    [Fact]
+    public async Task TestModuleHandlesWithEventsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
     Public Event TestEvent()
 
     Sub RaiseEvents()
@@ -169,13 +169,13 @@ internal static partial class Module1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestWithEventsWithoutInitializerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class MyEventClass
+    [Fact]
+    public async Task TestWithEventsWithoutInitializerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
     Public Event TestEvent()
 End Class
 Class Class1
@@ -199,13 +199,13 @@ internal partial class Class1
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task TestClassHandlesWithEventsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class MyEventClass
+    [Fact]
+    public async Task TestClassHandlesWithEventsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
     Public Event TestEvent()
 
     Sub RaiseEvents()
@@ -283,13 +283,13 @@ internal partial class Class1
 public partial class ShouldNotGainConstructor
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestPartialClassHandlesWithEventsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class MyEventClass
+    [Fact]
+    public async Task TestPartialClassHandlesWithEventsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
     Public Event TestEvent()
 
     Sub RaiseEvents()
@@ -361,12 +361,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestInitializeComponentAddsEventHandlersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic.CompilerServices
+    [Fact]
+    public async Task TestInitializeComponentAddsEventHandlersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic.CompilerServices
 
 <DesignerGenerated>
 Partial Public Class TestHandlesAdded
@@ -431,12 +431,12 @@ BC30002: Type 'Button' is not defined.
 BC30590: Event 'Click' cannot be found.
 1 target compilation errors:
 CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)");
-        }
+    }
 
-        [Fact]
-        public async Task Issue774_HandlerForBasePropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task Issue774_HandlerForBasePropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 Imports System.Windows.Forms
 Imports Microsoft.VisualBasic.CompilerServices
 
@@ -555,12 +555,12 @@ internal partial class Form1
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Issue584_EventWithByRefAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue584RaiseEventByRefDemo
+    [Fact]
+    public async Task Issue584_EventWithByRefAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue584RaiseEventByRefDemo
     Public Event ConversionNeeded(ai_OrigID As Integer, ByRef NewID As Integer)
 
     Public Function TestConversion(ai_ID) As Integer
@@ -584,12 +584,12 @@ public partial class Issue584RaiseEventByRefDemo
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Test_Issue701_MultiLineHandlesSyntaxAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Form1
+    [Fact]
+    public async Task Test_Issue701_MultiLineHandlesSyntaxAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Form1
     Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
                                                                             Button2.Click
     End Sub
@@ -606,7 +606,7 @@ Partial Class Form1
     Friend WithEvents Button1 As System.Windows.Forms.Button
     Friend WithEvents Button2 As System.Windows.Forms.Button
 End Class",
-@"using System;
+            @"using System;
 using System.Runtime.CompilerServices;
 
 public partial class Form1
@@ -678,6 +678,5 @@ public partial class Form1 : System.Windows.Forms.Form
         }
     }
 }");
-        }
     }
 }

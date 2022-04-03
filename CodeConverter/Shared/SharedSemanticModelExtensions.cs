@@ -1,17 +1,16 @@
-﻿namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared;
+
+internal static class SharedSemanticModelExtensions
 {
-    internal static class SharedSemanticModelExtensions
+
+    public static T GetAncestorOperationOrNull<T>(this SemanticModel semanticModel, SyntaxNode node) where T:IOperation
     {
-
-        public static T GetAncestorOperationOrNull<T>(this SemanticModel semanticModel, SyntaxNode node) where T:IOperation
-        {
-            for (var currentNode = node;
-                currentNode != null;
-                currentNode = currentNode.Parent) {
-                if (semanticModel.GetOperation(currentNode) is T tOp) return tOp;
-            }
-
-            return default;
+        for (var currentNode = node;
+             currentNode != null;
+             currentNode = currentNode.Parent) {
+            if (semanticModel.GetOperation(currentNode) is T tOp) return tOp;
         }
+
+        return default;
     }
 }

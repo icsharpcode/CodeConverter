@@ -1,14 +1,13 @@
-﻿namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared;
+
+public enum TokenContext
 {
-    public enum TokenContext
-    {
-        Global,
-        InterfaceOrModule,
-        Local,
-        MemberInModule,
-        MemberInClass,
-        MemberInStruct,
-        MemberInInterface,
-        MemberInProperty
-    }
+    Global,
+    InterfaceOrModule,
+    Local,
+    MemberInModule,
+    MemberInClass,
+    MemberInStruct,
+    MemberInInterface,
+    MemberInProperty
 }

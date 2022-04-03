@@ -2,14 +2,14 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+public class ExpressionTests : ConverterTestBase
 {
-    public class ExpressionTests : ConverterTestBase
+    [Fact]
+    public async Task ConversionOfNotUsesParensIfNeededAsync()
     {
-        [Fact]
-        public async Task ConversionOfNotUsesParensIfNeededAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Not 1 = 2
         Dim rslt2 = Not True
@@ -25,12 +25,12 @@ internal partial class TestClass
         bool rslt3 = !(new object() is bool);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DateLiteralsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task DateLiteralsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(Optional ByVal pDate As Date = #1/1/1900#)
         Dim rslt = #1/1/1900#
         Dim rslt2 = #8/13/2002 12:14 PM#
@@ -47,13 +47,13 @@ internal partial class TestClass
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ImplicitCastToDoubleLiteralAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class DoubleLiteral
+    [Fact]
+    public async Task ImplicitCastToDoubleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class DoubleLiteral
     Private Function Test(myDouble As Double) As Double
         Return Test(2.37D) + Test(&HFFUL) 'VB: D means decimal, C#: D means double
     End Function
@@ -65,12 +65,12 @@ internal partial class DoubleLiteral
         return Test(2.37d) + Test(255d); // VB: D means decimal, C#: D means double
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DateConstsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
+    [Fact]
+    public async Task DateConstsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
     Const x As Date = #1990-1-1#
 
     Private Sub Y(Optional ByVal opt As Date = x)
@@ -87,12 +87,12 @@ public partial class Issue213
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MethodCallWithImplicitConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task MethodCallWithImplicitConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Bar(True)
         Me.Bar(""4"")
@@ -118,12 +118,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue580_EnumCastsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+    [Fact]
+    public async Task Issue580_EnumCastsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
 Public Class EnumToString
     Enum Tes As Short
         None = 0
@@ -134,7 +134,7 @@ Public Class EnumToString
         Dim si_Txt As Short = CShort(2 ^ Tes.TEST2)
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 
 public partial class EnumToString
 {
@@ -150,12 +150,12 @@ public partial class EnumToString
         short si_Txt = (short)Math.Round(Math.Pow(2d, (double)Tes.TEST2));
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task IntToEnumArgAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task IntToEnumArgAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo(ByVal arg As TriState)
     End Sub
 
@@ -163,7 +163,7 @@ public partial class EnumToString
         Foo(0)
     End Sub
 End Class",
-                @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+            @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -176,18 +176,18 @@ public partial class Class1
         Foo(0);
     }
 }");
-        }
+    }
 
-        [Fact] // https://github.com/icsharpcode/CodeConverter/issues/636
-        public async Task CharacterizeCompilationErrorsWithLateBoundImplicitObjectNarrowingAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    [Fact] // https://github.com/icsharpcode/CodeConverter/issues/636
+    public async Task CharacterizeCompilationErrorsWithLateBoundImplicitObjectNarrowingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
     Public Sub Rounding()
         Dim o as Object = 3.0f
         Dim x = Math.Round(o, 2)
     End Sub
 End Class",
-@"using System;
+            @"using System;
 
 public partial class VisualBasicClass
 {
@@ -200,12 +200,12 @@ public partial class VisualBasicClass
 2 target compilation errors:
 CS1503: Argument 1: cannot convert from 'object' to 'double'
 CS1503: Argument 2: cannot convert from 'object' to 'int'");
-        }
+    }
 
-        [Fact]
-        public async Task EnumToIntCastAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class MyTest
+    [Fact]
+    public async Task EnumToIntCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class MyTest
     Public Enum TestEnum As Integer
         Test1 = 0
         Test2 = 1
@@ -216,7 +216,7 @@ CS1503: Argument 2: cannot convert from 'object' to 'int'");
         Dim t1 As Integer = EnumVariable
     End Sub
 End Class",
-                @"
+            @"
 public partial class MyTest
 {
     public enum TestEnum : int
@@ -232,12 +232,12 @@ public partial class MyTest
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task FlagsEnumAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"<Flags()> Public Enum FilePermissions As Integer
+    [Fact]
+    public async Task FlagsEnumAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"<Flags()> Public Enum FilePermissions As Integer
     None = 0
     Create = 1
     Read = 2
@@ -247,7 +247,7 @@ End Enum
 Public Class MyTest
     Public MyEnum As FilePermissions = FilePermissions.None + FilePermissions.Create
 End Class",
-                @"using System;
+            @"using System;
 
 [Flags()]
 public enum FilePermissions : int
@@ -263,12 +263,12 @@ public partial class MyTest
 {
     public FilePermissions MyEnum = (FilePermissions)((int)FilePermissions.None + (int)FilePermissions.Create);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task EnumSwitchAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task EnumSwitchAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Enum E
         A
     End Enum
@@ -286,7 +286,7 @@ public partial class MyTest
 
     End Sub
 End Class",
-                @"
+            @"
 public partial class Class1
 {
     public enum E
@@ -315,12 +315,12 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DuplicateCaseDiscardedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task DuplicateCaseDiscardedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
     Friend Module Module1
     Sub Main()
         Select Case 1
@@ -334,7 +334,7 @@ public partial class Class1
 
     End Sub
 End Module",
-                @"using System;
+            @"using System;
 
 internal static partial class Module1
 {
@@ -358,13 +358,13 @@ internal static partial class Module1
 }
 1 target compilation errors:
 CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
-            //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
-        }
+        //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
+    }
 
-        [Fact]
-        public async Task MethodCallWithoutParensAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task MethodCallWithoutParensAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim w = Bar
         Dim x = Me.Bar
@@ -394,12 +394,12 @@ public partial class Class1
 
     public int Baz { get; set; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConversionOfCTypeUsesParensIfNeededAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ConversionOfCTypeUsesParensIfNeededAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Ctype(true, Object).ToString()
         Dim rslt2 = Ctype(true, Object)
@@ -413,12 +413,12 @@ internal partial class TestClass
         object rslt2 = true;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DateKeywordAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task DateKeywordAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private DefaultDate as Date = Nothing
 End Class", @"using System;
 
@@ -426,12 +426,12 @@ internal partial class TestClass
 {
     private DateTime DefaultDate = default;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task GenericComparisonAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class GenericComparison
+    [Fact]
+    public async Task GenericComparisonAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class GenericComparison
     Public Sub m(Of T)(p As T)
         If p Is Nothing Then Return
     End Sub
@@ -444,12 +444,12 @@ public partial class GenericComparison
             return;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AccessSharedThroughInstanceAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+    [Fact]
+    public async Task AccessSharedThroughInstanceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Public Shared x As Integer = 2
     Public Sub Test()
         Dim tmp = Me
@@ -468,12 +468,12 @@ public partial class A
         int z = x;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task EmptyArrayExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+    [Fact]
+    public async Task EmptyArrayExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
 Public Class Issue495AndIssue713
     Public Function Empty() As Integer()
         Dim emptySingle As IEnumerable(Of Integer) = {}
@@ -500,12 +500,12 @@ public partial class Issue495AndIssue713
         return Array.Empty<int>();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task InitializedArrayExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+    [Fact]
+    public async Task InitializedArrayExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
 Public Class Issue713
     Public Function Empty() As Integer()
         Dim initializedSingle As IEnumerable(Of Integer) = {1}
@@ -524,12 +524,12 @@ public partial class Issue713
         return Array.Empty<int>();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task EmptyArrayParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    [Fact]
+    public async Task EmptyArrayParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
     Public Sub s()
         If Validate({}) Then
         End If
@@ -554,12 +554,12 @@ public partial class VisualBasicClass
         return true;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Empty2DArrayExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+    [Fact]
+    public async Task Empty2DArrayExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
 Public Class Empty2DArray
     Dim data(,) As Double = {}
 End Class", @"
@@ -567,12 +567,12 @@ public partial class Empty2DArray
 {
     private double[,] data = new double[,] { };
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ReducedTypeParametersInferrableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+    [Fact]
+    public async Task ReducedTypeParametersInferrableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -587,12 +587,12 @@ public partial class Class1
         var y = """".Split(',').Select(x => x);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ReducedTypeParametersNonInferrableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+    [Fact]
+    public async Task ReducedTypeParametersNonInferrableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -607,12 +607,12 @@ public partial class Class1
         var y = """".Split(',').Select<string, object>(x => x);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task EnumNullableConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task EnumNullableConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Main()
         Dim x = DayOfWeek.Monday
         Foo(x)
@@ -635,12 +635,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UninitializedVariableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task UninitializedVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub New()
         Dim needsInitialization As Integer
         Dim notUsed As Integer
@@ -739,12 +739,12 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task FullyTypeInferredEnumerableCreationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task FullyTypeInferredEnumerableCreationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
@@ -756,12 +756,12 @@ internal partial class TestClass
         var strings = new[] { ""1"", ""2"" };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task GetTypeExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task GetTypeExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
@@ -773,12 +773,12 @@ internal partial class TestClass
         var typ = typeof(string);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NullableIntegerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task NullableIntegerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Function Bar(value As String) As Integer?
         Dim result As Integer
         If Integer.TryParse(value, result) Then
@@ -803,12 +803,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NothingInvokesDefaultForValueTypesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task NothingInvokesDefaultForValueTypesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Sub Bar()
         Dim number As Integer
         number = Nothing
@@ -827,12 +827,12 @@ internal partial class TestClass
         dat = default;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConditionalExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ConditionalExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
@@ -844,12 +844,12 @@ internal partial class TestClass
         bool result = string.IsNullOrEmpty(str) ? true : false;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConditionalExpressionInStringConcatAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class ConditionalExpressionInStringConcat
+    [Fact]
+    public async Task ConditionalExpressionInStringConcatAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class ConditionalExpressionInStringConcat
     Private Sub TestMethod(ByVal str As String)
         Dim appleCount as integer = 42
         Console.WriteLine(""I have "" & appleCount & If(appleCount = 1, "" apple"", "" apples""))
@@ -864,12 +864,12 @@ internal partial class ConditionalExpressionInStringConcat
         Console.WriteLine(""I have "" + appleCount + (appleCount == 1 ? "" apple"" : "" apples""));
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConditionalExpressionInUnaryExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ConditionalExpressionInUnaryExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = Not If((str = """"), True, False)
     End Sub
@@ -881,12 +881,12 @@ internal partial class TestClass
         bool result = !(string.IsNullOrEmpty(str) ? true : false);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NullCoalescingExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task NullCoalescingExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
@@ -899,12 +899,12 @@ internal partial class TestClass
         Console.WriteLine(str ?? ""<null>"");
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task OmittedArgumentInInvocationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task OmittedArgumentInInvocationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Module MyExtensions
     public sub NewColumn(type As Type , Optional strV1 As String = nothing, Optional code As String = ""code"", Optional argInt as Integer = 1)
@@ -932,12 +932,12 @@ public static partial class MyExtensions
         NewColumn(null, argInt: 2);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task OmittedArgumentInCallInvocationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue445MissingParameter
+    [Fact]
+    public async Task OmittedArgumentInCallInvocationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue445MissingParameter
     Public Sub First(a As String, b As String, c As Integer)
         Call mySuperFunction(7, , New Object())
     End Sub
@@ -960,12 +960,12 @@ public partial class Issue445MissingParameter
         throw new NotImplementedException();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExternalReferenceToOutParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ExternalReferenceToOutParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim d = New Dictionary(Of string, string)
         Dim s As String
@@ -982,13 +982,13 @@ internal partial class TestClass
         d.TryGetValue(""a"", out s);
     }
 }");
-        }
+    }
 
         
-        [Fact]
-        public async Task ExternalReferenceToOutParameterFromInterfaceImplementationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+    [Fact]
+    public async Task ExternalReferenceToOutParameterFromInterfaceImplementationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
 MustInherit Class TestClass
     Implements IReadOnlyDictionary(Of Integer, Integer)
     Public Function TryGetValue(key as Integer, ByRef value As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).TryGetValue
@@ -1035,12 +1035,12 @@ internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
     public abstract IEnumerable<int> Values { get; }
     public abstract int Count { get; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ElvisOperatorExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass3
+    [Fact]
+    public async Task ElvisOperatorExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass3
     Private Class Rec
         Public ReadOnly Property Prop As New Rec
     End Class
@@ -1067,12 +1067,12 @@ internal partial class TestClass3
         return new Rec()?.Prop?.Prop?.Prop;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ObjectInitializerExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class StudentName
+    [Fact]
+    public async Task ObjectInitializerExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -1093,12 +1093,12 @@ internal partial class TestClass
         var student2 = new StudentName() { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ObjectInitializerWithInferredNameAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class Issue480
+    [Fact]
+    public async Task ObjectInitializerWithInferredNameAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Issue480
     Public Foo As Integer
 
     Sub Test()
@@ -1115,12 +1115,12 @@ internal partial class Issue480
         var x = new { Foo };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ObjectInitializerExpression2Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ObjectInitializerExpression2Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
@@ -1132,12 +1132,12 @@ internal partial class TestClass
         var student2 = new { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task CollectionInitializersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task CollectionInitializersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub DoStuff(a As Object)
     End Sub
     Private Sub TestMethod()
@@ -1160,12 +1160,12 @@ internal partial class TestClass
         var dict = new Dictionary<int, int>() { { 1, 2 }, { 3, 4 } };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DelegateExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task DelegateExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
         test(3)
@@ -1180,12 +1180,12 @@ internal partial class TestClass
         test(3);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LambdaBodyExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task LambdaBodyExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(a) a * 2
         Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
@@ -1213,12 +1213,12 @@ internal partial class TestClass
         test(3);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AsyncLambdaBodyExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task AsyncLambdaBodyExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Async Sub TestMethod()
         Dim test0 As Func(Of Task(Of Integer)) = Async Function()  2
         Dim test1 As Func(Of Integer, Task(Of Integer)) = Async Function(a) a * 2
@@ -1261,12 +1261,12 @@ internal partial class TestClass
         await test1(3);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AsyncLambdaParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task AsyncLambdaParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
         public Async Function mySub() As Task(Of Boolean)
             Return Await Me.ExecuteAuthenticatedAsync(Async Function() As Task(Of Boolean)
                 Return Await DoSomethingAsync()
@@ -1299,12 +1299,12 @@ internal partial class TestClass
         return true;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TypeInferredLambdaBodyExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task TypeInferredLambdaBodyExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -1332,12 +1332,12 @@ internal partial class TestClass
         test(3);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SingleLineLambdaWithStatementBodyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task SingleLineLambdaWithStatementBodyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         Dim simpleAssignmentAction As System.Action = Sub() x = 1
@@ -1356,12 +1356,12 @@ internal partial class TestClass
         Action ifAction = () => { if (true) return; };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AnonymousLambdaArrayTypeConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task AnonymousLambdaArrayTypeConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 Imports System.Diagnostics
 
 Public Class TargetTypeTestClass
@@ -1382,12 +1382,12 @@ public partial class TargetTypeTestClass
         var objects = new List<object>() { new Action(() => Debug.Print(3.ToString())), new Action(() => Debug.Print(4.ToString())) };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AnonymousLambdaTypeConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class AnonymousLambdaTypeConversionTest
+    [Fact]
+    public async Task AnonymousLambdaTypeConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class AnonymousLambdaTypeConversionTest
     Public Sub CallThing(thingToCall As [Delegate])
     End Sub
 
@@ -1429,12 +1429,12 @@ public partial class AnonymousLambdaTypeConversionTest
         CallThing(new Func<object, bool>(a => false));
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AwaitAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task AwaitAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Function SomeAsyncMethod() As Task(Of Integer)
         Return Task.FromResult(0)
     End Function
@@ -1459,12 +1459,12 @@ internal partial class TestClass
         Console.WriteLine(result);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NameQualifyingHandlesInheritanceAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClassBase
+    [Fact]
+    public async Task NameQualifyingHandlesInheritanceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClassBase
     Sub DoStuff()
     End Sub
 End Class
@@ -1488,12 +1488,12 @@ internal partial class TestClass : TestClassBase
         DoStuff();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UsingGlobalImportAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task UsingGlobalImportAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Public Function TestMethod() As String
          Return vbCrLf
     End Function
@@ -1506,12 +1506,12 @@ internal partial class TestClass
         return Constants.vbCrLf;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ValueCapitalisationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"public Enum TestState
+    [Fact]
+    public async Task ValueCapitalisationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"public Enum TestState
 one
 two
 end enum
@@ -1554,13 +1554,13 @@ public partial class test
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConstLiteralConversionIssue329Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Module1
+    [Fact]
+    public async Task ConstLiteralConversionIssue329Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Module1
     Const a As Boolean = 1
     Const b As Char = ChrW(1)
     Const c As Single = 1
@@ -1603,13 +1603,13 @@ internal static partial class Module1
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task SelectCaseIssue361Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Module Module1
+    [Fact]
+    public async Task SelectCaseIssue361Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Module1
     Enum E
         A = 1
     End Enum
@@ -1643,13 +1643,13 @@ internal static partial class Module1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SelectCaseIssue675Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class EnumTest
+    [Fact]
+    public async Task SelectCaseIssue675Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class EnumTest
     Public Enum UserInterface
         Unknown
         Spectrum
@@ -1710,13 +1710,13 @@ public partial class EnumTest
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SelectCaseDoesntGenerateBreakWhenLastStatementWillExitAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Test
+    [Fact]
+    public async Task SelectCaseDoesntGenerateBreakWhenLastStatementWillExitAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Test
     Public Function OnLoad() As Integer
         Dim x = 5
         While True
@@ -1980,26 +1980,26 @@ public partial class Test
         return x;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TupleAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Function GetString(yourBoolean as Boolean) As Boolean
+    [Fact]
+    public async Task TupleAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Function GetString(yourBoolean as Boolean) As Boolean
     Return 1 <> 1 OrElse if (yourBoolean, True, False)
 End Function",
-                @"public bool GetString(bool yourBoolean)
+            @"public bool GetString(bool yourBoolean)
 {
     return 1 != 1 || (yourBoolean ? true : false);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UseEventBackingFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Foo
+    [Fact]
+    public async Task UseEventBackingFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Foo
     Public Event Bar As EventHandler(Of EventArgs)
 
     Protected Sub OnBar(e As EventArgs)
@@ -2010,7 +2010,7 @@ End Function",
         End If
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 using System.Diagnostics;
 
 public partial class Foo
@@ -2029,12 +2029,12 @@ public partial class Foo
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DateTimeToDateAndTimeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task DateTimeToDateAndTimeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
@@ -2048,12 +2048,12 @@ public partial class Class1
         var x = DateAndTime.DateAdd(""m"", 5d, DateTime.Now);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task BaseFinalizeRemovedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task BaseFinalizeRemovedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
@@ -2064,12 +2064,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task GlobalNameIssue375Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+    [Fact]
+    public async Task GlobalNameIssue375Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
     Sub Main()
         Dim x = Microsoft.VisualBasic.Timer
     End Sub
@@ -2082,12 +2082,12 @@ internal static partial class Module1
         double x = DateAndTime.Timer;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TernaryConversionIssue363Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+    [Fact]
+    public async Task TernaryConversionIssue363Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
@@ -2100,13 +2100,13 @@ internal static partial class Module1
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task GenericMethodCalledWithAnonymousTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class MoreParsing
+    [Fact]
+    public async Task GenericMethodCalledWithAnonymousTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class MoreParsing
     Sub DoGet()
         Dim anon = New With {
             .ANumber = 5
@@ -2119,7 +2119,7 @@ internal static partial class Module1
         Return tInstance
     End Function
 End Class",
-                @"using System.Linq;
+            @"using System.Linq;
 
 public partial class MoreParsing
 {
@@ -2135,13 +2135,13 @@ public partial class MoreParsing
         return tInstance;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DecimalToIntegerCompoundOperatorsWithTypeConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Compound
+    [Fact]
+    public async Task DecimalToIntegerCompoundOperatorsWithTypeConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Compound
     Public Sub Operators()
         Dim anInt As Integer = 123
         Dim aDec As Decimal = 12.3
@@ -2152,7 +2152,7 @@ public partial class MoreParsing
         anInt += aDec
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 
 public partial class Compound
 {
@@ -2167,13 +2167,13 @@ public partial class Compound
         anInt = (int)Math.Round(anInt + aDec);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DecimalToShortCompoundOperatorsWithTypeConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Compound
+    [Fact]
+    public async Task DecimalToShortCompoundOperatorsWithTypeConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Compound
     Public Sub Operators()
         Dim aShort As Short = 123
         Dim aDec As Decimal = 12.3
@@ -2184,7 +2184,7 @@ public partial class Compound
         aShort += aDec
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 
 public partial class Compound
 {
@@ -2199,13 +2199,13 @@ public partial class Compound
         aShort = (short)Math.Round(aShort + aDec);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task IntegerToShortCompoundOperatorsWithTypeConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Compound
+    [Fact]
+    public async Task IntegerToShortCompoundOperatorsWithTypeConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Compound
     Public Sub Operators()
         Dim aShort As Short = 123
         Dim anInt As Integer= 12
@@ -2216,7 +2216,7 @@ public partial class Compound
         aShort += anInt
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 
 public partial class Compound
 {
@@ -2231,13 +2231,13 @@ public partial class Compound
         aShort = (short)(aShort + anInt);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ShortMultiplicationDeclarationAndAssignmentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Compound
+    [Fact]
+    public async Task ShortMultiplicationDeclarationAndAssignmentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Compound
     Public Sub Operators()
         Dim aShort As Short = 123
         Dim anotherShort As Short = 234
@@ -2246,7 +2246,7 @@ public partial class Compound
         x = aShort * x
     End Sub
 End Class",
-                @"
+            @"
 public partial class Compound
 {
     public void Operators()
@@ -2258,19 +2258,19 @@ public partial class Compound
         x = (short)(aShort * x);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task CintIsConvertedCorrectlyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Compound
+    [Fact]
+    public async Task CintIsConvertedCorrectlyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Compound
     Public Sub Operators()
         Dim do_Tmp As Double = 9999 / 100
         Dim i_Tmp as Integer = CInt(do_Tmp)
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 
 public partial class Compound
 {
@@ -2280,13 +2280,13 @@ public partial class Compound
         int i_Tmp = (int)Math.Round(do_Tmp);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ArgumentsAreTypeConvertedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Imports System.Drawing
+    [Fact]
+    public async Task ArgumentsAreTypeConvertedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Drawing
 
 Public Class Compound
     Public Sub TypeCast(someInt As Integer)
@@ -2294,7 +2294,7 @@ Public Class Compound
         Dim arry = New Single(7/someInt) {}
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 using System.Drawing;
 
 public partial class Compound
@@ -2305,12 +2305,12 @@ public partial class Compound
         var arry = new float[(int)Math.Round(7d / someInt + 1)];
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NullCoalescingOperatorUsesParenthesisWhenNeededAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    [Fact]
+    public async Task NullCoalescingOperatorUsesParenthesisWhenNeededAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
     Public Sub TestMethod(ByVal x As String, ByVal y As Func(Of Integer))
         Dim a As String = If(x, ""x"")
         Dim b As String = If(x, ""x"").ToUpper()
@@ -2333,12 +2333,12 @@ public partial class VisualBasicClass
         var f = y ?? (() => 6);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NullForgivingInvocationDoesNotThrowAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task NullForgivingInvocationDoesNotThrowAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class AClass
         Public Shared Sub Identify(ByVal talker As ITraceMessageTalker)
@@ -2371,6 +2371,5 @@ public partial interface ITraceMessageTalker
 {
     object IdentifyTalker(object v);
 }");
-        }
     }
 }

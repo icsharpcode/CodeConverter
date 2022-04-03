@@ -2,18 +2,18 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests
-{
-    /// <summary>
-    /// For generic loop related tests. Also see ExitableMethodExecutableStatementTests for tests of Exit Do, Exit For, etc.
-    /// </summary>
-    public class LoopStatementTests : ConverterTestBase
-    {
+namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
 
-        [Fact]
-        public async Task UntilStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+/// <summary>
+/// For generic loop related tests. Also see ExitableMethodExecutableStatementTests for tests of Exit Do, Exit For, etc.
+/// </summary>
+public class LoopStatementTests : ConverterTestBase
+{
+
+    [Fact]
+    public async Task UntilStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(rand As Random)
         Dim charIndex As Integer
         ' allow only digits and letters
@@ -34,12 +34,12 @@ internal partial class TestClass
         while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+    [Fact]
+    public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         For idx = 0 To 10
         Next
@@ -61,12 +61,12 @@ internal partial class Program
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Int16ForLoopAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"    Sub DummyMethod()
+    [Fact]
+    public async Task Int16ForLoopAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"    Sub DummyMethod()
         Dim someArray = New Integer() { 1, 2, 3}
         For index As Int16 = 0 To someArray.Length - 1
             Console.WriteLine(index)
@@ -77,12 +77,12 @@ internal partial class Program
     for (short index = 0, loopTo = (short)(someArray.Length - 1); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExternallyDeclaredLoopVariableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Sub Main()
+    [Fact]
+    public async Task ExternallyDeclaredLoopVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Sub Main()
     Dim foo As Single = 3.5
     Dim index As Integer
     For index = Int(foo) To Int(foo * 3)
@@ -96,12 +96,12 @@ End Sub", @"public void Main()
     for (index = (int)Math.Round(Conversion.Int(foo)); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForNonNegativeStepAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+    [Fact]
+    public async Task ForNonNegativeStepAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -0
         Debug.WriteLine(i)
@@ -117,12 +117,12 @@ internal partial class Issue453
             Debug.WriteLine(i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForNegativeStepAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+    [Fact]
+    public async Task ForNegativeStepAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -5
         Debug.WriteLine(i)
@@ -138,12 +138,12 @@ internal partial class Issue453
             Debug.WriteLine(i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForVariableStepAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+    [Fact]
+    public async Task ForVariableStepAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer, [step] As Integer)
       For i As Integer = startIndex To endIndex Step [step]
         Debug.WriteLine(i)
@@ -159,12 +159,12 @@ internal partial class Issue453
             Debug.WriteLine(i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEnumAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Enum MyEnum
+    [Fact]
+    public async Task ForEnumAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Enum MyEnum
     Zero
     One
 End Enum
@@ -206,12 +206,12 @@ internal partial class ForEnumAsync
             Debug.WriteLine(i4);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForeachWithObjectCollectionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+    [Fact]
+    public async Task ForeachWithObjectCollectionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         Dim zs As Object = { 1, 2, 3 }
         For Each z in zs
@@ -230,13 +230,13 @@ internal partial class Program
             Console.WriteLine(z);
     }
 }");
-        }
+    }
 
 
-        [Fact]
-        public async Task ForWithSingleStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForWithSingleStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(end As Integer)
         Dim b, s As Integer()
         For i = 0 To [end]
@@ -255,12 +255,12 @@ internal partial class TestClass
 }
 1 source compilation errors:
 BC30183: Keyword is not valid as an identifier.");
-        }
+    }
 
-        [Fact]
-        public async Task ForNextMutatingFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task ForNextMutatingFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Index As Integer
 
     Sub Foo()
@@ -280,12 +280,12 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForRequiringExtraVariableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForRequiringExtraVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim stringValue AS string = ""42""
         For i As Integer = 1 To 10 - stringValue.Length
@@ -307,12 +307,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForWithBlockAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForWithBlockAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod([end] As Integer)
         Dim b, s As Integer()
         For i = 0 To [end] - 1
@@ -329,12 +329,12 @@ internal partial class TestClass
             b[i] = s[i];
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LabeledAndForStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class GotoTest1
+    [Fact]
+    public async Task LabeledAndForStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0
@@ -410,6 +410,5 @@ internal partial class GotoTest1
         Console.ReadKey();
     }
 }");
-        }
     }
 }

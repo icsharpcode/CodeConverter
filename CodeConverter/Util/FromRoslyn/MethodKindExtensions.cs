@@ -4,14 +4,12 @@
 
 ////#define TRACKDEPTH
 
-namespace ICSharpCode.CodeConverter.Util.FromRoslyn
-{
+namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
-    internal static class MethodKindExtensions
+internal static class MethodKindExtensions
+{
+    public static bool IsPropertyAccessor(this MethodKind kind)
     {
-        public static bool IsPropertyAccessor(this MethodKind kind)
-        {
-            return kind == MethodKind.PropertyGet || kind == MethodKind.PropertySet;
-        }
+        return kind == MethodKind.PropertyGet || kind == MethodKind.PropertySet;
     }
 }

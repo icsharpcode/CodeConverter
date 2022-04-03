@@ -2,14 +2,14 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+public class BinaryExpressionTests : ConverterTestBase
 {
-    public class BinaryExpressionTests : ConverterTestBase
+    [Fact]
+    public async Task OmitsConversionForEnumBinaryExpressionAsync()
     {
-        [Fact]
-        public async Task OmitsConversionForEnumBinaryExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Enum RankEnum As SByte
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Enum RankEnum As SByte
     First = 1
     Second = 2
 End Enum
@@ -34,12 +34,12 @@ public partial class TestClass
         bool enumEnumEquality = eEnum == RankEnum.First;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task BinaryOperatorsIsIsNotLeftShiftRightShiftAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task BinaryOperatorsIsIsNotLeftShiftRightShiftAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private bIs as Boolean = New Object Is New Object
     Private bIsNot as Boolean = New Object IsNot New Object
     Private bLeftShift as Integer = 1 << 3
@@ -52,12 +52,12 @@ internal partial class TestClass
     private int bLeftShift = 1 << 3;
     private int bRightShift = 8 >> 3;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LikeOperatorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task LikeOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = """" Like ""*x*""
     End Sub
@@ -71,12 +71,12 @@ public partial class Class1
         bool x = LikeOperator.LikeString("""", ""*x*"", CompareMethod.Binary);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ShiftAssignmentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ShiftAssignmentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         x <<= 4
@@ -92,12 +92,12 @@ internal partial class TestClass
         x >>= 3;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task IntegerArithmeticAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task IntegerArithmeticAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 7 ^ 6 Mod 5 \ 4 + 3 * 2
         x += 1
@@ -120,12 +120,12 @@ internal partial class TestClass
         x = Math.Pow(x, 5d);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ImplicitConversionsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ImplicitConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x As Double = 1
         Dim y As Decimal = 2
@@ -150,12 +150,12 @@ internal partial class TestClass
     }
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task FloatingPointDivisionIsForcedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task FloatingPointDivisionIsForcedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 10 / 3
         x /= 2
@@ -178,12 +178,12 @@ internal partial class TestClass
         z = (int)Math.Round(z / 3d);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConditionalExpressionInBinaryExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ConditionalExpressionInBinaryExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Integer = 5 - If((str = """"), 1, 2)
     End Sub
@@ -195,12 +195,12 @@ internal partial class TestClass
         int result = 5 - (string.IsNullOrEmpty(str) ? 1 : 2);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ImplicitBooleanConversion712Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
+    [Fact]
+    public async Task ImplicitBooleanConversion712Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
     Private Function TestMethod()
         Dim var1 As Boolean? = Nothing
         Dim var2 As Boolean? = Nothing
@@ -216,12 +216,12 @@ internal partial class TestClass712
         return var1 == true || var2 == false;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ImplicitIfStatementBooleanConversion712Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
+    [Fact]
+    public async Task ImplicitIfStatementBooleanConversion712Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
     Private Function TestMethod()
         Dim var1 As Boolean? = Nothing
         Dim var2 As Boolean? = Nothing
@@ -240,12 +240,12 @@ internal partial class TestClass712
             return false;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConversionInComparisonOperatorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionInComparisonOperatorTest
+    [Fact]
+    public async Task ConversionInComparisonOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionInComparisonOperatorTest
     Public Sub Foo()
         Dim SomeDecimal As Decimal = 12.3
         Dim ACalc As Double = 32.1
@@ -267,6 +267,5 @@ public partial class ConversionInComparisonOperatorTest
         }
     }
 }");
-        }
     }
 }

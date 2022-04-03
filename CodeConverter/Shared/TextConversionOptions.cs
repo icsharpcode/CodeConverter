@@ -1,17 +1,16 @@
-﻿namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared;
+
+public class TextConversionOptions : SingleConversionOptions
 {
-    public class TextConversionOptions : SingleConversionOptions
+    private readonly ConversionOptions _conversionOptions;
+
+    public TextConversionOptions(IReadOnlyCollection<PortableExecutableReference> references, string sourceFilePath = null)
     {
-        private readonly ConversionOptions _conversionOptions;
-
-        public TextConversionOptions(IReadOnlyCollection<PortableExecutableReference> references, string sourceFilePath = null)
-        {
-            References = references;
-            SourceFilePath = sourceFilePath;
-            _conversionOptions = new ConversionOptions();
-        }
-
-        public IReadOnlyCollection<PortableExecutableReference> References { get; }
-        public string SourceFilePath { get; }
+        References = references;
+        SourceFilePath = sourceFilePath;
+        _conversionOptions = new ConversionOptions();
     }
+
+    public IReadOnlyCollection<PortableExecutableReference> References { get; }
+    public string SourceFilePath { get; }
 }

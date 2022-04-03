@@ -2,17 +2,17 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+/// <summary>
+/// See https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/how-to-transform-xml-by-using-linq
+/// </summary>
+public class XmlExpressionTests : ConverterTestBase
 {
-    /// <summary>
-    /// See https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/how-to-transform-xml-by-using-linq
-    /// </summary>
-    public class XmlExpressionTests : ConverterTestBase
+    [Fact]
+    public async Task NestedXmlEchoSimpleAsync()
     {
-        [Fact]
-        public async Task NestedXmlEchoSimpleAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim hello = ""Hello""
         dim x = <h1><%= hello %></h1>
@@ -27,12 +27,12 @@ internal partial class TestClass
         XElement x = new XElement(""h1"", hello);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TwoLayerNestedXmlWithExpressionsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task TwoLayerNestedXmlWithExpressionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim var1 = 1
         Dim var2 = 2
@@ -49,12 +49,12 @@ internal partial class TestClass
         XElement x = new XElement(""h1"", var1, var2, new XElement(""span"", var2, var1));
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MultiLineXmlExpressionsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+    [Fact]
+    public async Task MultiLineXmlExpressionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Class TestClass
     Private Sub TestMethod()
@@ -126,15 +126,15 @@ internal partial class TestClass
 }
 1 target compilation errors:
 CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'IEnumerable<XElement>' could be found (are you missing a using directive or an assembly reference?)", incompatibleWithAutomatedCommentTesting: true /* auto-testing of comments doesn't work because it tries to put VB comments inside the xml literal */);
-            //BUG: See compilation error
-        }
+        //BUG: See compilation error
+    }
 
 
 
-        [Fact]
-        public async Task AssignmentStatementWithXmlElementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task AssignmentStatementWithXmlElementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim b = <someXmlTag></someXmlTag>
         Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
@@ -149,14 +149,14 @@ internal partial class TestClass
         XElement c = new XElement(""someXmlTag"", new XElement(""bla"", new XAttribute(""anAttribute"", ""itsValue""), ""tata""), new XElement(""someContent"", ""tata""));
     }
 }");
-        }
+    }
 
 
 
-        [Fact]
-        public async Task AssignmentStatementWithXmlElementAndEmbeddedExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task AssignmentStatementWithXmlElementAndEmbeddedExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Const value1 = ""something""
         Dim xElement = <Elem1 Attr1=<%= value1 %> Attr2=<%= 100 %>></Elem1>
@@ -171,14 +171,14 @@ internal partial class TestClass
         XElement xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", value1), new XAttribute(""Attr2"", 100));
     }
 }");
-        }
+    }
 
 
 
-        [Fact]
-        public async Task SelfClosingXmlTagAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task SelfClosingXmlTagAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()       
         Dim xElement = <Elem1 Attr1=""something"" />
     End Sub
@@ -191,14 +191,14 @@ internal partial class TestClass
         XElement xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", ""something""));
     }
 }");
-        }
+    }
 
 
 
-        [Fact]
-        public async Task ConditionalMemberAccessAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ConditionalMemberAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()       
         Dim xDocument = <Test></Test>
         Dim elements1 = xDocument.<Something>.SingleOrDefault()?.<SomethingElse>
@@ -215,14 +215,14 @@ internal partial class TestClass
     }
 }");
 
-        }
+    }
 
 
 
-        [Fact]
-        public async Task NamespaceImportAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"' Place Imports statements at the top of your program.  
+    [Fact]
+    public async Task NamespaceImportAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"' Place Imports statements at the top of your program.  
 Imports <xmlns=""http://DefaultNamespace"">
 Imports <xmlns:ns=""http://NewNamespace"">
 
@@ -285,6 +285,5 @@ internal static partial class Module1
         Console.WriteLine(outer);
     }
 }");
-        }
     }
 }
