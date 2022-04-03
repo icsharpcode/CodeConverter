@@ -2,7 +2,7 @@
 
 internal static class ProjectExtensions
 {
-    private static readonly char[] DirSeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+    private static readonly char[] DirSeparators = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
     public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions)
     {
@@ -21,7 +21,7 @@ internal static class ProjectExtensions
     {
         return ProjectInfo.Create(projectId, project.Version, projectName, project.AssemblyName,
             options.Language, null, project.OutputFilePath,
-            options, parseOptions, System.Array.Empty<DocumentInfo>(), projectProjectReferences,
+            options, parseOptions, Array.Empty<DocumentInfo>(), projectProjectReferences,
             project.MetadataReferences, project.AnalyzerReferences);
     }
 

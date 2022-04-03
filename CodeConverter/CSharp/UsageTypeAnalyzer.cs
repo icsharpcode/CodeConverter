@@ -33,7 +33,7 @@ internal static class UsageTypeAnalyzer
     {
         var references = await SymbolFinder.FindReferencesAsync(symbol, solution);
         return references.SelectMany(r => r.Locations).GroupBy(l => (Doc: l.Document, Tree: l.Location.SourceTree))
-            .Select(g => (Doc: g.Key.Doc, Usages: g.Where(l => l.Location.SourceTree != outsideLocation?.SourceTree || !l.Location.SourceSpan.OverlapsWith(outsideLocation.SourceSpan)).ToArray()))
+            .Select(g => (g.Key.Doc, Usages: g.Where(l => l.Location.SourceTree != outsideLocation?.SourceTree || !l.Location.SourceSpan.OverlapsWith(outsideLocation.SourceSpan)).ToArray()))
             .Where(g => g.Usages.Any());
     }
 

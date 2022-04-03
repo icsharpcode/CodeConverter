@@ -1,7 +1,5 @@
 ﻿namespace ICSharpCode.CodeConverter.Shared;
 
-using System.Collections.Generic;
-
 public interface ISolutionFileTextEditor
 {
     List<(string Find, string Replace, bool FirstOnly)> GetProjectFileProjectReferenceReplacements(

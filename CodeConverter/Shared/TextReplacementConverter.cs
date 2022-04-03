@@ -1,10 +1,7 @@
-namespace ICSharpCode.CodeConverter.Shared;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
 using System.IO.Abstractions;
+using System.Text.RegularExpressions;
+
+namespace ICSharpCode.CodeConverter.Shared;
 
 public class TextReplacementConverter
 {

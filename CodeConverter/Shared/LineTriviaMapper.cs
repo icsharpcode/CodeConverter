@@ -5,7 +5,7 @@ namespace ICSharpCode.CodeConverter.Shared;
 internal class LineTriviaMapper
 {
 
-    private static readonly string[] _kinds = new[] { AnnotationConstants.SourceStartLineAnnotationKind, AnnotationConstants.SourceEndLineAnnotationKind };
+    private static readonly string[] _kinds = { AnnotationConstants.SourceStartLineAnnotationKind, AnnotationConstants.SourceEndLineAnnotationKind };
     private readonly SyntaxNode _target;
     private readonly SyntaxNode _source;
     private readonly TextLineCollection _sourceLines;
@@ -60,7 +60,7 @@ internal class LineTriviaMapper
     private static ILookup<int, (SyntaxNodeOrToken Node, int SourceLineIndex, string Kind)> GetNodesBySourceLine(SyntaxNode target)
     {
         return target.GetAnnotatedNodesAndTokens(_kinds).SelectMany(n =>
-            n.GetAnnotations(_kinds).Select(a => (Node: n, SourceLineIndex: int.Parse(a.Data), Kind: a.Kind))
+            n.GetAnnotations(_kinds).Select(a => (Node: n, SourceLineIndex: int.Parse(a.Data), a.Kind))
         ).ToLookup(n => n.SourceLineIndex, n => n);
     }
 
@@ -148,7 +148,6 @@ internal class LineTriviaMapper
                     var targetTrivia = GetTargetTriviaCollection(originalToReplace);
                     targetTrivia.Leading.AddRange(_leadingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
                     _leadingTriviaCarriedOver.Clear();
-                    return;
                 }
             }
         }

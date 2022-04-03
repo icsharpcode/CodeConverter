@@ -445,7 +445,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 if (IsIterator) return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 
                 if (!enclosingMethodInfo.ReturnsVoidOrAsyncTask()) {
-                    ExpressionSyntax expr = HasReturnVariable ? (ExpressionSyntax)ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+                    ExpressionSyntax expr = HasReturnVariable ? ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
                     return SingleStatement(SyntaxFactory.ReturnStatement(expr));
                 }
 
@@ -524,9 +524,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         if (csStatements.TryUnpackSingleStatement(out var stmt) && stmt.IsKind(SyntaxKind.IfStatement)) {
             // so that you get a neat "else if" at the end
             return SyntaxFactory.ElseClause(stmt);
-        } else {
-            return SyntaxFactory.ElseClause(SyntaxFactory.Block(csStatements));
         }
+
+        return SyntaxFactory.ElseClause(SyntaxFactory.Block(csStatements));
     }
 
     private async Task<StatementSyntax[]> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statementSyntaxs)

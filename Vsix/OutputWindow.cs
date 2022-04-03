@@ -18,7 +18,7 @@ internal class OutputWindow
     private const string PaneName = "Code Converter";
     private static readonly Guid PaneGuid = new("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
     private readonly IVsOutputWindowPane _outputPane;
-    private bool _hasOutputSinceSolutionOpened = false;
+    private bool _hasOutputSinceSolutionOpened;
 
     // Reference to avoid GC https://docs.microsoft.com/en-us/dotnet/api/envdte.solutionevents?view=visualstudiosdk-2017#remarks
     // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable

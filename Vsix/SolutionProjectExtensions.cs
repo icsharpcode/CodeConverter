@@ -2,6 +2,7 @@
 using System.Linq;
 using EnvDTE;
 using EnvDTE80;
+using Microsoft.VisualStudio.Shell;
 
 namespace ICSharpCode.CodeConverter.VsExtension;
 
@@ -12,13 +13,13 @@ public static class SolutionProjectExtensions
 {
     public static IEnumerable<Project> GetAllProjects(this Solution sln)
     {
-        Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+        ThreadHelper.ThrowIfNotOnUIThread();
         return sln.Projects.Cast<Project>().SelectMany(GetProjects);
     }
 
     public static IEnumerable<Project> GetProjects(this Project project)
     {
-        Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();
+        ThreadHelper.ThrowIfNotOnUIThread();
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
         if (project.Kind == ProjectKinds.vsProjectKindSolutionFolder) {
             return project.ProjectItems.Cast<ProjectItem>()

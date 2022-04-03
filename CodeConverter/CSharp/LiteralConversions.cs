@@ -1,8 +1,7 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
-using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
+﻿using System.Globalization;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -103,9 +102,9 @@ internal class LiteralConversions
     {
         if (isVerbatimString) {
             return EscapeVerbatimQuotes(valueTextForCompiler);
-        } else {
-            return unquotedTextForUser.Replace("\"\"", "\\\"");
         }
+
+        return unquotedTextForUser.Replace("\"\"", "\\\"");
     }
 
     public static string EscapeVerbatimQuotes(string valueTextForCompiler)
@@ -150,7 +149,7 @@ internal class LiteralConversions
             string hexValue = textForUser.Substring(2);
             textForUser = "0x" + hexValue;
 
-            int parsedHexValue = int.Parse(hexValue, System.Globalization.NumberStyles.HexNumber);
+            int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber);
 
             // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
             // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `int.MinValue + 0x11234567`

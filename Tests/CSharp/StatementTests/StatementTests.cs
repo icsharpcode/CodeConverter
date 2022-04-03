@@ -1158,7 +1158,7 @@ public partial class AcmeClass
     public async Task DeclareStatementVoidAsync()
     {
         // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-        await TestConversionVisualBasicToCSharpAsync($@"Imports System.Diagnostics
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Diagnostics
 Imports System.Threading
 
 Public Class AcmeClass
@@ -1195,7 +1195,7 @@ public partial class AcmeClass
     [Fact]
     public async Task SplitArrayDeclarationsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync($@"Public Class SplitArrayDeclarations
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class SplitArrayDeclarations
     Public Shared Sub Main()
         Dim i_Test, i_Tab(), bearb(,) As Integer
     End Sub

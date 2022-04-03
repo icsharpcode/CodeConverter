@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using Xunit;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
-using ICSharpCode.CodeConverter.Shared;
+using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.VB;
 

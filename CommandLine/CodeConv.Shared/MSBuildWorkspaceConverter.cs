@@ -1,24 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using CodeConv.Shared.Util;
+using ICSharpCode.CodeConverter.CommandLine.Util;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
+using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.MSBuild;
-using McMaster.Extensions.CommandLineUtils;
-using System.IO;
-using Microsoft.VisualStudio.Threading;
-using CodeConv.Shared.Util;
-using System.ComponentModel.DataAnnotations;
-using ICSharpCode.CodeConverter.CommandLine.Util;
 using Microsoft.CodeAnalysis.Host.Mef;
+using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.CommandLine;
 
@@ -57,7 +57,7 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
         var languageConversion = targetLanguage == Language.CS
             ? (ILanguageConversion)new VBToCSConversion()
             : new CSToVBConversion();
-        languageConversion.ConversionOptions = new ConversionOptions(){AbandonOptionalTasksAfter = TimeSpan.FromHours(4)};
+        languageConversion.ConversionOptions = new ConversionOptions {AbandonOptionalTasksAfter = TimeSpan.FromHours(4)};
         var languageNameToConvert = targetLanguage == Language.CS
             ? LanguageNames.VisualBasic
             : LanguageNames.CSharp;
@@ -101,7 +101,7 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
         var errors = await projectsToConvert.ParallelSelectAwait(async x => {
             var c = await x.GetCompilationAsync() ?? throw new InvalidOperationException($"Compilation could not be created for {x.Language}");
             return new[] { CompilationWarnings.WarningsForCompilation(c, c.AssemblyName) };
-        }, Env.MaxDop, default).ToArrayAsync();
+        }, Env.MaxDop).ToArrayAsync();
         var errorString = string.Join("\r\n", workspaceErrors.Yield().Concat(errors.SelectMany(w => w)).Where(w => w != null));
         return errorString;
     }

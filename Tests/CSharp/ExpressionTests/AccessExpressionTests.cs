@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Xunit;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 

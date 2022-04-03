@@ -23,7 +23,7 @@ public static class CompilerExtensions
             var result = compilation.Emit(dllStream, pdbStream);
             if (!result.Success) {
                 string codeLines = string.Join("\r\n", Utils.HomogenizeEol(syntaxTree.ToString())
-                    .Split(new string[]{"\r\n"}, StringSplitOptions.None)
+                    .Split(new[]{"\r\n"}, StringSplitOptions.None)
                     .Select((l, i) => $"{i+1:000}: {l}"));
                 throw new CompilationException(
                     $"{compiler.GetType().Name} error:\r\n{string.Join("\r\n", result.Diagnostics)}\r\n\r\nSource code:\r\n{codeLines}"

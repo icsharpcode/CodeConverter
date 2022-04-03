@@ -91,17 +91,17 @@ internal class HandledEventsAnalyzer
                 return (CreateEventContainer(e.EventContainer, semanticModel), new EventDescriptor(e.EventMember, eventSymbol), HandlingMethod: methodSymbol);
             });
     }
-    private HandledEventsAnalysis.EventContainer CreateEventContainer(Microsoft.CodeAnalysis.VisualBasic.Syntax.EventContainerSyntax p, SemanticModel semanticModel)
+    private HandledEventsAnalysis.EventContainer CreateEventContainer(EventContainerSyntax p, SemanticModel semanticModel)
     {
         switch (p) {
             //For me, trying to use "MyClass" in a Handles expression is a syntax error. Events aren't overridable anyway so I'm not sure how this would get used.
-            case Microsoft.CodeAnalysis.VisualBasic.Syntax.KeywordEventContainerSyntax kecs when kecs.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MyBaseKeyword):
+            case KeywordEventContainerSyntax kecs when kecs.Keyword.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.MyBaseKeyword):
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Base, null);
-            case Microsoft.CodeAnalysis.VisualBasic.Syntax.KeywordEventContainerSyntax _:
+            case KeywordEventContainerSyntax _:
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.This, null);
-            case Microsoft.CodeAnalysis.VisualBasic.Syntax.WithEventsEventContainerSyntax weecs:
+            case WithEventsEventContainerSyntax weecs:
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, semanticModel.GetSymbolInfo(weecs).Symbol.Name);
-            case Microsoft.CodeAnalysis.VisualBasic.Syntax.WithEventsPropertyEventContainerSyntax wepecs:
+            case WithEventsPropertyEventContainerSyntax wepecs:
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, wepecs.Property.Identifier.Text);
             default:
                 throw new ArgumentOutOfRangeException(nameof(p), p, $"Unrecognized event container: `{p}`");

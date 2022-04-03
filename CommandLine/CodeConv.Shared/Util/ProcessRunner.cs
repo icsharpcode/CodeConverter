@@ -35,7 +35,7 @@ internal static class ProcessRunner
         psi.UseShellExecute = false;
         psi.RedirectStandardError = true;
         psi.RedirectStandardOutput = true;
-        using var process = new Process() { StartInfo = psi };
+        using var process = new Process { StartInfo = psi };
         var stdOutComplete = new TaskCompletionSource<object?>();
         var stdErrComplete = new TaskCompletionSource<object?>();
         process.OutputDataReceived += (sender, e) => {

@@ -24,7 +24,7 @@ internal class TypeConversionAnalyzer
     private readonly SyntaxGenerator _csSyntaxGenerator;
     private readonly ExpressionEvaluator _expressionEvaluator;
 
-    private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = new[] {
+    private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = {
         VBasic.SyntaxKind.IntegerDivideExpression,
         VBasic.SyntaxKind.ModuloExpression,
         VBasic.SyntaxKind.AddExpression,
@@ -48,7 +48,7 @@ internal class TypeConversionAnalyzer
         if (csNode == null) return null;
         var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
         csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
-            ? VbSyntaxNodeExtensions.ParenthesizeIfPrecedenceCouldChange(vbNode, csNode)
+            ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode)
             : csNode;
         return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceSourceType: forceSourceType, forceTargetType: forceTargetType).Expr;
     }
@@ -135,15 +135,18 @@ internal class TypeConversionAnalyzer
         if (vbType.IsEnumType()) {
             if (vbConvertedType.IsNumericType()) {
                 return TypeConversionKind.NonDestructiveCast;
-            } else if (vbType.Equals(vbConvertedType) ||
-                       (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType())) ||
-                       vbConvertedType.SpecialType == SpecialType.System_Object) {
-                return TypeConversionKind.Identity;
-            } else if (vbConvertedType.SpecialType == SpecialType.System_String) {
-                return TypeConversionKind.EnumCastThenConversion;
-            }else {
-                return TypeConversionKind.Conversion;
             }
+
+            if (vbType.Equals(vbConvertedType) ||
+                (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType())) ||
+                vbConvertedType.SpecialType == SpecialType.System_Object) {
+                return TypeConversionKind.Identity;
+            }
+
+            if (vbConvertedType.SpecialType == SpecialType.System_String) {
+                return TypeConversionKind.EnumCastThenConversion;
+            }
+            return TypeConversionKind.Conversion;
         }
 
         var vbCompilation = (VBasic.VisualBasicCompilation) _semanticModel.Compilation;

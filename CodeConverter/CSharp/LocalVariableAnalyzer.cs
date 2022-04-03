@@ -8,7 +8,7 @@ internal static class LocalVariableAnalyzer
 {
     public static async Task<HashSet<ILocalSymbol>> GetDescendantsToInlineInLoopAsync(this Solution solution, SemanticModel semanticModel, VisualBasicSyntaxNode methodNode)
     {
-        var forEachControlVariables = await methodNode.DescendantNodes().OfType<VBSyntax.ForEachBlockSyntax>().SelectAsync(forEach => GetLoopVariablesToInlineAsync(solution, semanticModel, forEach));
+        var forEachControlVariables = await methodNode.DescendantNodes().OfType<ForEachBlockSyntax>().SelectAsync(forEach => GetLoopVariablesToInlineAsync(solution, semanticModel, forEach));
         return new HashSet<ILocalSymbol>(forEachControlVariables.Where(f => f != null), SymbolEquivalenceComparer.Instance);
     }
 

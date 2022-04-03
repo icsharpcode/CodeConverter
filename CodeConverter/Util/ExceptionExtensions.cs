@@ -1,6 +1,6 @@
 namespace ICSharpCode.CodeConverter.Util;
 
-internal static partial class ExceptionExtensions
+internal static class ExceptionExtensions
 {
     public static ExceptionWithNodeInformation WithNodeInformation(this Exception exception, SyntaxNode syntaxNode)
     {

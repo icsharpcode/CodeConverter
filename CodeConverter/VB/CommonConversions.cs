@@ -48,7 +48,7 @@ internal class CommonConversions
         if (expressionBody != null) {
             var convertedBody = expressionBody.Expression.Accept(_nodesVisitor);
             if (convertedBody is ExpressionSyntax convertedBodyExpression) {
-                convertedBody = hasReturnType ? (ExecutableStatementSyntax)SyntaxFactory.ReturnStatement(convertedBodyExpression)
+                convertedBody = hasReturnType ? SyntaxFactory.ReturnStatement(convertedBodyExpression)
                     : SyntaxFactory.ExpressionStatement(convertedBodyExpression);
             }
 
@@ -101,7 +101,7 @@ internal class CommonConversions
         IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
             .Concat(isPatternExpressions.Select(ConvertToVariableDeclaratorOrNull).Where(x => x != null));
         var variableDeclaratorSyntaxes = variableDeclaratorSyntaxs.ToArray();
-        return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[] { CreateLocalDeclarationStatement(variableDeclaratorSyntaxes) } : Enumerable.Empty<StatementSyntax>();
+        return variableDeclaratorSyntaxes.Any() ? new[] { CreateLocalDeclarationStatement(variableDeclaratorSyntaxes) } : Enumerable.Empty<StatementSyntax>();
     }
 
     private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSSyntax.PropertyDeclarationSyntax> propertyBlocks, bool isModule)
@@ -139,7 +139,7 @@ internal class CommonConversions
         var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
         TypeSyntax typeSyntax;
         if (des.Type.IsVar) {
-            typeSyntax = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>() is { } typeSymbol
+            typeSyntax = _semanticModel.GetSymbolInfo(des.Type).ExtractBestMatch<ITypeSymbol>() is { } typeSymbol
                 ? (TypeSyntax) VbSyntaxGenerator.TypeExpression(typeSymbol)
                 : null;
         } else {
@@ -178,7 +178,7 @@ internal class CommonConversions
         var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
         TypeSyntax typeSyntax;
         if (des.Type.IsVar) {
-            var typeSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, des.Type).ExtractBestMatch<ITypeSymbol>();
+            var typeSymbol = _semanticModel.GetSymbolInfo(des.Type).ExtractBestMatch<ITypeSymbol>();
             typeSyntax = (TypeSyntax)VbSyntaxGenerator.TypeExpression(typeSymbol);
         } else {
             typeSyntax = (TypeSyntax)des.Type.Accept(_nodesVisitor);
@@ -232,7 +232,7 @@ internal class CommonConversions
                     body = body.Count > 0 ? body :
                         SyntaxFactory.SingletonList((StatementSyntax)SyntaxFactory.AssignmentStatement(SyntaxKind.SimpleAssignmentStatement,
                             SyntaxFactory.IdentifierName(GetVbPropertyBackingFieldName(parent)),
-                            SyntaxFactory.Token(VBUtil.GetExpressionOperatorTokenKind(SyntaxKind.SimpleAssignmentStatement)),
+                            SyntaxFactory.Token(SyntaxKind.SimpleAssignmentStatement.GetExpressionOperatorTokenKind()),
                             SyntaxFactory.IdentifierName("value")
                         ));
                 }
@@ -308,7 +308,7 @@ internal class CommonConversions
                 SyntaxFactory.SingletonList<StatementSyntax>(vbThrowStatement), endBlock);
         } else {
             var stmt = GetStatementSyntax(body.Accept(_nodesVisitor),
-                expression => isSub ? (StatementSyntax)SyntaxFactory.ExpressionStatement(expression) : SyntaxFactory.ReturnStatement(expression));
+                expression => isSub ? SyntaxFactory.ExpressionStatement(expression) : SyntaxFactory.ReturnStatement(expression));
             statements = InsertRequiredDeclarations(SyntaxFactory.SingletonList(stmt), body);
         }
 
@@ -382,7 +382,7 @@ internal class CommonConversions
             case CSSyntaxKind.ClassDeclaration:
                 var classOrInterface = type.BaseList?.Types.FirstOrDefault()?.Type;
                 if (classOrInterface == null) return;
-                var classOrInterfaceSymbol = ModelExtensions.GetSymbolInfo(_semanticModel, classOrInterface).Symbol as ITypeSymbol;
+                var classOrInterfaceSymbol = _semanticModel.GetSymbolInfo(classOrInterface).Symbol as ITypeSymbol;
                 if (classOrInterfaceSymbol?.IsInterfaceType() == true) {
                     arr = type.BaseList?.Types.Select(t => (TypeSyntax)t.Type.Accept(_nodesVisitor)).ToArray();
                     if (arr.Length > 0)
@@ -535,9 +535,9 @@ internal class CommonConversions
             operation.Parent is IRaiseEventOperation || operation.Parent is IInvocationOperation ||
             operation.Parent is IConditionalAccessOperation cao && cao.WhenNotNull is IInvocationOperation) {
             return valueText;
-        } else {
-            return valueText + "Event";
         }
+
+        return valueText + "Event";
     }
 
     public static SyntaxToken Identifier(string idText, bool keywordRequiresEscaping = false)

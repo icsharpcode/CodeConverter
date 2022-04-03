@@ -48,9 +48,9 @@ internal static class VisualStudioInteraction
             var fvi = FileVersionInfo.GetVersionInfo(path);
             return new Version(fvi.ProductMajorPart, fvi.ProductMinorPart, fvi.ProductBuildPart,
                 fvi.ProductPrivatePart);
-        } else {
-            return null;
         }
+
+        return null;
     }
 
 

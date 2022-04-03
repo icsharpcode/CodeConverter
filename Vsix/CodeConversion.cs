@@ -7,14 +7,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using CodeConv.Shared.Util;
+using EnvDTE;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Threading;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
-using Project = EnvDTE.Project;
 using Task = System.Threading.Tasks.Task;
 
 namespace ICSharpCode.CodeConverter.VsExtension;
@@ -311,7 +310,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
         await TaskScheduler.Default;
 
-        var conversionOptions = new ConversionOptions(){AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()};
+        var conversionOptions = new ConversionOptions {AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()};
         var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken, conversionOptions: conversionOptions);
 
         await foreach (var result in solutionConverter.Convert()) yield return result;

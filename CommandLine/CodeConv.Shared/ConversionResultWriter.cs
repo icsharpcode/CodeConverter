@@ -10,7 +10,7 @@ namespace ICSharpCode.CodeConverter.CommandLine;
 
 public static class ConversionResultWriter
 {
-    private static readonly string[] FileSystemNamesToIgnore = new[] { ".git", ".gitattributes", ".gitignore", "bin", "obj", ".vs" };
+    private static readonly string[] FileSystemNamesToIgnore = { ".git", ".gitattributes", ".gitignore", "bin", "obj", ".vs" };
 
     public static async Task WriteConvertedAsync(IAsyncEnumerable<ConversionResult> conversionResultsEnumerable, string solutionFilePath, DirectoryInfo targetDirectory, bool wipeTargetDirectory, bool copyOriginalDirectory, IProgress<string> progress, CancellationToken cancellationToken)
     {

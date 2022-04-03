@@ -3,7 +3,6 @@ using System.ComponentModel.Design;
 using System.Threading;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.VisualStudio.Shell;
-using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 
 namespace ICSharpCode.CodeConverter.VsExtension;
