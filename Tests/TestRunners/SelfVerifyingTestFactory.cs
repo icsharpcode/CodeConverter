@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using ICSharpCode.CodeConverter.Tests.Compilation;
-using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.VisualStudio.Threading;
 using Xunit;

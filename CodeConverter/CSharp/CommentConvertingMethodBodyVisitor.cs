@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Util;
+﻿using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;

@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
-using ICSharpCode.CodeConverter.Util;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace ICSharpCode.CodeConverter.CommandLine.Util

@@ -1,13 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
+﻿using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
-using System;
-using System.Threading;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.VB

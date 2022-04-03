@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 

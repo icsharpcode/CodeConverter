@@ -1,8 +1,5 @@
 ﻿using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using Microsoft.CodeAnalysis;
-using Microsoft.VisualBasic;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests

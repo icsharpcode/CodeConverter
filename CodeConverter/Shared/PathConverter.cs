@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class PathConverter
     {

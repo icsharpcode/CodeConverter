@@ -1,9 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Host.Mef;
+﻿using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Shared
 {

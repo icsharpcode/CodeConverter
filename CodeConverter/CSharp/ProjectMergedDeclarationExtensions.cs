@@ -1,18 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.VisualBasic;
-using System.Threading;
-using System.Collections.Generic;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis.Text;
-using System.Runtime.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ICSharpCode.CodeConverter.Util.FromRoslyn
+﻿namespace ICSharpCode.CodeConverter.Util.FromRoslyn
 {
     /// <remarks>
     /// From https://github.com/dotnet/roslyn/blob/159707383710936bc0730a25be652081a2350878/src/Compilers/Core/Portable/InternalUtilities/ExceptionUtilities.cs#L12

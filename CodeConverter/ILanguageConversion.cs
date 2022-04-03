@@ -1,9 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
-using System.Threading;
-using System;
 
 namespace ICSharpCode.CodeConverter
 {

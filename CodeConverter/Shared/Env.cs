@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ICSharpCode.CodeConverter.Shared
+﻿namespace ICSharpCode.CodeConverter.Shared
 {
     public static class Env
     {

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
@@ -16,7 +12,6 @@ using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
-using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;

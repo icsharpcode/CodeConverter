@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ICSharpCode.CodeConverter.Shared
 {
     internal static class ProjectTypeGuids

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.CSharp

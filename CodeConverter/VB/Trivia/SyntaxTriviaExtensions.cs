@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
-using ICSharpCode.CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.Util
 {

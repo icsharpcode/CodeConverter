@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;

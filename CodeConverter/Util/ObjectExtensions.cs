@@ -1,5 +1,3 @@
-using System;
-
 namespace ICSharpCode.CodeConverter.Util
 {
     [Obsolete("Please use CSharp switch expression instead")]

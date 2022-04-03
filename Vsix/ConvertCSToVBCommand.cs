@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
 using System.Threading;
-using System.Windows;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;

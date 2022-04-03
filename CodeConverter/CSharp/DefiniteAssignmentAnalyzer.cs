@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

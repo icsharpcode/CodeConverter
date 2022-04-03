@@ -1,9 +1,5 @@
-﻿using System.Reflection;
-using System;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests

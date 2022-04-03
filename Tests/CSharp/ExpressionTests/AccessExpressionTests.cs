@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Xunit;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter.Shared;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
 {

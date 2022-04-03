@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Reflection;
-using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Util.FromRoslynSdk;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Host;

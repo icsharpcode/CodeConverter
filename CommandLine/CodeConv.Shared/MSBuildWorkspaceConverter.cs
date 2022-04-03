@@ -14,10 +14,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 using McMaster.Extensions.CommandLineUtils;
 using System.IO;
-using ICSharpCode.CodeConverter.CommandLine.Util;
 using Microsoft.VisualStudio.Threading;
 using CodeConv.Shared.Util;
 using System.ComponentModel.DataAnnotations;
+using ICSharpCode.CodeConverter.CommandLine.Util;
 using Microsoft.CodeAnalysis.Host.Mef;
 
 namespace ICSharpCode.CodeConverter.CommandLine

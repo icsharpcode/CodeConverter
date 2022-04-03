@@ -1,8 +1,4 @@
-﻿
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-
-namespace ICSharpCode.CodeConverter.CSharp
+﻿namespace ICSharpCode.CodeConverter.CSharp
 {
     public interface IOperatorConverter
     {

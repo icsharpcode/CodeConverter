@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -14,8 +8,6 @@ using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using BinaryOperatorKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Threading;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

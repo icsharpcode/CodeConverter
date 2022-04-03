@@ -1,14 +1,6 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
-using System.Web.UI.WebControls;
-using System.Windows.Forms;
+﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using Microsoft.Build.Tasks;
-using NuGet.Protocol.Plugins;
 using Xunit;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
 {
