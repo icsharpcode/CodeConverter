@@ -204,7 +204,7 @@ internal class VisualBasicEqualityComparison
     {
         return node.IsKind(VBasic.SyntaxKind.NotEqualsExpression)
             ? Negate(positiveExpression)
-            : (ExpressionSyntax)positiveExpression;
+            : positiveExpression;
     }
 
     private static PrefixUnaryExpressionSyntax Negate(InvocationExpressionSyntax positiveExpression)
@@ -238,7 +238,7 @@ internal class VisualBasicEqualityComparison
         var compareObject = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
             SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                 {SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), optionCompareTextCaseInsensitive})));
-        return negate ? (ExpressionSyntax)Negate(compareObject) : compareObject;
+        return negate ? Negate(compareObject) : compareObject;
     }
 
     private static BinaryExpressionSyntax GetCompareTextCaseInsensitiveCompareOptions()

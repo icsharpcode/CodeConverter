@@ -31,7 +31,7 @@ internal static class SyntaxTriviaExtensions
 
     public static CS.SyntaxKind? GetCSKind(this SyntaxTrivia t)
     {
-        return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : (CS.SyntaxKind?)null;
+        return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : null;
     }
 
     /// <remarks>Good candidate for unit testing to catch newline issues hidden by the test harness</remarks>

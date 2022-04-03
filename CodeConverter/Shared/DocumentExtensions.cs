@@ -13,7 +13,7 @@ internal static class DocumentExtensions
     {
         Func<SyntaxNode, bool> wouldBeSimplifiedIncorrectly =
             convertedDocument.Project.Language == LanguageNames.VisualBasic
-                ? (Func<SyntaxNode, bool>) VbWouldBeSimplifiedIncorrectly
+                ? VbWouldBeSimplifiedIncorrectly
                 : CsWouldBeSimplifiedIncorrectly;
         var originalRoot = await convertedDocument.GetSyntaxRootAsync();
         var nodesWithUnresolvedTypes = (await convertedDocument.GetSemanticModelAsync()).GetDiagnostics()
