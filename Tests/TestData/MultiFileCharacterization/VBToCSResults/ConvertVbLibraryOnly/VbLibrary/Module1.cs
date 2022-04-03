@@ -14,6 +14,7 @@ namespace VbLibrary
             var x = default(object);
             int argvalue = Conversions.ToInteger(x);
             dict.TryGetValue(1, out argvalue);
+            x = argvalue;
         }
 
         public static void Main()

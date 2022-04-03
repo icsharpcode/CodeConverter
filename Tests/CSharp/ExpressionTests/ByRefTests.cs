@@ -108,8 +108,10 @@ public partial class Class1
         C1 = (Class1)argclass12;
         object argclass13 = _c2;
         Bar(ref argclass13);
+        _c2 = (Class1)argclass13;
         object argclass14 = _c2;
         Bar(ref argclass14);
+        _c2 = (Class1)argclass14;
         Bar(ref _o1);
         Bar(ref _o1);
     }
@@ -610,5 +612,42 @@ internal static partial class Other
     public static List<object> lst2 = new List<object>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
 }");
         }
+
+        [Fact]
+        public async Task Issue856Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue856
+    Sub Main()
+        Dim decimalTarget As Decimal
+        Double.TryParse(""123"", decimalTarget)
+        
+        Dim longTarget As Long
+        Integer.TryParse(""123"", longTarget)
+        
+        Dim intTarget As Integer
+        Long.TryParse(""123"", intTarget)
+    End Sub
+
+End Class", @"
+public partial class Issue856
+{
+    public void Main()
+    {
+        var decimalTarget = default(decimal);
+        double argresult = (double)decimalTarget;
+        double.TryParse(""123"", out argresult);
+        decimalTarget = (decimal)argresult;
+        var longTarget = default(long);
+        int argresult1 = (int)longTarget;
+        int.TryParse(""123"", out argresult1);
+        longTarget = argresult1;
+        var intTarget = default(int);
+        long argresult2 = intTarget;
+        long.TryParse(""123"", out argresult2);
+        intTarget = (int)argresult2;
+    }
+}");
+        }
+
     }
 }
