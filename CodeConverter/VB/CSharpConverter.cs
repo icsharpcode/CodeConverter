@@ -1,6 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.VisualBasic;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB;
 
@@ -13,7 +12,7 @@ internal static class CSharpConverter
         var compilation = await document.Project.GetCompilationAsync(cancellationToken);
         var tree = await document.GetSyntaxTreeAsync(cancellationToken);
         var semanticModel = compilation.GetSemanticModel(tree, true);
-        var root = await document.GetSyntaxRootAsync(cancellationToken) as CSS.CompilationUnitSyntax ??
+        var root = await document.GetSyntaxRootAsync(cancellationToken) as CSSyntax.CompilationUnitSyntax ??
                    throw new InvalidOperationException(NullRootError(document));
 
         var vbSyntaxGenerator = SyntaxGenerator.GetGenerator(vbReferenceProject);

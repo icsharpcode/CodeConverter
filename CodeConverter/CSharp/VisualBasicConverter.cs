@@ -1,6 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -22,7 +21,7 @@ internal static class VisualBasicConverter
         var semanticModel = compilation.GetSemanticModel(tree, true);
         var visualBasicSyntaxVisitor = new
             DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator, typeToInheritors);
-        var converted = await root.AcceptAsync<CSS.CompilationUnitSyntax>(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
+        var converted = await root.AcceptAsync<CSSyntax.CompilationUnitSyntax>(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
         return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);
     }

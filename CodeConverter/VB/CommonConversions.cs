@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using LambdaExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LambdaExpressionSyntax;
@@ -39,8 +38,8 @@ internal class CommonConversions
         _nodesVisitor = nodesVisitor;
     }
 
-    public SyntaxList<StatementSyntax> ConvertBody(CSS.BlockSyntax body,
-        CSS.ArrowExpressionClauseSyntax expressionBody, bool hasReturnType, MethodBodyExecutableStatementVisitor iteratorState = null)
+    public SyntaxList<StatementSyntax> ConvertBody(CSSyntax.BlockSyntax body,
+        CSSyntax.ArrowExpressionClauseSyntax expressionBody, bool hasReturnType, MethodBodyExecutableStatementVisitor iteratorState = null)
     {
         if (body != null) {
             return ConvertStatements(body.Statements, iteratorState);
@@ -78,10 +77,10 @@ internal class CommonConversions
         SyntaxList<StatementSyntax> convertedStatements, CS.CSharpSyntaxNode originaNode)
     {
         var descendantNodes = originaNode.DescendantNodes().ToList();
-        var declarationExpressions = descendantNodes.OfType<CSS.DeclarationExpressionSyntax>()
+        var declarationExpressions = descendantNodes.OfType<CSSyntax.DeclarationExpressionSyntax>()
             .Where(e => !e.Parent.IsKind(CSSyntaxKind.ForEachVariableStatement)) //Handled inline for tuple loop
             .ToList();
-        var isPatternExpressions = descendantNodes.OfType<CSS.IsPatternExpressionSyntax>().ToList();
+        var isPatternExpressions = descendantNodes.OfType<CSSyntax.IsPatternExpressionSyntax>().ToList();
         if (declarationExpressions.Any() || isPatternExpressions.Any()) {
             convertedStatements = convertedStatements.InsertRange(0, ConvertToDeclarationStatement(declarationExpressions, isPatternExpressions));
         }
@@ -89,15 +88,15 @@ internal class CommonConversions
         return convertedStatements;
     }
 
-    public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(SyntaxList<StatementSyntax> convertedStatements, CSS.TypeDeclarationSyntax typeNode, bool isModule) {
-        var propertyBlocks = typeNode.Members.OfType<CSS.PropertyDeclarationSyntax>()
+    public SyntaxList<StatementSyntax> InsertGeneratedClassMemberDeclarations(SyntaxList<StatementSyntax> convertedStatements, CSSyntax.TypeDeclarationSyntax typeNode, bool isModule) {
+        var propertyBlocks = typeNode.Members.OfType<CSSyntax.PropertyDeclarationSyntax>()
             .Where(e => e.AccessorList != null && e.AccessorList.Accessors.Any(a => a.Body == null && a.ExpressionBody == null && a.Modifiers.ContainsDeclaredVisibility()))
             .ToList();
         return convertedStatements.InsertRange(0, ConvertToDeclarationStatement(propertyBlocks, isModule));
     }
 
-    private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSS.DeclarationExpressionSyntax> des,
-        List<CSS.IsPatternExpressionSyntax> isPatternExpressions)
+    private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSSyntax.DeclarationExpressionSyntax> des,
+        List<CSSyntax.IsPatternExpressionSyntax> isPatternExpressions)
     {
         IEnumerable<VariableDeclaratorSyntax> variableDeclaratorSyntaxs = des.Select(ConvertToVariableDeclarator)
             .Concat(isPatternExpressions.Select(ConvertToVariableDeclaratorOrNull).Where(x => x != null));
@@ -105,7 +104,7 @@ internal class CommonConversions
         return variableDeclaratorSyntaxes.Any() ? new StatementSyntax[] { CreateLocalDeclarationStatement(variableDeclaratorSyntaxes) } : Enumerable.Empty<StatementSyntax>();
     }
 
-    private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSS.PropertyDeclarationSyntax> propertyBlocks, bool isModule)
+    private IEnumerable<StatementSyntax> ConvertToDeclarationStatement(List<CSSyntax.PropertyDeclarationSyntax> propertyBlocks, bool isModule)
     {
         var variableDeclaratorSyntaxs = propertyBlocks.GroupBy(x => x.Modifiers.Any(CSSyntaxKind.StaticKeyword)).ToList();
         var shared = variableDeclaratorSyntaxs.Where(x => x.Key).SelectMany(x => x.Select(ConvertToVariableDeclarator));
@@ -133,7 +132,7 @@ internal class CommonConversions
         return SyntaxFactory.LocalDeclarationStatement(syntaxTokenList, declarators);
     }
 
-    private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSS.DeclarationExpressionSyntax des)
+    private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSSyntax.DeclarationExpressionSyntax des)
     {
             
         var id = ((IdentifierNameSyntax)des.Accept(_nodesVisitor)).Identifier;
@@ -152,10 +151,10 @@ internal class CommonConversions
         return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
     }
 
-    private VariableDeclaratorSyntax ConvertToVariableDeclaratorOrNull(CSS.IsPatternExpressionSyntax node)
+    private VariableDeclaratorSyntax ConvertToVariableDeclaratorOrNull(CSSyntax.IsPatternExpressionSyntax node)
     {
         switch (node.Pattern) {
-            case CSS.DeclarationPatternSyntax d: {
+            case CSSyntax.DeclarationPatternSyntax d: {
                 var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
                 var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
                 TypeSyntax right = (TypeSyntax)d.Type.Accept(_nodesVisitor);
@@ -166,14 +165,14 @@ internal class CommonConversions
                         SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
                 return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
             }
-            case CSS.ConstantPatternSyntax _:
+            case CSSyntax.ConstantPatternSyntax _:
                 return null;
             default:
                 throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
         }
     }
 
-    private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSS.PropertyDeclarationSyntax des)
+    private VariableDeclaratorSyntax ConvertToVariableDeclarator(CSSyntax.PropertyDeclarationSyntax des)
     {
         var id = GetVbPropertyBackingFieldName(des);
         var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
@@ -196,7 +195,7 @@ internal class CommonConversions
         return visitor.CommentConvertingVisitor;
     }
 
-    public AccessorBlockSyntax ConvertAccessor(CSS.AccessorDeclarationSyntax node, out bool isIterator, bool isAutoImplementedProperty = false)
+    public AccessorBlockSyntax ConvertAccessor(CSSyntax.AccessorDeclarationSyntax node, out bool isIterator, bool isAutoImplementedProperty = false)
     {
         SyntaxKind blockKind;
         AccessorStatementSyntax stmt;
@@ -209,7 +208,7 @@ internal class CommonConversions
         isIterator = isIteratorState.IsIterator;
         var attributes = SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(_nodesVisitor)));
         var modifiers = ConvertModifiers(node.Modifiers, TokenContext.Local);
-        var parent = (CSS.BasePropertyDeclarationSyntax)node.Parent.Parent;
+        var parent = (CSSyntax.BasePropertyDeclarationSyntax)node.Parent.Parent;
         Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax valueParam;
 
         switch (accesorKind) {
@@ -260,9 +259,9 @@ internal class CommonConversions
         return SyntaxFactory.AccessorBlock(blockKind, stmt, body, endStmt).WithCsSourceMappingFrom(node);
     }
 
-    private static SyntaxToken GetVbPropertyBackingFieldName(CSS.BasePropertyDeclarationSyntax parent)
+    private static SyntaxToken GetVbPropertyBackingFieldName(CSSyntax.BasePropertyDeclarationSyntax parent)
     {
-        return Identifier("_" + ((CSS.PropertyDeclarationSyntax)parent).Identifier.Text);
+        return Identifier("_" + ((CSSyntax.PropertyDeclarationSyntax)parent).Identifier.Text);
     }
 
     public ExpressionSyntax ReduceArrayUpperBoundExpression(Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax expr)
@@ -276,7 +275,7 @@ internal class CommonConversions
             (ExpressionSyntax)expr.Accept(_nodesVisitor), SyntaxFactory.Token(SyntaxKind.MinusToken), SyntaxFactory.NumericLiteralExpression(SyntaxFactory.Literal(1)));
     }
 
-    public LambdaExpressionSyntax ConvertLambdaExpression(CSS.AnonymousFunctionExpressionSyntax node, CS.CSharpSyntaxNode body, IEnumerable<ParameterSyntax> parameters, SyntaxTokenList modifiers)
+    public LambdaExpressionSyntax ConvertLambdaExpression(CSSyntax.AnonymousFunctionExpressionSyntax node, CS.CSharpSyntaxNode body, IEnumerable<ParameterSyntax> parameters, SyntaxTokenList modifiers)
     {
         var parameterList = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters.Select(p => (Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax)p.Accept(_nodesVisitor))));
         LambdaHeaderSyntax header;
@@ -297,11 +296,11 @@ internal class CommonConversions
         }
 
         SyntaxList<StatementSyntax> statements;
-        if (body is CSS.BlockSyntax block) {
+        if (body is CSSyntax.BlockSyntax block) {
             statements = ConvertStatements(block.Statements);
 
         } else if (body.Kind() == CSSyntaxKind.ThrowExpression) {
-            var csThrowExpression = (CSS.ThrowExpressionSyntax)body;
+            var csThrowExpression = (CSSyntax.ThrowExpressionSyntax)body;
             var vbThrowExpression = (ExpressionSyntax)csThrowExpression.Expression.Accept(_nodesVisitor);
             var vbThrowStatement = SyntaxFactory.ThrowStatement(SyntaxFactory.Token(SyntaxKind.ThrowKeyword), vbThrowExpression);
 
@@ -317,7 +316,7 @@ internal class CommonConversions
 
     }
 
-    public bool ReturnsVoid(CSS.AnonymousFunctionExpressionSyntax node) {
+    public bool ReturnsVoid(CSSyntax.AnonymousFunctionExpressionSyntax node) {
         var symbol = (IMethodSymbol)_semanticModel.GetSymbolInfo(node).Symbol;
         return symbol.ReturnsVoid;
     }
@@ -376,7 +375,7 @@ internal class CommonConversions
         return expression != null;
     }
 
-    public void ConvertBaseList(CSS.BaseTypeDeclarationSyntax type, List<InheritsStatementSyntax> inherits, List<ImplementsStatementSyntax> implements)
+    public void ConvertBaseList(CSSyntax.BaseTypeDeclarationSyntax type, List<InheritsStatementSyntax> inherits, List<ImplementsStatementSyntax> implements)
     {
         TypeSyntax[] arr;
         switch (type.Kind()) {
@@ -466,7 +465,7 @@ internal class CommonConversions
         return token == SyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
     }
 
-    internal SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSS.VariableDeclarationSyntax declaration)
+    internal SeparatedSyntaxList<VariableDeclaratorSyntax> RemodelVariableDeclaration(CSSyntax.VariableDeclarationSyntax declaration)
     {
         var visualBasicSyntaxNode = declaration.Type.Accept(_nodesVisitor);
         var type = (TypeSyntax)visualBasicSyntaxNode;
@@ -664,7 +663,7 @@ internal class CommonConversions
         return valueText;
     }
 
-    public static string GetTupleName(CSS.ParenthesizedVariableDesignationSyntax node)
+    public static string GetTupleName(CSSyntax.ParenthesizedVariableDesignationSyntax node)
     {
         return String.Join("", node.Variables.Select((v, i) => {
             var sourceText1 = v.ToString();

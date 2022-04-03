@@ -1,5 +1,4 @@
-﻿using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
-
+﻿
 namespace ICSharpCode.CodeConverter.VB;
 
 internal static class SemanticModelSymbolSetExtensions
@@ -17,7 +16,7 @@ internal static class SemanticModelSymbolSetExtensions
     {
         switch (symbol) {
             case IMethodSymbol methodSymbol:
-                return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol, (CSS.BaseMethodDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body, new SymbolKind[] { SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter });
+                return GetCsSymbolsDeclaredByMethod(semanticModel, methodSymbol, (CSSyntax.BaseMethodDeclarationSyntax n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body, new SymbolKind[] { SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter });
             case IPropertySymbol propertySymbol:
                 return GetCsSymbolsDeclaredByProperty(semanticModel, propertySymbol);
             case IEventSymbol eventSymbol:
@@ -37,9 +36,9 @@ internal static class SemanticModelSymbolSetExtensions
         return bodies.SelectMany(GetDeepestBlocks).Select(block => semanticModel.LookupSymbols(block.SpanStart).Where(x => x.MatchesKind(kinds)));
     }
 
-    private static IEnumerable<CSS.BlockSyntax> GetDeepestBlocks(CS.CSharpSyntaxNode body)
+    private static IEnumerable<CSSyntax.BlockSyntax> GetDeepestBlocks(CS.CSharpSyntaxNode body)
     {
-        return body.DescendantNodesAndSelf().OfType<CSS.BlockSyntax>().Where(x => !x.DescendantNodes().OfType<CSS.BlockSyntax>().Any());
+        return body.DescendantNodesAndSelf().OfType<CSSyntax.BlockSyntax>().Where(x => !x.DescendantNodes().OfType<CSSyntax.BlockSyntax>().Any());
     }
 
     private static IEnumerable<TResult> DeclarationWhereNotNull<TNode, TResult>(ISymbol symbol, Func<TNode, TResult> selectWhereNotNull)
@@ -54,7 +53,7 @@ internal static class SemanticModelSymbolSetExtensions
 
     private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByProperty(SemanticModel semanticModel, IPropertySymbol propertySymbol)
     {
-        Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
+        Func<CSSyntax.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
         return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.GetMethod, getAccessorBody, new SymbolKind[] { SymbolKind.Local, SymbolKind.Parameter, SymbolKind.TypeParameter })
             .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.SetMethod, getAccessorBody, new SymbolKind[] { SymbolKind.Local, SymbolKind.TypeParameter }));
     }
@@ -62,14 +61,14 @@ internal static class SemanticModelSymbolSetExtensions
     private static IEnumerable<ISymbol> GetCsSymbolsDeclaredByField(SemanticModel semanticModel, IFieldSymbol fieldSymbol)
     {
         return DeclarationWhereManyNotNull(fieldSymbol,
-                (CSS.BaseFieldDeclarationSyntax f) => f.Declaration.Variables.Select(v => v.Initializer?.Value))
+                (CSSyntax.BaseFieldDeclarationSyntax f) => f.Declaration.Variables.Select(v => v.Initializer?.Value))
             .SelectMany(i => semanticModel.LookupSymbols(i.SpanStart, fieldSymbol.ContainingType));
     }
 
     private static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsDeclaredByEvent(SemanticModel semanticModel, IEventSymbol propertySymbol)
     {
         var kinds = new SymbolKind[] { SymbolKind.Local, SymbolKind.TypeParameter };
-        Func<CSS.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
+        Func<CSSyntax.AccessorDeclarationSyntax, CS.CSharpSyntaxNode> getAccessorBody = (n) => (CS.CSharpSyntaxNode)n.ExpressionBody ?? n.Body;
         return GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.AddMethod, getAccessorBody, kinds)
             .Concat(GetCsSymbolsDeclaredByMethod(semanticModel, propertySymbol.RemoveMethod, getAccessorBody, kinds));
     }

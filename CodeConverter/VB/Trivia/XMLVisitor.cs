@@ -1,5 +1,4 @@
-﻿using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
-using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
+﻿using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 
 namespace ICSharpCode.CodeConverter.VB.Trivia;
 
@@ -118,10 +117,10 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         throw new ArgumentOutOfRangeException(nameof(op));
     }
 
-    private SyntaxList<VBSyntax.XmlNodeSyntax> GatherAttributes(SyntaxList<CSS.XmlAttributeSyntax> ListOfAttributes)
+    private SyntaxList<VBSyntax.XmlNodeSyntax> GatherAttributes(SyntaxList<CSSyntax.XmlAttributeSyntax> ListOfAttributes)
     {
         var VBAttributes = new SyntaxList<VBSyntax.XmlNodeSyntax>();
-        foreach (CSS.XmlAttributeSyntax a in ListOfAttributes)
+        foreach (CSSyntax.XmlAttributeSyntax a in ListOfAttributes)
             VBAttributes = VBAttributes.Add((VBSyntax.XmlNodeSyntax)a.Accept(this));
         return VBAttributes;
     }
@@ -131,31 +130,31 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return base.DefaultVisit(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitConversionOperatorMemberCref(CSS.ConversionOperatorMemberCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitConversionOperatorMemberCref(CSSyntax.ConversionOperatorMemberCrefSyntax node)
     {
         return base.VisitConversionOperatorMemberCref(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitCrefBracketedParameterList(CSS.CrefBracketedParameterListSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitCrefBracketedParameterList(CSSyntax.CrefBracketedParameterListSyntax node)
     {
         return base.VisitCrefBracketedParameterList(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitCrefParameter(CSS.CrefParameterSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitCrefParameter(CSSyntax.CrefParameterSyntax node)
     {
         return node.Type.Accept(this);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitCrefParameterList(CSS.CrefParameterListSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitCrefParameterList(CSSyntax.CrefParameterListSyntax node)
     {
         return base.VisitCrefParameterList(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitGenericName(CSS.GenericNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitGenericName(CSSyntax.GenericNameSyntax node)
     {
         var Identifier = VBFactory.Identifier(node.Identifier.ToString());
         var TypeList = new List<VBSyntax.TypeSyntax>();
-        foreach (CSS.TypeSyntax a in node.TypeArgumentList.Arguments)
+        foreach (CSSyntax.TypeSyntax a in node.TypeArgumentList.Arguments)
         {
             VBSyntax.TypeSyntax TypeIdentifier = (VBSyntax.TypeSyntax)a.Accept(this);
             TypeList.Add(TypeIdentifier);
@@ -163,20 +162,20 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return VBFactory.GenericName(Identifier, VBFactory.TypeArgumentList(TypeList.ToArray()));
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitIdentifierName(CSS.IdentifierNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitIdentifierName(CSSyntax.IdentifierNameSyntax node)
     {
         var Identifier = VBFactory.IdentifierName(node.Identifier.ToString());
         return Identifier;
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitNameMemberCref(CSS.NameMemberCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitNameMemberCref(CSSyntax.NameMemberCrefSyntax node)
     {
         var Name = node.Name.Accept(this);
         var CrefParameters = new List<VBSyntax.CrefSignaturePartSyntax>();
         VBSyntax.CrefSignatureSyntax Signature = null;
         if (node.Parameters != null)
         {
-            foreach (CSS.CrefParameterSyntax p in node.Parameters.Parameters)
+            foreach (CSSyntax.CrefParameterSyntax p in node.Parameters.Parameters)
             {
                 VBSyntax.TypeSyntax TypeSyntax1 = (VBSyntax.TypeSyntax)p.Accept(this);
                 CrefParameters.Add(VBFactory.CrefSignaturePart(modifier: default(SyntaxToken), TypeSyntax1));
@@ -186,13 +185,13 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return VBFactory.CrefReference((VBSyntax.TypeSyntax)Name, signature: Signature, asClause: null);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitOperatorMemberCref(CSS.OperatorMemberCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitOperatorMemberCref(CSSyntax.OperatorMemberCrefSyntax node)
     {
         var CrefOperator = GetVBOperatorToken(node.OperatorToken.ValueText);
         return VBFactory.CrefOperatorReference(CrefOperator.WithLeadingTrivia(VisualBasicSyntaxFactory.SpaceTrivia));
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitPredefinedType(CSS.PredefinedTypeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitPredefinedType(CSSyntax.PredefinedTypeSyntax node)
     {
         var Token = VBUtil.ConvertTypesTokenToKind(CS.CSharpExtensions.Kind(node.Keyword), true);
         var switchExpr = Token.RawKind;
@@ -215,7 +214,7 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         }
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitQualifiedCref(CSS.QualifiedCrefSyntax QualifiedCref)
+    public override VBasic.VisualBasicSyntaxNode VisitQualifiedCref(CSSyntax.QualifiedCrefSyntax QualifiedCref)
     {
         var IdentifierOrTypeName = QualifiedCref.Container.Accept(this);
         VBSyntax.CrefReferenceSyntax Value = (VBSyntax.CrefReferenceSyntax)QualifiedCref.Member.Accept(this);
@@ -229,28 +228,28 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return VBFactory.CrefReference(QualifiedNameSyntax, Value.Signature, null);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitQualifiedName(CSS.QualifiedNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitQualifiedName(CSSyntax.QualifiedNameSyntax node)
     {
         return VBFactory.QualifiedName((VBSyntax.NameSyntax)node.Left.Accept(this), (VBSyntax.SimpleNameSyntax)node.Right.Accept(this));
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitTypeCref(CSS.TypeCrefSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitTypeCref(CSSyntax.TypeCrefSyntax node)
     {
         return node.Type.Accept(this);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlCDataSection(CSS.XmlCDataSectionSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlCDataSection(CSSyntax.XmlCDataSectionSyntax node)
     {
         var TextTokens = TriviaListSupport.TranslateTokenList(node.TextTokens);
         return VBFactory.XmlCDataSection(VisualBasicSyntaxFactory.BeginCDataToken, TextTokens, VisualBasicSyntaxFactory.EndCDataToken);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlComment(CSS.XmlCommentSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlComment(CSSyntax.XmlCommentSyntax node)
     {
         return base.VisitXmlComment(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlCrefAttribute(CSS.XmlCrefAttributeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlCrefAttribute(CSSyntax.XmlCrefAttributeSyntax node)
     {
         VBSyntax.XmlNameSyntax Name = (VBSyntax.XmlNameSyntax)node.Name.Accept(this);
 
@@ -261,7 +260,7 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return VBFactory.XmlAttribute(Name, Value);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlElement(CSS.XmlElementSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlElement(CSSyntax.XmlElementSyntax node)
     {
         var Content = new SyntaxList<VBSyntax.XmlNodeSyntax>();
         VBSyntax.XmlElementStartTagSyntax StartTag = (VBSyntax.XmlElementStartTagSyntax)node.StartTag.Accept(this);
@@ -307,18 +306,18 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return XmlElement;
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlElementEndTag(CSS.XmlElementEndTagSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlElementEndTag(CSSyntax.XmlElementEndTagSyntax node)
     {
         return VBFactory.XmlElementEndTag((VBSyntax.XmlNameSyntax)node.Name.Accept(this));
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlElementStartTag(CSS.XmlElementStartTagSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlElementStartTag(CSSyntax.XmlElementStartTagSyntax node)
     {
         var ListOfAttributes = GatherAttributes(node.Attributes);
         return VBFactory.XmlElementStartTag((VBSyntax.XmlNodeSyntax)node.Name.Accept(this), ListOfAttributes);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlEmptyElement(CSS.XmlEmptyElementSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlEmptyElement(CSSyntax.XmlEmptyElementSyntax node)
     {
         try
         {
@@ -336,7 +335,7 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         }
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlName(CSS.XmlNameSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlName(CSSyntax.XmlNameSyntax node)
     {
         VBSyntax.XmlPrefixSyntax Prefix;
         Prefix = node.Prefix == null ? null : (VBSyntax.XmlPrefixSyntax)node.Prefix.Accept(this);
@@ -344,7 +343,7 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return VBFactory.XmlName(Prefix, localName);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlNameAttribute(CSS.XmlNameAttributeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlNameAttribute(CSSyntax.XmlNameAttributeSyntax node)
     {
         var Name = ((VBSyntax.XmlNodeSyntax)node.Name.Accept(this));
         string ValueString = node.Identifier.ToString();
@@ -352,24 +351,24 @@ internal class XMLVisitor : CS.CSharpSyntaxVisitor<VBasic.VisualBasicSyntaxNode>
         return VBFactory.XmlAttribute(Name, Value);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlPrefix(CSS.XmlPrefixSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlPrefix(CSSyntax.XmlPrefixSyntax node)
     {
         return base.VisitXmlPrefix(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlProcessingInstruction(CSS.XmlProcessingInstructionSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlProcessingInstruction(CSSyntax.XmlProcessingInstructionSyntax node)
     {
         return base.VisitXmlProcessingInstruction(node);
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlText(CSS.XmlTextSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlText(CSSyntax.XmlTextSyntax node)
     {
         var TextTokens = TriviaListSupport.TranslateTokenList(node.TextTokens);
         var XmlText = VBFactory.XmlText(TextTokens);
         return XmlText;
     }
 
-    public override VBasic.VisualBasicSyntaxNode VisitXmlTextAttribute(CSS.XmlTextAttributeSyntax node)
+    public override VBasic.VisualBasicSyntaxNode VisitXmlTextAttribute(CSSyntax.XmlTextAttributeSyntax node)
     {
         VBSyntax.XmlNodeSyntax Name = (VBSyntax.XmlNodeSyntax)node.Name.Accept(this);
         var TextTokens = TriviaListSupport.TranslateTokenList(node.TextTokens);

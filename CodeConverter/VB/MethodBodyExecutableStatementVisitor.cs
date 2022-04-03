@@ -1,6 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using LiteralExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax;
@@ -44,7 +43,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
             .WithNodeInformation(node);
     }
 
-    public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(CSS.LocalDeclarationStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitLocalDeclarationStatement(CSSyntax.LocalDeclarationStatementSyntax node)
     {
         var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
         if (modifiers.Count == 0)
@@ -56,7 +55,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         );
     }
 
-    private StatementSyntax ConvertSingleExpression(CSS.ExpressionSyntax node)
+    private StatementSyntax ConvertSingleExpression(CSSyntax.ExpressionSyntax node)
     {
         var exprNode = node.Accept(_nodesVisitor);
         var expression = exprNode as ExpressionSyntax;
@@ -77,12 +76,12 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.ExpressionStatement(expressionSyntax);
     }
 
-    public override SyntaxList<StatementSyntax> VisitExpressionStatement(CSS.ExpressionStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitExpressionStatement(CSSyntax.ExpressionStatementSyntax node)
     {
         return SyntaxFactory.SingletonList(ConvertSingleExpression(node.Expression));
     }
 
-    public override SyntaxList<StatementSyntax> VisitIfStatement(CSS.IfStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitIfStatement(CSSyntax.IfStatementSyntax node)
     {
         if (node.Else == null && TryConvertIfNotNullRaiseEvent(node, out var stmt)) {
             return SyntaxFactory.SingletonList(stmt);
@@ -91,7 +90,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         ElseBlockSyntax elseBlock = null;
         CollectElseBlocks(node, elseIfBlocks, ref elseBlock);
 
-        if (node.Statement is CSS.BlockSyntax) {
+        if (node.Statement is CSSyntax.BlockSyntax) {
             stmt = SyntaxFactory.MultiLineIfBlock(
                 SyntaxFactory.IfStatement((ExpressionSyntax)node.Condition.Accept(_nodesVisitor)).WithThenKeyword(SyntaxFactory.Token(SyntaxKind.ThenKeyword)),
                 ConvertBlock(node.Statement),
@@ -117,66 +116,66 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList(stmt);
     }
 
-    private bool IsSimpleStatement(CSS.StatementSyntax statement)
+    private bool IsSimpleStatement(CSSyntax.StatementSyntax statement)
     {
-        return statement is CSS.ExpressionStatementSyntax
-               || statement is CSS.BreakStatementSyntax
-               || statement is CSS.ContinueStatementSyntax
-               || statement is CSS.ReturnStatementSyntax
-               || statement is CSS.YieldStatementSyntax
-               || statement is CSS.ThrowStatementSyntax;
+        return statement is CSSyntax.ExpressionStatementSyntax
+               || statement is CSSyntax.BreakStatementSyntax
+               || statement is CSSyntax.ContinueStatementSyntax
+               || statement is CSSyntax.ReturnStatementSyntax
+               || statement is CSSyntax.YieldStatementSyntax
+               || statement is CSSyntax.ThrowStatementSyntax;
     }
 
-    private bool TryConvertIfNotNullRaiseEvent(CSS.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
+    private bool TryConvertIfNotNullRaiseEvent(CSSyntax.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
     {
         raiseEventStatement = null;
         return TryGetBinaryExpression(node, out var comparisonExpression, CS.SyntaxKind.NotEqualsExpression, CS.SyntaxKind.NullLiteralExpression)
                && TryConvertRaiseEvent(node.Statement, comparisonExpression, ref raiseEventStatement);
     }
 
-    private static bool TryGetBinaryExpression(CSS.IfStatementSyntax node, out CSS.BinaryExpressionSyntax binaryExpressionSyntax, CS.SyntaxKind notEqualsExpression, CS.SyntaxKind operand)
+    private static bool TryGetBinaryExpression(CSSyntax.IfStatementSyntax node, out CSSyntax.BinaryExpressionSyntax binaryExpressionSyntax, CS.SyntaxKind notEqualsExpression, CS.SyntaxKind operand)
     {
-        binaryExpressionSyntax = TrimParenthesis(node) as CSS.BinaryExpressionSyntax;
+        binaryExpressionSyntax = TrimParenthesis(node) as CSSyntax.BinaryExpressionSyntax;
         return binaryExpressionSyntax != null
                && binaryExpressionSyntax.IsKind(notEqualsExpression)
                && (binaryExpressionSyntax.Left.IsKind(operand) ||
                    binaryExpressionSyntax.Right.IsKind(operand));
     }
 
-    private static CSS.ExpressionSyntax TrimParenthesis(CSS.IfStatementSyntax node)
+    private static CSSyntax.ExpressionSyntax TrimParenthesis(CSSyntax.IfStatementSyntax node)
     {
         var condition = node.Condition;
-        while (condition is CSS.ParenthesizedExpressionSyntax pExp) condition = pExp.Expression;
+        while (condition is CSSyntax.ParenthesizedExpressionSyntax pExp) condition = pExp.Expression;
         return condition;
     }
 
-    private bool TryConvertRaiseEvent(CSS.StatementSyntax resultStatement,
-        CSS.BinaryExpressionSyntax be, ref StatementSyntax raiseEventStatement)
+    private bool TryConvertRaiseEvent(CSSyntax.StatementSyntax resultStatement,
+        CSSyntax.BinaryExpressionSyntax be, ref StatementSyntax raiseEventStatement)
     {
-        CSS.ExpressionStatementSyntax singleStatement;
-        if (resultStatement is CSS.BlockSyntax block)
+        CSSyntax.ExpressionStatementSyntax singleStatement;
+        if (resultStatement is CSSyntax.BlockSyntax block)
         {
             if (block.Statements.Count != 1)
                 return false;
-            singleStatement = block.Statements[0] as CSS.ExpressionStatementSyntax;
+            singleStatement = block.Statements[0] as CSSyntax.ExpressionStatementSyntax;
         }
         else
         {
-            singleStatement = resultStatement as CSS.ExpressionStatementSyntax;
+            singleStatement = resultStatement as CSSyntax.ExpressionStatementSyntax;
         }
 
-        if (!(singleStatement?.Expression is CSS.InvocationExpressionSyntax singleInvocationExpression))
+        if (!(singleStatement?.Expression is CSSyntax.InvocationExpressionSyntax singleInvocationExpression))
             return false;
 
         raiseEventStatement = singleInvocationExpression.Accept(_nodesVisitor) as RaiseEventStatementSyntax;
         return raiseEventStatement != null;
     }
 
-    private void CollectElseBlocks(CSS.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)
+    private void CollectElseBlocks(CSSyntax.IfStatementSyntax node, List<ElseIfBlockSyntax> elseIfBlocks, ref ElseBlockSyntax elseBlock)
     {
         if (node.Else == null) return;
-        if (node.Else.Statement is CSS.IfStatementSyntax) {
-            var elseIf = (CSS.IfStatementSyntax)node.Else.Statement;
+        if (node.Else.Statement is CSSyntax.IfStatementSyntax) {
+            var elseIf = (CSSyntax.IfStatementSyntax)node.Else.Statement;
             elseIfBlocks.Add(
                 SyntaxFactory.ElseIfBlock(
                     SyntaxFactory.ElseIfStatement((ExpressionSyntax)elseIf.Condition.Accept(_nodesVisitor)).WithThenKeyword(SyntaxFactory.Token(SyntaxKind.ThenKeyword)),
@@ -190,7 +189,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         }
     }
 
-    public override SyntaxList<StatementSyntax> VisitSwitchStatement(CSS.SwitchStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitSwitchStatement(CSSyntax.SwitchStatementSyntax node)
     {
         StatementSyntax stmt;
         _blockInfo.Push(new BlockInfo());
@@ -220,7 +219,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         }
     }
 
-    private CaseBlockSyntax ConvertSwitchSection(CSS.SwitchSectionSyntax section)
+    private CaseBlockSyntax ConvertSwitchSection(CSSyntax.SwitchSectionSyntax section)
     {
         if (IsDefaultSwitchStatement(section))
             return SyntaxFactory.CaseElseBlock(SyntaxFactory.CaseElseStatement(SyntaxFactory.ElseCaseClause()), ConvertSwitchSectionBlock(section));
@@ -229,24 +228,24 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.CaseBlock(caseStatementSyntax, ConvertSwitchSectionBlock(section));
     }
 
-    private static bool IsDefaultSwitchStatement(CSS.SwitchSectionSyntax c)
+    private static bool IsDefaultSwitchStatement(CSSyntax.SwitchSectionSyntax c)
     {
-        return c.Labels.OfType<CSS.DefaultSwitchLabelSyntax>().Any();
+        return c.Labels.OfType<CSSyntax.DefaultSwitchLabelSyntax>().Any();
     }
 
-    private SyntaxList<StatementSyntax> ConvertSwitchSectionBlock(CSS.SwitchSectionSyntax section)
+    private SyntaxList<StatementSyntax> ConvertSwitchSectionBlock(CSSyntax.SwitchSectionSyntax section)
     {
         List<StatementSyntax> statements = new List<StatementSyntax>();
         var lastStatement = section.Statements.LastOrDefault();
         foreach (var s in section.Statements) {
-            if (s == lastStatement && s is CSS.BreakStatementSyntax)
+            if (s == lastStatement && s is CSSyntax.BreakStatementSyntax)
                 continue;
             statements.AddRange(ConvertBlock(s));
         }
         return SyntaxFactory.List(statements);
     }
 
-    public override SyntaxList<StatementSyntax> VisitDoStatement(CSS.DoStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitDoStatement(CSSyntax.DoStatementSyntax node)
     {
         var condition = (ExpressionSyntax)node.Condition.Accept(_nodesVisitor);
         var stmt = ConvertBlock(node.Statement);
@@ -259,7 +258,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(block);
     }
 
-    public override SyntaxList<StatementSyntax> VisitWhileStatement(CSS.WhileStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitWhileStatement(CSSyntax.WhileStatementSyntax node)
     {
         var condition = (ExpressionSyntax)node.Condition.Accept(_nodesVisitor);
         var stmt = ConvertBlock(node.Statement);
@@ -271,7 +270,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(block);
     }
 
-    public override SyntaxList<StatementSyntax> VisitForStatement(CSS.ForStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitForStatement(CSSyntax.ForStatementSyntax node)
     {
         StatementSyntax block;
         var convertedStatements = ConvertBlock(node.Statement);
@@ -297,7 +296,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList(block);
     }
 
-    private bool ConvertForToSimpleForNextWithoutStatements(CSS.ForStatementSyntax node, out ForBlockSyntax blockWithoutStatements)
+    private bool ConvertForToSimpleForNextWithoutStatements(CSSyntax.ForStatementSyntax node, out ForBlockSyntax blockWithoutStatements)
     {
         //   ForStatement -> ForNextStatement when for-loop is simple
 
@@ -332,10 +331,10 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         if (SyntaxTokenExtensions.IsKind(iterator.OperatorToken, SyntaxKind.MinusEqualsToken))
             step = -step;
 
-        var condition = node.Condition as CSS.BinaryExpressionSyntax;
-        if (condition == null || !(condition.Left is CSS.IdentifierNameSyntax))
+        var condition = node.Condition as CSSyntax.BinaryExpressionSyntax;
+        if (condition == null || !(condition.Left is CSSyntax.IdentifierNameSyntax))
             return false;
-        if (((CSS.IdentifierNameSyntax)condition.Left).Identifier.IsEquivalentTo(iteratorIdentifier.Identifier))
+        if (((CSSyntax.IdentifierNameSyntax)condition.Left).Identifier.IsEquivalentTo(iteratorIdentifier.Identifier))
             return false;
 
         ExpressionSyntax end;
@@ -373,12 +372,12 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
                 null
             );
         } else {
-            var initializer = node.Initializers.FirstOrDefault() as CSS.AssignmentExpressionSyntax;
+            var initializer = node.Initializers.FirstOrDefault() as CSSyntax.AssignmentExpressionSyntax;
             if (initializer == null || !initializer.IsKind(CS.SyntaxKind.SimpleAssignmentExpression))
                 return false;
-            if (!(initializer.Left is CSS.IdentifierNameSyntax))
+            if (!(initializer.Left is CSSyntax.IdentifierNameSyntax))
                 return false;
-            if (((CSS.IdentifierNameSyntax)initializer.Left).Identifier.IsEquivalentTo(iteratorIdentifier.Identifier))
+            if (((CSSyntax.IdentifierNameSyntax)initializer.Left).Identifier.IsEquivalentTo(iteratorIdentifier.Identifier))
                 return false;
             variable = initializer.Left.Accept(_nodesVisitor);
             start = (ExpressionSyntax)initializer.Right.Accept(_nodesVisitor);
@@ -392,11 +391,11 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return true;
     }
 
-    public override SyntaxList<StatementSyntax> VisitForEachVariableStatement(CSS.ForEachVariableStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitForEachVariableStatement(CSSyntax.ForEachVariableStatementSyntax node)
     {
         var loopVar = node.Variable.Accept(_nodesVisitor);
         var extraStatements = new List<StatementSyntax>();
-        if (node.Variable is CSS.DeclarationExpressionSyntax des && des.Designation is CSS.ParenthesizedVariableDesignationSyntax pv) {
+        if (node.Variable is CSSyntax.DeclarationExpressionSyntax des && des.Designation is CSSyntax.ParenthesizedVariableDesignationSyntax pv) {
             var tupleName = CommonConversions.GetTupleName(pv);
             extraStatements.AddRange(pv.Variables.Select((v, i) => {
                 var initializer = SyntaxFactory.EqualsValue(SyntaxFactory.SimpleMemberAccessExpression(
@@ -411,7 +410,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return CreateForEachStatement(loopVar, node.Expression, node.Statement, extraStatements.ToArray());
     }
 
-    public override SyntaxList<StatementSyntax> VisitForEachStatement(CSS.ForEachStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitForEachStatement(CSSyntax.ForEachStatementSyntax node)
     {
         VisualBasicSyntaxNode variable;
         if (node.Type.IsVar)
@@ -432,7 +431,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
     }
 
     private SyntaxList<StatementSyntax> CreateForEachStatement(VisualBasicSyntaxNode vbVariable,
-        CSS.ExpressionSyntax csExpression, CSS.StatementSyntax csStatement, params StatementSyntax[] prefixExtraVbStatements)
+        CSSyntax.ExpressionSyntax csExpression, CSSyntax.StatementSyntax csStatement, params StatementSyntax[] prefixExtraVbStatements)
     {
         var expression = (ExpressionSyntax) csExpression.Accept(_nodesVisitor);
         var stmt = ConvertBlock(csStatement, prefixExtraVbStatements);
@@ -444,7 +443,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(block);
     }
 
-    public override SyntaxList<StatementSyntax> VisitTryStatement(CSS.TryStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitTryStatement(CSSyntax.TryStatementSyntax node)
     {
         var block = SyntaxFactory.TryBlock(
             ConvertBlock(node.Block),
@@ -455,7 +454,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(block);
     }
 
-    private CatchBlockSyntax ConvertCatchClause(int index, CSS.CatchClauseSyntax catchClause)
+    private CatchBlockSyntax ConvertCatchClause(int index, CSSyntax.CatchClauseSyntax catchClause)
     {
         var statements = ConvertBlock(catchClause.Block);
         if (catchClause.Declaration == null)
@@ -475,7 +474,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         );
     }
 
-    public override SyntaxList<StatementSyntax> VisitUsingStatement(CSS.UsingStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitUsingStatement(CSSyntax.UsingStatementSyntax node)
     {
         UsingStatementSyntax stmt;
         if (node.Declaration == null) {
@@ -489,7 +488,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.UsingBlock(stmt, ConvertBlock(node.Statement)));
     }
 
-    public override SyntaxList<StatementSyntax> VisitLockStatement(CSS.LockStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitLockStatement(CSSyntax.LockStatementSyntax node)
     {
         var stmt = SyntaxFactory.SyncLockStatement(
             (ExpressionSyntax)node.Expression?.Accept(_nodesVisitor)
@@ -497,7 +496,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.SyncLockBlock(stmt, ConvertBlock(node.Statement)));
     }
 
-    public override SyntaxList<StatementSyntax> VisitLabeledStatement(CSS.LabeledStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitLabeledStatement(CSSyntax.LabeledStatementSyntax node)
     {
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.LabelStatement(_commonConversions.ConvertIdentifier(node.Identifier)))
             .AddRange(ConvertBlock(node.Statement));
@@ -513,7 +512,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return $"_Select{_switchCount}_Case{expressionText}";
     }
 
-    public override SyntaxList<StatementSyntax> VisitGotoStatement(CSS.GotoStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitGotoStatement(CSSyntax.GotoStatementSyntax node)
     {
         LabelSyntax label;
         if (node.IsKind(CS.SyntaxKind.GotoCaseStatement, CS.SyntaxKind.GotoDefaultStatement)) {
@@ -523,7 +522,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
             _blockInfo.Peek().GotoCaseExpressions.Add(labelExpression);
             label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, MakeGotoSwitchLabel(labelExpression));
         } else {
-            label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, _commonConversions.ConvertIdentifier(((CSS.IdentifierNameSyntax)node.Expression).Identifier));
+            label = SyntaxFactory.Label(SyntaxKind.IdentifierLabel, _commonConversions.ConvertIdentifier(((CSSyntax.IdentifierNameSyntax)node.Expression).Identifier));
         }
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.GoToStatement(label));
     }
@@ -532,7 +531,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
     /// VB doesn't have a block construct, but all of its other constructs (e.g. if statements) create a block.
     /// So we can use an always-true if statement to isolate the variables.
     /// </summary>
-    public override SyntaxList<StatementSyntax> VisitBlock(CSS.BlockSyntax node)
+    public override SyntaxList<StatementSyntax> VisitBlock(CSSyntax.BlockSyntax node)
     {
         var statements = ConvertBlock(node);
         var ifBlock = CreateBlock(statements);
@@ -553,19 +552,19 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return ifBlock;
     }
 
-    private SyntaxList<StatementSyntax> ConvertBlock(CSS.StatementSyntax node, params StatementSyntax[] prefixExtraVbStatements)
+    private SyntaxList<StatementSyntax> ConvertBlock(CSSyntax.StatementSyntax node, params StatementSyntax[] prefixExtraVbStatements)
     {
-        if (node is CSS.BlockSyntax b) {
-            return SyntaxFactory.List(prefixExtraVbStatements.Concat(b.Statements.Where(s => !(s is CSS.EmptyStatementSyntax))
+        if (node is CSSyntax.BlockSyntax b) {
+            return SyntaxFactory.List(prefixExtraVbStatements.Concat(b.Statements.Where(s => !(s is CSSyntax.EmptyStatementSyntax))
                 .SelectMany(s => s.Accept(CommentConvertingVisitor))));
         }
-        if (node is CSS.EmptyStatementSyntax) {
+        if (node is CSSyntax.EmptyStatementSyntax) {
             return SyntaxFactory.List(prefixExtraVbStatements);
         }
         return node.Accept(CommentConvertingVisitor);
     }
 
-    public override SyntaxList<StatementSyntax> VisitReturnStatement(CSS.ReturnStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitReturnStatement(CSSyntax.ReturnStatementSyntax node)
     {
         var vbExpression = node.Expression?.Accept(_nodesVisitor);
         return SyntaxFactory.SingletonList(ReturnStatement(vbExpression));
@@ -580,7 +579,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
                 : SyntaxFactory.ReturnStatement((ExpressionSyntax)vbExpression);
     }
 
-    public override SyntaxList<StatementSyntax> VisitYieldStatement(CSS.YieldStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitYieldStatement(CSSyntax.YieldStatementSyntax node)
     {
         IsIterator = true;
         StatementSyntax stmt;
@@ -591,7 +590,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList(stmt);
     }
 
-    public override SyntaxList<StatementSyntax> VisitThrowStatement(CSS.ThrowStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitThrowStatement(CSSyntax.ThrowStatementSyntax node)
     {
         StatementSyntax stmt;
         if (node.Expression == null)
@@ -601,27 +600,27 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList(stmt);
     }
 
-    public override SyntaxList<StatementSyntax> VisitContinueStatement(CSS.ContinueStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitContinueStatement(CSSyntax.ContinueStatementSyntax node)
     {
         var statementKind = SyntaxKind.None;
         var keywordKind = SyntaxKind.None;
-        foreach (var stmt in node.GetAncestors<CSS.StatementSyntax>()) {
-            if (stmt is CSS.DoStatementSyntax) {
+        foreach (var stmt in node.GetAncestors<CSSyntax.StatementSyntax>()) {
+            if (stmt is CSSyntax.DoStatementSyntax) {
                 statementKind = SyntaxKind.ContinueDoStatement;
                 keywordKind = SyntaxKind.DoKeyword;
                 break;
             }
-            if (stmt is CSS.WhileStatementSyntax) {
+            if (stmt is CSSyntax.WhileStatementSyntax) {
                 statementKind = SyntaxKind.ContinueWhileStatement;
                 keywordKind = SyntaxKind.WhileKeyword;
                 break;
             }
-            if (stmt is CSS.ForEachStatementSyntax) {
+            if (stmt is CSSyntax.ForEachStatementSyntax) {
                 statementKind = SyntaxKind.ContinueForStatement;
                 keywordKind = SyntaxKind.ForKeyword;
                 break;
             }
-            if (stmt is CSS.ForStatementSyntax fs) {
+            if (stmt is CSSyntax.ForStatementSyntax fs) {
                 bool isFor = ConvertForToSimpleForNextWithoutStatements(fs, out _);
                 statementKind = isFor ? SyntaxKind.ContinueForStatement : SyntaxKind.ContinueWhileStatement;
                 keywordKind = isFor ? SyntaxKind.ForKeyword : SyntaxKind.WhileKeyword;
@@ -631,33 +630,33 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ContinueStatement(statementKind, SyntaxFactory.Token(keywordKind)));
     }
 
-    public override SyntaxList<StatementSyntax> VisitBreakStatement(CSS.BreakStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitBreakStatement(CSSyntax.BreakStatementSyntax node)
     {
         var statementKind = SyntaxKind.None;
         var keywordKind = SyntaxKind.None;
-        foreach (var stmt in node.GetAncestors<CSS.StatementSyntax>()) {
-            if (stmt is CSS.DoStatementSyntax) {
+        foreach (var stmt in node.GetAncestors<CSSyntax.StatementSyntax>()) {
+            if (stmt is CSSyntax.DoStatementSyntax) {
                 statementKind = SyntaxKind.ExitDoStatement;
                 keywordKind = SyntaxKind.DoKeyword;
                 break;
             }
-            if (stmt is CSS.WhileStatementSyntax) {
+            if (stmt is CSSyntax.WhileStatementSyntax) {
                 statementKind = SyntaxKind.ExitWhileStatement;
                 keywordKind = SyntaxKind.WhileKeyword;
                 break;
             }
-            if (stmt is CSS.ForEachStatementSyntax) {
+            if (stmt is CSSyntax.ForEachStatementSyntax) {
                 statementKind = SyntaxKind.ExitForStatement;
                 keywordKind = SyntaxKind.ForKeyword;
                 break;
             }
-            if (stmt is CSS.ForStatementSyntax fs) {
+            if (stmt is CSSyntax.ForStatementSyntax fs) {
                 bool isFor = ConvertForToSimpleForNextWithoutStatements(fs, out _);
                 statementKind = isFor ? SyntaxKind.ExitForStatement : SyntaxKind.ExitWhileStatement;
                 keywordKind = isFor ? SyntaxKind.ForKeyword : SyntaxKind.WhileKeyword;
                 break;
             }
-            if (stmt is CSS.SwitchStatementSyntax) {
+            if (stmt is CSSyntax.SwitchStatementSyntax) {
                 statementKind = SyntaxKind.ExitSelectStatement;
                 keywordKind = SyntaxKind.SelectKeyword;
                 break;
@@ -665,12 +664,12 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         }
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExitStatement(statementKind, SyntaxFactory.Token(keywordKind)));
     }
-    public override SyntaxList<StatementSyntax> VisitEmptyStatement(CSS.EmptyStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitEmptyStatement(CSSyntax.EmptyStatementSyntax node)
     {
         return SyntaxFactory.List<StatementSyntax>();
     }
 
-    public override SyntaxList<StatementSyntax> VisitCheckedStatement(CSS.CheckedStatementSyntax node)
+    public override SyntaxList<StatementSyntax> VisitCheckedStatement(CSSyntax.CheckedStatementSyntax node)
     {
         return WrapInComment(ConvertBlock(node.Block), "Visual Basic does not support checked statements!");
     }
