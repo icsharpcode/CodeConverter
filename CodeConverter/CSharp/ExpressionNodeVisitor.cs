@@ -283,7 +283,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         var nodeForType = node;
         var convertMethodForKeyword = GetConvertMethodForKeywordOrNull(nodeForType);
-        if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
+        if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType() &&
+            _semanticModel.GetTypeInfo(node.Expression).Type is {} expressionType && !expressionType.IsIntegralType() && !expressionType.IsEnumType()) {
             convertMethodForKeyword = GetConvertMethodForKeywordOrNull(typeSymbol.EnumUnderlyingType);
         } else if (convertMethodForKeyword != null) {
             nodeForType = null;
@@ -690,7 +691,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var csExpressionSyntax = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         csExpressionSyntax =
             CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpressionSyntax);
-        if (node?.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax) {
+        if (node.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax) {
             return SyntaxFactory.AnonymousObjectMemberDeclarator(
                 SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Name.Identifier))),
                 csExpressionSyntax);
@@ -1769,7 +1770,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol, ISymbol symbol)
     {
         ExpressionSyntax cSharpSyntaxNode = null;
-        if (symbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && symbol?.Name == "ChrW" || symbol?.Name == "Chr") {
+        if (symbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && symbol.Name == "ChrW" || symbol?.Name == "Chr") {
             var vbArg = node.ArgumentList.Arguments.Single().GetExpression();
             var constValue = _semanticModel.GetConstantValue(vbArg);
             if (IsCultureInvariant(symbol, constValue)) {

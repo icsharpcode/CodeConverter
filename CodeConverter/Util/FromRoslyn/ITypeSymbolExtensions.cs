@@ -254,6 +254,8 @@ internal static partial class ITypeSymbolExtensions
         return false;
     }
 
+    public static bool IsIntegralType(this ITypeSymbol? type) => type.IsNumericType() && !type.IsFractionalNumericType();
+
     public static bool IsFractionalNumericType(this ITypeSymbol? type)
     {
         if (type != null) {
