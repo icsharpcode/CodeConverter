@@ -293,7 +293,8 @@ namespace ICSharpCode.CodeConverter.CSharp
         {
             var nodeForType = node;
             var convertMethodForKeyword = GetConvertMethodForKeywordOrNull(nodeForType);
-            if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType()) {
+            if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType() &&
+                _semanticModel.GetTypeInfo(node.Expression).Type is {} expressionType && !expressionType.IsIntegralType() && !expressionType.IsEnumType()) {
                 convertMethodForKeyword = GetConvertMethodForKeywordOrNull(typeSymbol.EnumUnderlyingType);
             } else if (convertMethodForKeyword != null) {
                 nodeForType = null;

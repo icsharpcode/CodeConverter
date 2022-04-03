@@ -257,6 +257,61 @@ internal partial class Class1
         }
 
         [Fact]
+        public async Task CastingIntegralTypeToEnumShouldUseExplicitCastAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(
+                @"
+Enum TestEnum
+    None = 0
+End Enum
+Enum TestEnum2
+    None = 1
+End Enum
+Class Class1
+    Private Sub Test()
+        Dim res = CType(5S, TestEnum)
+        res = CType(5D, TestEnum)
+        res = CType(5L, TestEnum)
+        res = CType(5.4F, TestEnum)
+        res = CType(5.7R, TestEnum)
+        res = CType(5UL, TestEnum)
+        res = CType(5, TestEnum)
+        
+        Dim otherEnum = TestEnum2.None
+        res = CType(otherEnum, TestEnum)
+    End Sub
+End Class",
+                @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum TestEnum
+{
+    None = 0
+}
+
+internal enum TestEnum2
+{
+    None = 1
+}
+
+internal partial class Class1
+{
+    private void Test()
+    {
+        TestEnum res = (TestEnum)5;
+        res = (TestEnum)Conversions.ToInteger(5m);
+        res = (TestEnum)5L;
+        res = (TestEnum)Conversions.ToInteger(5.4f);
+        res = (TestEnum)Conversions.ToInteger(5.7d);
+        res = (TestEnum)5UL;
+        res = (TestEnum)5;
+        var otherEnum = TestEnum2.None;
+        res = (TestEnum)otherEnum;
+    }
+}
+");
+        }
+
+        [Fact]
         public async Task TryCastObjectToGenericListAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(
