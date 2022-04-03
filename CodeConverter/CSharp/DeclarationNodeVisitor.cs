@@ -956,7 +956,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 potentialMethodId = GetMethodId(containingPropertyStmt.Identifier.Text);
 
                 if (ShouldConvertAsParameterizedProperty(containingPropertyStmt)) {
-                    var method = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList, false);
+                    var method = await CreateMethodDeclarationSyntax(containingPropertyStmt.ParameterList, false);
                     return method;
                 }
                 break;
@@ -965,7 +965,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 potentialMethodId = SetMethodId(containingPropertyStmt.Identifier.Text);
 
                 if (ShouldConvertAsParameterizedProperty(containingPropertyStmt)) {
-                    var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt?.ParameterList, true);
+                    var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt.ParameterList, true);
                     return AddValueSetParameter(declaredPropSymbol, setMethod, returnType, false);
                 }
                 break;
