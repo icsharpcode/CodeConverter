@@ -1,7 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
-using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 
 namespace ICSharpCode.CodeConverter.VB;
@@ -33,10 +31,10 @@ internal class CommentConvertingVisitorWrapper<T> where T : VisualBasicSyntaxNod
     private static T WithSourceMapping(SyntaxNode csNode, T converted)
     {
         switch (csNode) {
-            case CsSyntax.AttributeListSyntax _:
+            case CSSyntax.AttributeListSyntax _:
                 converted = converted.WithPrependedLeadingTrivia(SyntaxFactory.CarriageReturnLineFeed);
                 break;
-            case CsSyntax.CompilationUnitSyntax csCus when converted is VbSyntax.CompilationUnitSyntax vbCus:
+            case CSSyntax.CompilationUnitSyntax csCus when converted is VBSyntax.CompilationUnitSyntax vbCus:
                 converted = (T) (object) vbCus.WithEndOfFileToken(
                     vbCus.EndOfFileToken.WithConvertedLeadingTriviaFrom(csCus.EndOfFileToken).WithSourceMappingFrom(csCus.EndOfFileToken)
                 );

@@ -8,9 +8,6 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
-using IOperation = Microsoft.CodeAnalysis.IOperation;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

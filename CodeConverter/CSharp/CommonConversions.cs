@@ -9,17 +9,12 @@ using Microsoft.CodeAnalysis.Operations;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
-using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using SyntaxFacts = Microsoft.CodeAnalysis.CSharp.SyntaxFacts;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
 using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.VariableDeclaratorSyntax;
 using VisualBasicExtensions = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using ITypeSymbol = Microsoft.CodeAnalysis.ITypeSymbol;
-using TypeInfo = Microsoft.CodeAnalysis.TypeInfo;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -349,7 +344,7 @@ internal class CommonConversions
         if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
         var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
             .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
-            .Where(t => CSharpExtensions.Kind(t) != CSSyntaxKind.None)
+            .Where(t => t.Kind() != CSSyntaxKind.None)
             .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
         return SyntaxFactory.TokenList(modifierSyntaxs);
     }
