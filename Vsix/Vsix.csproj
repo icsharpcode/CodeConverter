@@ -51,7 +51,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Build against VS 15.7 -->
-    <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="2.8.2" />
+    <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="3.4.0" />
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="15.0.1" ExcludeAssets="runtime" />
     <!-- Avoids needing the VSSDK MSI installed. Version is the VS version used during compilation, not where the VSIX will be installed -->
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.0.4201-preview4">
