@@ -144,9 +144,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             .WithArgumentList(ExpressionSyntaxExtensions.CreateArgList(interpolatedString));
     }
 
-    private static InterpolatedStringTextSyntax InterpolatedStringText(string text) =>
-        SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(SyntaxFactory.TriviaList(), SyntaxKind.InterpolatedStringTextToken, text, text, SyntaxFactory.TriviaList()));
-
     public override async Task<CSharpSyntaxNode> VisitXmlString(VBasic.Syntax.XmlStringSyntax node) =>
         CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
 

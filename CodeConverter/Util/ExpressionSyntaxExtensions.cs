@@ -12,7 +12,7 @@ internal static class ExpressionSyntaxExtensions
 
     public static VBSyntax.ArgumentListSyntax CreateArgList<T>(params T[] args) where T : VBSyntax.ExpressionSyntax
     {
-        return CreateVbArgList((IEnumerable<T>) args);
+        return CreateVbArgList(args);
     }
 
     public static VBSyntax.ArgumentListSyntax CreateVbArgList<T>(this IEnumerable<T> argExpressions) where T : VBSyntax.ExpressionSyntax

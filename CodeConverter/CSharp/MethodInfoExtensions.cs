@@ -24,7 +24,7 @@ internal static class MethodInfoExtensions
 
     {
         var func = method.CreateOpenDelegate<Func<TTarget, TReturn>>();
-        return (TDesiredTarget target) => target is TTarget tt ? (TDesiredReturn)(object)func(tt) : default;
+        return target => target is TTarget tt ? (TDesiredReturn)func(tt) : default;
     }
 
     /// <summary>
@@ -38,7 +38,7 @@ internal static class MethodInfoExtensions
     {
         var paramIsReferenceType = default(TParam) == null;
         var func = method.CreateOpenDelegate<Func<TTarget, TParam, TReturn>>();
-        return (TDesiredTarget target, TDesiredParam param) => {
+        return (target, param) => {
             var desiredParam = paramIsReferenceType ? param is TParam p ? p : default : (TParam)(object)param;
             return target is TTarget desiredTarget ? (TDesiredReturn)(object)func(desiredTarget, desiredParam) : default;
         };
