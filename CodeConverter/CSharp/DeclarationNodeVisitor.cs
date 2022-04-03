@@ -8,8 +8,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using StringComparer = System.StringComparer;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using SyntaxToken = Microsoft.CodeAnalysis.SyntaxToken;
 using Microsoft.CodeAnalysis.VisualBasic;

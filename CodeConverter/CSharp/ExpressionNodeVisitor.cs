@@ -14,8 +14,6 @@ using Microsoft.VisualBasic.CompilerServices;
 using IOperation = Microsoft.CodeAnalysis.IOperation;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using VBasic = Microsoft.CodeAnalysis.VisualBasic;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp
 {

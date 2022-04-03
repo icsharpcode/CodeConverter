@@ -2,9 +2,7 @@
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace ICSharpCode.CodeConverter.VB
 {

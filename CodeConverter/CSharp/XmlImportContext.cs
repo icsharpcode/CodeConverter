@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 

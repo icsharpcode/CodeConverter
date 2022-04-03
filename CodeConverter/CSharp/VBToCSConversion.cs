@@ -2,10 +2,7 @@
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
-using CS = Microsoft.CodeAnalysis.CSharp;
-using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.VisualBasic;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;

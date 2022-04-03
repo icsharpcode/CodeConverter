@@ -1,8 +1,5 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
-using CS = Microsoft.CodeAnalysis.CSharp;
-using VBasic = Microsoft.CodeAnalysis.VisualBasic;
-using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text.RegularExpressions;
 
 namespace ICSharpCode.CodeConverter.Util

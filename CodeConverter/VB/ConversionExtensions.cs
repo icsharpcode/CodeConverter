@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using CS = Microsoft.CodeAnalysis.CSharp;
 
 namespace ICSharpCode.CodeConverter.VB
 {
