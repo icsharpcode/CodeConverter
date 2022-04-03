@@ -5,8 +5,8 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 
 internal sealed class Cancellation : IDisposable
 {
-    private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-    private CancellationTokenSource _commandCancellationTokenSource = new CancellationTokenSource();
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private CancellationTokenSource _commandCancellationTokenSource = new();
 
     public CancellationTokenSource ResetCommandCancellation()
     {

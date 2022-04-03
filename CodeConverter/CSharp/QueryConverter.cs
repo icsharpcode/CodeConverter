@@ -11,7 +11,7 @@ internal class QueryConverter
 {
     private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
     private readonly SemanticModel _semanticModel;
-    private static readonly SyntaxAnnotation DefaultSelectAnnotation = new SyntaxAnnotation("DefaultSelect");
+    private static readonly SyntaxAnnotation DefaultSelectAnnotation = new("DefaultSelect");
 
     public QueryConverter(CommonConversions commonConversions, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
     {

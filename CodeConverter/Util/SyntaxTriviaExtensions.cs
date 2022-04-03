@@ -5,7 +5,7 @@ namespace ICSharpCode.CodeConverter.Util;
 
 internal static class SyntaxTriviaExtensions
 {
-    private static readonly Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> VBToCSSyntaxKinds = new Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> {
+    private static readonly Dictionary<VBasic.SyntaxKind, CS.SyntaxKind> VBToCSSyntaxKinds = new() {
         {VBasic.SyntaxKind.SkippedTokensTrivia, CS.SyntaxKind.SkippedTokensTrivia},
         {VBasic.SyntaxKind.DisabledTextTrivia, CS.SyntaxKind.DisabledTextTrivia},
         {VBasic.SyntaxKind.ConstDirectiveTrivia, CS.SyntaxKind.DefineDirectiveTrivia}, // Just a guess

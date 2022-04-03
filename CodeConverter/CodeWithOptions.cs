@@ -2,7 +2,7 @@
 
 public class CodeWithOptions
 {
-    private static readonly HashSet<Type> _typesToFindAssemblyReferencesFrom = new HashSet<Type> {
+    private static readonly HashSet<Type> _typesToFindAssemblyReferencesFrom = new() {
         typeof(System.Text.Encoding),
         typeof(System.ComponentModel.DefaultValueAttribute),
         typeof(System.Dynamic.DynamicObject),

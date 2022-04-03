@@ -36,7 +36,7 @@ internal static class VisualStudioInteraction
     internal static DTE2 Dte => m_Dte ??= Package.GetGlobalService(typeof(DTE)) as DTE2;
 
     private static CancellationToken CancelAllToken;
-    private static readonly Version m_LowestSupportedVersion = new Version(15, 7, 0, 0);
+    private static readonly Version m_LowestSupportedVersion = new(15, 7, 0, 0);
     private static readonly Version m_FullVsVersion = GetFullVsVersion();
     private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + (m_FullVsVersion?.ToString() ?? "unknown version");
 

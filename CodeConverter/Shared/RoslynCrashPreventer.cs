@@ -4,8 +4,8 @@ namespace ICSharpCode.CodeConverter.Shared;
 
 internal static class RoslynCrashPreventer
 {
-    private static readonly DelegatingHandler _codeAnalysisHandler= new DelegatingHandler(typeof(Compilation).Assembly, "Microsoft.CodeAnalysis.FatalError");
-    private static readonly DelegatingHandler _errorReportingHandler = new DelegatingHandler(typeof(WorkspaceDiagnostic).Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
+    private static readonly DelegatingHandler _codeAnalysisHandler= new(typeof(Compilation).Assembly, "Microsoft.CodeAnalysis.FatalError");
+    private static readonly DelegatingHandler _errorReportingHandler = new(typeof(WorkspaceDiagnostic).Assembly, "Microsoft.CodeAnalysis.ErrorReporting.FatalError");
     private static volatile int _currentUses;
 
     /// <summary>
@@ -31,7 +31,7 @@ internal static class RoslynCrashPreventer
     {
         private readonly Assembly _assembly;
         private readonly string _containingType;
-        private readonly object _exchangeLock = new object();
+        private readonly object _exchangeLock = new();
         private Action<Exception> _originalHandler;
 
         public DelegatingHandler(Assembly assembly, string containingType)

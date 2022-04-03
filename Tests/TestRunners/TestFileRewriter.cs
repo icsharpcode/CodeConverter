@@ -9,7 +9,7 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 
 public static class TestFileRewriter
 {
-    private static readonly Lazy<Dictionary<string, string>> FileContents = new Lazy<Dictionary<string, string>>(GetTestFileContents);
+    private static readonly Lazy<Dictionary<string, string>> FileContents = new(GetTestFileContents);
 
     private static Dictionary<string, string> GetTestFileContents()
     {

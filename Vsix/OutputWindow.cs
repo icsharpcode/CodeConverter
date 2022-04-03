@@ -16,7 +16,7 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 internal class OutputWindow
 {
     private const string PaneName = "Code Converter";
-    private static readonly Guid PaneGuid = new Guid("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
+    private static readonly Guid PaneGuid = new("44F575C6-36B5-4CDB-AAAE-E096E6A446BF");
     private readonly IVsOutputWindowPane _outputPane;
     private bool _hasOutputSinceSolutionOpened = false;
 

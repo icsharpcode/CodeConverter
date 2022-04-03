@@ -2,12 +2,12 @@
 
 internal class TypeContext : ITypeContext
 {
-    private readonly Stack<(AdditionalInitializers Initializers, HandledEventsAnalysis Methods)> _contextStack = new Stack<(AdditionalInitializers Initializers, HandledEventsAnalysis Methods)>();
+    private readonly Stack<(AdditionalInitializers Initializers, HandledEventsAnalysis Methods)> _contextStack = new();
 
     public AdditionalInitializers Initializers => _contextStack.Peek().Initializers;
     public HandledEventsAnalysis HandledEventsAnalysis => _contextStack.Peek().Methods;
 
-    public PerScopeState PerScopeState { get; internal set; } = new PerScopeState();
+    public PerScopeState PerScopeState { get; internal set; } = new();
 
     public void Push(HandledEventsAnalysis methodWithHandles, AdditionalInitializers additionalInitializers)
     {

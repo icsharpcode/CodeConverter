@@ -18,13 +18,13 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
     private SemanticModel _semanticModel;
     private readonly CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> _nodesVisitor;
     private readonly CommonConversions _commonConversions;
-    private readonly Stack<BlockInfo> _blockInfo = new Stack<BlockInfo>(); // currently only works with switch blocks
+    private readonly Stack<BlockInfo> _blockInfo = new(); // currently only works with switch blocks
     private int _switchCount = 0;
     public bool IsIterator { get; private set; }
 
     private class BlockInfo
     {
-        public readonly List<VisualBasicSyntaxNode> GotoCaseExpressions = new List<VisualBasicSyntaxNode>();
+        public readonly List<VisualBasicSyntaxNode> GotoCaseExpressions = new();
     }
     public CommentConvertingMethodBodyVisitor CommentConvertingVisitor { get; }
 

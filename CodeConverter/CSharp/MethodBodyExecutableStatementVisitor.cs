@@ -20,7 +20,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly Stack<ExpressionSyntax> _withBlockLhs;
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly HandledEventsAnalysis _handledEventsAnalysis;
-    private readonly HashSet<string> _generatedNames = new HashSet<string>();
+    private readonly HashSet<string> _generatedNames = new();
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private PerScopeState _perScopeState;

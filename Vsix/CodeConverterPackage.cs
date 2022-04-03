@@ -84,7 +84,7 @@ public sealed class CodeConverterPackage : AsyncPackage
     public const string VbSolutionMenuVisibilityGuid = "3332e9e5-019c-4e93-b75a-2499f6f1cec6";
     public const string ConvertableSolutionMenuVisibilityGuid = "8e7192d0-28b7-4fe7-8d84-82c1db98d459";
 
-    internal Cancellation PackageCancellation { get; } = new Cancellation();
+    internal Cancellation PackageCancellation { get; } = new();
 
     /// <summary>
     /// Initializes a new instance of package class.

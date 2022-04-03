@@ -265,7 +265,7 @@ internal static partial class SpecializedCollections
 
         internal class List<T> : Collection<T>, IList<T>, IReadOnlyList<T>
         {
-            public static readonly new List<T> Instance = new List<T>();
+            public static readonly new List<T> Instance = new();
 
             protected List()
             {

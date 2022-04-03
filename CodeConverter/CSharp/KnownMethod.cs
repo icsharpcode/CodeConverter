@@ -23,7 +23,7 @@ internal struct KnownMethod
         (Import, TypeName, MethodName).GetHashCode();
 
     public static implicit operator KnownMethod((string import, string typeName, string methodName) value) =>
-        new KnownMethod(value.import, value.typeName, value.methodName);
+        new(value.import, value.typeName, value.methodName);
 
     public ExpressionSyntax Invoke(HashSet<string> extraUsingDirectives, params ExpressionSyntax[] args)
     {
