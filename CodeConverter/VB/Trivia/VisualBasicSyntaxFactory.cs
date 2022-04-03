@@ -1,8 +1,10 @@
 ﻿// DO NOT REORDER DOCUMENT Tokens must be defined BEFORE they are used
-using Microsoft.VisualBasic;
+
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
 using Constants = Microsoft.VisualBasic.Constants;
+
+namespace ICSharpCode.CodeConverter.VB.Trivia;
 
 public static class VisualBasicSyntaxFactory
 {
@@ -210,4 +212,3 @@ public static class VisualBasicSyntaxFactory
     public readonly static SyntaxTokenList PublicModifier = SyntaxFactory.TokenList(PublicKeyword);
     public readonly static Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeSyntax RuntimeInteropServicesOut = SyntaxFactory.ParseTypeName("Runtime.InteropServices.Out");
 }
-

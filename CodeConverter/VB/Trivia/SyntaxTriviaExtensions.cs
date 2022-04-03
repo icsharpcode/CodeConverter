@@ -1,6 +1,4 @@
-﻿using VB = Microsoft.CodeAnalysis.VisualBasic;
-
-namespace CSharpToVBCodeConverter.Util;
+﻿namespace ICSharpCode.CodeConverter.VB.Trivia;
 
 internal static class SyntaxTriviaExtensions
 {
@@ -29,6 +27,6 @@ internal static class SyntaxTriviaExtensions
 
     public static bool IsSingleLineComment(this SyntaxTrivia trivia)
     {
-        return trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia) || trivia.IsKind(VB.SyntaxKind.CommentTrivia);
+        return trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia) || trivia.IsKind(VBasic.SyntaxKind.CommentTrivia);
     }
 }

@@ -260,27 +260,27 @@ internal static class VBUtil
     public static SyntaxToken ConvertTypesTokenToKind(CS.SyntaxKind t, bool isXml = false)
     {
         switch (t) {
-            case CS.SyntaxKind.None: return global::VisualBasicSyntaxFactory.EmptyToken;
-            case CS.SyntaxKind.BoolKeyword: return global::VisualBasicSyntaxFactory.BooleanKeyword;
-            case CS.SyntaxKind.ByteKeyword: return global::VisualBasicSyntaxFactory.ByteKeyword;
-            case CS.SyntaxKind.SByteKeyword: return global::VisualBasicSyntaxFactory.SByteKeyword;
-            case CS.SyntaxKind.ShortKeyword: return global::VisualBasicSyntaxFactory.ShortKeyword;
-            case CS.SyntaxKind.UShortKeyword: return global::VisualBasicSyntaxFactory.UShortKeyword;
-            case CS.SyntaxKind.IntKeyword: return global::VisualBasicSyntaxFactory.IntegerKeyword;
-            case CS.SyntaxKind.UIntKeyword: return global::VisualBasicSyntaxFactory.UIntegerKeyword;
-            case CS.SyntaxKind.LongKeyword: return global::VisualBasicSyntaxFactory.LongKeyword;
-            case CS.SyntaxKind.ULongKeyword: return global::VisualBasicSyntaxFactory.ULongKeyword;
-            case CS.SyntaxKind.DoubleKeyword: return global::VisualBasicSyntaxFactory.DoubleKeyword;
-            case CS.SyntaxKind.FloatKeyword: return global::VisualBasicSyntaxFactory.SingleKeyword;
-            case CS.SyntaxKind.DecimalKeyword: return global::VisualBasicSyntaxFactory.DecimalKeyword;
-            case CS.SyntaxKind.StringKeyword: return global::VisualBasicSyntaxFactory.StringKeyword;
-            case CS.SyntaxKind.CharKeyword: return global::VisualBasicSyntaxFactory.CharKeyword;
+            case CS.SyntaxKind.None: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.EmptyToken;
+            case CS.SyntaxKind.BoolKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.BooleanKeyword;
+            case CS.SyntaxKind.ByteKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.ByteKeyword;
+            case CS.SyntaxKind.SByteKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.SByteKeyword;
+            case CS.SyntaxKind.ShortKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.ShortKeyword;
+            case CS.SyntaxKind.UShortKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.UShortKeyword;
+            case CS.SyntaxKind.IntKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.IntegerKeyword;
+            case CS.SyntaxKind.UIntKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.UIntegerKeyword;
+            case CS.SyntaxKind.LongKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.LongKeyword;
+            case CS.SyntaxKind.ULongKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.ULongKeyword;
+            case CS.SyntaxKind.DoubleKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.DoubleKeyword;
+            case CS.SyntaxKind.FloatKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.SingleKeyword;
+            case CS.SyntaxKind.DecimalKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.DecimalKeyword;
+            case CS.SyntaxKind.StringKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.StringKeyword;
+            case CS.SyntaxKind.CharKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.CharKeyword;
             case CS.SyntaxKind.VoidKeyword:                         // not supported
                 if (isXml) {
-                    return global::VisualBasicSyntaxFactory.NothingKeyword;
+                    return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.NothingKeyword;
                 }
-                return global::VisualBasicSyntaxFactory.EmptyToken;
-            case CS.SyntaxKind.ObjectKeyword: return global::VisualBasicSyntaxFactory.ObjectKeyword;
+                return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.EmptyToken;
+            case CS.SyntaxKind.ObjectKeyword: return global::ICSharpCode.CodeConverter.VB.Trivia.VisualBasicSyntaxFactory.ObjectKeyword;
         }
 
         throw new NotSupportedException($"Type.Kind {t} is not supported!");

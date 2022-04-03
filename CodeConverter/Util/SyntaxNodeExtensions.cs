@@ -1,4 +1,5 @@
 using System.Text;
+using ICSharpCode.CodeConverter.VB.Trivia;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -353,7 +354,7 @@ internal static class SyntaxNodeExtensions
     {
         try {
             if (triviaToConvert.Any() && triviaToConvert.First().Language == LanguageNames.CSharp) {
-                return CSharpToVBCodeConverter.Util.RecursiveTriviaConverter.ConvertTopLevel(triviaToConvert).Where(x => x != default(SyntaxTrivia));
+                return RecursiveTriviaConverter.ConvertTopLevel(triviaToConvert).Where(x => x != default(SyntaxTrivia));
             }
             return triviaToConvert.SelectMany(ConvertVBTrivia).Where(x => x != default(SyntaxTrivia));
         } catch (Exception) {
