@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualBasic.CompilerServices;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using Constants = Microsoft.VisualBasic.Constants;
 
@@ -255,12 +254,12 @@ internal class RecursiveTriviaConverter
 
         /* TODO ERROR: Skipped EndRegionDirectiveTrivia */
         /* TODO ERROR: Skipped RegionDirectiveTrivia */
-        CSS.StructuredTriviaSyntax StructuredTrivia = (CSS.StructuredTriviaSyntax)t.GetStructure();
+        CSSyntax.StructuredTriviaSyntax StructuredTrivia = (CSSyntax.StructuredTriviaSyntax)t.GetStructure();
         Debug.Assert(StructuredTrivia != null, $"Found new type of non structured trivia {t.RawKind}");
         var switchExpr1 = t.RawKind;
         switch (switchExpr1) {
             case (int)CS.SyntaxKind.DefineDirectiveTrivia: {
-                CSS.DefineDirectiveTriviaSyntax DefineDirective = (CSS.DefineDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.DefineDirectiveTriviaSyntax DefineDirective = (CSSyntax.DefineDirectiveTriviaSyntax)StructuredTrivia;
                 var Name = VBFactory.Identifier(DefineDirective.Name.ValueText);
                 VBSyntax.ExpressionSyntax value = VBFactory.TrueLiteralExpression(VisualBasicSyntaxFactory.TrueKeyword);
                 return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(WithConvertedTriviaFrom(VBFactory.ConstDirectiveTrivia(Name, value), DefineDirective), DefineDirective.EndOfDirectiveToken)
@@ -268,7 +267,7 @@ internal class RecursiveTriviaConverter
             }
 
             case (int)CS.SyntaxKind.UndefDirectiveTrivia: {
-                CSS.UndefDirectiveTriviaSyntax UndefineDirective = (CSS.UndefDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.UndefDirectiveTriviaSyntax UndefineDirective = (CSSyntax.UndefDirectiveTriviaSyntax)StructuredTrivia;
                 var Name = VBFactory.Identifier(UndefineDirective.Name.ValueText);
                 VBSyntax.ExpressionSyntax value = VisualBasicSyntaxFactory.NothingExpression;
                 return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(WithConvertedTriviaFrom(VBFactory.ConstDirectiveTrivia(Name, value), UndefineDirective), UndefineDirective.EndOfDirectiveToken)
@@ -280,31 +279,31 @@ internal class RecursiveTriviaConverter
                     TriviaDepth -= 1;
                     return VBFactory.CommentTrivia($"' TODO VB does not allow directives here, original statement {t.ToFullString().WithoutNewLines(' ')}");
                 }
-                CSS.EndIfDirectiveTriviaSyntax EndIfDirective = (CSS.EndIfDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.EndIfDirectiveTriviaSyntax EndIfDirective = (CSSyntax.EndIfDirectiveTriviaSyntax)StructuredTrivia;
                 return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.EndIfDirectiveTrivia().WithConvertedTrailingTriviaFrom(EndIfDirective.EndIfKeyword), EndIfDirective.EndOfDirectiveToken)
                 );
             }
 
             case (int)CS.SyntaxKind.ErrorDirectiveTrivia: {
-                CSS.ErrorDirectiveTriviaSyntax ErrorDirective = (CSS.ErrorDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.ErrorDirectiveTriviaSyntax ErrorDirective = (CSSyntax.ErrorDirectiveTriviaSyntax)StructuredTrivia;
                 return VBFactory.CommentTrivia($"' TODO: Check VB does not support Error Directive Trivia, Original Directive {ErrorDirective.ToFullString()}");
             }
 
             case (int)CS.SyntaxKind.IfDirectiveTrivia: {
-                if (t.Token.Parent?.AncestorsAndSelf().OfType<CSS.InitializerExpressionSyntax>().Any() == true) {
+                if (t.Token.Parent?.AncestorsAndSelf().OfType<CSSyntax.InitializerExpressionSyntax>().Any() == true) {
                     TriviaDepth += 1;
                 }
-                CSS.IfDirectiveTriviaSyntax IfDirective = (CSS.IfDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.IfDirectiveTriviaSyntax IfDirective = (CSSyntax.IfDirectiveTriviaSyntax)StructuredTrivia;
                 string Expression1 = StringReplaceCondition(IfDirective.Condition.ToString());
 
                 return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.IfDirectiveTrivia(VisualBasicSyntaxFactory.IfKeyword, VBFactory.ParseExpression(Expression1)).With(IfDirective.GetLeadingTrivia().ConvertTrivia(), IfDirective.Condition.GetTrailingTrivia().ConvertTrivia()), IfDirective.EndOfDirectiveToken));
             }
 
             case (int)CS.SyntaxKind.ElifDirectiveTrivia: {
-                if (t.Token.Parent.AncestorsAndSelf().OfType<CSS.InitializerExpressionSyntax>().Any()) {
+                if (t.Token.Parent.AncestorsAndSelf().OfType<CSSyntax.InitializerExpressionSyntax>().Any()) {
                     TriviaDepth += 1;
                 }
-                CSS.ElifDirectiveTriviaSyntax ELIfDirective = (CSS.ElifDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.ElifDirectiveTriviaSyntax ELIfDirective = (CSSyntax.ElifDirectiveTriviaSyntax)StructuredTrivia;
                 string Expression1 = StringReplaceCondition(ELIfDirective.Condition.ToString());
 
                 SyntaxToken IfOrElseIfKeyword;
@@ -323,19 +322,19 @@ internal class RecursiveTriviaConverter
             }
 
             case (int)CS.SyntaxKind.ElseDirectiveTrivia: {
-                return VBFactory.Trivia(WithTrailingEOL(VBFactory.ElseDirectiveTrivia().NormalizeWhitespace().WithConvertedTrailingTriviaFrom(((CSS.ElseDirectiveTriviaSyntax)StructuredTrivia).ElseKeyword)));
+                return VBFactory.Trivia(WithTrailingEOL(VBFactory.ElseDirectiveTrivia().NormalizeWhitespace().WithConvertedTrailingTriviaFrom(((CSSyntax.ElseDirectiveTriviaSyntax)StructuredTrivia).ElseKeyword)));
             }
 
             case (int)CS.SyntaxKind.EndRegionDirectiveTrivia: {
-                CSS.EndRegionDirectiveTriviaSyntax EndRegionDirective = (CSS.EndRegionDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.EndRegionDirectiveTriviaSyntax EndRegionDirective = (CSSyntax.EndRegionDirectiveTriviaSyntax)StructuredTrivia;
                 return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.EndRegionDirectiveTrivia(VisualBasicSyntaxFactory.HashToken, VisualBasicSyntaxFactory.EndKeyword, VisualBasicSyntaxFactory.RegionKeyword), EndRegionDirective.EndOfDirectiveToken));
             }
 
             case (int)CS.SyntaxKind.PragmaWarningDirectiveTrivia: {
-                // Dim PragmaWarningDirectiveTrivia As CSS.PragmaWarningDirectiveTriviaSyntax = DirectCast(StructuredTrivia, CSS.PragmaWarningDirectiveTriviaSyntax)
+                // Dim PragmaWarningDirectiveTrivia As CSSyntax.PragmaWarningDirectiveTriviaSyntax = DirectCast(StructuredTrivia, CSSyntax.PragmaWarningDirectiveTriviaSyntax)
                 // Dim ErrorList As New List(Of VBS.IdentifierNameSyntax)
                 // Dim TrailingTriviaStringBuilder As New StringBuilder
-                // For Each i As CSS.ExpressionSyntax In PragmaWarningDirectiveTrivia.ErrorCodes
+                // For Each i As CSSyntax.ExpressionSyntax In PragmaWarningDirectiveTrivia.ErrorCodes
                 // Dim ErrorCode As String = i.ToString
                 // If ErrorCode.IsInteger Then
                 // ErrorCode = $"CS_{ErrorCode}"
@@ -356,7 +355,7 @@ internal class RecursiveTriviaConverter
             }
 
             case (int)CS.SyntaxKind.RegionDirectiveTrivia: {
-                CSS.RegionDirectiveTriviaSyntax RegionDirective = (CSS.RegionDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.RegionDirectiveTriviaSyntax RegionDirective = (CSSyntax.RegionDirectiveTriviaSyntax)StructuredTrivia;
                 var EndOfDirectiveToken = RegionDirective.EndOfDirectiveToken;
                 string NameString = $"\"{EndOfDirectiveToken.LeadingTrivia.ToString().Replace("\"", "")}\"";
                 var RegionDirectiveTriviaNode = VBFactory.RegionDirectiveTrivia(VisualBasicSyntaxFactory.HashToken, VisualBasicSyntaxFactory.RegionKeyword, VBFactory.StringLiteralToken(NameString, NameString)
@@ -365,7 +364,7 @@ internal class RecursiveTriviaConverter
             }
 
             case (int)CS.SyntaxKind.SingleLineDocumentationCommentTrivia: {
-                CSS.DocumentationCommentTriviaSyntax SingleLineDocumentationComment = (CSS.DocumentationCommentTriviaSyntax)StructuredTrivia;
+                CSSyntax.DocumentationCommentTriviaSyntax SingleLineDocumentationComment = (CSSyntax.DocumentationCommentTriviaSyntax)StructuredTrivia;
                 var walker = new XMLVisitor();
                 walker.Visit(SingleLineDocumentationComment);
 
@@ -393,7 +392,7 @@ internal class RecursiveTriviaConverter
             }
 
             case (int)CS.SyntaxKind.PragmaChecksumDirectiveTrivia: {
-                CSS.PragmaChecksumDirectiveTriviaSyntax PragmaChecksumDirective = (CSS.PragmaChecksumDirectiveTriviaSyntax)StructuredTrivia;
+                CSSyntax.PragmaChecksumDirectiveTriviaSyntax PragmaChecksumDirective = (CSSyntax.PragmaChecksumDirectiveTriviaSyntax)StructuredTrivia;
                 var Guid1 = VBFactory.ParseToken(PragmaChecksumDirective.Guid.Text.ToUpperInvariant());
                 var Bytes = VBFactory.ParseToken(PragmaChecksumDirective.Bytes.Text);
                 var ExternalSource = VBFactory.ParseToken(PragmaChecksumDirective.File.Text);
@@ -403,7 +402,7 @@ internal class RecursiveTriviaConverter
 
             case (int)CS.SyntaxKind.SkippedTokensTrivia: {
                 var Builder = new StringBuilder();
-                foreach (SyntaxToken tok in ((CSS.SkippedTokensTriviaSyntax)StructuredTrivia).Tokens)
+                foreach (SyntaxToken tok in ((CSSyntax.SkippedTokensTriviaSyntax)StructuredTrivia).Tokens)
                     Builder.Append(tok.ToString());
                 return VBFactory.CommentTrivia($"' TODO: Error SkippedTokensTrivia '{Builder}'");
             }
@@ -467,7 +466,7 @@ internal class RecursiveTriviaConverter
                 }
 
                 case (int)CS.SyntaxKind.MultiLineDocumentationCommentTrivia: {
-                    CSS.StructuredTriviaSyntax sld = (CSS.StructuredTriviaSyntax)Trivia.GetStructure();
+                    CSSyntax.StructuredTriviaSyntax sld = (CSSyntax.StructuredTriviaSyntax)Trivia.GetStructure();
                     foreach (SyntaxNode t1 in sld.ChildNodes()) {
                         var Lines = t1.ToFullString().ConsistentNewlines().Split(new[] { "\r\n" }, StringSplitOptions.None);
                         foreach (string line in Lines) {

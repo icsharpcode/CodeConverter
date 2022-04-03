@@ -12,7 +12,6 @@ using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.Member
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -196,7 +195,7 @@ internal class TypeConversionAnalyzer
         return null;
     }
 
-    private CSS.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
+    private CSSyntax.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
     {
         var parentExceptParentheses = vbNode.Parent is VBSyntax.ExpressionSyntax parentExp ? parentExp.SkipOutOfParens() : vbNode.Parent;
         if (vbConvertedType.Name != nameof(Delegate) &&
@@ -214,7 +213,7 @@ internal class TypeConversionAnalyzer
         return null;
     }
 
-    private CSS.NameSyntax CreateCommonDelegateTypeSyntax(IMethodSymbol vbLambda)
+    private CSSyntax.NameSyntax CreateCommonDelegateTypeSyntax(IMethodSymbol vbLambda)
     {
         var parameters = vbLambda.Parameters
             .Select(p => _csSyntaxGenerator.TypeExpression(p.Type));
@@ -227,7 +226,7 @@ internal class TypeConversionAnalyzer
         return CreateType("Func", parameters.Concat(typeExpression));
     }
 
-    private static CSS.NameSyntax CreateType(string baseTypeName, IEnumerable<SyntaxNode> parameters)
+    private static CSSyntax.NameSyntax CreateType(string baseTypeName, IEnumerable<SyntaxNode> parameters)
     {
         var parameterList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(parameters));
         if (!parameterList.Arguments.Any()) return SyntaxFactory.IdentifierName(baseTypeName);

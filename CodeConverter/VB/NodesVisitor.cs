@@ -9,7 +9,6 @@ using ArgumentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayRankSpecifierSyntax;
 using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
 using AttributeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeSyntax;
-using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using InterpolatedStringContentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringContentSyntax;
@@ -41,7 +40,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     private readonly SemanticModel _semanticModel;
     private readonly VisualBasicCompilation _vbViewOfCsSymbols;
     private readonly SyntaxGenerator _vbSyntaxGenerator;
-    private readonly List<CSS.UsingDirectiveSyntax> _importsToConvert = new List<CSS.UsingDirectiveSyntax>();
+    private readonly List<CSSyntax.UsingDirectiveSyntax> _importsToConvert = new List<CSSyntax.UsingDirectiveSyntax>();
     private readonly HashSet<string> _extraImports = new HashSet<string>();
     private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
     private readonly CommonConversions _commonConversions;
@@ -75,7 +74,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             .WithNodeInformation(node);
     }
 
-    public override VisualBasicSyntaxNode VisitCompilationUnit(CSS.CompilationUnitSyntax node)
+    public override VisualBasicSyntaxNode VisitCompilationUnit(CSSyntax.CompilationUnitSyntax node)
     {
         _importsToConvert.AddRange(node.Usings);
         foreach (var @extern in node.Externs)
@@ -92,7 +91,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             members
         );
     }
-    private IEnumerable<CSS.UsingDirectiveSyntax> TidyImportsList(IEnumerable<CSS.UsingDirectiveSyntax> usings)
+    private IEnumerable<CSSyntax.UsingDirectiveSyntax> TidyImportsList(IEnumerable<CSSyntax.UsingDirectiveSyntax> usings)
     {
         return usings
             .GroupBy(x => x.ToString())
@@ -105,18 +104,18 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     }
 
     #region Attributes
-    public override VisualBasicSyntaxNode VisitAttributeList(CSS.AttributeListSyntax node)
+    public override VisualBasicSyntaxNode VisitAttributeList(CSSyntax.AttributeListSyntax node)
     {
         return SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(node.Attributes.Select(a => (AttributeSyntax)a.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitAttribute(CSS.AttributeSyntax node)
+    public override VisualBasicSyntaxNode VisitAttribute(CSSyntax.AttributeSyntax node)
     {
-        var list = (CSS.AttributeListSyntax)node.Parent;
+        var list = (CSSyntax.AttributeListSyntax)node.Parent;
         return SyntaxFactory.Attribute((AttributeTargetSyntax)list.Target?.Accept(TriviaConvertingVisitor), (TypeSyntax)node.Name.Accept(TriviaConvertingVisitor), (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitAttributeTargetSpecifier(CSS.AttributeTargetSpecifierSyntax node)
+    public override VisualBasicSyntaxNode VisitAttributeTargetSpecifier(CSSyntax.AttributeTargetSpecifierSyntax node)
     {
         SyntaxToken id;
         switch (CS.CSharpExtensions.Kind(node.Identifier)) {
@@ -132,12 +131,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.AttributeTarget(id);
     }
 
-    public override VisualBasicSyntaxNode VisitAttributeArgumentList(CSS.AttributeArgumentListSyntax node)
+    public override VisualBasicSyntaxNode VisitAttributeArgumentList(CSSyntax.AttributeArgumentListSyntax node)
     {
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitAttributeArgument(CSS.AttributeArgumentSyntax node)
+    public override VisualBasicSyntaxNode VisitAttributeArgument(CSSyntax.AttributeArgumentSyntax node)
     {
         NameColonEqualsSyntax name = null;
         if (node.NameColon != null) {
@@ -150,7 +149,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     }
     #endregion
 
-    public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CSS.NamespaceDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CSSyntax.NamespaceDeclarationSyntax node)
     {
         foreach (var @using in node.Usings)
             _importsToConvert.AddRange(node.Usings);
@@ -164,7 +163,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitUsingDirective(CSS.UsingDirectiveSyntax node)
+    public override VisualBasicSyntaxNode VisitUsingDirective(CSSyntax.UsingDirectiveSyntax node)
     {
         var nameToImport = _semanticModel.GetSymbolInfo(node.Name).Symbol is INamespaceOrTypeSymbol toImport
             ? _commonConversions.GetFullyQualifiedNameSyntax(toImport, false)
@@ -183,7 +182,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     #region Namespace Members
 
-    public override VisualBasicSyntaxNode VisitClassDeclaration(CSS.ClassDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitClassDeclaration(CSSyntax.ClassDeclarationSyntax node)
     {
         var members = ConvertMembers(node).ToList();
         var id = _commonConversions.ConvertIdentifier(node.Identifier);
@@ -216,14 +215,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    private IEnumerable<StatementSyntax> ConvertMembers(CSS.TypeDeclarationSyntax node)
+    private IEnumerable<StatementSyntax> ConvertMembers(CSSyntax.TypeDeclarationSyntax node)
     {
         var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
         var newmembers = _commonConversions.InsertGeneratedClassMemberDeclarations(SyntaxFactory.List(members), node, CanBeModule(node));
         return newmembers;
     }
 
-    public override VisualBasicSyntaxNode VisitStructDeclaration(CSS.StructDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitStructDeclaration(CSSyntax.StructDeclarationSyntax node)
     {
         var members = ConvertMembers(node).ToList();
 
@@ -244,7 +243,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitInterfaceDeclaration(CSS.InterfaceDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitInterfaceDeclaration(CSSyntax.InterfaceDeclarationSyntax node)
     {
         var members = ConvertMembers(node).ToArray();
 
@@ -263,11 +262,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitEnumDeclaration(CSS.EnumDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitEnumDeclaration(CSSyntax.EnumDeclarationSyntax node)
     {
         var members = node.Members.Select(m => (StatementSyntax)m.Accept(TriviaConvertingVisitor));
         var baseType = (TypeSyntax)node.BaseList?
-            .Types.OfType<CSS.SimpleBaseTypeSyntax>().Single().Type.Accept(TriviaConvertingVisitor);
+            .Types.OfType<CSSyntax.SimpleBaseTypeSyntax>().Single().Type.Accept(TriviaConvertingVisitor);
         return SyntaxFactory.EnumBlock(
             SyntaxFactory.EnumStatement(
                 SyntaxFactory.List(node.AttributeLists.Select(a => (AttributeListSyntax)a.Accept(TriviaConvertingVisitor))), CommonConversions.ConvertModifiers(node.Modifiers), _commonConversions.ConvertIdentifier(node.Identifier),
@@ -277,7 +276,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitEnumMemberDeclaration(CSS.EnumMemberDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitEnumMemberDeclaration(CSSyntax.EnumMemberDeclarationSyntax node)
     {
         var initializer = (ExpressionSyntax)node.EqualsValue?.Value.Accept(TriviaConvertingVisitor);
         return SyntaxFactory.EnumMemberDeclaration(
@@ -286,7 +285,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitDelegateDeclaration(CSS.DelegateDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitDelegateDeclaration(CSSyntax.DelegateDeclarationSyntax node)
     {
         var id = _commonConversions.ConvertIdentifier(node.Identifier);
         var methodInfo = _semanticModel.GetDeclaredSymbol(node) as INamedTypeSymbol;
@@ -311,7 +310,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     #region Type Members
 
-    public override VisualBasicSyntaxNode VisitFieldDeclaration(CSS.FieldDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitFieldDeclaration(CSSyntax.FieldDeclarationSyntax node)
     {
         var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
         if (modifiers.Count == 0)
@@ -323,7 +322,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitConstructorDeclaration(CSS.ConstructorDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitConstructorDeclaration(CSSyntax.ConstructorDeclarationSyntax node)
     {
         var initializer = new[] { (StatementSyntax)node.Initializer?.Accept(TriviaConvertingVisitor) }.Where(x => x != null);
         return SyntaxFactory.ConstructorBlock(
@@ -335,11 +334,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitIsPatternExpression(CSS.IsPatternExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitIsPatternExpression(CSSyntax.IsPatternExpressionSyntax node)
     {
         ExpressionSyntax lhs = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
         switch (node.Pattern) {
-            case CSS.DeclarationPatternSyntax d: {
+            case CSSyntax.DeclarationPatternSyntax d: {
                 var left = (ExpressionSyntax)d.Designation.Accept(TriviaConvertingVisitor);
                 ExpressionSyntax right = SyntaxFactory.TryCastExpression(
                     lhs,
@@ -350,7 +349,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                     SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                 return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
             }
-            case CSS.ConstantPatternSyntax cps:
+            case CSSyntax.ConstantPatternSyntax cps:
                 return SyntaxFactory.IsExpression(lhs,
                     (ExpressionSyntax)cps.Expression.Accept(TriviaConvertingVisitor));
             default:
@@ -358,22 +357,22 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    public override VisualBasicSyntaxNode VisitDeclarationExpression(CSS.DeclarationExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitDeclarationExpression(CSSyntax.DeclarationExpressionSyntax node)
     {
         return node.Designation.Accept(TriviaConvertingVisitor);
     }
 
-    public override VisualBasicSyntaxNode VisitSingleVariableDesignation(CSS.SingleVariableDesignationSyntax node)
+    public override VisualBasicSyntaxNode VisitSingleVariableDesignation(CSSyntax.SingleVariableDesignationSyntax node)
     {
         return SyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(node.Identifier));
     }
 
-    public override VisualBasicSyntaxNode VisitDiscardDesignation(CSS.DiscardDesignationSyntax node)
+    public override VisualBasicSyntaxNode VisitDiscardDesignation(CSSyntax.DiscardDesignationSyntax node)
     {
         return SyntaxFactory.IdentifierName("__");
     }
 
-    public override VisualBasicSyntaxNode VisitConstructorInitializer(CSS.ConstructorInitializerSyntax node)
+    public override VisualBasicSyntaxNode VisitConstructorInitializer(CSSyntax.ConstructorInitializerSyntax node)
     {
         var initializerExpression = GetInitializerExpression(node);
         var newMethodCall = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -383,7 +382,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(newMethodCall, (ArgumentListSyntax)node.ArgumentList.Accept(TriviaConvertingVisitor)));
     }
 
-    private static ExpressionSyntax GetInitializerExpression(CSS.ConstructorInitializerSyntax node)
+    private static ExpressionSyntax GetInitializerExpression(CSSyntax.ConstructorInitializerSyntax node)
     {
         if (node.IsKind(CS.SyntaxKind.BaseConstructorInitializer)) {
             return SyntaxFactory.MyBaseExpression();
@@ -396,7 +395,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         throw new ArgumentOutOfRangeException(nameof(node), node, $"{CS.CSharpExtensions.Kind(node)} unknown");
     }
 
-    public override VisualBasicSyntaxNode VisitDestructorDeclaration(CSS.DestructorDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitDestructorDeclaration(CSSyntax.DestructorDeclarationSyntax node)
     {
         return SyntaxFactory.SubBlock(
             SyntaxFactory.SubStatement(
@@ -409,7 +408,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitMethodDeclaration(CSS.MethodDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitMethodDeclaration(CSSyntax.MethodDeclarationSyntax node)
     {
         var isIteratorState = new MethodBodyExecutableStatementVisitor(_semanticModel, TriviaConvertingVisitor, _commonConversions);
         bool requiresBody = node.Body != null || node.ExpressionBody != null || node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, CS.SyntaxKind.ExternKeyword, CS.SyntaxKind.PartialKeyword));
@@ -493,7 +492,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSS.PropertyDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSSyntax.PropertyDeclarationSyntax node)
     {
         var id = _commonConversions.ConvertIdentifier(node.Identifier);
         var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
@@ -502,7 +501,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return ConvertPropertyBlock(node, id, modifiers, null, node.ExpressionBody, initializer);
     }
 
-    public override VisualBasicSyntaxNode VisitIndexerDeclaration(CSS.IndexerDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitIndexerDeclaration(CSSyntax.IndexerDeclarationSyntax node)
     {
         var id = _commonConversions.ConvertIdentifier(node.ThisKeyword);
         var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
@@ -514,9 +513,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return ConvertPropertyBlock(node, id, modifiers, parameterListSyntax, node.ExpressionBody, null);
     }
 
-    private VisualBasicSyntaxNode ConvertPropertyBlock(CSS.BasePropertyDeclarationSyntax node,
+    private VisualBasicSyntaxNode ConvertPropertyBlock(CSSyntax.BasePropertyDeclarationSyntax node,
         SyntaxToken id, SyntaxTokenList modifiers,
-        ParameterListSyntax parameterListSyntax, CSS.ArrowExpressionClauseSyntax arrowExpressionClauseSyntax,
+        ParameterListSyntax parameterListSyntax, CSSyntax.ArrowExpressionClauseSyntax arrowExpressionClauseSyntax,
         EqualsValueSyntax initializerOrNull)
     {
         ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
@@ -573,14 +572,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return Enumerable.Empty<SyntaxKind>();
     }
 
-    private static bool RequiresAccessorBody(CSS.AccessorListSyntax accessorListSyntaxOrNull)
+    private static bool RequiresAccessorBody(CSSyntax.AccessorListSyntax accessorListSyntaxOrNull)
     {
         return accessorListSyntaxOrNull.Accessors.Any(a => a.Body != null || a.ExpressionBody != null || a.Modifiers.ContainsDeclaredVisibility());
     }
 
-    private TokenContext GetMemberContext(CSS.MemberDeclarationSyntax member)
+    private TokenContext GetMemberContext(CSSyntax.MemberDeclarationSyntax member)
     {
-        var parentType = member.GetAncestorOrThis<CSS.TypeDeclarationSyntax>();
+        var parentType = member.GetAncestorOrThis<CSSyntax.TypeDeclarationSyntax>();
         var parentTypeKind = parentType?.Kind();
         switch (parentTypeKind) {
             case CS.SyntaxKind.ClassDeclaration:
@@ -593,11 +592,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
         }
     }
-    private bool CanBeModule(CSS.TypeDeclarationSyntax type) {
-        var parentType = type.GetAncestor<CSS.TypeDeclarationSyntax>();
+    private bool CanBeModule(CSSyntax.TypeDeclarationSyntax type) {
+        var parentType = type.GetAncestor<CSSyntax.TypeDeclarationSyntax>();
         return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null && parentType == null;
     }
-    public override VisualBasicSyntaxNode VisitEventDeclaration(CSS.EventDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitEventDeclaration(CSSyntax.EventDeclarationSyntax node)
     {
         ConvertAndSplitAttributes(node.AttributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes);
         var declaredSymbol = _semanticModel.GetDeclaredSymbol(node);
@@ -622,11 +621,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
         var csEventFieldIdentifier = node.AccessorList?.Accessors
             .SelectMany(x => x.Body.Statements)
-            .OfType<CSS.ExpressionStatementSyntax>()
+            .OfType<CSSyntax.ExpressionStatementSyntax>()
             .Where(x => x.Expression != null)
             .Select(x => x.Expression)
-            .OfType<CSS.AssignmentExpressionSyntax>()
-            .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSS.IdentifierNameSyntax>())
+            .OfType<CSSyntax.AssignmentExpressionSyntax>()
+            .SelectMany(x => x.Left.DescendantNodesAndSelf().OfType<CSSyntax.IdentifierNameSyntax>())
             .FirstOrDefault();
         var eventFieldIdentifier = (IdentifierNameSyntax)csEventFieldIdentifier?.Accept(TriviaConvertingVisitor, false);
 
@@ -674,7 +673,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.EventBlock(stmt, SyntaxFactory.List(accessors));
     }
 
-    public override VisualBasicSyntaxNode VisitEventFieldDeclaration(CSS.EventFieldDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitEventFieldDeclaration(CSSyntax.EventFieldDeclarationSyntax node)
     {
         var decl = node.Declaration.Variables.Single();
         var id = SyntaxFactory.Identifier(decl.Identifier.ValueText, SyntaxFacts.IsKeywordKind(decl.Identifier.Kind()), decl.Identifier.GetIdentifierText(), TypeCharacter.None);
@@ -694,7 +693,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return (TypeSyntax) _vbSyntaxGenerator.TypeExpression(typeInfo);
     }
 
-    private void ConvertAndSplitAttributes(SyntaxList<CSS.AttributeListSyntax> attributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes)
+    private void ConvertAndSplitAttributes(SyntaxList<CSSyntax.AttributeListSyntax> attributeLists, out SyntaxList<AttributeListSyntax> attributes, out SyntaxList<AttributeListSyntax> returnAttributes)
     {
         var retAttr = new List<AttributeListSyntax>();
         var attr = new List<AttributeListSyntax>();
@@ -710,7 +709,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         attributes = SyntaxFactory.List(attr);
     }
 
-    public override VisualBasicSyntaxNode VisitOperatorDeclaration(CSS.OperatorDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitOperatorDeclaration(CSSyntax.OperatorDeclarationSyntax node)
     {
         ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
         var body = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, true);
@@ -768,7 +767,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         throw new NotSupportedException($"{nameof(syntaxKind)} of {syntaxKind} cannot be converted");
     }
 
-    public override VisualBasicSyntaxNode VisitConversionOperatorDeclaration(CSS.ConversionOperatorDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitConversionOperatorDeclaration(CSSyntax.ConversionOperatorDeclarationSyntax node)
     {
         ConvertAndSplitAttributes(node.AttributeLists, out var attributes, out var returnAttributes);
         var body = _commonConversions.ConvertBody(node.Body, node.ExpressionBody, true);
@@ -784,28 +783,28 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.OperatorBlock(stmt, body);
     }
 
-    public override VisualBasicSyntaxNode VisitParameterList(CSS.ParameterListSyntax node)
+    public override VisualBasicSyntaxNode VisitParameterList(CSSyntax.ParameterListSyntax node)
     {
         return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitBracketedParameterList(CSS.BracketedParameterListSyntax node)
+    public override VisualBasicSyntaxNode VisitBracketedParameterList(CSSyntax.BracketedParameterListSyntax node)
     {
         return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(node.Parameters.Select(p => (ParameterSyntax)p.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitTupleType(CSS.TupleTypeSyntax node)
+    public override VisualBasicSyntaxNode VisitTupleType(CSSyntax.TupleTypeSyntax node)
     {
         var elements = node.Elements.Select(e => (TupleElementSyntax)e.Accept(TriviaConvertingVisitor));
         return SyntaxFactory.TupleType(SyntaxFactory.SeparatedList(elements));
     }
 
-    public override VisualBasicSyntaxNode VisitTupleElement(CSS.TupleElementSyntax node)
+    public override VisualBasicSyntaxNode VisitTupleElement(CSSyntax.TupleElementSyntax node)
     {
         return SyntaxFactory.TypedTupleElement((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitTupleExpression(CSS.TupleExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitTupleExpression(CSSyntax.TupleExpressionSyntax node)
     {
         var args = node.Arguments.Select(a => {
             var expr = (ExpressionSyntax)a.Expression.Accept(TriviaConvertingVisitor);
@@ -814,12 +813,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
     }
 
-    public override VisualBasicSyntaxNode VisitParenthesizedVariableDesignation(CSS.ParenthesizedVariableDesignationSyntax node)
+    public override VisualBasicSyntaxNode VisitParenthesizedVariableDesignation(CSSyntax.ParenthesizedVariableDesignationSyntax node)
     {
         return SyntaxFactory.IdentifierName(CommonConversions.GetTupleName(node));
     }
 
-    public override VisualBasicSyntaxNode VisitParameter(CSS.ParameterSyntax node)
+    public override VisualBasicSyntaxNode VisitParameter(CSSyntax.ParameterSyntax node)
     {
         var id = _commonConversions.ConvertIdentifier(node.Identifier);
         var returnType = (TypeSyntax)node.Type?.Accept(TriviaConvertingVisitor);
@@ -860,7 +859,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     #region Expressions
 
-    public override VisualBasicSyntaxNode VisitLiteralExpression(CSS.LiteralExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitLiteralExpression(CSSyntax.LiteralExpressionSyntax node)
     {
         if (node.IsKind(CS.SyntaxKind.DefaultLiteralExpression)) {
             return CreateTypedNothing(node);
@@ -878,12 +877,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    public override VisualBasicSyntaxNode VisitInterpolatedStringExpression(CSS.InterpolatedStringExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitInterpolatedStringExpression(CSSyntax.InterpolatedStringExpressionSyntax node)
     {
         return SyntaxFactory.InterpolatedStringExpression(node.Contents.Select(c => (InterpolatedStringContentSyntax)c.Accept(TriviaConvertingVisitor)).ToArray());
     }
 
-    public override VisualBasicSyntaxNode VisitInterpolatedStringText(CSS.InterpolatedStringTextSyntax node)
+    public override VisualBasicSyntaxNode VisitInterpolatedStringText(CSSyntax.InterpolatedStringTextSyntax node)
     {
         return SyntaxFactory.InterpolatedStringText(SyntaxFactory.InterpolatedStringTextToken(ConvertUserText(node.TextToken), node.TextToken.ValueText));
     }
@@ -899,24 +898,24 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return token.ValueText.Replace("\\\\", "\\");
     }
 
-    public override VisualBasicSyntaxNode VisitInterpolation(CSS.InterpolationSyntax node)
+    public override VisualBasicSyntaxNode VisitInterpolation(CSSyntax.InterpolationSyntax node)
     {
         return SyntaxFactory.Interpolation(SyntaxFactory.Token(SyntaxKind.OpenBraceToken), (ExpressionSyntax) node.Expression.Accept(TriviaConvertingVisitor), (InterpolationAlignmentClauseSyntax) node.AlignmentClause?.Accept(TriviaConvertingVisitor), (InterpolationFormatClauseSyntax) node.FormatClause?.Accept(TriviaConvertingVisitor), SyntaxFactory.Token(SyntaxKind.CloseBraceToken));
     }
 
-    public override VisualBasicSyntaxNode VisitInterpolationFormatClause(CSS.InterpolationFormatClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitInterpolationFormatClause(CSSyntax.InterpolationFormatClauseSyntax node)
     {
         SyntaxToken formatStringToken = SyntaxFactory.InterpolatedStringTextToken(SyntaxTriviaList.Empty,
             ConvertUserFormatText(node.FormatStringToken), node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
         return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), formatStringToken);
     }
 
-    public override VisualBasicSyntaxNode VisitInterpolationAlignmentClause(CSS.InterpolationAlignmentClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitInterpolationAlignmentClause(CSSyntax.InterpolationAlignmentClauseSyntax node)
     {
         return SyntaxFactory.InterpolationAlignmentClause(SyntaxFactory.Token(SyntaxKind.CommaToken), (ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSS.ParenthesizedExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitParenthesizedExpression(CSSyntax.ParenthesizedExpressionSyntax node)
     {
         return node.Expression.Accept(TriviaConvertingVisitor)
             .TypeSwitch<VisualBasicSyntaxNode, AssignmentStatementSyntax, CTypeExpressionSyntax, TryCastExpressionSyntax, ExpressionSyntax, VisualBasicSyntaxNode>(
@@ -941,7 +940,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             );
     }
 
-    public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSS.PrefixUnaryExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitPrefixUnaryExpression(CSSyntax.PrefixUnaryExpressionSyntax node)
     {
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
         if (kind == SyntaxKind.AddAssignmentStatement || kind == SyntaxKind.SubtractAssignmentStatement) {
@@ -961,14 +960,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return names.Aggregate((seed, current) => seed + '.' + current);
     }
 
-    public override VisualBasicSyntaxNode VisitAssignmentExpression(CSS.AssignmentExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitAssignmentExpression(CSSyntax.AssignmentExpressionSyntax node)
     {
         var left = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
         var right = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
         if (IsReturnValueDiscarded(node)) {
             if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
                 if (_semanticModel.GetSymbolInfo(node.Left).Symbol.Kind != SymbolKind.Event) {
-                    var kind = node.GetAncestor<CSS.AccessorDeclarationSyntax>()?.Kind();
+                    var kind = node.GetAncestor<CSSyntax.AccessorDeclarationSyntax>()?.Kind();
                     if (kind != null && (kind.Value == CS.SyntaxKind.AddAccessorDeclaration || kind.Value == CS.SyntaxKind.RemoveAccessorDeclaration)) {
                         var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
                         var delegateMethod = MemberAccess("[Delegate]", methodName);
@@ -986,14 +985,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             }
             return MakeAssignmentStatement(node, left, right);
         }
-        if (node.Parent is CSS.ForStatementSyntax) {
+        if (node.Parent is CSSyntax.ForStatementSyntax) {
             return MakeAssignmentStatement(node, left, right);
         }
         if (node.Parent.IsParentKind(CS.SyntaxKind.CoalesceExpression)) {
             return MakeAssignmentStatement(node, left, right);
         }
-        if (node.Parent is CSS.InitializerExpressionSyntax) {
-            if (node.Left is CSS.ImplicitElementAccessSyntax) {
+        if (node.Parent is CSSyntax.InitializerExpressionSyntax) {
+            if (node.Left is CSSyntax.ImplicitElementAccessSyntax) {
                 return SyntaxFactory.CollectionInitializer(
                     SyntaxFactory.SeparatedList(new[] { left, right })
                 );
@@ -1026,7 +1025,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitPostfixUnaryExpression(CSS.PostfixUnaryExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitPostfixUnaryExpression(CSSyntax.PostfixUnaryExpressionSyntax node)
     {
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
         if (IsReturnValueDiscarded(node)) {
@@ -1059,16 +1058,16 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    private bool IsReturnValueDiscarded(CSS.ExpressionSyntax node)
+    private bool IsReturnValueDiscarded(CSSyntax.ExpressionSyntax node)
     {
-        return node.Parent is CSS.ParenthesizedLambdaExpressionSyntax ples && _commonConversions.ReturnsVoid(ples) ||
-               node.Parent is CSS.ExpressionStatementSyntax ||
-               node.Parent is CSS.SimpleLambdaExpressionSyntax ||
-               node.Parent is CSS.ForStatementSyntax ||
+        return node.Parent is CSSyntax.ParenthesizedLambdaExpressionSyntax ples && _commonConversions.ReturnsVoid(ples) ||
+               node.Parent is CSSyntax.ExpressionStatementSyntax ||
+               node.Parent is CSSyntax.SimpleLambdaExpressionSyntax ||
+               node.Parent is CSSyntax.ForStatementSyntax ||
                node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
     }
 
-    private AssignmentStatementSyntax MakeAssignmentStatement(CSS.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
+    private AssignmentStatementSyntax MakeAssignmentStatement(CSSyntax.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
     {
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
         if (node.IsKind(CS.SyntaxKind.AndAssignmentExpression, CS.SyntaxKind.OrAssignmentExpression, CS.SyntaxKind.ExclusiveOrAssignmentExpression, CS.SyntaxKind.ModuloAssignmentExpression)) {
@@ -1090,7 +1089,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitInvocationExpression(CSS.InvocationExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitInvocationExpression(CSSyntax.InvocationExpressionSyntax node)
     {
         if (IsNameOfExpression(node)) {
             var argument = node.ArgumentList.Arguments.Single().Expression;
@@ -1111,10 +1110,10 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.InvocationExpression(vbEventExpression, argumentListSyntax);
     }
 
-    private bool TryCreateRaiseEventStatement(CSS.ExpressionSyntax invokedCsExpression,
-        CSS.ArgumentListSyntax argumentListSyntax, out VisualBasicSyntaxNode visitInvocationExpression)
+    private bool TryCreateRaiseEventStatement(CSSyntax.ExpressionSyntax invokedCsExpression,
+        CSSyntax.ArgumentListSyntax argumentListSyntax, out VisualBasicSyntaxNode visitInvocationExpression)
     {
-        if (invokedCsExpression is CSS.MemberAccessExpressionSyntax csMemberAccess &&
+        if (invokedCsExpression is CSSyntax.MemberAccessExpressionSyntax csMemberAccess &&
             IsInvokeIdentifier(csMemberAccess.Name)) {
             invokedCsExpression = csMemberAccess.Expression;
         }
@@ -1146,15 +1145,15 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    private bool IsNameOfExpression(CSS.InvocationExpressionSyntax node)
+    private bool IsNameOfExpression(CSSyntax.InvocationExpressionSyntax node)
     {
-        return node.Expression is CSS.IdentifierNameSyntax methodIdentifier
+        return node.Expression is CSSyntax.IdentifierNameSyntax methodIdentifier
                && methodIdentifier?.Identifier.Text == "nameof"
                // nameof expressions don't have an associated method symbol, a method called nameof usually would
                && _semanticModel.GetSymbolInfo(methodIdentifier).ExtractBestMatch<ISymbol>() == null;
     }
 
-    public override VisualBasicSyntaxNode VisitConditionalExpression(CSS.ConditionalExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitConditionalExpression(CSSyntax.ConditionalExpressionSyntax node)
     {
         return SyntaxFactory.TernaryConditionalExpression(
             (ExpressionSyntax)node.Condition.Accept(TriviaConvertingVisitor),
@@ -1163,9 +1162,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitConditionalAccessExpression(CSS.ConditionalAccessExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitConditionalAccessExpression(CSSyntax.ConditionalAccessExpressionSyntax node)
     {
-        if (node.WhenNotNull is CSS.InvocationExpressionSyntax invocation && TryCreateRaiseEventStatement(node.Expression, invocation.ArgumentList, out var raiseEventStatement)) {
+        if (node.WhenNotNull is CSSyntax.InvocationExpressionSyntax invocation && TryCreateRaiseEventStatement(node.Expression, invocation.ArgumentList, out var raiseEventStatement)) {
             return raiseEventStatement;
         }
 
@@ -1176,12 +1175,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    private static bool IsInvokeIdentifier(CSS.SimpleNameSyntax sns)
+    private static bool IsInvokeIdentifier(CSSyntax.SimpleNameSyntax sns)
     {
         return sns.Identifier.Value.Equals("Invoke");
     }
 
-    public override VisualBasicSyntaxNode VisitMemberAccessExpression(CSS.MemberAccessExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitMemberAccessExpression(CSSyntax.MemberAccessExpressionSyntax node)
     {
         return WrapTypedNameIfNecessary(SyntaxFactory.MemberAccessExpression(
             SyntaxKind.SimpleMemberAccessExpression,
@@ -1191,14 +1190,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         ), node);
     }
 
-    public override VisualBasicSyntaxNode VisitImplicitElementAccess(CSS.ImplicitElementAccessSyntax node)
+    public override VisualBasicSyntaxNode VisitImplicitElementAccess(CSSyntax.ImplicitElementAccessSyntax node)
     {
         if (node.ArgumentList.Arguments.Count > 1)
             throw new NotSupportedException("ImplicitElementAccess can only have one argument!");
         return node.ArgumentList.Arguments[0].Expression.Accept(TriviaConvertingVisitor);
     }
 
-    public override VisualBasicSyntaxNode VisitElementAccessExpression(CSS.ElementAccessExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitElementAccessExpression(CSSyntax.ElementAccessExpressionSyntax node)
     {
         return SyntaxFactory.InvocationExpression(
             (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor),
@@ -1206,17 +1205,17 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitMemberBindingExpression(CSS.MemberBindingExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitMemberBindingExpression(CSSyntax.MemberBindingExpressionSyntax node)
     {
         return SyntaxFactory.SimpleMemberAccessExpression((SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitDefaultExpression(CSS.DefaultExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitDefaultExpression(CSSyntax.DefaultExpressionSyntax node)
     {
         return CreateTypedNothing(node);
     }
 
-    private VisualBasicSyntaxNode CreateTypedNothing(CSS.ExpressionSyntax node)
+    private VisualBasicSyntaxNode CreateTypedNothing(CSSyntax.ExpressionSyntax node)
     {
         var nothing = VisualBasicSyntaxFactory.NothingExpression;
         return _semanticModel.GetTypeInfo(node).ConvertedType is { } t
@@ -1224,17 +1223,17 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             : nothing;
     }
 
-    public override VisualBasicSyntaxNode VisitThisExpression(CSS.ThisExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitThisExpression(CSSyntax.ThisExpressionSyntax node)
     {
         return SyntaxFactory.MeExpression();
     }
 
-    public override VisualBasicSyntaxNode VisitBaseExpression(CSS.BaseExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitBaseExpression(CSSyntax.BaseExpressionSyntax node)
     {
         return SyntaxFactory.MyBaseExpression();
     }
 
-    public override VisualBasicSyntaxNode VisitBinaryExpression(CSS.BinaryExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitBinaryExpression(CSSyntax.BinaryExpressionSyntax node)
     {
         var vbLeft = (ExpressionSyntax)node.Left.Accept(TriviaConvertingVisitor);
         var vbRight = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
@@ -1291,12 +1290,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitTypeOfExpression(CSS.TypeOfExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitTypeOfExpression(CSSyntax.TypeOfExpressionSyntax node)
     {
         return SyntaxFactory.GetTypeExpression((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitCastExpression(CSS.CastExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitCastExpression(CSSyntax.CastExpressionSyntax node)
     {
         var sourceType = _semanticModel.GetTypeInfo(node.Expression).Type;
         var destType = _semanticModel.GetTypeInfo(node.Type).Type;
@@ -1346,7 +1345,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    public override VisualBasicSyntaxNode VisitObjectCreationExpression(CSS.ObjectCreationExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitObjectCreationExpression(CSSyntax.ObjectCreationExpressionSyntax node)
     {
         return SyntaxFactory.ObjectCreationExpression(
             SyntaxFactory.List<AttributeListSyntax>(),
@@ -1356,7 +1355,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitAnonymousObjectCreationExpression(CSS.AnonymousObjectCreationExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitAnonymousObjectCreationExpression(CSSyntax.AnonymousObjectCreationExpressionSyntax node)
     {
         return SyntaxFactory.AnonymousObjectCreationExpression(
             SyntaxFactory.ObjectMemberInitializer(SyntaxFactory.SeparatedList(
@@ -1365,7 +1364,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitAnonymousObjectMemberDeclarator(CSS.AnonymousObjectMemberDeclaratorSyntax node)
+    public override VisualBasicSyntaxNode VisitAnonymousObjectMemberDeclarator(CSSyntax.AnonymousObjectMemberDeclaratorSyntax node)
     {
         if (node.NameEquals == null) {
             return SyntaxFactory.InferredFieldInitializer((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
@@ -1377,9 +1376,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    public override VisualBasicSyntaxNode VisitArrayCreationExpression(CSS.ArrayCreationExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitArrayCreationExpression(CSSyntax.ArrayCreationExpressionSyntax node)
     {
-        var upperBoundArguments = node.Type.RankSpecifiers.First()?.Sizes.Where(s => !(s is CSS.OmittedArraySizeExpressionSyntax)).Select(
+        var upperBoundArguments = node.Type.RankSpecifiers.First()?.Sizes.Where(s => !(s is CSSyntax.OmittedArraySizeExpressionSyntax)).Select(
             s => _commonConversions.ReduceArrayUpperBoundExpression(s));
         var rankSpecifiers = node.Type.RankSpecifiers.Select(rs => (ArrayRankSpecifierSyntax)rs.Accept(TriviaConvertingVisitor));
 
@@ -1393,14 +1392,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitImplicitArrayCreationExpression(CSS.ImplicitArrayCreationExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitImplicitArrayCreationExpression(CSSyntax.ImplicitArrayCreationExpressionSyntax node)
     {
         return SyntaxFactory.CollectionInitializer(
             SyntaxFactory.SeparatedList(node.Initializer.Expressions.Select(e => (ExpressionSyntax)e.Accept(TriviaConvertingVisitor)))
         );
     }
 
-    public override VisualBasicSyntaxNode VisitInitializerExpression(CSS.InitializerExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitInitializerExpression(CSSyntax.InitializerExpressionSyntax node)
     {
         if (node.IsKind(CS.SyntaxKind.ObjectInitializerExpression)) {
             var expressions = node.Expressions.Select(e => e.Accept(TriviaConvertingVisitor)).ToList();
@@ -1431,28 +1430,28 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.CollectionInitializer(SyntaxFactory.SeparatedList(node.Expressions.Select(e => (ExpressionSyntax)e.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitAnonymousMethodExpression(CSS.AnonymousMethodExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitAnonymousMethodExpression(CSSyntax.AnonymousMethodExpressionSyntax node)
     {
-        var parameterListParameters = node.ParameterList?.Parameters ?? Enumerable.Empty<CSS.ParameterSyntax>();// May have no parameter list
+        var parameterListParameters = node.ParameterList?.Parameters ?? Enumerable.Empty<CSSyntax.ParameterSyntax>();// May have no parameter list
         return _commonConversions.ConvertLambdaExpression(node, node.Block, parameterListParameters, SyntaxFactory.TokenList(node.AsyncKeyword));
     }
 
-    public override VisualBasicSyntaxNode VisitSimpleLambdaExpression(CSS.SimpleLambdaExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitSimpleLambdaExpression(CSSyntax.SimpleLambdaExpressionSyntax node)
     {
         return _commonConversions.ConvertLambdaExpression(node, node.Body, new[] { node.Parameter }, SyntaxFactory.TokenList(node.AsyncKeyword));
     }
 
-    public override VisualBasicSyntaxNode VisitParenthesizedLambdaExpression(CSS.ParenthesizedLambdaExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitParenthesizedLambdaExpression(CSSyntax.ParenthesizedLambdaExpressionSyntax node)
     {
         return _commonConversions.ConvertLambdaExpression(node, node.Body, node.ParameterList.Parameters, SyntaxFactory.TokenList(node.AsyncKeyword));
     }
 
-    public override VisualBasicSyntaxNode VisitAwaitExpression(CSS.AwaitExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitAwaitExpression(CSSyntax.AwaitExpressionSyntax node)
     {
         return SyntaxFactory.AwaitExpression((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitQueryExpression(CSS.QueryExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitQueryExpression(CSSyntax.QueryExpressionSyntax node)
     {
         return SyntaxFactory.QueryExpression(
             SyntaxFactory.SingletonList((QueryClauseSyntax)node.FromClause.Accept(TriviaConvertingVisitor))
@@ -1461,7 +1460,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitFromClause(CSS.FromClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitFromClause(CSSyntax.FromClauseSyntax node)
     {
         return SyntaxFactory.FromClause(
             SyntaxFactory.CollectionRangeVariable(SyntaxFactory.ModifiedIdentifier(_commonConversions.ConvertIdentifier(node.Identifier)),
@@ -1469,26 +1468,26 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitWhereClause(CSS.WhereClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitWhereClause(CSSyntax.WhereClauseSyntax node)
     {
         return SyntaxFactory.WhereClause((ExpressionSyntax)node.Condition.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitSelectClause(CSS.SelectClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitSelectClause(CSSyntax.SelectClauseSyntax node)
     {
         return SyntaxFactory.SelectClause(
             SyntaxFactory.ExpressionRangeVariable((ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor))
         );
     }
 
-    private IEnumerable<QueryClauseSyntax> ConvertQueryBody(CSS.QueryBodySyntax body)
+    private IEnumerable<QueryClauseSyntax> ConvertQueryBody(CSSyntax.QueryBodySyntax body)
     {
-        if (body.SelectOrGroup is CSS.GroupClauseSyntax && body.Continuation == null)
+        if (body.SelectOrGroup is CSSyntax.GroupClauseSyntax && body.Continuation == null)
             throw new NotSupportedException("group by clause without into not supported in VB");
-        if (body.SelectOrGroup is CSS.SelectClauseSyntax) {
+        if (body.SelectOrGroup is CSSyntax.SelectClauseSyntax) {
             yield return (QueryClauseSyntax)body.SelectOrGroup.Accept(TriviaConvertingVisitor);
         } else {
-            var group = (CSS.GroupClauseSyntax)body.SelectOrGroup;
+            var group = (CSSyntax.GroupClauseSyntax)body.SelectOrGroup;
             var newGroupKeyName = GeneratePlaceholder("groupByKey");
             var csGroupId = _commonConversions.ConvertIdentifier(body.Continuation.Identifier);
             var groupIdEquals = SyntaxFactory.VariableNameEquals(SyntaxFactory.ModifiedIdentifier(csGroupId));
@@ -1514,7 +1513,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                ins.Identifier.Text == csGroupId.Text;
     }
 
-    public override VisualBasicSyntaxNode VisitLetClause(CSS.LetClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitLetClause(CSSyntax.LetClauseSyntax node)
     {
         return SyntaxFactory.LetClause(
             SyntaxFactory.SingletonSeparatedList(
@@ -1526,7 +1525,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         );
     }
 
-    public override VisualBasicSyntaxNode VisitJoinClause(CSS.JoinClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitJoinClause(CSSyntax.JoinClauseSyntax node)
     {
         var asClause = node.Type == null
             ? null
@@ -1558,14 +1557,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     }
 
-    public override VisualBasicSyntaxNode VisitOrderByClause(CSS.OrderByClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitOrderByClause(CSSyntax.OrderByClauseSyntax node)
     {
         return SyntaxFactory.OrderByClause(
             SyntaxFactory.SeparatedList(node.Orderings.Select(o => (OrderingSyntax)o.Accept(TriviaConvertingVisitor)))
         );
     }
 
-    public override VisualBasicSyntaxNode VisitOrdering(CSS.OrderingSyntax node)
+    public override VisualBasicSyntaxNode VisitOrdering(CSSyntax.OrderingSyntax node)
     {
         if (node.IsKind(CS.SyntaxKind.DescendingOrdering)) {
             return SyntaxFactory.Ordering(SyntaxKind.DescendingOrdering, (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor));
@@ -1574,17 +1573,17 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
 
-    public override VisualBasicSyntaxNode VisitArgumentList(CSS.ArgumentListSyntax node)
+    public override VisualBasicSyntaxNode VisitArgumentList(CSSyntax.ArgumentListSyntax node)
     {
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitBracketedArgumentList(CSS.BracketedArgumentListSyntax node)
+    public override VisualBasicSyntaxNode VisitBracketedArgumentList(CSSyntax.BracketedArgumentListSyntax node)
     {
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (ArgumentSyntax)a.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitArgument(CSS.ArgumentSyntax node)
+    public override VisualBasicSyntaxNode VisitArgument(CSSyntax.ArgumentSyntax node)
     {
         NameColonEqualsSyntax name = null;
         if (node.NameColon != null) {
@@ -1594,7 +1593,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.SimpleArgument(name, value);
     }
 
-    public override VisualBasicSyntaxNode VisitThrowExpression(CSS.ThrowExpressionSyntax node)
+    public override VisualBasicSyntaxNode VisitThrowExpression(CSSyntax.ThrowExpressionSyntax node)
     {
         var convertedExceptionExpression = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
         if (IsReturnValueDiscarded(node)) return SyntaxFactory.ThrowStatement(convertedExceptionExpression);
@@ -1606,11 +1605,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.InvocationExpression(throwEx, argList);
     }
 
-    public override VisualBasicSyntaxNode VisitCasePatternSwitchLabel(CSS.CasePatternSwitchLabelSyntax node)
+    public override VisualBasicSyntaxNode VisitCasePatternSwitchLabel(CSSyntax.CasePatternSwitchLabelSyntax node)
     {
         var condition = node.WhenClause.Condition.SkipIntoParens();
         switch (condition) {
-            case CSS.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var"): //VarPatternSyntax (not available in current library version)
+            case CSSyntax.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var"): //VarPatternSyntax (not available in current library version)
                 var basicSyntaxNode = (ExpressionSyntax)bes.Right.Accept(TriviaConvertingVisitor);
                 SyntaxKind expressionKind = bes.Kind().ConvertToken();
                 return SyntaxFactory.RelationalCaseClause(GetCaseClauseFromOperatorKind(expressionKind),
@@ -1620,7 +1619,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
     }
     private INamedTypeSymbol GetStructOrClassSymbol(CS.CSharpSyntaxNode node) {
-        return (INamedTypeSymbol)_semanticModel.GetDeclaredSymbol(node.Ancestors().First(x => x is CSS.ClassDeclarationSyntax || x is CSS.StructDeclarationSyntax));
+        return (INamedTypeSymbol)_semanticModel.GetDeclaredSymbol(node.Ancestors().First(x => x is CSSyntax.ClassDeclarationSyntax || x is CSSyntax.StructDeclarationSyntax));
     }
     private static SyntaxKind GetCaseClauseFromOperatorKind(SyntaxKind syntaxKind)
     {
@@ -1642,7 +1641,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     }
 
 
-    public override VisualBasicSyntaxNode VisitCaseSwitchLabel(CSS.CaseSwitchLabelSyntax node)
+    public override VisualBasicSyntaxNode VisitCaseSwitchLabel(CSSyntax.CaseSwitchLabelSyntax node)
     {
         return SyntaxFactory.SimpleCaseClause((ExpressionSyntax)node.Value.Accept(TriviaConvertingVisitor));
     }
@@ -1651,13 +1650,13 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     #region Types / Modifiers
 
-    public override VisualBasicSyntaxNode VisitArrayType(CSS.ArrayTypeSyntax node)
+    public override VisualBasicSyntaxNode VisitArrayType(CSSyntax.ArrayTypeSyntax node)
     {
         return SyntaxFactory.ArrayType((TypeSyntax)node.ElementType.Accept(TriviaConvertingVisitor),
             SyntaxFactory.List(node.RankSpecifiers.Select(rs => (ArrayRankSpecifierSyntax)rs.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitArrayRankSpecifier(CSS.ArrayRankSpecifierSyntax node)
+    public override VisualBasicSyntaxNode VisitArrayRankSpecifier(CSSyntax.ArrayRankSpecifierSyntax node)
     {
         return SyntaxFactory.ArrayRankSpecifier(
             SyntaxFactory.Token(SyntaxKind.OpenParenToken),
@@ -1665,12 +1664,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             SyntaxFactory.Token(SyntaxKind.CloseParenToken));
     }
 
-    public override VisualBasicSyntaxNode VisitTypeParameterList(CSS.TypeParameterListSyntax node)
+    public override VisualBasicSyntaxNode VisitTypeParameterList(CSSyntax.TypeParameterListSyntax node)
     {
         return SyntaxFactory.TypeParameterList(node.Parameters.Select(p => (TypeParameterSyntax)p.Accept(TriviaConvertingVisitor)).ToArray());
     }
 
-    public override VisualBasicSyntaxNode VisitTypeParameter(CSS.TypeParameterSyntax node)
+    public override VisualBasicSyntaxNode VisitTypeParameter(CSSyntax.TypeParameterSyntax node)
     {
         SyntaxToken variance = default(SyntaxToken);
         if (!SyntaxTokenExtensions.IsKind(node.VarianceKeyword, CS.SyntaxKind.None)) {
@@ -1681,14 +1680,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.TypeParameter(variance, _commonConversions.ConvertIdentifier(node.Identifier), (TypeParameterConstraintClauseSyntax)clause?.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitTypeParameterConstraintClause(CSS.TypeParameterConstraintClauseSyntax node)
+    public override VisualBasicSyntaxNode VisitTypeParameterConstraintClause(CSSyntax.TypeParameterConstraintClauseSyntax node)
     {
         if (node.Constraints.Count == 1)
             return SyntaxFactory.TypeParameterSingleConstraintClause((ConstraintSyntax)node.Constraints[0].Accept(TriviaConvertingVisitor));
         return SyntaxFactory.TypeParameterMultipleConstraintClause(SyntaxFactory.SeparatedList(node.Constraints.Select(c => (ConstraintSyntax)c.Accept(TriviaConvertingVisitor))));
     }
 
-    public override VisualBasicSyntaxNode VisitClassOrStructConstraint(CSS.ClassOrStructConstraintSyntax node)
+    public override VisualBasicSyntaxNode VisitClassOrStructConstraint(CSSyntax.ClassOrStructConstraintSyntax node)
     {
         if (node.IsKind(CS.SyntaxKind.ClassConstraint))
             return SyntaxFactory.ClassConstraint(SyntaxFactory.Token(SyntaxKind.ClassKeyword));
@@ -1697,41 +1696,41 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         throw new NotSupportedException();
     }
 
-    public override VisualBasicSyntaxNode VisitTypeConstraint(CSS.TypeConstraintSyntax node)
+    public override VisualBasicSyntaxNode VisitTypeConstraint(CSSyntax.TypeConstraintSyntax node)
     {
         return SyntaxFactory.TypeConstraint((TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitConstructorConstraint(CSS.ConstructorConstraintSyntax node)
+    public override VisualBasicSyntaxNode VisitConstructorConstraint(CSSyntax.ConstructorConstraintSyntax node)
     {
         return SyntaxFactory.NewConstraint(SyntaxFactory.Token(SyntaxKind.NewKeyword));
     }
 
-    private CSS.TypeParameterConstraintClauseSyntax FindClauseForParameter(CSS.TypeParameterSyntax node)
+    private CSSyntax.TypeParameterConstraintClauseSyntax FindClauseForParameter(CSSyntax.TypeParameterSyntax node)
     {
-        SyntaxList<CSS.TypeParameterConstraintClauseSyntax> clauses;
+        SyntaxList<CSSyntax.TypeParameterConstraintClauseSyntax> clauses;
         var parentBlock = node.Parent.Parent;
         clauses = parentBlock.TypeSwitch(
-            (CSS.MethodDeclarationSyntax m) => m.ConstraintClauses,
-            (CSS.ClassDeclarationSyntax c) => c.ConstraintClauses,
-            (CSS.DelegateDeclarationSyntax d) => d.ConstraintClauses,
-            (CSS.InterfaceDeclarationSyntax i) => i.ConstraintClauses,
+            (CSSyntax.MethodDeclarationSyntax m) => m.ConstraintClauses,
+            (CSSyntax.ClassDeclarationSyntax c) => c.ConstraintClauses,
+            (CSSyntax.DelegateDeclarationSyntax d) => d.ConstraintClauses,
+            (CSSyntax.InterfaceDeclarationSyntax i) => i.ConstraintClauses,
             _ => { throw new NotImplementedException($"{_.GetType().FullName} not implemented!"); }
         );
         return clauses.FirstOrDefault(c => c.Name.ToString() == node.ToString());
     }
 
-    public override VisualBasicSyntaxNode VisitPredefinedType(CSS.PredefinedTypeSyntax node)
+    public override VisualBasicSyntaxNode VisitPredefinedType(CSSyntax.PredefinedTypeSyntax node)
     {
         return SyntaxFactory.PredefinedType(SyntaxFactory.Token(CS.CSharpExtensions.Kind(node.Keyword).ConvertToken()));
     }
 
-    public override VisualBasicSyntaxNode VisitNullableType(CSS.NullableTypeSyntax node)
+    public override VisualBasicSyntaxNode VisitNullableType(CSSyntax.NullableTypeSyntax node)
     {
         return SyntaxFactory.NullableType((TypeSyntax)node.ElementType.Accept(TriviaConvertingVisitor));
     }
 
-    public override VisualBasicSyntaxNode VisitOmittedTypeArgument(CSS.OmittedTypeArgumentSyntax node)
+    public override VisualBasicSyntaxNode VisitOmittedTypeArgument(CSSyntax.OmittedTypeArgumentSyntax node)
     {
         return SyntaxFactory.ParseTypeName("");
     }
@@ -1740,38 +1739,38 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     #region NameSyntax
 
-    public override VisualBasicSyntaxNode VisitIdentifierName(CSS.IdentifierNameSyntax node)
+    public override VisualBasicSyntaxNode VisitIdentifierName(CSSyntax.IdentifierNameSyntax node)
     {
         return WrapTypedNameIfNecessary(SyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(node.Identifier)), node);
     }
 
-    public override VisualBasicSyntaxNode VisitGenericName(CSS.GenericNameSyntax node)
+    public override VisualBasicSyntaxNode VisitGenericName(CSSyntax.GenericNameSyntax node)
     {
         return WrapTypedNameIfNecessary(SyntaxFactory.GenericName(_commonConversions.ConvertIdentifier(node.Identifier), (TypeArgumentListSyntax)node.TypeArgumentList.Accept(TriviaConvertingVisitor)), node);
     }
 
-    public override VisualBasicSyntaxNode VisitQualifiedName(CSS.QualifiedNameSyntax node)
+    public override VisualBasicSyntaxNode VisitQualifiedName(CSSyntax.QualifiedNameSyntax node)
     {
         return WrapTypedNameIfNecessary(SyntaxFactory.QualifiedName((NameSyntax)node.Left.Accept(TriviaConvertingVisitor), (SimpleNameSyntax)node.Right.Accept(TriviaConvertingVisitor)), node);
     }
 
-    public override VisualBasicSyntaxNode VisitAliasQualifiedName(CSS.AliasQualifiedNameSyntax node)
+    public override VisualBasicSyntaxNode VisitAliasQualifiedName(CSSyntax.AliasQualifiedNameSyntax node)
     {
         return WrapTypedNameIfNecessary(SyntaxFactory.QualifiedName((NameSyntax)node.Alias.Accept(TriviaConvertingVisitor), (SimpleNameSyntax)node.Name.Accept(TriviaConvertingVisitor)), node);
     }
 
-    public override VisualBasicSyntaxNode VisitTypeArgumentList(CSS.TypeArgumentListSyntax node)
+    public override VisualBasicSyntaxNode VisitTypeArgumentList(CSSyntax.TypeArgumentListSyntax node)
     {
         return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(node.Arguments.Select(a => (TypeSyntax)a.Accept(TriviaConvertingVisitor))));
     }
 
-    private VisualBasicSyntaxNode WrapTypedNameIfNecessary(ExpressionSyntax name, CSS.ExpressionSyntax originalName)
+    private VisualBasicSyntaxNode WrapTypedNameIfNecessary(ExpressionSyntax name, CSSyntax.ExpressionSyntax originalName)
     {
-        if (originalName.Parent is CSS.NameSyntax
-            || originalName.Parent is CSS.AttributeSyntax
-            || originalName.Parent is CSS.MemberAccessExpressionSyntax
-            || originalName.Parent is CSS.MemberBindingExpressionSyntax
-            || originalName.Parent is CSS.InvocationExpressionSyntax
+        if (originalName.Parent is CSSyntax.NameSyntax
+            || originalName.Parent is CSSyntax.AttributeSyntax
+            || originalName.Parent is CSSyntax.MemberAccessExpressionSyntax
+            || originalName.Parent is CSSyntax.MemberBindingExpressionSyntax
+            || originalName.Parent is CSSyntax.InvocationExpressionSyntax
             || _semanticModel.SyntaxTree != originalName.SyntaxTree)
             return name;
 
@@ -1792,12 +1791,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return name;
     }
 
-    private TypeSyntax GetOverloadedFormalParameterTypeOrNull(CSS.ExpressionSyntax argumentChildExpression)
+    private TypeSyntax GetOverloadedFormalParameterTypeOrNull(CSSyntax.ExpressionSyntax argumentChildExpression)
     {
         var y = _semanticModel.GetSymbolInfo(argumentChildExpression);
 
-        if (argumentChildExpression?.Parent is CSS.ArgumentSyntax nameArgument &&
-            nameArgument.Parent?.Parent is CSS.InvocationExpressionSyntax ies) {
+        if (argumentChildExpression?.Parent is CSSyntax.ArgumentSyntax nameArgument &&
+            nameArgument.Parent?.Parent is CSSyntax.InvocationExpressionSyntax ies) {
             var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
             //TODO: Deal with named parameters
             var symbolInfo = _semanticModel.GetSymbolInfo(ies.Expression);
