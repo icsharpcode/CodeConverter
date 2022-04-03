@@ -108,8 +108,10 @@ public partial class Class1
         C1 = (Class1)argclass12;
         object argclass13 = _c2;
         Bar(ref argclass13);
+        _c2 = (Class1)argclass13;
         object argclass14 = _c2;
         Bar(ref argclass14);
+        _c2 = (Class1)argclass14;
         Bar(ref _o1);
         Bar(ref _o1);
     }
@@ -610,5 +612,158 @@ internal static partial class Other
     public static List<object> lst2 = new List<object>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
 }");
         }
+
+        [Fact]
+        public async Task Issue856Async()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue856
+    Sub Main()
+        Dim decimalTarget As Decimal
+        Double.TryParse(""123"", decimalTarget)
+        
+        Dim longTarget As Long
+        Integer.TryParse(""123"", longTarget)
+        
+        Dim intTarget As Integer
+        Long.TryParse(""123"", intTarget)
+    End Sub
+
+End Class", @"
+public partial class Issue856
+{
+    public void Main()
+    {
+        var decimalTarget = default(decimal);
+        double argresult = (double)decimalTarget;
+        double.TryParse(""123"", out argresult);
+        decimalTarget = (decimal)argresult;
+        var longTarget = default(long);
+        int argresult1 = (int)longTarget;
+        int.TryParse(""123"", out argresult1);
+        longTarget = argresult1;
+        var intTarget = default(int);
+        long argresult2 = intTarget;
+        long.TryParse(""123"", out argresult2);
+        intTarget = (int)argresult2;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task OutParameterIsEnforcedByCSharpCompileErrorAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' Statement removed so comment removed too
+
+Public Class OutParameterIsEnforcedByCSharpCompileError
+    Shared Sub LogAndReset(<Out> ByRef arg As Integer)
+        System.Console.WriteLine(arg)
+    End Sub
+End Class", @"using System;
+
+public partial class OutParameterIsEnforcedByCSharpCompileError
+{
+    public static void LogAndReset(out int arg)
+    {
+        Console.WriteLine(arg);
+    }
+}
+2 target compilation errors:
+CS0269: Use of unassigned out parameter 'arg'
+CS0177: The out parameter 'arg' must be assigned to before control leaves the current method");
+            // These compile errors are the correct conversion - VB doesn't enforce out parameters not being used for input, or being assigned before output
+        }
+
+        [Fact]
+        public async Task BinaryExpressionOutParameterAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' BUG: Comment lost because overwritten
+
+Public Class BinaryExpressionOutParameter
+    Shared Sub Main()
+        Dim wide As Object = 7
+        Zero(wide)
+        Dim narrow As Short = 3
+        Zero(narrow)
+        Zero(7 + 3)
+    End Sub
+
+    Shared Sub Zero(<Out> ByRef arg As Integer)
+        arg = 0
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class BinaryExpressionOutParameter
+{
+    public static void Main()
+    {
+        object wide = 7;
+        int argarg = Conversions.ToInteger(wide);
+        Zero(out argarg);
+        wide = argarg;
+        short narrow = 3;
+        int argarg1 = narrow;
+        Zero(out argarg1);
+        narrow = (short)argarg1;
+        int argarg2 = 7 + 3;
+        Zero(out argarg2);
+    }
+
+    public static void Zero(out int arg)
+    {
+        arg = 0;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task BinaryExpressionRefParameterAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Public Class BinaryExpressionRefParameter
+    Shared Sub Main()
+        Dim wide As Object = 7
+        LogAndReset(wide)
+        Dim wideArray() As Object = {3,4,4}
+        LogAndReset(wideArray(1))
+        Dim narrow As Short = 3
+        LogAndReset(narrow)
+        LogAndReset(7 + 3)
+    End Sub
+
+    Shared Sub LogAndReset(ByRef arg As Integer)
+        System.Console.WriteLine(arg)
+        arg = 0
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class BinaryExpressionRefParameter
+{
+    public static void Main()
+    {
+        object wide = 7;
+        int argarg = Conversions.ToInteger(wide);
+        LogAndReset(ref argarg);
+        wide = argarg;
+        var wideArray = new object[] { 3, 4, 4 };
+        var tmp = wideArray;
+        int argarg1 = Conversions.ToInteger(tmp[1]);
+        LogAndReset(ref argarg1);
+        tmp[1] = argarg1;
+        short narrow = 3;
+        int argarg2 = narrow;
+        LogAndReset(ref argarg2);
+        narrow = (short)argarg2;
+        int argarg3 = 7 + 3;
+        LogAndReset(ref argarg3);
+    }
+
+    public static void LogAndReset(ref int arg)
+    {
+        Console.WriteLine(arg);
+        arg = 0;
+    }
+}");
+        }
+
     }
 }

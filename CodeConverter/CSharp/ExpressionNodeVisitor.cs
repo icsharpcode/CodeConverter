@@ -1662,14 +1662,19 @@ namespace ICSharpCode.CodeConverter.CSharp
                     return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
                 }
 
-                var typeInfo = _semanticModel.GetTypeInfo(expression);
-                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
-
-                if (isTypeMismatch || DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
+                if (DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
 
                 if (expression is VBasic.Syntax.IdentifierNameSyntax || expression is VBSyntax.MemberAccessExpressionSyntax ||
                     IsRefArrayAcces(expression)) {
-                    return RefConversion.Inline;
+
+                    var typeInfo = _semanticModel.GetTypeInfo(expression);
+                    bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
+
+                    if (isTypeMismatch) {
+                        return RefConversion.PreAndPostAssignment;
+                    } else {
+                        return RefConversion.Inline;
+                    }
                 }
 
                 return RefConversion.PreAssigment;
