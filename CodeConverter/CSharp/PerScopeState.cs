@@ -1,7 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using VBasic = Microsoft.CodeAnalysis.VisualBasic;
-using CS = Microsoft.CodeAnalysis.CSharp;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp.Syntax;

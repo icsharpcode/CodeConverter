@@ -1,6 +1,5 @@
 ﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;

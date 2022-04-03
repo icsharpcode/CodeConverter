@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.VB;
 

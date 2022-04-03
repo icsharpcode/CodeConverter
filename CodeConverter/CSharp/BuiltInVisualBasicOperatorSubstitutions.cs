@@ -4,10 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using BinaryOperatorKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
-using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 
