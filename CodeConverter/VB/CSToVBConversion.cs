@@ -58,7 +58,7 @@ public class CSToVBConversion : ILanguageConversion
         return xml;
     }
 
-    private string AddInfer(string xml)
+    private static string AddInfer(string xml)
     {
         if (xml.IndexOf("<OptionInfer>") > -1) return xml;
 

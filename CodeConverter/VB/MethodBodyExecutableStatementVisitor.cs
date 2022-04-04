@@ -61,7 +61,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         var expression = exprNode as ExpressionSyntax;
         return expression != null ? WrapRootExpression(expression) : (StatementSyntax)exprNode;
     }
-    private StatementSyntax WrapRootExpression(ExpressionSyntax expressionSyntax) {
+    private static StatementSyntax WrapRootExpression(ExpressionSyntax expressionSyntax) {
         InvocationExpressionSyntax invocationExpression = expressionSyntax as InvocationExpressionSyntax;
         if (invocationExpression != null) {
             var lastExpression = expressionSyntax.FollowProperty(exp => exp.TypeSwitch(
@@ -116,7 +116,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return SyntaxFactory.SingletonList(stmt);
     }
 
-    private bool IsSimpleStatement(CSSyntax.StatementSyntax statement)
+    private static bool IsSimpleStatement(CSSyntax.StatementSyntax statement)
     {
         return statement is CSSyntax.ExpressionStatementSyntax
                || statement is CSSyntax.BreakStatementSyntax
@@ -674,7 +674,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return WrapInComment(ConvertBlock(node.Block), "Visual Basic does not support checked statements!");
     }
 
-    private SyntaxList<StatementSyntax> WrapInComment(SyntaxList<StatementSyntax> nodes, string comment)
+    private static SyntaxList<StatementSyntax> WrapInComment(SyntaxList<StatementSyntax> nodes, string comment)
     {
         if (nodes.Count > 0) {
             nodes = nodes.Replace(nodes[0], nodes[0].WithPrependedLeadingTrivia(SyntaxFactory.CommentTrivia("BEGIN TODO : " + comment)));

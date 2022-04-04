@@ -119,7 +119,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         if (!_xmlImportContext.HasImports || vbNode.Parent is VBSyntax.XmlNodeSyntax) return creation;
         return SyntaxFactory.InvocationExpression(
-            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, _xmlImportContext.HelperClassShortIdentifierName, SyntaxFactory.IdentifierName("Apply")), 
+            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, XmlImportContext.HelperClassShortIdentifierName, SyntaxFactory.IdentifierName("Apply")), 
             SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(creation))));
     }
 
@@ -202,7 +202,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 SyntaxKind.AddExpression,
                 SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    _xmlImportContext.HelperClassShortIdentifierName,
+                    XmlImportContext.HelperClassShortIdentifierName,
                     SyntaxFactory.IdentifierName(node.Prefix.Name.ValueText)
                 ),
                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
@@ -214,8 +214,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 SyntaxKind.AddExpression,
                 SyntaxFactory.MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
-                    _xmlImportContext.HelperClassShortIdentifierName,
-                    _xmlImportContext.DefaultIdentifierName
+                    XmlImportContext.HelperClassShortIdentifierName,
+                    XmlImportContext.DefaultIdentifierName
                 ),
                 SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
             );

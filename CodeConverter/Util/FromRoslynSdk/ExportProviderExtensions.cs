@@ -55,7 +55,7 @@ internal static class ExportProviderExtensions
             return true;
         }
 
-        private (Type exportType, Type? metadataType) GetContractType(Type contractType, bool importMany)
+        private static (Type exportType, Type? metadataType) GetContractType(Type contractType, bool importMany)
         {
             if (importMany && contractType.IsConstructedGenericType)
             {

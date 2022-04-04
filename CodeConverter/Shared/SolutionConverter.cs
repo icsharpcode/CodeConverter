@@ -115,10 +115,10 @@ public class SolutionConverter
         var relativeProjPaths = _projectsToConvert.Select(proj =>
             (proj.Name, RelativeProjPath: PathConverter.GetRelativePath(_solutionFilePath, proj.FilePath)));
 
-        var slnProjectReferenceReplacements = _solutionFileTextEditor.GetSolutionFileProjectReferenceReplacements(relativeProjPaths,
+        var slnProjectReferenceReplacements = SolutionFileTextEditor.GetSolutionFileProjectReferenceReplacements(relativeProjPaths,
             _sourceSolutionContents, projectTypeGuidMappings);
 
-        var convertedSolutionContents = _textReplacementConverter.Replace(_sourceSolutionContents, slnProjectReferenceReplacements);
+        var convertedSolutionContents = TextReplacementConverter.Replace(_sourceSolutionContents, slnProjectReferenceReplacements);
         return new ConversionResult(convertedSolutionContents) {
             SourcePathOrNull = _solutionFilePath,
             TargetPathOrNull = _solutionFilePath

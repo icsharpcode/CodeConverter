@@ -61,7 +61,7 @@ End Function";
         }
     }
 
-    private StatementSyntax Parse(string methodDefinition)
+    private static StatementSyntax Parse(string methodDefinition)
     {
         return Compiler.CreateTree(methodDefinition)
             .GetRoot().ChildNodes().Single().NormalizeWhitespace() as StatementSyntax;

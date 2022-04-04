@@ -18,7 +18,7 @@ internal class CsExpander : ISyntaxExpander
     /// <summary>
     /// The VB reduction step doesn't seem to reduce things qualified with global, so don't add it anywhere it isn't already
     /// </summary>
-    private SyntaxNode WithoutGlobalOverqualification(SyntaxNode node, SyntaxNode expandedNode)
+    private static SyntaxNode WithoutGlobalOverqualification(SyntaxNode node, SyntaxNode expandedNode)
     {
         var aliasNodes = expandedNode.GetAnnotatedNodes(Simplifier.Annotation).Select(syntaxNode =>
             LeftMostDescendant(syntaxNode).Parent).OfType<AliasQualifiedNameSyntax>().Where(n => n.Alias.IsGlobalId()).ToArray();

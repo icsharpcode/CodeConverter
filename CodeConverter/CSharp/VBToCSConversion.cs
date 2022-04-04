@@ -72,7 +72,7 @@ public class VBToCSConversion : ILanguageConversion
         return xml;
     }
 
-    private string TweakDefineConstants(string xml)
+    private static string TweakDefineConstants(string xml)
     {
         // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
         // Then add them to the define constants in the same section, or create one if necessary.

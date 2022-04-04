@@ -84,7 +84,7 @@ internal class AdditionalInitializers
         }
     }
 
-    private ConstructorDeclarationSyntax WithAdditionalInitializers(ConstructorDeclarationSyntax oldConstructor,
+    private static ConstructorDeclarationSyntax WithAdditionalInitializers(ConstructorDeclarationSyntax oldConstructor,
         IReadOnlyCollection<Assignment> additionalConstructorAssignments)
     {
         var preInitializerStatements = CreateAssignmentStatement(additionalConstructorAssignments.Where(x => !x.PostAssignment));

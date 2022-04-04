@@ -173,7 +173,7 @@ internal partial class SymbolEquivalenceComparer
             return _symbolEquivalenceComparer._assemblyComparerOpt?.Equals(x, y) ?? true;
         }
 
-        private bool DynamicTypesAreEquivalent(IDynamicTypeSymbol x, IDynamicTypeSymbol y)
+        private static bool DynamicTypesAreEquivalent(IDynamicTypeSymbol x, IDynamicTypeSymbol y)
         {
             return true;
         }
@@ -186,14 +186,14 @@ internal partial class SymbolEquivalenceComparer
                 AreEquivalent(x.ContainingSymbol, y.ContainingSymbol, equivalentTypesWithDifferingAssemblies);
         }
 
-        private bool LabelsAreEquivalent(ILabelSymbol x, ILabelSymbol y)
+        private static bool LabelsAreEquivalent(ILabelSymbol x, ILabelSymbol y)
         {
             return
                 x.Name == y.Name &&
                 HaveSameLocation(x, y);
         }
 
-        private bool LocalsAreEquivalent(ILocalSymbol x, ILocalSymbol y)
+        private static bool LocalsAreEquivalent(ILocalSymbol x, ILocalSymbol y)
         {
             return HaveSameLocation(x, y);
         }
@@ -272,7 +272,7 @@ internal partial class SymbolEquivalenceComparer
             return TypeArgumentsAreEquivalent(x.TypeArguments, y.TypeArguments, equivalentTypesWithDifferingAssemblies);
         }
 
-        private bool AreCompatibleMethodKinds(MethodKind kind1, MethodKind kind2)
+        private static bool AreCompatibleMethodKinds(MethodKind kind1, MethodKind kind2)
         {
             if (kind1 == kind2)
             {
@@ -616,12 +616,12 @@ internal partial class SymbolEquivalenceComparer
             return AreEquivalent(x.ContainingSymbol, y.ContainingSymbol, equivalentTypesWithDifferingAssemblies);
         }
 
-        private bool RangeVariablesAreEquivalent(IRangeVariableSymbol x, IRangeVariableSymbol y)
+        private static bool RangeVariablesAreEquivalent(IRangeVariableSymbol x, IRangeVariableSymbol y)
         {
             return HaveSameLocation(x, y);
         }
 
-        private bool PreprocessingSymbolsAreEquivalent(IPreprocessingSymbol x, IPreprocessingSymbol y)
+        private static bool PreprocessingSymbolsAreEquivalent(IPreprocessingSymbol x, IPreprocessingSymbol y)
         {
             return x.Name == y.Name;
         }

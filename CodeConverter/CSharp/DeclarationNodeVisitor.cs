@@ -100,7 +100,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
             .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
             .Select(g => g.First())
-            .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(x => SyntaxFactory.UsingDirective(SyntaxFactory.NameEquals(_xmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
+            .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(x => SyntaxFactory.UsingDirective(SyntaxFactory.NameEquals(XmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
 
         return SyntaxFactory.CompilationUnit(
             SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
@@ -139,7 +139,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return _semanticModel.GetDeclaredSymbol(vbStatement)?.ToDisplayString().StartsWith(rootNamespace) == true;
     }
 
-    private bool IsNamespaceDeclaration(VBSyntax.StatementSyntax m)
+    private static bool IsNamespaceDeclaration(VBSyntax.StatementSyntax m)
     {
         return m is VBSyntax.NamespaceBlockSyntax;
     }
@@ -861,7 +861,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return new SyntaxList<AccessorDeclarationSyntax>(delegatingAccessors);
     }
 
-    private string AddRealPropertyDelegatingToMyClassVersion(List<MemberDeclarationSyntax> additionalDeclarations, SyntaxToken csIdentifier,
+    private static string AddRealPropertyDelegatingToMyClassVersion(List<MemberDeclarationSyntax> additionalDeclarations, SyntaxToken csIdentifier,
         SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList modifiers, TypeSyntax rawType, bool readOnly, bool writeOnly)
     {
         var csIdentifierName = "MyClass" + csIdentifier.ValueText;
@@ -1093,7 +1093,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return SyntaxFactory.Block(statements);
     }
 
-    private async Task<BlockSyntax> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> methodBodyVisitor)
+    private static async Task<BlockSyntax> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> methodBodyVisitor)
     {
         return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
     }
@@ -1369,7 +1369,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             .FirstOrDefault(argKinds.Contains);
     }
 
-    private TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
+    private static TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
     {
         var parentType = member.GetAncestorOrThis<VBSyntax.TypeBlockSyntax>();
         var parentTypeKind = parentType?.Kind();
@@ -1618,7 +1618,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         if (node.Prefix == null && node.LocalName.ValueText == "xmlns") {
             // default namespace             
-            return _xmlImportContext.DefaultIdentifierName;
+            return XmlImportContext.DefaultIdentifierName;
         } else if (node.Prefix.Name.ValueText == "xmlns") { 
             // namespace alias
             return SyntaxFactory.IdentifierName(node.LocalName.ValueText);

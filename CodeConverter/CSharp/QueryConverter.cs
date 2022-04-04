@@ -318,7 +318,7 @@ internal class QueryConverter
         return (groupExpressions.Count == 1) ? groupExpressions.Single().cs : CreateAnonymousType(groupExpressions);
     }
 
-    private CSSyntax.ExpressionSyntax CreateAnonymousType(List<(ExpressionSyntax vb, CSSyntax.ExpressionSyntax cs)> groupExpressions)
+    private static CSSyntax.ExpressionSyntax CreateAnonymousType(List<(ExpressionSyntax vb, CSSyntax.ExpressionSyntax cs)> groupExpressions)
     {
         return SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(groupExpressions.Select(CreateAnonymousMember)));
     }
@@ -338,7 +338,7 @@ internal class QueryConverter
         return CommonConversions.ConvertIdentifier(name);
     }
 
-    private IEnumerable<string> GetGroupKeyIdentifiers(VBSyntax.GroupByClauseSyntax gs)
+    private static IEnumerable<string> GetGroupKeyIdentifiers(VBSyntax.GroupByClauseSyntax gs)
     {
         return gs.Keys.Select(k => k.NameEquals?.Identifier.Identifier.Text)
             .Where(x => x != null);

@@ -53,7 +53,7 @@ internal class HandledEventsAnalyzer
     }
 
 
-    private int ParametersToDiscard(IEventSymbol e, IMethodSymbol handlingMethod)
+    private static int ParametersToDiscard(IEventSymbol e, IMethodSymbol handlingMethod)
     {
         var mayRequireDiscardedParameters = !handlingMethod.Parameters.Any();
         var toDiscard = mayRequireDiscardedParameters ? e?.Type.GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
@@ -91,7 +91,7 @@ internal class HandledEventsAnalyzer
                 return (CreateEventContainer(e.EventContainer, semanticModel), new EventDescriptor(e.EventMember, eventSymbol), HandlingMethod: methodSymbol);
             });
     }
-    private HandledEventsAnalysis.EventContainer CreateEventContainer(EventContainerSyntax p, SemanticModel semanticModel)
+    private static HandledEventsAnalysis.EventContainer CreateEventContainer(EventContainerSyntax p, SemanticModel semanticModel)
     {
         switch (p) {
             //For me, trying to use "MyClass" in a Handles expression is a syntax error. Events aren't overridable anyway so I'm not sure how this would get used.

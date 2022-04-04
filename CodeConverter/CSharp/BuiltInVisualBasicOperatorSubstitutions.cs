@@ -123,7 +123,7 @@ internal static class VbOperatorConversion
         }
 
         /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remarks>
-        private async Task<ExpressionSyntax> ConvertToDecimalBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member) =>
+        private static async Task<ExpressionSyntax> ConvertToDecimalBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member) =>
             default;
 
         private async Task<ExpressionSyntax> ConvertToObjectBinaryOperatorAsync(VBSyntax.BinaryExpressionSyntax node, KnownMethod member) =>
@@ -137,22 +137,22 @@ internal static class VbOperatorConversion
             return member.Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs, optionaCompareTextBoolLiteralExpression);
         }
 
-        private async Task<ExpressionSyntax> ConvertToConcatenateOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+        private static async Task<ExpressionSyntax> ConvertToConcatenateOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
         {
             return null;
         }
 
-        private async Task<ExpressionSyntax> ConvertToObjectShortCircuitOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+        private static async Task<ExpressionSyntax> ConvertToObjectShortCircuitOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
         {
             return null;
         }
 
-        private async Task<ExpressionSyntax> ConvertToDateComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+        private static async Task<ExpressionSyntax> ConvertToDateComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
         {
             return null;
         }
 
-        private async Task<ExpressionSyntax> ConvertToDecimalComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
+        private static async Task<ExpressionSyntax> ConvertToDecimalComparisonOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
         {
             return null;
         }

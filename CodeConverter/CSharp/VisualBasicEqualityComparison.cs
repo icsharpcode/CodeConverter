@@ -59,7 +59,7 @@ internal class VisualBasicEqualityComparison
         return GetObjectEqualityType(typeInfos);
     }
 
-    public RequiredType GetObjectEqualityType(params TypeInfo[] typeInfos)
+    public static RequiredType GetObjectEqualityType(params TypeInfo[] typeInfos)
     {
         bool requiresVbEqualityCheck = typeInfos.Any(t => t.Type?.SpecialType == SpecialType.System_Object);
 

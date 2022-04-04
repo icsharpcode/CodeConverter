@@ -89,7 +89,7 @@ internal class ExpressionEvaluator
         return TryCompileTimeEvaluateInvocation(vbOperation, out result) || TryCompileTimeEvaluateBinaryExpression(vbOperation, out result);
     }
 
-    private bool TryCompileTimeEvaluateInvocation(IOperation vbOperation, out object result)
+    private static bool TryCompileTimeEvaluateInvocation(IOperation vbOperation, out object result)
     {
         if (vbOperation is IInvocationOperation invocationOperation &&
             ConversionsMethodNames.TryGetValue(invocationOperation.TargetMethod.Name,
