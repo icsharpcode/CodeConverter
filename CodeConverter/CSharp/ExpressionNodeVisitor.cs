@@ -60,8 +60,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var convertType =
             semanticModel.Compilation.GetTypeByMetadataName(ConvertType.FullName) ??
             (ITypeSymbol)semanticModel.Compilation
-                .GetSymbolsWithName(n => n.Equals(ConvertType.Name), SymbolFilter.Type).First(s =>
-                    s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace));
+                .GetSymbolsWithName(n => n.Equals(ConvertType.Name, StringComparison.Ordinal), SymbolFilter.Type).First(s =>
+                    s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace, StringComparison.Ordinal));
 
         var convertMethods = convertType.GetMembers().Where(m =>
             m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
