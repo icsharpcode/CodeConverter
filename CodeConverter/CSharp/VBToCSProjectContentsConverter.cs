@@ -57,7 +57,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
     private class TypeSymbolFullNameComparer : IEqualityComparer<ITypeSymbol>
     {
         public static readonly IEqualityComparer<ITypeSymbol> Instance = new TypeSymbolFullNameComparer();
-        public bool Equals(ITypeSymbol x, ITypeSymbol y) => x.GetFullMetadataName().Equals(y.GetFullMetadataName());
+        public bool Equals(ITypeSymbol x, ITypeSymbol y) => x.GetFullMetadataName().Equals(y.GetFullMetadataName(), StringComparison.Ordinal);
         public int GetHashCode(ITypeSymbol obj) => obj.GetFullMetadataName().GetHashCode();
     }
 

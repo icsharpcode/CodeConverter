@@ -16,7 +16,7 @@ public static class ConversionResultWriter
     {
         var solutionFile = new FileInfo(solutionFilePath);
         var solutionFileDirectory = solutionFile.Directory ?? throw new InvalidOperationException("Solution file directory could not be found");
-        var sourceAndTargetSame = string.Equals(solutionFileDirectory.FullName, targetDirectory.FullName);
+        var sourceAndTargetSame = string.Equals(solutionFileDirectory.FullName, targetDirectory.FullName, StringComparison.Ordinal);
 
         if (!sourceAndTargetSame) {
             if (wipeTargetDirectory) {
