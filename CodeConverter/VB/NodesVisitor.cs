@@ -471,7 +471,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             var containingType = memberInfo.ContainingType;
             var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
             explicitImplementors = baseClassesAndInterfaces.Except(new[] { containingType })
-                .SelectMany(t => t.GetMembers().Where(m => memberInfo.Name.EndsWith(m.Name)))
+                .SelectMany(t => t.GetMembers().Where(m => memberInfo.Name.EndsWith(m.Name, StringComparison.InvariantCulture)))
                 .Where(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo) == true)
                 .ToImmutableArray();
         }
@@ -1610,7 +1610,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
         var condition = node.WhenClause.Condition.SkipIntoParens();
         switch (condition) {
-            case CSSyntax.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var"): //VarPatternSyntax (not available in current library version)
+            case CSSyntax.BinaryExpressionSyntax bes when node.Pattern.ToString().StartsWith("var", StringComparison.InvariantCulture): //VarPatternSyntax (not available in current library version)
                 var basicSyntaxNode = (ExpressionSyntax)bes.Right.Accept(TriviaConvertingVisitor);
                 SyntaxKind expressionKind = bes.Kind().ConvertToken();
                 return SyntaxFactory.RelationalCaseClause(GetCaseClauseFromOperatorKind(expressionKind),

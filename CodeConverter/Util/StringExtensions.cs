@@ -84,7 +84,7 @@ internal static class StringExtensions
     {
         const string attribute = nameof(Attribute);
 
-        return !attributeTypeName.EndsWith(attribute)
+        return !attributeTypeName.EndsWith(attribute, StringComparison.InvariantCulture)
             ? attributeTypeName
             : attributeTypeName.Replace(attribute, null);
     }

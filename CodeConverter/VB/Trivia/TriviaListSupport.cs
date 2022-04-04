@@ -23,7 +23,7 @@ internal static class TriviaListSupport
                     if (t.IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia))
                     {
                         NewLeadingTriviaList = NewLeadingTriviaList.Add(VBFactory.DocumentationCommentExteriorTrivia(token.LeadingTrivia[0].ToString().Replace("///", "'''")));
-                        if (!TokenText.StartsWith(" "))
+                        if (!TokenText.StartsWith(" ", StringComparison.InvariantCulture))
                         {
                             TokenText = " " + TokenText;
                             ValueText = " " + ValueText;

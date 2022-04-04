@@ -48,8 +48,8 @@ internal static class ProjectMergedDeclarationExtensions
     private static bool IsStandaloneGeneratedResource(XElement t)
     {
         return t.Name.LocalName == "EmbeddedResource" &&
-               GetIncludeOrUpdateAttribute(t)?.Value.EndsWith(".resx") == true &&
-               t.Element(t.GetDefaultNamespace() + "Generator")?.Value.EndsWith("ResXFileCodeGenerator") == true;
+               (GetIncludeOrUpdateAttribute(t)?.Value).EndsWith(".resx", StringComparison.InvariantCulture) == true &&
+               (t.Element(t.GetDefaultNamespace() + "Generator")?.Value).EndsWith("ResXFileCodeGenerator", StringComparison.InvariantCulture) == true;
     }
 
     private static XAttribute GetIncludeOrUpdateAttribute(XElement t)
@@ -182,6 +182,6 @@ End Namespace";
     private static async Task<IEnumerable<ISymbol>> GetSymbolStartingWithAsync(Project project, string symbolPrefix, SymbolFilter symbolFilter, CancellationToken cancellationToken)
     {
         var compilation = await project.GetCompilationAsync(cancellationToken);
-        return compilation.GetSymbolsWithName(s => s.StartsWith(symbolPrefix), symbolFilter);
+        return compilation.GetSymbolsWithName(s => s.StartsWith(symbolPrefix, StringComparison.InvariantCulture), symbolFilter);
     }
 }

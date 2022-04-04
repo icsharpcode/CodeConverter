@@ -642,13 +642,13 @@ internal class CommonConversions
 
         if (valueText.Length <= 2) return valueText;
 
-        if (valueText.StartsWith("0x")) {
+        if (valueText.StartsWith("0x", StringComparison.InvariantCulture)) {
             if (value switch {
                     ulong _ => "UL",
                     uint _ => "UI",
                     _ => default
                 } is { } suffix) {
-                if (!valueText.EndsWith(suffix)) {
+                if (!valueText.EndsWith(suffix, StringComparison.InvariantCulture)) {
                     valueText += suffix;
                 }
             }
@@ -656,7 +656,7 @@ internal class CommonConversions
             return "&H" + valueText.Substring(2).Replace("R", "D"); // Undo any accidental replacements that assumed this was a decimal;
         }
 
-        if (valueText.StartsWith("0b")) {
+        if (valueText.StartsWith("0b", StringComparison.InvariantCulture)) {
             return "&B" + valueText.Substring(2);
         }
 
