@@ -152,3 +152,6 @@ dotnet_analyzer_diagnostic.category-Performance.severity = suggestion
 
 # CC0097: You have missing/unexistent parameters in Xml Docs
 dotnet_diagnostic.CC0097.severity = none
+
+csharp_style_namespace_declarations = file_scoped
+dotnet_diagnostic.IDE0161.severity = warning
