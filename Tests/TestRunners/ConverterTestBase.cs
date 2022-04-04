@@ -58,7 +58,7 @@ public class ConverterTestBase
 
     private static bool LineCanHaveCSharpComment(string l)
     {
-        return !l.TrimStart().StartsWith("#region");
+        return !l.TrimStart().StartsWith("#region", StringComparison.InvariantCulture);
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ End Sub";
     private static bool LineCanHaveVisualBasicComment(string l)
     {
         string trimmed = l.Trim();
-        return !trimmed.StartsWith("#Region") && !trimmed.StartsWith("#End Region");
+        return !trimmed.StartsWith("#Region", StringComparison.InvariantCulture) && !trimmed.StartsWith("#End Region", StringComparison.InvariantCulture);
     }
 
     private static string SurroundWithBlock(string expectedCsharpCode)

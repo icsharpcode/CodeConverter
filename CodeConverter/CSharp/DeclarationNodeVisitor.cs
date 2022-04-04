@@ -112,7 +112,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private static bool IsSystemUsing(UsingDirectiveSyntax u)
     {
-        return u.Name.ToString().StartsWith("System") || u.Name.ToString().StartsWith("global::System");
+        return u.Name.ToString().StartsWith("System", StringComparison.InvariantCulture) || u.Name.ToString().StartsWith("global::System", StringComparison.InvariantCulture);
     }
 
     private static bool HasSourceMapAnnotations(UsingDirectiveSyntax c)
@@ -136,7 +136,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private bool ShouldBeNestedInRootNamespace(VBSyntax.StatementSyntax vbStatement, string rootNamespace)
     {
-        return _semanticModel.GetDeclaredSymbol(vbStatement)?.ToDisplayString().StartsWith(rootNamespace) == true;
+        return (_semanticModel.GetDeclaredSymbol(vbStatement)?.ToDisplayString()).StartsWith(rootNamespace, StringComparison.InvariantCulture) == true;
     }
 
     private static bool IsNamespaceDeclaration(VBSyntax.StatementSyntax m)
@@ -176,7 +176,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
         var parentNamespaceDecl = parentNamespaceSyntax != null ? ModelExtensions.GetDeclaredSymbol(_semanticModel, parentNamespaceSyntax) : null;
         var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
-        if (parentNamespaceFullName != null && namespaceToDeclare.StartsWith(parentNamespaceFullName + "."))
+        if (parentNamespaceFullName != null && namespaceToDeclare.StartsWith(parentNamespaceFullName + ".", StringComparison.InvariantCulture))
             namespaceToDeclare = namespaceToDeclare.Substring(parentNamespaceFullName.Length + 1);
 
         var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, SyntaxFactory.List(members));

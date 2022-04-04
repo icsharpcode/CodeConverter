@@ -878,7 +878,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         if (invocationSymbol?.ContainingNamespace.MetadataName != nameof(Microsoft.VisualBasic) ||
             invocationSymbol.ContainingType.Name != nameof(Conversions) ||
-            !invocationSymbol.Name.StartsWith("To") ||
+            !invocationSymbol.Name.StartsWith("To", StringComparison.InvariantCulture) ||
             conversionNode.ArgumentList.Arguments.Count != 1) {
             return null;
         }

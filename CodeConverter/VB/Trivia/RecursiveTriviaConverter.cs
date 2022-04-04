@@ -219,14 +219,14 @@ internal class RecursiveTriviaConverter
             }
 
             case (int)CS.SyntaxKind.SingleLineCommentTrivia: {
-                if (t.ToFullString().EndsWith("*/")) {
+                if (t.ToFullString().EndsWith("*/", StringComparison.InvariantCulture)) {
                     return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4))}");
                 }
                 return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2))}");
             }
 
             case (int)CS.SyntaxKind.MultiLineCommentTrivia: {
-                if (t.ToFullString().EndsWith("*/")) {
+                if (t.ToFullString().EndsWith("*/", StringComparison.InvariantCulture)) {
                     return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2, t.ToFullString().Length - 4)).Replace(Constants.vbLf, "").Replace(Constants.vbCr, "")}");
                 }
                 return VBFactory.CommentTrivia($"'{ReplaceLeadingSlashes(t.ToFullString().Substring(2)).Replace(Constants.vbLf, "").Replace(Constants.vbCr, "")}");
@@ -448,9 +448,9 @@ internal class RecursiveTriviaConverter
                 case (int)CS.SyntaxKind.MultiLineCommentTrivia: {
                     var Lines = Trivia.ToFullString().Substring(2).Split(new[] { "\r\n" }, StringSplitOptions.None);
                     foreach (string line in Lines) {
-                        if (line.EndsWith("*/")) {
+                        if (line.EndsWith("*/", StringComparison.InvariantCulture)) {
                             TriviaList.Add(VBFactory.CommentTrivia($"' {RemoveLeadingSpacesStar(line.Substring(0, line.Length - 2))}"));
-                            if (Trivia.ToFullString().EndsWith(Constants.vbLf)) {
+                            if (Trivia.ToFullString().EndsWith(Constants.vbLf, StringComparison.InvariantCulture)) {
                                 TriviaList.Add(VisualBasicSyntaxFactory.VBEOLTrivia);
                             }
                         } else {
@@ -470,7 +470,7 @@ internal class RecursiveTriviaConverter
                     foreach (SyntaxNode t1 in sld.ChildNodes()) {
                         var Lines = t1.ToFullString().ConsistentNewlines().Split(new[] { "\r\n" }, StringSplitOptions.None);
                         foreach (string line in Lines) {
-                            if (line.StartsWith("/*")) {
+                            if (line.StartsWith("/*", StringComparison.InvariantCulture)) {
                                 TriviaList.Add(VBFactory.CommentTrivia($"' {RemoveLeadingSpacesStar(line.Substring(1, line.Length - 1))}"));
                                 TriviaList.Add(VisualBasicSyntaxFactory.VBEOLTrivia);
                             } else {

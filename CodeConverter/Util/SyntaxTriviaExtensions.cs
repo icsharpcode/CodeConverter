@@ -39,13 +39,13 @@ internal static class SyntaxTriviaExtensions
     {
         var commentText = trivia.ToString();
         if (trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia)) {
-            if (commentText.StartsWith("//")) {
+            if (commentText.StartsWith("//", StringComparison.InvariantCulture)) {
                 commentText = commentText.Substring(2);
             }
 
             return commentText.TrimStart(null);
         } else if (trivia.IsKind(VBasic.SyntaxKind.CommentTrivia)) {
-            if (commentText.StartsWith("'") || commentText.StartsWith("’")) {
+            if (commentText.StartsWith("'", StringComparison.InvariantCulture) || commentText.StartsWith("’", StringComparison.InvariantCulture)) {
                 commentText = commentText.Substring(1);
             }
 
@@ -53,11 +53,11 @@ internal static class SyntaxTriviaExtensions
         } else if (CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineCommentTrivia) {
             var textBuilder = new StringBuilder();
 
-            if (commentText.EndsWith("*/")) {
+            if (commentText.EndsWith("*/", StringComparison.InvariantCulture)) {
                 commentText = commentText.Substring(0, commentText.Length - 2);
             }
 
-            if (commentText.StartsWith("/*")) {
+            if (commentText.StartsWith("/*", StringComparison.InvariantCulture)) {
                 commentText = commentText.Substring(2);
             }
 

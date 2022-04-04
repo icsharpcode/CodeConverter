@@ -44,7 +44,7 @@ internal static class ProjectExtensions
 
         string solutionPath = GetDirectoryPath(proj.Solution);
         return proj.Documents
-            .Where(d => d.FilePath != null && d.FilePath.StartsWith(solutionPath))
+            .Where(d => d.FilePath != null && d.FilePath.StartsWith(solutionPath, StringComparison.InvariantCulture))
             .Select(d => d.FilePath.Replace(solutionPath, "").TrimStart(DirSeparators))
             .Where(p => p.IndexOfAny(DirSeparators) > -1)
             .Select(p => p.Split(DirSeparators).First())

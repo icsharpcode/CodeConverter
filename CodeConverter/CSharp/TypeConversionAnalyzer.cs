@@ -241,7 +241,7 @@ internal class TypeConversionAnalyzer
         // C# does not have literals for short/ushort, so the actual type here is integer
         if (vbNode is VBSyntax.LiteralExpressionSyntax literal &&
             literal.IsKind(VBasic.SyntaxKind.NumericLiteralExpression) &&
-            literal.Token.Text.EndsWith("S")) {
+            literal.Token.Text.EndsWith("S", StringComparison.InvariantCulture)) {
             return _csCompilation.GetSpecialType(SpecialType.System_Int32);
         }
 
