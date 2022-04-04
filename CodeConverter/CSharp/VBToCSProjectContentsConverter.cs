@@ -110,7 +110,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
         }
     }
 
-    private string RebaseResxPaths(string projDirPath, string resxDirPath, string originalResx)
+    private static string RebaseResxPaths(string projDirPath, string resxDirPath, string originalResx)
     {
         var xml = XDocument.Parse(originalResx);
         var xmlNs = xml.Root.GetDefaultNamespace();

@@ -111,14 +111,14 @@ internal partial class SymbolEquivalenceComparer
                     GetHashCode(x.ContainingSymbol, currentHash));
         }
 
-        private int CombineHashCodes(ILabelSymbol x, int currentHash)
+        private static int CombineHashCodes(ILabelSymbol x, int currentHash)
         {
             return
                 Hash.Combine(x.Name,
                     Hash.Combine(x.Locations.FirstOrDefault(), currentHash));
         }
 
-        private int CombineHashCodes(ILocalSymbol x, int currentHash)
+        private static int CombineHashCodes(ILocalSymbol x, int currentHash)
         {
             return Hash.Combine(x.Locations.FirstOrDefault(), currentHash);
         }
@@ -310,12 +310,12 @@ internal partial class SymbolEquivalenceComparer
                 GetHashCode(x.ContainingSymbol, currentHash);
         }
 
-        private int CombineHashCodes(IRangeVariableSymbol x, int currentHash)
+        private static int CombineHashCodes(IRangeVariableSymbol x, int currentHash)
         {
             return Hash.Combine(x.Locations.FirstOrDefault(), currentHash);
         }
 
-        private int CombineHashCodes(IPreprocessingSymbol x, int currentHash)
+        private static int CombineHashCodes(IPreprocessingSymbol x, int currentHash)
         {
             return Hash.Combine(x.GetHashCode(), currentHash);
         }

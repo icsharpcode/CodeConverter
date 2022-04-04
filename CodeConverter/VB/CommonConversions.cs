@@ -321,7 +321,7 @@ internal class CommonConversions
         return symbol.ReturnsVoid;
     }
 
-    private StatementSyntax GetStatementSyntax(VisualBasicSyntaxNode node, Func<ExpressionSyntax, StatementSyntax> create) {
+    private static StatementSyntax GetStatementSyntax(VisualBasicSyntaxNode node, Func<ExpressionSyntax, StatementSyntax> create) {
         if (node is StatementSyntax syntax) return syntax;
         return create(node as ExpressionSyntax);
     }

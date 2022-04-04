@@ -22,7 +22,7 @@ public class TextReplacementConverter
         return new ConversionResult(withReplacements) { SourcePathOrNull = filePath.FullName, IsIdentity = oldProjectText == withReplacements};
     }
 
-    public string Replace(string originalText, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements)
+    public static string Replace(string originalText, IEnumerable<(string Find, string Replace, bool FirstOnly)> replacements)
     {
         foreach (var (oldValue, newValue, firstOnly) in replacements) {
             Regex regex = new Regex(oldValue, RegexOptions.IgnoreCase);

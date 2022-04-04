@@ -348,7 +348,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return CreateForZeroToValueLoop(loopVariableIdentifier, arrayCopy, sourceArrayCount);
     }
 
-    private ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
+    private static ForStatementSyntax CreateForZeroToValueLoop(SimpleNameSyntax loopVariableIdentifier, StatementSyntax loopStatement, ExpressionSyntax inclusiveLoopUpperBound)
     {
         var loopVariableAssignment = CommonConversions.CreateVariableDeclarationAndAssignment(loopVariableIdentifier.Identifier.Text, CommonConversions.Literal(0));
         var lessThanSourceBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression,
@@ -885,7 +885,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private ExpressionSyntax EqualsAdjustedForStringComparison(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, TypeInfo lhsTypeInfo, ExpressionSyntax csLeft, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
     {
         var vbEquality = CommonConversions.VisualBasicEqualityComparison;
-        switch (vbEquality.GetObjectEqualityType(lhsTypeInfo, rhsTypeInfo)) {
+        switch (VisualBasicEqualityComparison.GetObjectEqualityType(lhsTypeInfo, rhsTypeInfo)) {
             case VisualBasicEqualityComparison.RequiredType.Object:
                 return vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight);
             case VisualBasicEqualityComparison.RequiredType.StringOnly:
@@ -1003,12 +1003,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SingleStatement(await node.Invocation.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
     }
 
-    private SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
+    private static SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
     {
         return SyntaxFactory.SingletonList(statement);
     }
 
-    private SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
+    private static SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
     {
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
     }

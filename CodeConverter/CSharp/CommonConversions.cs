@@ -369,7 +369,7 @@ internal class CommonConversions
         return declaredSymbol == null || !declaredSymbol.IsType() || declaredSymbol.ContainingType == null;
     }
 
-    private SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
+    private static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
     {
         SyntaxKind vbSyntaxKind = VisualBasicExtensions.Kind(m);
         switch (vbSyntaxKind) {
@@ -407,7 +407,7 @@ internal class CommonConversions
 
     }
 
-    private IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKind(Accessibility declaredAccessibility)
+    private static IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKind(Accessibility declaredAccessibility)
     {
         switch (declaredAccessibility) {
             case Accessibility.Private:
@@ -427,7 +427,7 @@ internal class CommonConversions
         }
     }
 
-    private bool IgnoreInContext(SyntaxToken m, TokenContext context)
+    private static bool IgnoreInContext(SyntaxToken m, TokenContext context)
     {
         switch (VisualBasicExtensions.Kind(m)) {
             case SyntaxKind.OptionalKeyword:
@@ -441,7 +441,7 @@ internal class CommonConversions
         }
     }
 
-    public bool IsConversionOperator(SyntaxToken token)
+    public static bool IsConversionOperator(SyntaxToken token)
     {
         bool isConvOp= token.IsKind(CSSyntaxKind.ExplicitKeyword, CSSyntaxKind.ImplicitKeyword)
                        ||token.IsKind(SyntaxKind.NarrowingKeyword, SyntaxKind.WideningKeyword);

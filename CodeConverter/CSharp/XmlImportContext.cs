@@ -9,7 +9,7 @@ internal class XmlImportContext
 {
     private readonly List<FieldDeclarationSyntax> _xNamespaceFields = new();
     public IdentifierNameSyntax HelperClassUniqueIdentifierName { get; }
-    public IdentifierNameSyntax HelperClassShortIdentifierName => SyntaxFactory.IdentifierName("XmlImports");
+    public static IdentifierNameSyntax HelperClassShortIdentifierName => SyntaxFactory.IdentifierName("XmlImports");
 
     public XmlImportContext(Document document)            
     {
@@ -26,7 +26,7 @@ internal class XmlImportContext
 
     public bool HasImports => _xNamespaceFields.Any();
 
-    public IdentifierNameSyntax DefaultIdentifierName => SyntaxFactory.IdentifierName("Default");
+    public static IdentifierNameSyntax DefaultIdentifierName => SyntaxFactory.IdentifierName("Default");
 
     public bool HasDefaultImport => _xNamespaceFields.Any(x => x.Declaration.Variables.Single().Identifier.IsEquivalentTo(DefaultIdentifierName.Identifier));
 
@@ -88,7 +88,7 @@ internal class XmlImportContext
             
     }
 
-    private ExpressionSyntax BuildXmlnsAttributeName(IdentifierNameSyntax fieldIdentifierName)
+    private static ExpressionSyntax BuildXmlnsAttributeName(IdentifierNameSyntax fieldIdentifierName)
     {
         var xmlns = SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("XNamespace"), SyntaxFactory.IdentifierName("Xmlns"));
         return SyntaxFactory.BinaryExpression(CSSyntaxKind.AddExpression, xmlns, CommonConversions.Literal(fieldIdentifierName.Identifier.ValueText));

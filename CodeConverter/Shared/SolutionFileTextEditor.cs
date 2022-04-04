@@ -4,7 +4,7 @@ namespace ICSharpCode.CodeConverter.Shared;
 
 public class SolutionFileTextEditor : ISolutionFileTextEditor
 {
-    public List<(string Find, string Replace, bool FirstOnly)> GetSolutionFileProjectReferenceReplacements(
+    public static List<(string Find, string Replace, bool FirstOnly)> GetSolutionFileProjectReferenceReplacements(
         IEnumerable<(string Name, string RelativeProjPath)> projTuples, string sourceSolutionContents,
         IReadOnlyCollection<(string, string)> projTypeGuidMappings)
     {

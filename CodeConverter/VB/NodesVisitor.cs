@@ -91,7 +91,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             members
         );
     }
-    private IEnumerable<CSSyntax.UsingDirectiveSyntax> TidyImportsList(IEnumerable<CSSyntax.UsingDirectiveSyntax> usings)
+    private static IEnumerable<CSSyntax.UsingDirectiveSyntax> TidyImportsList(IEnumerable<CSSyntax.UsingDirectiveSyntax> usings)
     {
         return usings
             .GroupBy(x => x.ToString())
@@ -592,7 +592,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 throw new ArgumentOutOfRangeException(nameof(member), parentTypeKind, null);
         }
     }
-    private bool CanBeModule(CSSyntax.TypeDeclarationSyntax type) {
+    private static bool CanBeModule(CSSyntax.TypeDeclarationSyntax type) {
         var parentType = type.GetAncestor<CSSyntax.TypeDeclarationSyntax>();
         return type.Modifiers.Any(CS.SyntaxKind.StaticKeyword) && type.TypeParameterList == null && parentType == null;
     }
@@ -728,7 +728,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
 
 
-    private SyntaxKind ConvertOperatorDeclarationToken(CS.SyntaxKind syntaxKind, bool firstParameterIsString)
+    private static SyntaxKind ConvertOperatorDeclarationToken(CS.SyntaxKind syntaxKind, bool firstParameterIsString)
     {
         switch (syntaxKind) {
             case CS.SyntaxKind.PlusToken:
@@ -1071,7 +1071,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
     }
 
-    private AssignmentStatementSyntax MakeAssignmentStatement(CSSyntax.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
+    private static AssignmentStatementSyntax MakeAssignmentStatement(CSSyntax.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
     {
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
         if (node.IsKind(CS.SyntaxKind.AndAssignmentExpression, CS.SyntaxKind.OrAssignmentExpression, CS.SyntaxKind.ExclusiveOrAssignmentExpression, CS.SyntaxKind.ModuloAssignmentExpression)) {
@@ -1707,7 +1707,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.NewConstraint(SyntaxFactory.Token(SyntaxKind.NewKeyword));
     }
 
-    private CSSyntax.TypeParameterConstraintClauseSyntax FindClauseForParameter(CSSyntax.TypeParameterSyntax node)
+    private static CSSyntax.TypeParameterConstraintClauseSyntax FindClauseForParameter(CSSyntax.TypeParameterSyntax node)
     {
         SyntaxList<CSSyntax.TypeParameterConstraintClauseSyntax> clauses;
         var parentBlock = node.Parent.Parent;

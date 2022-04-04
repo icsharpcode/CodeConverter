@@ -19,7 +19,7 @@ internal class RecursiveTriviaConverter
 
     private int TriviaDepth = 0;
 
-    private string RemoveLeadingSpacesStar(string line)
+    private static string RemoveLeadingSpacesStar(string line)
     {
         var NewStringBuilder = new StringBuilder();
         bool SkipSpace = true;
@@ -55,7 +55,7 @@ internal class RecursiveTriviaConverter
         return NewStringBuilder.ToString();
     }
 
-    private string ReplaceLeadingSlashes(string CommentTriviaBody)
+    private static string ReplaceLeadingSlashes(string CommentTriviaBody)
     {
         for (int i = 0, loopTo = CommentTriviaBody.Length - 1; i <= loopTo; i++) {
             if ((CommentTriviaBody.Substring(i, 1) ?? "") == "/") {
@@ -428,7 +428,7 @@ internal class RecursiveTriviaConverter
         throw new NotImplementedException($"t.Kind({(VBasic.SyntaxKind)Conversions.ToUShort(t.RawKind)}) Is unknown");
     }
 
-    internal string StringReplaceCondition(string csCondition)
+    internal static string StringReplaceCondition(string csCondition)
     {
         return csCondition.Replace("==", "=").Replace("!=", "<>").Replace("&&", "And").Replace("||", "Or").Replace("  ", " ").Replace("!", "Not ").Replace("false", "False").Replace("true", "True");
     }
@@ -502,7 +502,7 @@ internal class RecursiveTriviaConverter
         return TriviaList;
     }
 
-    internal T WithConvertedTriviaFrom<T>(T node, SyntaxNode otherNode) where T : SyntaxNode
+    internal static T WithConvertedTriviaFrom<T>(T node, SyntaxNode otherNode) where T : SyntaxNode
     {
         if (otherNode == null) {
             return node;

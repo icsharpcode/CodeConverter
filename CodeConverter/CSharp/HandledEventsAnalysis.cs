@@ -221,7 +221,7 @@ internal class HandledEventsAnalysis
     /// <remarks>
     /// If such an overload already exists in the source, this will duplicate it. It seems pretty unlikely though, and probably not worth the effort of renaming.
     /// </remarks>
-    private MethodDeclarationSyntax DelegatingMethod(IdentifierNameSyntax methodId, MethodDeclarationSyntax invokeMethod)
+    private static MethodDeclarationSyntax DelegatingMethod(IdentifierNameSyntax methodId, MethodDeclarationSyntax invokeMethod)
     {
         var body = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(methodId));
         return invokeMethod.WithIdentifier(methodId.Identifier)
