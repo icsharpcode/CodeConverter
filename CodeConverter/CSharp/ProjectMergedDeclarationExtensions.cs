@@ -48,8 +48,8 @@ internal static class ProjectMergedDeclarationExtensions
     private static bool IsStandaloneGeneratedResource(XElement t)
     {
         return t.Name.LocalName == "EmbeddedResource" &&
-               (GetIncludeOrUpdateAttribute(t)?.Value).EndsWith(".resx", StringComparison.InvariantCulture) == true &&
-               (t.Element(t.GetDefaultNamespace() + "Generator")?.Value).EndsWith("ResXFileCodeGenerator", StringComparison.InvariantCulture) == true;
+               GetIncludeOrUpdateAttribute(t)?.Value.EndsWith(".resx", StringComparison.InvariantCulture) == true &&
+               t.Element(t.GetDefaultNamespace() + "Generator")?.Value.EndsWith("ResXFileCodeGenerator", StringComparison.InvariantCulture) == true;
     }
 
     private static XAttribute GetIncludeOrUpdateAttribute(XElement t)
