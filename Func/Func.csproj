@@ -8,7 +8,6 @@
     <UserSecretsId>1d2f0b91-7e29-4920-8a93-e52863d06c2e</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
     <Compile Include="..\Web\WebConverter.cs" Link="WebConverter.cs" />
     <None Include="local.settings.json" />
   </ItemGroup>

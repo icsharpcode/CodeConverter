@@ -80,7 +80,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
     public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)
     {
         var projDirPath = SourceProject.GetDirectoryPath();
-        var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r.WithTargetPath(GetTargetPath(projDirPath, r))).ToArray());
+        var (project, docIds) = _convertedCsProject.WithDocuments(firstPassResults.Select(r => r with {TargetPath = GetTargetPath(projDirPath, r)}).ToArray());
         if (_useProjectLevelWinformsAdjustments) project = await project.RenameMergedNamespacesAsync(_progress, _cancellationToken);
         return (project, docIds);
     }
