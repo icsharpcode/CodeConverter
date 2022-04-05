@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.VisualStudio.Threading;
+﻿using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.Shared;
 

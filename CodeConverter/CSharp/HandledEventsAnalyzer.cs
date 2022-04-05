@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Util;
+﻿using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ICSharpCode.CodeConverter.Shared;
+﻿namespace ICSharpCode.CodeConverter.Shared;
 
 /// <summary>
 /// Overrides ToString with sensible default output

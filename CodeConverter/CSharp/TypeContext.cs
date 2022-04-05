@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.CSharp;
+﻿namespace ICSharpCode.CodeConverter.CSharp;
 
 internal class TypeContext : ITypeContext
 {

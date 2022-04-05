@@ -4,13 +4,7 @@
 
 ////#define TRACKDEPTH
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Shared.Extensions;
-using Roslyn.Utilities;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 

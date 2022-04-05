@@ -1,13 +1,9 @@
 ﻿#nullable enable
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
-using Roslyn.Utilities;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 

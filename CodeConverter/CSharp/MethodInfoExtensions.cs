@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Reflection;
-using ICSharpCode.CodeConverter.Util;
+﻿using System.Reflection;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

@@ -1,5 +1,4 @@
-﻿using System;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 

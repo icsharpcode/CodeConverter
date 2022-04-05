@@ -1,14 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.VisualBasic;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using CSS = Microsoft.CodeAnalysis.CSharp.Syntax;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using System.Threading;
 
 namespace ICSharpCode.CodeConverter.VB;
 

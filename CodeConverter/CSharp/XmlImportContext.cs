@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;

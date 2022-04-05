@@ -1,18 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using LangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
-using System;
 using System.Xml.Linq;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

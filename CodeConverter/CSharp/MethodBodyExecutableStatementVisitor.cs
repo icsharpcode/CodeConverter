@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -14,8 +10,6 @@ using VBasic = Microsoft.CodeAnalysis.VisualBasic;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.CodeAnalysis.FindSymbols;
-using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

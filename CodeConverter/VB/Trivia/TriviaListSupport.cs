@@ -1,9 +1,7 @@
 ﻿using Microsoft.VisualBasic;
-using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using CS = Microsoft.CodeAnalysis.CSharp;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
-using ICSharpCode.CodeConverter.Util;
 
 namespace CSharpToVBCodeConverter.DestVisualBasic;
 

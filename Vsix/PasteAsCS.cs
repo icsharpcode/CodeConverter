@@ -1,11 +1,8 @@
 ﻿using System;
 using System.ComponentModel.Design;
 using System.Threading;
-using System.Windows;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
 using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using IAsyncServiceProvider = Microsoft.VisualStudio.Shell.IAsyncServiceProvider;
 using Task = System.Threading.Tasks.Task;
 

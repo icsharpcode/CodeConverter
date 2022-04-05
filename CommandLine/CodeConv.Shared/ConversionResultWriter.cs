@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CommandLine.Util;
-using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.CommandLine
 {

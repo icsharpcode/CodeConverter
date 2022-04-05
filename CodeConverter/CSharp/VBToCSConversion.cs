@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using Microsoft.CodeAnalysis;
@@ -10,10 +7,8 @@ using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.VisualBasic;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
-using System.Threading;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

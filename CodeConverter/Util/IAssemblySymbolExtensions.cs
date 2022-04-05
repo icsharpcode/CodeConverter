@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util;

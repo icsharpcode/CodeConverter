@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Document = Microsoft.CodeAnalysis.Document;

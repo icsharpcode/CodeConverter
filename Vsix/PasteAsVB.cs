@@ -1,8 +1,6 @@
 ﻿using System;
 using System.ComponentModel.Design;
 using System.Threading;
-using System.Windows;
-using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;

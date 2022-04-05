@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -13,8 +9,6 @@ using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using VBasic = Microsoft.CodeAnalysis.VisualBasic;
-using System.Diagnostics.Tracing;
-using Microsoft.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

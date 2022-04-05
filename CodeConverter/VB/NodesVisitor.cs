@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Threading;
-using ICSharpCode.CodeConverter.CSharp;
+﻿using System.Collections.Immutable;
 using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
