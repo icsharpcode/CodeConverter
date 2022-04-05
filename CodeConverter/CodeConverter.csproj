@@ -25,6 +25,9 @@
     <AnalysisMode>Recommended</AnalysisMode>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Common\DefaultReferences.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Common\DefaultReferences.cs" />
   </ItemGroup>
   <ItemGroup>
