@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 /// <summary>
 /// Converted from https://github.com/dotnet/roslyn/blob/159707383710936bc0730a25be652081a2350878/src/EditorFeatures/VisualBasic/Utilities/NamedTypeSymbolExtensions.vb#L9-L41

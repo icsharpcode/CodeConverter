@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 /// <remarks>
 /// From https://github.com/dotnet/roslyn/blob/2b12b9f3b8fe8895694280648b523bc4fd95211f/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/ISymbolExtensions_Accessibility.cs#L13

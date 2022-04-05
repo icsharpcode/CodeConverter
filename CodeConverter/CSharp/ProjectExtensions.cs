@@ -1,7 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.CSharp;
+﻿namespace ICSharpCode.CodeConverter.CSharp;
 
 internal static class ProjectExtensions
 {

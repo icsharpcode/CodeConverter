@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using VB = Microsoft.CodeAnalysis.VisualBasic;
+﻿using VB = Microsoft.CodeAnalysis.VisualBasic;
 
 namespace CSharpToVBCodeConverter.Util;
 

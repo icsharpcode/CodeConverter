@@ -1,5 +1,4 @@
 using System.Text;
-using Microsoft.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace ICSharpCode.CodeConverter.Util;

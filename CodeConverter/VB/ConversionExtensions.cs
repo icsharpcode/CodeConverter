@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace ICSharpCode.CodeConverter.VB;
+﻿namespace ICSharpCode.CodeConverter.VB;
 
 internal static class ConversionExtensions
 {

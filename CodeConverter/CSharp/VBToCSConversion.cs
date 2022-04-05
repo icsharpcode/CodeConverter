@@ -1,7 +1,4 @@
 ﻿using System.Text;
-using ICSharpCode.CodeConverter.Shared;
-using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.VisualBasic;

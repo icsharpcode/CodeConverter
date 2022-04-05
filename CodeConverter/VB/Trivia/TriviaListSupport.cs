@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualBasic;
-using Microsoft.CodeAnalysis;
+using Constants = Microsoft.VisualBasic.Constants;
 using VBFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 
 namespace CSharpToVBCodeConverter.DestVisualBasic;

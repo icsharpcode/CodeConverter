@@ -1,6 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Util;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using VbSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CsSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;

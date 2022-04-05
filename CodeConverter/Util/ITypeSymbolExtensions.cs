@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
-using ICSharpCode.CodeConverter.Shared;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util;
 

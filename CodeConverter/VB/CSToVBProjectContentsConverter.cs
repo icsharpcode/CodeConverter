@@ -1,6 +1,4 @@
 ﻿using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using System.Runtime.CompilerServices;
 

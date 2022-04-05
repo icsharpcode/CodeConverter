@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.Shared;
