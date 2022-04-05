@@ -274,9 +274,9 @@ public class ProjectConversion
         try {
             var convertedNode = await _projectContentsConverter.SingleFirstPassAsync(document);
             string[] errors = GetErrorsFromAnnotations(convertedNode);
-            return (treeFilePath, convertedNode, errors);
+            return new(treeFilePath, convertedNode, errors);
         } catch (Exception e) {
-            return (treeFilePath, null, new[] { e.ToString() });
+            return new(treeFilePath, null, new[] { e.ToString() });
         }
     }
 

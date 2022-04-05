@@ -25,10 +25,7 @@
     <AnalysisMode>Recommended</AnalysisMode>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Shared\DefaultReferences.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Shared\DefaultReferences.cs" />
+    <EmbeddedResource Include="Common\DefaultReferences.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.8.2" />

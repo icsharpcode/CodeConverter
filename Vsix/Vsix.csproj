@@ -126,9 +126,6 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs">
-      <Link>DefaultReferences.cs</Link>
-    </Compile>
     <Compile Include="..\CommandLine\CodeConv.Shared\Util\AppDomainExtensions.cs">
       <Link>AppDomainExtensions.cs</Link>
     </Compile>
