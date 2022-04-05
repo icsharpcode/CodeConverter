@@ -1,8 +1,7 @@
-﻿namespace ICSharpCode.CodeConverter
+﻿namespace ICSharpCode.CodeConverter;
+
+public enum Language
 {
-    public enum Language
-    {
-        CS,
-        VB
-    }
+    CS,
+    VB
 }

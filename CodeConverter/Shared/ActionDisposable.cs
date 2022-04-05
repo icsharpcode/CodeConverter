@@ -1,17 +1,15 @@
 ﻿using System;
 
-namespace ICSharpCode.CodeConverter.Shared
+namespace ICSharpCode.CodeConverter.Shared;
+
+internal sealed class ActionDisposable : IDisposable
 {
+    private readonly Action _onDispose;
 
-    internal sealed class ActionDisposable : IDisposable
+    public ActionDisposable(Action onDispose)
     {
-        private readonly Action _onDispose;
-
-        public ActionDisposable(Action onDispose)
-        {
-            _onDispose = onDispose;
-        }
-
-        public void Dispose() => _onDispose();
+        _onDispose = onDispose;
     }
+
+    public void Dispose() => _onDispose();
 }

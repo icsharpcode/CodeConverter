@@ -5,23 +5,22 @@
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
-namespace ICSharpCode.CodeConverter.Util.FromRoslyn
+namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
+
+internal partial class SymbolEquivalenceComparer
 {
-    internal partial class SymbolEquivalenceComparer
+    private sealed class SimpleNameAssemblyComparer : IEqualityComparer<IAssemblySymbol>
     {
-        private sealed class SimpleNameAssemblyComparer : IEqualityComparer<IAssemblySymbol>
+        public static readonly IEqualityComparer<IAssemblySymbol> Instance = new SimpleNameAssemblyComparer();
+
+        public bool Equals(IAssemblySymbol x, IAssemblySymbol y)
         {
-            public static readonly IEqualityComparer<IAssemblySymbol> Instance = new SimpleNameAssemblyComparer();
+            return AssemblyIdentityComparer.SimpleNameComparer.Equals(x.Name, y.Name);
+        }
 
-            public bool Equals(IAssemblySymbol x, IAssemblySymbol y)
-            {
-                return AssemblyIdentityComparer.SimpleNameComparer.Equals(x.Name, y.Name);
-            }
-
-            public int GetHashCode(IAssemblySymbol obj)
-            {
-                return AssemblyIdentityComparer.SimpleNameComparer.GetHashCode(obj.Name);
-            }
+        public int GetHashCode(IAssemblySymbol obj)
+        {
+            return AssemblyIdentityComparer.SimpleNameComparer.GetHashCode(obj.Name);
         }
     }
 }

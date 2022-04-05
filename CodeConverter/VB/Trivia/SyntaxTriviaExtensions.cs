@@ -4,37 +4,35 @@ using CS = Microsoft.CodeAnalysis.CSharp;
 using VB = Microsoft.CodeAnalysis.VisualBasic;
 using ICSharpCode.CodeConverter.Util;
 
-namespace CSharpToVBCodeConverter.Util
+namespace CSharpToVBCodeConverter.Util;
+
+internal static class SyntaxTriviaExtensions
 {
-    internal static class SyntaxTriviaExtensions
+
+    public static bool IsCommentOrDirectiveTrivia(this SyntaxTrivia t)
     {
-
-        public static bool IsCommentOrDirectiveTrivia(this SyntaxTrivia t)
+        if (t.IsSingleLineComment())
         {
-            if (t.IsSingleLineComment())
-            {
-                return true;
-            }
-            if (t.IsMultiLineComment())
-            {
-                return true;
-            }
-            if (t.IsDirective)
-            {
-                return true;
-            }
-            return false;
+            return true;
         }
-
-        public static bool IsMultiLineComment(this SyntaxTrivia trivia)
+        if (t.IsMultiLineComment())
         {
-            return trivia.IsKind(CS.SyntaxKind.MultiLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia) || trivia.IsKind(CS.SyntaxKind.MultiLineDocumentationCommentTrivia);
+            return true;
         }
-
-        public static bool IsSingleLineComment(this SyntaxTrivia trivia)
+        if (t.IsDirective)
         {
-            return trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia) || trivia.IsKind(VB.SyntaxKind.CommentTrivia);
+            return true;
         }
+        return false;
+    }
+
+    public static bool IsMultiLineComment(this SyntaxTrivia trivia)
+    {
+        return trivia.IsKind(CS.SyntaxKind.MultiLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.DocumentationCommentExteriorTrivia) || trivia.IsKind(CS.SyntaxKind.MultiLineDocumentationCommentTrivia);
+    }
+
+    public static bool IsSingleLineComment(this SyntaxTrivia trivia)
+    {
+        return trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia) || trivia.IsKind(VB.SyntaxKind.CommentTrivia);
     }
 }
-
