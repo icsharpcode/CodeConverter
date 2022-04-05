@@ -288,7 +288,7 @@ internal static partial class SpecializedCollections
 
             public T this[int index] {
                 get {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index), index, null);
                 }
 
                 set {

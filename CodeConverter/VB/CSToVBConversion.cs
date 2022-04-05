@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
@@ -60,10 +61,10 @@ public class CSToVBConversion : ILanguageConversion
 
     private static string AddInfer(string xml)
     {
-        if (xml.IndexOf("<OptionInfer>") > -1) return xml;
+        if (xml.IndexOf("<OptionInfer>", StringComparison.Ordinal) > -1) return xml;
 
         string propertygroup = "<PropertyGroup>";
-        var startOfFirstPropertyGroup = xml.IndexOf(propertygroup);
+        var startOfFirstPropertyGroup = xml.IndexOf(propertygroup, StringComparison.Ordinal);
         if (startOfFirstPropertyGroup == -1) return xml;
 
         int endOfFirstPropertyGroupStartTag = startOfFirstPropertyGroup + propertygroup.Length;
@@ -75,8 +76,8 @@ public class CSToVBConversion : ILanguageConversion
     {
         var startTag = "<DefineConstants>";
         var endTag = "</DefineConstants>";
-        var defineConstantsStart = s.IndexOf(startTag);
-        var defineConstantsEnd = s.IndexOf(endTag);
+        var defineConstantsStart = s.IndexOf(startTag, StringComparison.Ordinal);
+        var defineConstantsEnd = s.IndexOf(endTag, StringComparison.Ordinal);
         if (defineConstantsStart == -1 || defineConstantsEnd == -1)
             return s;
 
@@ -90,8 +91,8 @@ public class CSToVBConversion : ILanguageConversion
         var startTag = "<PropertyGroup";
         var endTag = "</PropertyGroup>";
         var prevGroupEnd = 0;
-        var propertyGroupStart = s.IndexOf(startTag);
-        var propertyGroupEnd = s.IndexOf(endTag);
+        var propertyGroupStart = s.IndexOf(startTag, StringComparison.Ordinal);
+        var propertyGroupEnd = s.IndexOf(endTag, StringComparison.Ordinal);
 
         if (propertyGroupStart == -1 || propertyGroupEnd == -1) {
             return s;
@@ -105,8 +106,8 @@ public class CSToVBConversion : ILanguageConversion
             curSegment = TweakOutputPath(curSegment);
             sb.Append(curSegment);
             prevGroupEnd = propertyGroupEnd;
-            propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd);
-            propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1);
+            propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd, StringComparison.Ordinal);
+            propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1, StringComparison.Ordinal);
         }
 
         sb.Append(s, prevGroupEnd, s.Length - prevGroupEnd);
@@ -118,8 +119,8 @@ public class CSToVBConversion : ILanguageConversion
     {
         var startPathTag = "<OutputPath>";
         var endPathTag = "</OutputPath>";
-        var pathStart = s.IndexOf(startPathTag);
-        var pathEnd = s.IndexOf(endPathTag);
+        var pathStart = s.IndexOf(startPathTag, StringComparison.Ordinal);
+        var pathEnd = s.IndexOf(endPathTag, StringComparison.Ordinal);
 
         if (pathStart == -1 || pathEnd == -1)
             return s;
@@ -128,8 +129,8 @@ public class CSToVBConversion : ILanguageConversion
             
         var startFileTag = "<DocumentationFile";
         var endFileTag = "</DocumentationFile>";
-        var fileTagStart = s.IndexOf(startFileTag);
-        var fileTagEnd = s.IndexOf(endFileTag);
+        var fileTagStart = s.IndexOf(startFileTag, StringComparison.Ordinal);
+        var fileTagEnd = s.IndexOf(endFileTag, StringComparison.Ordinal);
 
         if (fileTagStart == -1 || fileTagEnd == -1)
             return s;

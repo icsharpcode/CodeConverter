@@ -286,7 +286,7 @@ internal class QueryConverter
             return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
         });
 
-        if (selectedVariables.Count() == 1)
+        if (selectedVariables.Length == 1)
             return SyntaxFactory.SelectClause(selectedVariables.Single().Expression);
         return SyntaxFactory.SelectClause(SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(selectedVariables)));
     }

@@ -29,9 +29,9 @@ public class VBToCSConversion : ILanguageConversion
     }
 
     public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
-        bool surroundedByMethod)
+        bool surroundedWithMethod)
     {
-        return surroundedByMethod
+        return surroundedWithMethod
             ? descendantNodes.OfType<VBSyntax.MethodBlockBaseSyntax>().First<SyntaxNode>()
             : descendantNodes.OfType<VBSyntax.TypeBlockSyntax>().First<SyntaxNode>();
     }
@@ -77,8 +77,8 @@ public class VBToCSConversion : ILanguageConversion
         // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
         // Then add them to the define constants in the same section, or create one if necessary.
 
-        var defineConstantsStart = xml.IndexOf("<DefineConstants>");
-        var defineConstantsEnd = xml.IndexOf("</DefineConstants>");
+        var defineConstantsStart = xml.IndexOf("<DefineConstants>", StringComparison.Ordinal);
+        var defineConstantsEnd = xml.IndexOf("</DefineConstants>", StringComparison.Ordinal);
         if (defineConstantsStart == -1 || defineConstantsEnd == -1)
             return xml;
 
@@ -92,8 +92,8 @@ public class VBToCSConversion : ILanguageConversion
         var startTag = "<PropertyGroup";
         var endTag = "</PropertyGroup>";
         var prevGroupEnd = 0;
-        var propertyGroupStart = s.IndexOf(startTag);
-        var propertyGroupEnd = s.IndexOf(endTag);
+        var propertyGroupStart = s.IndexOf(startTag, StringComparison.Ordinal);
+        var propertyGroupEnd = s.IndexOf(endTag, StringComparison.Ordinal);
         var sb = new StringBuilder();
 
         if (propertyGroupStart == -1 || propertyGroupEnd == -1)
@@ -106,8 +106,8 @@ public class VBToCSConversion : ILanguageConversion
             curSegment = TweakOutputPath(curSegment);
             sb.Append(curSegment);
             prevGroupEnd = propertyGroupEnd;
-            propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd);
-            propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1);
+            propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd, StringComparison.Ordinal);
+            propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1, StringComparison.Ordinal);
         } while (propertyGroupStart != -1 && propertyGroupEnd != -1);
 
         sb.Append(s.Substring(prevGroupEnd));
@@ -119,8 +119,8 @@ public class VBToCSConversion : ILanguageConversion
     {
         var startPathTag = "<OutputPath>";
         var endPathTag = "</OutputPath>";
-        var pathStart = s.IndexOf(startPathTag);
-        var pathEnd = s.IndexOf(endPathTag);
+        var pathStart = s.IndexOf(startPathTag, StringComparison.Ordinal);
+        var pathEnd = s.IndexOf(endPathTag, StringComparison.Ordinal);
 
         if (pathStart == -1 || pathEnd == -1)
             return s;
@@ -129,8 +129,8 @@ public class VBToCSConversion : ILanguageConversion
 
         var startFileTag = "<DocumentationFile>";
         var endFileTag = "</DocumentationFile>";
-        var fileTagStart = s.IndexOf(startFileTag);
-        var fileTagEnd = s.IndexOf(endFileTag);
+        var fileTagStart = s.IndexOf(startFileTag, StringComparison.Ordinal);
+        var fileTagEnd = s.IndexOf(endFileTag, StringComparison.Ordinal);
 
         if (fileTagStart == -1 || fileTagEnd == -1)
             return s;

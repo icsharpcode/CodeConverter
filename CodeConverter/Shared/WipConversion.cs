@@ -8,12 +8,12 @@ internal struct WipFileConversion
     }
 }
 
-public struct WipFileConversion<TWip>
+public readonly struct WipFileConversion<TWip>
 {
-    public string SourcePath;
-    public string TargetPath;
-    public TWip Wip;
-    public string[] Errors;
+    public string SourcePath { get; }
+    public string TargetPath { get; }
+    public TWip Wip { get; }
+    public string[] Errors { get; }
 
     private WipFileConversion(string sourcePath, string targetPath, TWip wip, string[] errors)
     {

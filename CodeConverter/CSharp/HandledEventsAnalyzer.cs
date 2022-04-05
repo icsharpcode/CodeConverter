@@ -56,7 +56,7 @@ internal class HandledEventsAnalyzer
     private static int ParametersToDiscard(IEventSymbol e, IMethodSymbol handlingMethod)
     {
         var mayRequireDiscardedParameters = !handlingMethod.Parameters.Any();
-        var toDiscard = mayRequireDiscardedParameters ? e?.Type.GetDelegateInvokeMethod()?.GetParameters().Count() ?? 0 : 0;
+        var toDiscard = mayRequireDiscardedParameters ? e?.Type.GetDelegateInvokeMethod()?.GetParameters().Length ?? 0 : 0;
         return toDiscard;
     }
 
@@ -81,7 +81,7 @@ internal class HandledEventsAnalyzer
             .SelectMany(mbb => HandledEvent(mbb.SemanticModel, mbb.MethodDeclarations, m));
     }
 
-    private IEnumerable<(HandledEventsAnalysis.EventContainer EventContainer, EventDescriptor Event, IMethodSymbol HandlingMethod)> HandledEvent(SemanticModel semanticModel,
+    private static IEnumerable<(HandledEventsAnalysis.EventContainer EventContainer, EventDescriptor Event, IMethodSymbol HandlingMethod)> HandledEvent(SemanticModel semanticModel,
         MethodStatementSyntax[] mbb, IMethodSymbol methodSymbol)
     {
         return mbb.Where(mss => mss.HandlesClause?.Events.Any() == true)

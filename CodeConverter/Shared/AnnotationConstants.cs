@@ -1,4 +1,6 @@
-﻿namespace ICSharpCode.CodeConverter.Shared;
+﻿using System.Globalization;
+
+namespace ICSharpCode.CodeConverter.Shared;
 
 internal class AnnotationConstants
 {
@@ -10,11 +12,11 @@ internal class AnnotationConstants
 
     public static SyntaxAnnotation SourceStartLine(FileLinePositionSpan origLinespan)
     {
-        return new SyntaxAnnotation(SourceStartLineAnnotationKind, origLinespan.StartLinePosition.Line.ToString());
+        return new SyntaxAnnotation(SourceStartLineAnnotationKind, origLinespan.StartLinePosition.Line.ToString(CultureInfo.InvariantCulture));
     }
 
     public static SyntaxAnnotation SourceEndLine(FileLinePositionSpan origLinespan)
     {
-        return new SyntaxAnnotation(SourceEndLineAnnotationKind, origLinespan.EndLinePosition.Line.ToString());
+        return new SyntaxAnnotation(SourceEndLineAnnotationKind, origLinespan.EndLinePosition.Line.ToString(CultureInfo.InvariantCulture));
     }
 }

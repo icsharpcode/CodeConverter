@@ -15,8 +15,8 @@ internal static class DocumentExtensions
             convertedDocument.Project.Language == LanguageNames.VisualBasic
                 ? VbWouldBeSimplifiedIncorrectly
                 : CsWouldBeSimplifiedIncorrectly;
-        var originalRoot = await convertedDocument.GetSyntaxRootAsync();
-        var nodesWithUnresolvedTypes = (await convertedDocument.GetSemanticModelAsync()).GetDiagnostics()
+        var originalRoot = await convertedDocument.GetSyntaxRootAsync(cancellationToken);
+        var nodesWithUnresolvedTypes = (await convertedDocument.GetSemanticModelAsync(cancellationToken)).GetDiagnostics(cancellationToken: cancellationToken)
             .Where(d => d.Id == unresolvedTypeDiagnosticId && d.Location.IsInSource)
             .Select(d => originalRoot.FindNode(d.Location.SourceSpan).GetAncestor<TUsingDirectiveSyntax>())
             .ToLookup(d => (SyntaxNode) d);

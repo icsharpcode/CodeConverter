@@ -50,7 +50,7 @@ internal class VisualBasicEqualityComparison
 
     public HashSet<string> ExtraUsingDirectives { get; }
 
-    public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
+    public static RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
     {
         var typeInfos = new[] { leftType, rightType };
         if (!node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {

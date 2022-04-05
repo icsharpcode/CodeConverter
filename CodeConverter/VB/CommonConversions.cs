@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Editing;
+﻿using System.Globalization;
+using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -168,7 +169,7 @@ internal class CommonConversions
             case CSSyntax.ConstantPatternSyntax _:
                 return null;
             default:
-                throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+                throw new ArgumentOutOfRangeException(nameof(node), node.Pattern, null);
         }
     }
 
@@ -673,7 +674,7 @@ internal class CommonConversions
 
     private static string UppercaseFirstLetter(string sourceText)
     {
-        return sourceText.Substring(0, 1).ToUpper() + sourceText.Substring(1);
+        return sourceText.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture) + sourceText.Substring(1);
     }
 
     public bool IsEventHandlerIdentifier(CS.CSharpSyntaxNode syntax)

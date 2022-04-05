@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using System.Globalization;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp.Replacements;
@@ -122,7 +123,7 @@ internal class SimpleMethodReplacement
     {
         for (var index = 0; index < argumentListSyntax.Arguments.Count; index++) {
             var expression = argumentListSyntax.Arguments[index].Expression;
-            var nodeToReplace = zeroOrSingleArgExpression.GetAnnotatedNodes(AnnotationKind).Single(x => x.GetAnnotations(AnnotationKind).Single().Data == index.ToString());
+            var nodeToReplace = zeroOrSingleArgExpression.GetAnnotatedNodes(AnnotationKind).Single(x => x.GetAnnotations(AnnotationKind).Single().Data == index.ToString(CultureInfo.InvariantCulture));
             zeroOrSingleArgExpression = zeroOrSingleArgExpression.ReplaceNode(nodeToReplace, expression);
         }
 

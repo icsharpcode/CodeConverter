@@ -353,7 +353,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 return SyntaxFactory.IsExpression(lhs,
                     (ExpressionSyntax)cps.Expression.Accept(TriviaConvertingVisitor));
             default:
-                throw new ArgumentOutOfRangeException(nameof(node.Pattern), node.Pattern, null);
+                throw new ArgumentOutOfRangeException(nameof(node), node.Pattern, null);
         }
     }
 
@@ -577,7 +577,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return accessorListSyntaxOrNull.Accessors.Any(a => a.Body != null || a.ExpressionBody != null || a.Modifiers.ContainsDeclaredVisibility());
     }
 
-    private TokenContext GetMemberContext(CSSyntax.MemberDeclarationSyntax member)
+    private static TokenContext GetMemberContext(CSSyntax.MemberDeclarationSyntax member)
     {
         var parentType = member.GetAncestorOrThis<CSSyntax.TypeDeclarationSyntax>();
         var parentTypeKind = parentType?.Kind();
