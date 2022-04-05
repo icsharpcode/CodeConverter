@@ -1,6 +1,6 @@
 ﻿using System.IO.Abstractions;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 public class SolutionConverter
 {

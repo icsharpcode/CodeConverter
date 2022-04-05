@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 /// <summary>
 /// https://putridparrot.com/blog/replacing-multiple-configureawait-with-the-synchronizationcontextremover/

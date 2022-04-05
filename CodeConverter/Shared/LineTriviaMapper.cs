@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using Microsoft.CodeAnalysis.Text;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 internal class LineTriviaMapper
 {

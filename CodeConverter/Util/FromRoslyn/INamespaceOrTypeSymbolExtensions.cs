@@ -54,7 +54,7 @@ internal static partial class INamespaceOrTypeSymbolExtensions
                 }
             }
 
-            var comp = name1.CompareTo(name2);
+            var comp = StringComparer.Ordinal.Compare(name1, name2);
             if (comp != 0)
             {
                 return comp;

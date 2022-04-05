@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 public static class EnumerableExtensions
 {

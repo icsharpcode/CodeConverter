@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;

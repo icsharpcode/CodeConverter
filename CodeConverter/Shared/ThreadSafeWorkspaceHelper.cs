@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Threading;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 /// <summary>
 /// Known MEF bug means creating multiple workspaces outside VS context in parallel has race conditions: https://github.com/dotnet/roslyn/issues/24260

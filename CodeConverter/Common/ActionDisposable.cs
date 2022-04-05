@@ -1,4 +1,4 @@
-﻿namespace ICSharpCode.CodeConverter.Shared;
+﻿namespace ICSharpCode.CodeConverter.Common;
 
 internal sealed class ActionDisposable : IDisposable
 {

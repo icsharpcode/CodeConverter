@@ -1,4 +1,4 @@
-﻿namespace ICSharpCode.CodeConverter.Shared;
+﻿namespace ICSharpCode.CodeConverter.Common;
 
 public interface ISolutionFileTextEditor
 {

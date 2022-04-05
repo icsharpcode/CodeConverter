@@ -10,7 +10,7 @@ using CodeConv.Shared.Util;
 using ICSharpCode.CodeConverter.CommandLine.Util;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using McMaster.Extensions.CommandLineUtils;

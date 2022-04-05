@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis.Formatting;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 /// <summary>
 /// https://github.com/icsharpcode/CodeConverter/issues/598#issuecomment-663773878

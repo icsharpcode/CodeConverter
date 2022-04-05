@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 public class SolutionFileTextEditor : ISolutionFileTextEditor
 {

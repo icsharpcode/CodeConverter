@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic;

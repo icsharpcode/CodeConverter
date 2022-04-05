@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using CodeConv.Shared.Util;
 using EnvDTE;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;

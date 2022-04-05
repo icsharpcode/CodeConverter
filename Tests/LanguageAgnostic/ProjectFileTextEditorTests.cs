@@ -1,4 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.Common;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.LanguageAgnostic;

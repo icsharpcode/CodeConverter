@@ -4,7 +4,7 @@ using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Simplification;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 internal static class DocumentExtensions
 {

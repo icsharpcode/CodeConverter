@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.Text;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 internal static class LanguageConversionExtensions {
     public static SyntaxTree MakeFullCompilationUnit(this ILanguageConversion languageConversion, string code, out TextSpan? textSpan) {
