@@ -1,5 +1,10 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
+using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Common;
 
