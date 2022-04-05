@@ -53,8 +53,9 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
         var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
         var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator);
+        var nullableExpressionsConverter = new VisualBasicNullableExpressionsConverter();
         CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
-        var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext);
+        var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext, nullableExpressionsConverter);
         _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
         _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitorAsync;
         CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;

@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Xml Namespace Imports now converted [#836](https://github.com/icsharpcode/CodeConverter/issues/836)
 * Use explicit cast when integral numeric types are casted to enum [#861](https://github.com/icsharpcode/CodeConverter/issues/861)
 * Correct inconsistent casing of event handlers [#854](https://github.com/icsharpcode/CodeConverter/issues/854)
+* Fix binary expressions for nullable types in VB->C# conversion [#840](https://github.com/icsharpcode/CodeConverter/issues/840)
 
 ### C# -> VB
 
