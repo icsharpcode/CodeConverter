@@ -2,7 +2,7 @@
 
 namespace ICSharpCode.CodeConverter.Common;
 
-internal class AnnotationConstants
+internal static class AnnotationConstants
 {
     public const string SelectedNodeAnnotationKind = "CodeConverter.SelectedNode";
     public const string AnnotatedNodeIsParentData = "CodeConverter.SelectedNode.IsAllChildrenOfThisNode";
