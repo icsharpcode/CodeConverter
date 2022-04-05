@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using McMaster.Extensions.CommandLineUtils;
 using System.Threading;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.DotNetTool.Util;
 using System.Linq;

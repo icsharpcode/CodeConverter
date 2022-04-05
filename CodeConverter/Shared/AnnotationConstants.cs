@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 internal class AnnotationConstants
 {

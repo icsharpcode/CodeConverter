@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 public class ProjectConversion
 {

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Tests.Compilation;

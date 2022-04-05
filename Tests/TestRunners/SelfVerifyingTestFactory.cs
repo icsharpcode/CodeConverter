@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.Tests.Compilation;
 using Microsoft.VisualStudio.Threading;
 using Xunit;

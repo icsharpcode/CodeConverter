@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Web;

@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.Threading;
 
-namespace ICSharpCode.CodeConverter.Shared;
+namespace ICSharpCode.CodeConverter.Common;
 
 /// <summary>
 /// If you have a JoinableTaskFactory, set it here to help avoid deadlocks

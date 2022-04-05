@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using EnvDTE;
 using EnvDTE80;
-using ICSharpCode.CodeConverter.Shared;
+using ICSharpCode.CodeConverter.Common;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
