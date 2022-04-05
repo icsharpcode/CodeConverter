@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.CompilerServices;
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -41,7 +40,7 @@ namespace ConsoleApp1.My
         public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
         {
             foreach (XElement item in source)
-                return Conversions.ToString(item.Attribute(name));
+                return (string)item.Attribute(name);
             return null;
         }
 
@@ -55,7 +54,7 @@ namespace ConsoleApp1.My
         }
         public static string get_AttributeValue(XElement source, XName name)
         {
-            return Conversions.ToString(source.Attribute(name));
+            return (string)source.Attribute(name);
         }
 
         public static void set_AttributeValue(XElement source, XName name, string value)

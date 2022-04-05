@@ -169,7 +169,7 @@ internal static class NullableTypesLogicExtensions
 {
     private static ExpressionSyntax HasValue(ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("HasValue"));
     private static ExpressionSyntax HasNoValue(ExpressionSyntax node) => HasValue(node).Negate();
-    private static ExpressionSyntax Value(ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("Value"));
+    public static ExpressionSyntax Value(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("Value"));
 
     public static ExpressionSyntax GetValueOrDefault(this ExpressionSyntax node) => SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("GetValueOrDefault")));
     public static ExpressionSyntax Negate(this ExpressionSyntax node) => SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, node.AddParens());

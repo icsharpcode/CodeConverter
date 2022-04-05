@@ -79,6 +79,9 @@ internal class TypeConversionAnalyzer
             case TypeConversionKind.FractionalNumberRoundThenCast:
                 csNode = AddRoundInvocation(csNode);
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
+            case TypeConversionKind.NullableFractionalNumberRoundThenCast:
+                csNode = AddRoundInvocation(csNode.Value());
+                return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.EnumConversionThenCast:
                 var underlyingType = ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType;
                 csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, underlyingType);
@@ -94,7 +97,7 @@ internal class TypeConversionAnalyzer
             case TypeConversionKind.NonDestructiveCast:
                 return CreateCast(csNode, vbConvertedType);
             case TypeConversionKind.Conversion:
-                return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType); ;
+                return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.NullableBool:
                 return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
                     LiteralConversions.GetLiteralExpression(true));
@@ -257,9 +260,11 @@ internal class TypeConversionAnalyzer
         var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
 
         bool isConvertToString =
-            (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
+                (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
         bool isConvertFractionalToInt = 
-            !csConversion.IsImplicit && vbType.IsFractionalNumericType() && vbConvertedType.IsNumericType() && !vbConvertedType.IsFractionalNumericType();
+                !csConversion.IsImplicit && 
+                (vbType.IsFractionalNumericType() || vbType.IsNullable(out var underlyingType) && underlyingType.IsFractionalNumericType()) && 
+                vbConvertedType.IsIntegralType();
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
             if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
@@ -278,6 +283,9 @@ internal class TypeConversionAnalyzer
             }
         } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
             typeConversionKind = TypeConversionKind.NonDestructiveCast;
+            return true;
+        } else if (vbConversion.IsNarrowing && vbConversion.IsNullableValueType && isConvertFractionalToInt) {
+            typeConversionKind = TypeConversionKind.NullableFractionalNumberRoundThenCast;
             return true;
         } else if (vbConversion.IsNumeric && csConversion.IsNumeric && isConvertFractionalToInt) {
             typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
@@ -327,6 +335,10 @@ internal class TypeConversionAnalyzer
 
         if (vbConversion.IsNumeric && (vbType.IsEnumType() || vbConvertedType.IsEnumType())) {
             return TypeConversionKind.NonDestructiveCast;
+        }
+
+        if (vbConversion.IsNarrowing && vbConversion.IsString && vbConversion.ToString().Contains("InvolvesEnumTypeConversions")) {
+            return TypeConversionKind.EnumConversionThenCast;
         }
         if (vbConversion.IsNarrowing) {
             return TypeConversionKind.DestructiveCast;
@@ -404,7 +416,8 @@ internal class TypeConversionAnalyzer
         NullableBool,
         StringToCharArray,
         DelegateConstructor,
-        FractionalNumberRoundThenCast
+        FractionalNumberRoundThenCast,
+        NullableFractionalNumberRoundThenCast
     }
 
     public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,

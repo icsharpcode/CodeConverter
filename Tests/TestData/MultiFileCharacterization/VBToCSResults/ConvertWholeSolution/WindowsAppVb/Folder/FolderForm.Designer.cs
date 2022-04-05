@@ -2,11 +2,10 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace WindowsAppVb
 {
-    [DesignerGenerated()]
+    [Microsoft.VisualBasic.CompilerServices.DesignerGenerated()]
     public partial class FolderForm : Form
     {
 

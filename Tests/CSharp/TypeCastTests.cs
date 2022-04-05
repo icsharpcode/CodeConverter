@@ -191,24 +191,47 @@ public partial class AShape
     }
 
     [Fact]
-    public async Task CTypeDoubleToIntAsync()
+    public async Task CTypeFractionalAndBooleanToIntAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim q = 2.37
-        Dim j = CType(q, Integer)
+            @"
+Class Class1
+    Private Sub Test(b as Boolean, f as Single, d as Double, m as Decimal)
+        Dim i = CType(b, Integer)
+        i = CType(f, Integer)
+        i = CType(d, Integer)
+        i = CType(m, Integer)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+    Private Sub TestNullable(b as Boolean?, f as Single?, d as Double?, m as Decimal?)
+        Dim i = CType(b, Integer)
+        i = CType(f, Integer)
+        i = CType(d, Integer)
+        i = CType(m, Integer)
+    End Sub
+End Class",
+            @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
-    private void Test()
+    private void Test(bool b, float f, double d, decimal m)
     {
-        double q = 2.37d;
-        int j = Conversions.ToInteger(q);
+        int i = Conversions.ToInteger(b);
+        i = (int)Math.Round(f);
+        i = (int)Math.Round(d);
+        i = (int)Math.Round(m);
     }
-}");
+
+    private void TestNullable(bool? b, float? f, double? d, decimal? m)
+    {
+        int i = Conversions.ToInteger(b);
+        i = (int)Math.Round(f.Value);
+        i = (int)Math.Round(d.Value);
+        i = (int)Math.Round(m.Value);
+    }
+}
+");
     }
 
     [Fact]
@@ -258,10 +281,39 @@ internal partial class Class1
     }
 
     [Fact]
+    public async Task CastingStringToEnumShouldUseConversionsToIntegerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Enum TestEnum
+    None = 0
+End Enum
+
+Class Class1
+    Sub TestEnumCast(str as String)
+        Dim enm  As TestEnum = str
+    End Sub
+End Class",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum TestEnum
+{
+    None = 0
+}
+
+internal partial class Class1
+{
+    public void TestEnumCast(string str)
+    {
+        TestEnum enm = (TestEnum)Conversions.ToInteger(str);
+    }
+}
+");
+    }
+
+    [Fact]
     public async Task CastingIntegralTypeToEnumShouldUseExplicitCastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        await TestConversionVisualBasicToCSharpAsync(@"
 Enum TestEnum
     None = 0
 End Enum
@@ -269,21 +321,37 @@ Enum TestEnum2
     None = 1
 End Enum
 Class Class1
-    Private Sub Test()
-        Dim res = CType(5S, TestEnum)
-        res = CType(5D, TestEnum)
-        res = CType(5L, TestEnum)
-        res = CType(5.4F, TestEnum)
-        res = CType(5.7R, TestEnum)
-        res = CType(5UL, TestEnum)
-        res = CType(5, TestEnum)
-        
-        Dim otherEnum = TestEnum2.None
-        res = CType(otherEnum, TestEnum)
+    Private Sub TestIntegrals(b as Byte, s as Short, i as Integer, l as Long, e as TestEnum2)
+        Dim res = CType(b, TestEnum)
+        res = CType(s, TestEnum)
+        res = CType(i, TestEnum)
+        res = CType(l, TestEnum)
+        res = CType(e, TestEnum)
+    End Sub
+
+    Private Sub TestNullableIntegrals(b as Byte?, s as Short?, i as Integer?, l as Long?, e as TestEnum2?)
+        Dim res = CType(b, TestEnum)
+        res = CType(s, TestEnum)
+        res = CType(i, TestEnum)
+        res = CType(l, TestEnum)
+        res = CType(e, TestEnum)
+    End Sub
+
+    Private Sub TestUnsignedIntegrals(b as SByte, s as UShort, i as UInteger, l as ULong)
+        Dim res = CType(b, TestEnum)
+        res = CType(s, TestEnum)
+        res = CType(i, TestEnum)
+        res = CType(l, TestEnum)
+    End Sub
+
+    Private Sub TestNullableUnsignedIntegrals(b as SByte?, s as UShort?, i as UInteger?, l as ULong?)
+        Dim res = CType(b, TestEnum)
+        res = CType(s, TestEnum)
+        res = CType(i, TestEnum)
+        res = CType(l, TestEnum)
     End Sub
 End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+                @"
 internal enum TestEnum
 {
     None = 0
@@ -296,18 +364,38 @@ internal enum TestEnum2
 
 internal partial class Class1
 {
-    private void Test()
+    private void TestIntegrals(byte b, short s, int i, long l, TestEnum2 e)
     {
-        TestEnum res = (TestEnum)5;
-        res = (TestEnum)Conversions.ToInteger(5m);
-        res = (TestEnum)5L;
-        res = (TestEnum)Conversions.ToInteger(5.4f);
-        res = (TestEnum)Conversions.ToInteger(5.7d);
-        res = (TestEnum)5UL;
-        res = (TestEnum)5;
+        TestEnum res = (TestEnum)b;
+        res = (TestEnum)s;
+        res = (TestEnum)i;
+        res = (TestEnum)l;
+        res = (TestEnum)e;
+    }
 
-        var otherEnum = TestEnum2.None;
-        res = (TestEnum)otherEnum;
+    private void TestNullableIntegrals(byte? b, short? s, int? i, long? l, TestEnum2? e)
+    {
+        TestEnum res = (TestEnum)b;
+        res = (TestEnum)s;
+        res = (TestEnum)i;
+        res = (TestEnum)l;
+        res = (TestEnum)e;
+    }
+
+    private void TestUnsignedIntegrals(sbyte b, ushort s, uint i, ulong l)
+    {
+        TestEnum res = (TestEnum)b;
+        res = (TestEnum)s;
+        res = (TestEnum)i;
+        res = (TestEnum)l;
+    }
+
+    private void TestNullableUnsignedIntegrals(sbyte? b, ushort? s, uint? i, ulong? l)
+    {
+        TestEnum res = (TestEnum)b;
+        res = (TestEnum)s;
+        res = (TestEnum)i;
+        res = (TestEnum)l;
     }
 }
 ");
