@@ -311,7 +311,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         await TaskScheduler.Default;
 
         var conversionOptions = new ConversionOptions {AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()};
-        var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken, conversionOptions: conversionOptions);
+        var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, conversionOptions: conversionOptions, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken);
 
         await foreach (var result in solutionConverter.Convert()) yield return result;
     }

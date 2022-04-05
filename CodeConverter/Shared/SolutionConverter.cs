@@ -16,10 +16,10 @@ public class SolutionConverter
 
     public static SolutionConverter CreateFor<TLanguageConversion>(IReadOnlyCollection<Project> projectsToConvert,
         ConversionOptions conversionOptions = default,
-        IProgress<ConversionProgress> progress = null,
-        CancellationToken cancellationToken = default,
         IFileSystem fileSystem = null,
-        string solutionContents = "") where TLanguageConversion : ILanguageConversion, new()
+        string solutionContents = "",
+        IProgress<ConversionProgress> progress = null,
+        CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
     {
         var conversion = new TLanguageConversion { ConversionOptions = conversionOptions };
         return CreateFor(conversion, projectsToConvert, progress, cancellationToken, fileSystem, solutionContents);
@@ -47,16 +47,16 @@ public class SolutionConverter
         var solutionFileTextEditor = new SolutionFileTextEditor();
         var projectReferenceReplacements = solutionFileTextEditor.GetProjectFileProjectReferenceReplacements(projTuples, sourceSolutionContents);
 
-        return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements,
-            progress ?? new Progress<ConversionProgress>(), cancellationToken, languageConversion, solutionFileTextEditor, fileSystem);
+        return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, languageConversion, solutionFileTextEditor, fileSystem, progress ?? new Progress<ConversionProgress>(), cancellationToken);
     }
 
     private SolutionConverter(string solutionFilePath,
         string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
         List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements,
+        ILanguageConversion languageConversion,
+        SolutionFileTextEditor solutionFileTextEditor, IFileSystem fileSystem,
         IProgress<ConversionProgress> showProgressMessage,
-        CancellationToken cancellationToken, ILanguageConversion languageConversion,
-        SolutionFileTextEditor solutionFileTextEditor, IFileSystem fileSystem)
+        CancellationToken cancellationToken)
     {
         _solutionFilePath = solutionFilePath;
         _sourceSolutionContents = sourceSolutionContents;

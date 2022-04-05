@@ -18,7 +18,7 @@ internal static partial class RoslynISymbolExtensions
         } else if (within is INamedTypeSymbol namedType) {
             return symbol.IsAccessibleWithin(namedType, throughType);
         } else {
-            throw new ArgumentException();
+            throw new ArgumentOutOfRangeException(nameof(within), within, null);
         }
     }
 

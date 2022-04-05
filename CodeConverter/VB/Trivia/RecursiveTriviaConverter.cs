@@ -17,7 +17,7 @@ internal class RecursiveTriviaConverter
         return new RecursiveTriviaConverter().ConvertTrivia(triviaToConvert);
     }
 
-    private int TriviaDepth = 0;
+    private int TriviaDepth;
 
     private static string RemoveLeadingSpacesStar(string line)
     {
@@ -484,11 +484,8 @@ internal class RecursiveTriviaConverter
                 }
 
                 default: {
-                    var ConvertedTrivia = ConvertTrivia(Trivia);
-                    if (ConvertedTrivia == null) {
-                        continue;
-                    }
-                    TriviaList.Add(ConvertedTrivia);
+                    var convertedTrivia = ConvertTrivia(Trivia);
+                    TriviaList.Add(convertedTrivia);
                     if (Trivia.IsKind(CS.SyntaxKind.SingleLineCommentTrivia)) {
                         if (!NextTrivia.IsKind(CS.SyntaxKind.EndOfLineTrivia)) {
                             TriviaList.Add(VisualBasicSyntaxFactory.VBEOLTrivia);

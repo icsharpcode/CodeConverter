@@ -1238,7 +1238,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                         propertyParams.ReturnType, explintfspec, identifier, propertyParams.Accessors,
                         null, null).NormalizeWhitespace(),
 
-                _ => throw new ArgumentOutOfRangeException()
+                _ => throw new ArgumentOutOfRangeException(nameof(declParams), declParams, null)
             };
 
         AddMemberDeclaration(additionalDeclarations, interfaceImplement, declParams.Identifier, declDelegate);

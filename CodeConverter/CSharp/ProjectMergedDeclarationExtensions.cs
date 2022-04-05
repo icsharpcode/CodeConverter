@@ -63,7 +63,7 @@ internal static class ProjectMergedDeclarationExtensions
         var projectDir = Path.Combine(vbProject.GetDirectoryPath(), "My Project");
 
         var compilation = await vbProject.GetCompilationAsync(cancellationToken);
-        var embeddedSourceTexts = await GetAllEmbeddedSourceText(compilation).Select((r, i) => (Text: r, Suffix: $".Static.{i+1}")).ToArrayAsync();
+        var embeddedSourceTexts = await GetAllEmbeddedSourceText(compilation).Select((r, i) => (Text: r, Suffix: $".Static.{i+1}")).ToArrayAsync(cancellationToken);
         var generatedSourceTexts = (Text: await GetDynamicallyGeneratedSourceTextAsync(compilation), Suffix: ".Dynamic").Yield();
 
         foreach (var (text, suffix) in embeddedSourceTexts.Concat(generatedSourceTexts)) {
@@ -182,6 +182,6 @@ End Namespace";
     private static async Task<IEnumerable<ISymbol>> GetSymbolStartingWithAsync(Project project, string symbolPrefix, SymbolFilter symbolFilter, CancellationToken cancellationToken)
     {
         var compilation = await project.GetCompilationAsync(cancellationToken);
-        return compilation.GetSymbolsWithName(s => s.StartsWith(symbolPrefix, StringComparison.InvariantCulture), symbolFilter);
+        return compilation.GetSymbolsWithName(s => s.StartsWith(symbolPrefix, StringComparison.InvariantCulture), symbolFilter, cancellationToken);
     }
 }

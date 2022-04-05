@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Data;
+using System.Globalization;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -548,7 +549,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 token = SyntaxFactory.Token(SyntaxKind.OutKeyword);
                 break;
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(refKind), refKind, null);
         }
 
         return token;
@@ -800,7 +801,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         var typeInfo = _semanticModel.GetTypeInfo(node);
         if (_semanticModel.GetSymbolInfo(node.Operand).Symbol is IMethodSymbol ms && typeInfo.Type is INamedTypeSymbol nt && !ms.CompatibleSignatureToDelegate(nt)) {
-            int count = nt.DelegateInvokeMethod.Parameters.Count();
+            int count = nt.DelegateInvokeMethod.Parameters.Length;
             return CommonConversions.ThrowawayParameters(expr, count);
         }
         return expr;
@@ -844,7 +845,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             }
         }
 
-        var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node, lhsTypeInfo, rhsTypeInfo);
+        var objectEqualityType = VisualBasicEqualityComparison.GetObjectEqualityType(node, lhsTypeInfo, rhsTypeInfo);
         switch (objectEqualityType) {
             case VisualBasicEqualityComparison.RequiredType.StringOnly:
                 if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
@@ -1797,7 +1798,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     /// https://github.com/icsharpcode/CodeConverter/issues/745
     /// </summary>
     private static bool IsCultureInvariant(ISymbol symbol, Optional<object> constValue) =>
-        symbol.Name == "ChrW" || symbol.Name == "Chr" && constValue.HasValue && Convert.ToUInt64(constValue.Value) <= 127;
+        symbol.Name == "ChrW" || symbol.Name == "Chr" && constValue.HasValue && Convert.ToUInt64(constValue.Value, CultureInfo.InvariantCulture) <= 127;
 
     private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
     {

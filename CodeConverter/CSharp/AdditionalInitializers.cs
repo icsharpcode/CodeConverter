@@ -47,7 +47,7 @@ internal class AdditionalInitializers
         return convertedMembers;
     }
 
-    private List<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers,
+    private static List<MemberDeclarationSyntax> WithAdditionalInitializers(List<MemberDeclarationSyntax> convertedMembers,
         SyntaxToken convertIdentifier, IReadOnlyCollection<Assignment> additionalInitializers,
         SyntaxTokenList modifiers, IEnumerable<ConstructorDeclarationSyntax> constructorsEnumerable, bool addConstructor, bool addedConstructorRequiresInitializeComponent)
     {

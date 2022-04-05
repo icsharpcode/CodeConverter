@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.VisualBasic;
+﻿using System.Globalization;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
@@ -19,7 +20,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
     private readonly CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> _nodesVisitor;
     private readonly CommonConversions _commonConversions;
     private readonly Stack<BlockInfo> _blockInfo = new(); // currently only works with switch blocks
-    private int _switchCount = 0;
+    private int _switchCount;
     public bool IsIterator { get; private set; }
 
     private class BlockInfo
@@ -400,7 +401,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
             extraStatements.AddRange(pv.Variables.Select((v, i) => {
                 var initializer = SyntaxFactory.EqualsValue(SyntaxFactory.SimpleMemberAccessExpression(
                     SyntaxFactory.IdentifierName(tupleName),
-                    SyntaxFactory.IdentifierName("Item" + (i + 1).ToString())));
+                    SyntaxFactory.IdentifierName("Item" + (i + 1).ToString(CultureInfo.InvariantCulture))));
                 var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
                         SyntaxFactory.ModifiedIdentifier(SyntaxFactory.Identifier(v.ToString())))
                     .WithInitializer(initializer);

@@ -380,7 +380,7 @@ internal class CommonConversions
         return token == CSSyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
     }
 
-    private IEnumerable<SyntaxToken> ConvertModifiersCore(Accessibility declaredAccessibility,
+    private static IEnumerable<SyntaxToken> ConvertModifiersCore(Accessibility declaredAccessibility,
         IEnumerable<SyntaxToken> modifiers, TokenContext context)
     {
         var remainingModifiers = modifiers.ToList();
@@ -400,7 +400,7 @@ internal class CommonConversions
             yield return SyntaxFactory.Token(CSSyntaxKind.StaticKeyword);
     }
 
-    private IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKindForContext(Accessibility declaredAccessibility,
+    private static IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKindForContext(Accessibility declaredAccessibility,
         TokenContext context)
     {
         return CsSyntaxAccessibilityKind(declaredAccessibility);
@@ -632,14 +632,14 @@ internal class CommonConversions
 
     public bool IsExtensionAttribute(VBSyntax.AttributeSyntax a)
     {
-        return SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
-            ?.Equals(ExtensionAttributeType.FullName) == true;
+        return (SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName())
+            ?.Equals(ExtensionAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 
     public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
     {
-        return SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName()
-            ?.Equals(OutAttributeType.FullName) == true;
+        return (SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName())
+            ?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 
     public ISymbol GetDeclaredCsOriginalSymbolOrNull(VBasic.VisualBasicSyntaxNode node)

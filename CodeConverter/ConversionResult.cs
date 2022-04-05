@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
 namespace ICSharpCode.CodeConverter;
 
@@ -40,7 +41,7 @@ public class ConversionResult
 
         for (int i = 0; i < Exceptions.Count; i++) {
             if (Exceptions.Count > 1) {
-                builder.AppendFormat("----- Exception {0} of {1} -----" + Environment.NewLine, i + 1, Exceptions.Count);
+                builder.AppendFormat(CultureInfo.InvariantCulture, "----- Exception {0} of {1} -----" + Environment.NewLine, i + 1, Exceptions.Count);
             }
             builder.AppendLine(Exceptions[i]);
         }

@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Text;
+﻿using System.Globalization;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.Shared;
 
@@ -60,7 +61,7 @@ internal class LineTriviaMapper
     private static ILookup<int, (SyntaxNodeOrToken Node, int SourceLineIndex, string Kind)> GetNodesBySourceLine(SyntaxNode target)
     {
         return target.GetAnnotatedNodesAndTokens(_kinds).SelectMany(n =>
-            n.GetAnnotations(_kinds).Select(a => (Node: n, SourceLineIndex: int.Parse(a.Data), a.Kind))
+            n.GetAnnotations(_kinds).Select(a => (Node: n, SourceLineIndex: int.Parse(a.Data, CultureInfo.InvariantCulture), a.Kind))
         ).ToLookup(n => n.SourceLineIndex, n => n);
     }
 

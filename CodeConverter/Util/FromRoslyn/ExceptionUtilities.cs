@@ -1,4 +1,6 @@
-﻿namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using System.Globalization;
+
+namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 /// <remarks>
 /// From https://github.com/dotnet/roslyn/blob/159707383710936bc0730a25be652081a2350878/src/Compilers/Core/Portable/InternalUtilities/ExceptionUtilities.cs#L12
@@ -12,7 +14,7 @@ internal static class ExceptionUtilities
     /// <returns>The <see cref="InvalidOperationException"/>, which should be thrown by the caller.</returns>
     internal static Exception UnexpectedValue(object o)
     {
-        string output = string.Format("Unexpected value '{0}' of type '{1}'", o, (o != null) ? o.GetType().FullName : "<unknown>");
+        string output = string.Format(CultureInfo.InvariantCulture, "Unexpected value '{0}' of type '{1}'", o, (o != null) ? o.GetType().FullName : "<unknown>");
 
         // We do not throw from here because we don't want all Watson reports to be bucketed to this call.
         return new InvalidOperationException(output);

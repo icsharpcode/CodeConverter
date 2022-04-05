@@ -61,7 +61,7 @@ internal class LiteralConversions
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal(c));
             case DateTime dt:
             {
-                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd") : dt.ToString("yyyy-MM-dd HH:mm:ss");
+                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
                 return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
             }
             default:
@@ -77,13 +77,13 @@ internal class LiteralConversions
     /// </summary>
     public static object ConvertLiteralNumericValueOrNull(object value, ITypeSymbol vbConvertedType) =>
         vbConvertedType?.SpecialType switch {
-            SpecialType.System_Int32 => Convert.ToInt32(value), //Special case since it's the C# default and doesn't need a suffix like the rest
-            SpecialType.System_UInt32 => Convert.ToUInt32(value),
-            SpecialType.System_Int64 => Convert.ToInt64(value),
-            SpecialType.System_UInt64=> Convert.ToUInt64(value),
-            SpecialType.System_Single => Convert.ToSingle(value),
-            SpecialType.System_Double => Convert.ToDouble(value),
-            SpecialType.System_Decimal => Convert.ToDecimal(value),
+            SpecialType.System_Int32 => Convert.ToInt32(value, CultureInfo.InvariantCulture), //Special case since it's the C# default and doesn't need a suffix like the rest
+            SpecialType.System_UInt32 => Convert.ToUInt32(value, CultureInfo.InvariantCulture),
+            SpecialType.System_Int64 => Convert.ToInt64(value, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt64=> Convert.ToUInt64(value, CultureInfo.InvariantCulture),
+            SpecialType.System_Single => Convert.ToSingle(value, CultureInfo.InvariantCulture),
+            SpecialType.System_Double => Convert.ToDouble(value, CultureInfo.InvariantCulture),
+            SpecialType.System_Decimal => Convert.ToDecimal(value, CultureInfo.InvariantCulture),
             _ => null
         };
 
@@ -119,8 +119,8 @@ internal class LiteralConversions
     private static string Unquote(string quotedText)
     {
         quotedText = quotedText.Replace('”', '"');
-        int firstQuoteIndex = quotedText.IndexOf("\"");
-        int lastQuoteIndex = quotedText.LastIndexOf("\"");
+        int firstQuoteIndex = quotedText.IndexOf("\"", StringComparison.Ordinal);
+        int lastQuoteIndex = quotedText.LastIndexOf("\"", StringComparison.Ordinal);
         var unquoted = quotedText.Substring(firstQuoteIndex + 1, lastQuoteIndex - firstQuoteIndex - 1);
         return unquoted;
     }
@@ -149,7 +149,7 @@ internal class LiteralConversions
             string hexValue = textForUser.Substring(2);
             textForUser = "0x" + hexValue;
 
-            int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber);
+            int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
             // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
             // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `int.MinValue + 0x11234567`
@@ -162,7 +162,7 @@ internal class LiteralConversions
                     SyntaxFactory.PredefinedType(
                         SyntaxFactory.Token(SyntaxKind.IntKeyword)),
                     SyntaxFactory.IdentifierName(nameof(int.MinValue)));
-                var positiveValueExpr = NumericLiteral(SyntaxFactory.Literal("0x" + positiveValue.ToString("X8"), positiveValue));
+                var positiveValueExpr = NumericLiteral(SyntaxFactory.Literal("0x" + positiveValue.ToString("X8", CultureInfo.InvariantCulture), positiveValue));
                 return (null, SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, intMinValueExpr, positiveValueExpr));
             }
         } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {

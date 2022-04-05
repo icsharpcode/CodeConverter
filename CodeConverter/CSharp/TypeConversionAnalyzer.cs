@@ -105,7 +105,7 @@ internal class TypeConversionAnalyzer
             case TypeConversionKind.DelegateConstructor:
                 return SyntaxFactory.ObjectCreationExpression(GetCommonDelegateTypeOrNull(vbNode, vbConvertedType)).WithArgumentList(new[]{csNode}.CreateCsArgList());
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(conversionKind), conversionKind, null);
         }
     }
 
