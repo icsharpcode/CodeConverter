@@ -76,7 +76,7 @@ internal static class ProjectMergedDeclarationExtensions
     private static Project WithRenamespacedDocument(string baseName, Project vbProject, string sourceText, string myProjectDirPath)
     {
         if (string.IsNullOrWhiteSpace(sourceText)) return vbProject;
-        return vbProject.AddDocument(baseName, sourceText.Renamespace(), filePath: Path.Combine(myProjectDirPath, baseName + ".Designer.vb")).Project;
+        return vbProject.AddDocument(baseName, sourceText.ReNamespace(), filePath: Path.Combine(myProjectDirPath, baseName + ".Designer.vb")).Project;
     }
 
     private static async IAsyncEnumerable<string> GetAllEmbeddedSourceText(Compilation compilation)
@@ -140,7 +140,7 @@ End Namespace";
         End Class";
     }
 
-    private static string Renamespace(this string sourceText)
+    private static string ReNamespace(this string sourceText)
     {
         return sourceText
             .Replace("Namespace Global.Microsoft.VisualBasic", $"Namespace Global.Microsoft.{Constants.MergedMsVbNamespace}")
