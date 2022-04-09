@@ -148,14 +148,13 @@ public class CSToVBConversion : ILanguageConversion
                node is CSSyntax.StatementSyntax ||
                node.ContainsSkippedText ||
                node.IsMissing ||
-               ParsedAsFieldButCouldBeLocalVariableDeclaration(node); ;
+               ParsedAsFieldButCouldBeLocalVariableDeclaration(node);
     }
 
     public bool MustBeContainedByClass(SyntaxNode node)
     {
         return node is CSSyntax.BaseMethodDeclarationSyntax || node is CSSyntax.BaseFieldDeclarationSyntax ||
-               node is CSSyntax.BasePropertyDeclarationSyntax ||
-               node is CSSyntax.GlobalStatementSyntax; //https://github.com/icsharpcode/CodeConverter/issues/825
+               node is CSSyntax.BasePropertyDeclarationSyntax;
     }
 
     private static bool ParsedAsFieldButCouldBeLocalVariableDeclaration(SyntaxNode node)
