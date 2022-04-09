@@ -1305,7 +1305,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Value is float)
                 {
-                    return (float)Value;
+                    return (double)(float)Value;
                 }
                 else if (Value is double)
                 {
