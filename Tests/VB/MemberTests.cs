@@ -754,7 +754,7 @@ public partial class HasConflictingPropertyAndField {
 }",
             @"Public Partial Class HasConflictingPropertyAndField
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
-        Dim lTEST As Integer = 0
+        Dim lTEST = 0
         testField = test + lTEST
         Return test
     End Function
@@ -765,14 +765,17 @@ Public Partial Class HasConflictingPropertyAndField
 
     Public Property Test As Integer
         Get
-            Dim lTEST As Integer = 0
-            Return testField + lTEST
+            Dim TEST = 0
+            Return testField + TEST
         End Get
         Set(ByVal value As Integer)
             testField = value
         End Set
     End Property
-End Class");
+End Class
+
+1 target compilation errors:
+BC30290: Local variable cannot have the same name as the function containing it.");
     }
 
     [Fact]
@@ -1402,7 +1405,8 @@ public class TestClass : BaseClass {
         where T : class {
     }
 }",
-            @"Public Class BaseClass
+            @"
+Public Class BaseClass
     Public Overridable Sub TestMethod(Of T As Class)(ByVal parameter As T)
     End Sub
 End Class
@@ -1422,7 +1426,8 @@ End Class");
 class TestClass {
     private DateTime date;
 }",
-            @"Friend Class TestClass
+            @"
+Friend Class TestClass
     Private [date] As Date
 End Class");
     }

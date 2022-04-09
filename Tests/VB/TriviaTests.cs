@@ -50,7 +50,6 @@ namespace ANamespace //namespace
 Imports System.Diagnostics 'Using statement
 Imports System.Runtime.InteropServices
 
-
 'blank line
 
 Namespace ANamespace 'namespace
@@ -76,6 +75,7 @@ Namespace ANamespace 'namespace
                 Debug.WriteLine(1) ' Check debug window
                 Debug.WriteLine(2)
             End If 'argument1 != null
+
             argument3 = Nothing '3
 #Else 'ElseDirective keeps comments
             argument = new object();

@@ -1061,7 +1061,7 @@ internal partial class TestClass3
 
     private Rec TestMethod(string str)
     {
-        int length = str?.Length ?? -1;
+        int length = (str?.Length) ?? -1;
         Console.WriteLine(length);
         Console.ReadKey();
         return new Rec()?.Prop?.Prop?.Prop;
