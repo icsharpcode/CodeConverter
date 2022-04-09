@@ -30,9 +30,11 @@ internal class HandledEventsAnalyzer
 
     private async Task<HandledEventsAnalysis> AnalyzeAsync()
     {
+#pragma warning disable RS1024 // Compare symbols correctly - bug in analyzer https://github.com/dotnet/roslyn-analyzers/issues/3427#issuecomment-929104517
         var ancestorPropsMembersByName = _type.GetBaseTypesAndThis().SelectMany(t => t.GetMembers().Where(m => m.IsKind(SymbolKind.Property)))
             .GroupBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(m => m.Key, g => g.First(), StringComparer.OrdinalIgnoreCase); // Uses the fact that GroupBy maintains addition order to get the closest declaration
+#pragma warning restore RS1024 // Compare symbols correctly
 
         var writtenWithEventsProperties = await ancestorPropsMembersByName.Values.OfType<IPropertySymbol>().ToAsyncEnumerable().ToDictionaryAwaitAsync(async p => p.Name, async p => (p, await IsNeverWrittenOrOverriddenAsync(p)), StringComparer.OrdinalIgnoreCase);
 
