@@ -14,7 +14,7 @@ public class ParallelSelectAwaitTests
     [Fact]
     public async Task ExceptionDoesNotHaltPipelineAsync()
     {
-        var asyncEnumerable = Input.ParallelSelectAwait(async i => {
+        var asyncEnumerable = Input.ParallelSelectAwaitAsync(async i => {
             await Task.Delay(1);
             return i > 3 ? i : throw new ObjectDisposedException("Original");
         }, MaxDop);
@@ -25,7 +25,7 @@ public class ParallelSelectAwaitTests
     [Fact]
     public async Task ExceptionDoesNotHaltPipelineSyncAsync()
     {
-        var asyncEnumerable = Input.ParallelSelectAwait(
+        var asyncEnumerable = Input.ParallelSelectAwaitAsync(
             async i => i > 3 ? i : throw new ObjectDisposedException("Original")
             , MaxDop
         );
@@ -36,7 +36,7 @@ public class ParallelSelectAwaitTests
     [Fact]
     public async Task AllElementsProcessedAsync()
     {
-        var array = await Input.ParallelSelectAwait(
+        var array = await Input.ParallelSelectAwaitAsync(
             async i => i
             , MaxDop
         ).ToArrayAsync();

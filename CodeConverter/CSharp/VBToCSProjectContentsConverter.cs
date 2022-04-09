@@ -95,7 +95,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
         return p.Replace(projDirPath, "").TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
-    public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResultsAsync(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         string projDirPath = SourceProject.GetDirectoryPath();
         foreach (var doc in additionalDocumentsToConvert) {
