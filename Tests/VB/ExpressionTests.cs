@@ -711,7 +711,7 @@ End Namespace");
     public async Task CreateValueTupleTypeAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"(double Sum, int Count) t2 = (4.5, 3);",
-            @"Private t2 As (Double, Integer) = (4.5, 3)"
+            @"Dim t2 = (4.5, 3)"
         );
     }
 
