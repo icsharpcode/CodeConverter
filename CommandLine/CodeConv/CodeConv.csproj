@@ -37,7 +37,7 @@ For a nugetted dll, web converter or visual studio extension, see https://github
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="17.1.46" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.10.56" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="NuGet.Build.Tasks" Version="6.1.0" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
