@@ -588,7 +588,7 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
             Dim lTeSt1 As Object = 5
-            Dim lTesT As Integer = CInt(o)
+            Dim lTesT = CInt(o)
             testField = [Delegate].Remove(testField, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)

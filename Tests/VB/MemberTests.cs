@@ -765,17 +765,14 @@ Public Partial Class HasConflictingPropertyAndField
 
     Public Property Test As Integer
         Get
-            Dim TEST = 0
-            Return testField + TEST
+            Dim lTEST = 0
+            Return testField + lTEST
         End Get
         Set(ByVal value As Integer)
             testField = value
         End Set
     End Property
-End Class
-
-1 target compilation errors:
-BC30290: Local variable cannot have the same name as the function containing it.");
+End Class");
     }
 
     [Fact]

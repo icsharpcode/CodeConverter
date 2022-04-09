@@ -24,10 +24,10 @@ internal static class SymbolRenamer
         return m.Name;
     }
 
-    public static async Task<Project> PerformRenamesAsync(Project project, IReadOnlyCollection<(ISymbol Original, string NewName)> symbolsWithNewNames)
+    public static async Task<Project> PerformRenamesAsync(Project project, IEnumerable<(ISymbol Original, string NewName)> symbolsWithNewNames)
     {
         var solution = project.Solution;
-        foreach (var (originalSymbol, newName) in symbolsWithNewNames) {
+        foreach (var (originalSymbol, newName) in symbolsWithNewNames.OrderByDescending(s => s.Original.DeclaringSyntaxReferences.Select(x => x.Span.End).Max())) {
             project = solution.GetProject(project.Id);
             var compilation = await project.GetCompilationAsync();
             ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).FirstOrDefault();

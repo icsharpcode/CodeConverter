@@ -37,7 +37,7 @@ internal static class ClashingMemberRenamer
     }
 
     private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
-        var membersByCaseInsensitiveName = symbols.ToLookup(SymbolRenamer.GetName, m => m, StringComparer.OrdinalIgnoreCase);
+        var membersByCaseInsensitiveName = symbols.ToLookup(SymbolRenamer.GetName, StringComparer.OrdinalIgnoreCase);
         var names = new HashSet<string>(membersByCaseInsensitiveName.Select(ms => ms.Key),
             StringComparer.OrdinalIgnoreCase);
         var symbolsWithNewNames = membersByCaseInsensitiveName.Where(ms => ms.Count() > 1)
