@@ -996,6 +996,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(invocationSymbol.Name)));
         }
 
+        if (invocationSymbol is IMethodSymbol m && convertedExpression is LambdaExpressionSyntax) {
+            convertedExpression = SyntaxFactory.ObjectCreationExpression(CommonConversions.GetFuncTypeSyntax(m), ExpressionSyntaxExtensions.CreateArgList(convertedExpression), null);
+        }
         return SyntaxFactory.InvocationExpression(convertedExpression, convertedArgumentList);
     }
 

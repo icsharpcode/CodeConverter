@@ -180,7 +180,7 @@ internal class CommonConversions
         return SyntaxFactory.VariableDeclaration(typeSyntax, SyntaxFactory.SingletonSeparatedList(v));
     }
 
-    private TypeSyntax GetFuncTypeSyntax(IMethodSymbol method)
+    public TypeSyntax GetFuncTypeSyntax(IMethodSymbol method)
     {
         var parameters = method.Parameters.Select(p => p.Type).ToArray();
         if (method.ReturnsVoid) {

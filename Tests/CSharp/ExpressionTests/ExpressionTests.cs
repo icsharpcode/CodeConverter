@@ -1183,6 +1183,28 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task LambdaImmediatelyExecutedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue869
+    Sub Main
+        Dim i As Integer = Function() 
+                                Return 2 
+                        End Function() 
+        Console.WriteLine(i)
+    End Sub
+End Class", @"using System;
+
+public partial class Issue869
+{
+    public void Main()
+    {
+        int i = new Func<int>(() => 2)();
+        Console.WriteLine(i);
+    }
+}");
+    }
+
+    [Fact]
     public async Task LambdaBodyExpressionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
