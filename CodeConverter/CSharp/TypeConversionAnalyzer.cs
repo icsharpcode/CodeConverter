@@ -1,4 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -47,7 +47,7 @@ internal class TypeConversionAnalyzer
     {
         if (csNode == null) return null;
         var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
-        csNode = addParenthesisIfNeeded && (conversionKind == TypeConversionKind.DestructiveCast || conversionKind == TypeConversionKind.NonDestructiveCast)
+        csNode = addParenthesisIfNeeded && conversionKind is TypeConversionKind.DestructiveCast or TypeConversionKind.NonDestructiveCast
             ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode)
             : csNode;
         return AddExplicitConversion(vbNode, csNode, conversionKind, addParenthesisIfNeeded, isConst, forceSourceType: forceSourceType, forceTargetType: forceTargetType).Expr;
@@ -295,10 +295,13 @@ internal class TypeConversionAnalyzer
         } else if (isConvertToString && vbType.SpecialType == SpecialType.System_Object) {
             typeConversionKind = TypeConversionKind.Conversion;
             return true;
-        } else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean) {
-            typeConversionKind = vbNode.AlwaysHasBooleanTypeInCSharp() ? TypeConversionKind.Identity : TypeConversionKind.NullableBool;
+        } 
+        else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp() &&
+                 (vbNode is not VBSyntax.BinaryExpressionSyntax and not VBSyntax.UnaryExpressionSyntax || vbNode.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression))) {
+            typeConversionKind = TypeConversionKind.NullableBool;
             return true;
-        } else if (csConversion.IsExplicit) {
+        }
+        else if (csConversion.IsExplicit) {
             typeConversionKind = TypeConversionKind.DestructiveCast;
             return true;
         }

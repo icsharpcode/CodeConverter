@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 
 * Convert immediately executed lambdas without causing a compiler error [#869](https://github.com/icsharpcode/CodeConverter/issues/869)
+* Fix binary expressions for nullable types in VB->C# conversion [#840](https://github.com/icsharpcode/CodeConverter/issues/840)
 
 ### C# -> VB
 

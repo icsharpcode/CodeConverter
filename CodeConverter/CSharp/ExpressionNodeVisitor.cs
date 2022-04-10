@@ -34,10 +34,11 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
     private readonly LambdaConverter _lambdaConverter;
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
+    private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
-        HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext)
+        HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext, VisualBasicNullableExpressionsConverter visualBasicNullableTypesConverter)
     {
         CommonConversions = commonConversions;
         _semanticModel = semanticModel;
@@ -48,6 +49,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
         _xmlImportContext = xmlImportContext;
+        _visualBasicNullableTypesConverter = visualBasicNullableTypesConverter;
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
         _convertMethodsLookupByReturnType =
@@ -774,7 +776,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
         SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
 
-
         if (kind == SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
             if (t.IsNumericType() || t.IsEnumType()) {
                 csTokenKind = SyntaxKind.TildeToken;
@@ -795,8 +796,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         if (await _operatorConverter.ConvertReferenceOrNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), true) is { } nothingComparison) {
             return nothingComparison;
         }
-
-        if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
+        if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean && node.AlwaysHasBooleanTypeInCSharp()) {
             return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, expr, LiteralConversions.GetLiteralExpression(false));
         }
 
@@ -830,7 +830,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
         ITypeSymbol forceLhsTargetType = null;
-        ITypeSymbol forceRhsTargetType = null;
         bool omitRightConversion = false;
         bool omitConversion = false;
         if (lhsTypeInfo.Type != null && rhsTypeInfo.Type != null)
@@ -844,13 +843,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                                  rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
                 if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
                     forceLhsTargetType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
-                }
-            }
-            else if (node.AlwaysHasBooleanTypeInCSharp()) {
-                if (!node.Left.AlwaysHasBooleanTypeInCSharp() && lhsTypeInfo.Type.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
-                    forceLhsTargetType = _vbBooleanTypeSymbol;
-                } else if (!node.Right.AlwaysHasBooleanTypeInCSharp() && rhsTypeInfo.Type.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean) {
-                    forceRhsTargetType = _vbBooleanTypeSymbol;
                 }
             }
         }
@@ -873,16 +865,16 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
                           lhsTypeInfo.Type.IsEnumType() && SymbolEqualityComparer.IncludeNullability.Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
                           && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
-                          && forceLhsTargetType == null && forceRhsTargetType == null;
+                          && forceLhsTargetType == null;
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
-        rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, forceTargetType: forceRhsTargetType);
-
+        rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
         var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
         var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-        return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? csBinExp : csBinExp.AddParens();
+        var exp = _visualBasicNullableTypesConverter.WithLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
     }
 
     private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
