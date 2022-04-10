@@ -229,7 +229,9 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
             oneLine += $" with {errors.Count} error" + (errors.Count == 1 ? "" : "s");
         }
 
-        if (files.Count > errors.Count * 2) {
+        if (VisualStudioInteraction.GetUpdateWarningsOrNull() is { } warnings) {
+            successSummary += Environment.NewLine + warnings;
+        } else if (files.Count > errors.Count * 2) {
             successSummary += Environment.NewLine + "Please report issues at https://github.com/icsharpcode/CodeConverter/issues and consider rating at https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter#review-details";
         } else {
             successSummary += Environment.NewLine + "Please report issues at https://github.com/icsharpcode/CodeConverter/issues";

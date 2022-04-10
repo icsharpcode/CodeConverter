@@ -30,15 +30,16 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 /// </remarks>
 internal static class VisualStudioInteraction
 {
-    private static DTE2 m_Dte;
+    private static DTE2 _dte;
 
     /// <remarks>All calls and usages must be from the main thread</remarks>>
-    internal static DTE2 Dte => m_Dte ??= Package.GetGlobalService(typeof(DTE)) as DTE2;
+    internal static DTE2 Dte => _dte ??= Package.GetGlobalService(typeof(DTE)) as DTE2;
 
-    private static CancellationToken CancelAllToken;
-    private static readonly Version m_LowestSupportedVersion = new(15, 7, 0, 0);
-    private static readonly Version m_FullVsVersion = GetFullVsVersion();
-    private static readonly string m_Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + (m_FullVsVersion?.ToString() ?? "unknown version");
+    private static CancellationToken _cancelAllToken;
+    private static readonly Version LowestSupportedVersion = new(16, 10, 0, 0);
+    private static readonly Version FullVsVersion = GetFullVsVersion();
+    private static readonly string Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + (FullVsVersion?.ToString() ?? "unknown version");
+    private static readonly int WeeksUpdatesStoppedFor = (int) (DateTime.Now - new DateTime(2022, 05, 01)).TotalDays / 7;
 
     private static Version GetFullVsVersion()
     {
@@ -56,12 +57,12 @@ internal static class VisualStudioInteraction
 
     internal static void Initialize(Cancellation packageCancellation)
     {
-        CancelAllToken = packageCancellation.CancelAll;
+        _cancelAllToken = packageCancellation.CancelAll;
     }
 
     public static async Task<List<string>> GetSelectedItemsPathAsync(Func<string, bool> fileFilter)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         const string folderKind = "{6BB5F8EF-4483-11D3-8BCF-00C04F8EC28C}";
         const string fileKind = "{6BB5F8EE-4483-11D3-8BCF-00C04F8EC28C}";
 
@@ -85,7 +86,7 @@ internal static class VisualStudioInteraction
 
     public static async Task<Window> OpenFileAsync(FileInfo fileInfo)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var window = Dte.ItemOperations.OpenFile(fileInfo.FullName, Constants.vsViewKindTextView);
         await TaskScheduler.Default;
         return window;
@@ -93,14 +94,14 @@ internal static class VisualStudioInteraction
 
     public static async Task SelectAllAsync(this Window window)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         ((TextSelection)window?.Document?.Selection)?.SelectAll(); // https://github.com/icsharpcode/CodeConverter/issues/770
         await TaskScheduler.Default;
     }
 
     public static async Task<IReadOnlyCollection<Project>> GetSelectedProjectsAsync(string projectExtension)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
 
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread
         var projects = GetSelectedSolutionExplorerItems<Solution>().SelectMany(s => s.GetAllProjects())
@@ -115,7 +116,7 @@ internal static class VisualStudioInteraction
 
     public static async Task<ITextDocument> GetTextDocumentAsync(this IWpfTextViewHost viewHost)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         viewHost.TextView.TextDataModel.DocumentBuffer.Properties.TryGetProperty(typeof(ITextDocument), out ITextDocument textDocument);
         await TaskScheduler.Default;
         return textDocument;
@@ -123,20 +124,16 @@ internal static class VisualStudioInteraction
 
     public static async Task ShowExceptionAsync(this AsyncPackage asyncPackage, Exception ex)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-        if (CancelAllToken.IsCancellationRequested) {
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
+        if (_cancelAllToken.IsCancellationRequested) {
             return;
         }
 
         string mainMessage = ex.ToString();
         var messageSuffix = "";
 
-        if (m_FullVsVersion < m_LowestSupportedVersion) {
-            messageSuffix = $"{Environment.NewLine}This extension only supports VS {m_LowestSupportedVersion}+, you are currently using {m_FullVsVersion}";
-        }
-
-        if (m_FullVsVersion.Major < 16) {
-            messageSuffix = $"{Environment.NewLine}Support for VS2017 (15.*) is likely to end this year. You're using: {m_FullVsVersion}";
+        if (FullVsVersion < LowestSupportedVersion) {
+            messageSuffix = $"{Environment.NewLine}This extension only receives updates for VS {LowestSupportedVersion}+, you are currently using {FullVsVersion}";
         }
 
         if (ex is FileNotFoundException fnf && !string.IsNullOrEmpty(fnf.FusionLog)) {
@@ -158,7 +155,7 @@ internal static class VisualStudioInteraction
         }
 
         MessageBox.Show($"An error has occurred during conversion - press Ctrl+C to copy the details: {mainMessage}{messageSuffix}",
-            m_Title, MessageBoxButton.OK, MessageBoxImage.Error);
+            Title, MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     private static string GetShortStackTrace(Exception ex)
@@ -175,8 +172,8 @@ internal static class VisualStudioInteraction
     /// <returns>true iff the user answers "OK"</returns>
     public static async Task<bool> ShowMessageBoxAsync(string title, string msg, bool showCancelButton, bool defaultOk = true)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
-        if (CancelAllToken.IsCancellationRequested) return false;
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
+        if (_cancelAllToken.IsCancellationRequested) return false;
         var userAnswer = MessageBox.Show(msg, title,
             showCancelButton ? MessageBoxButton.OKCancel : MessageBoxButton.OK,
             MessageBoxImage.Information,
@@ -184,15 +181,17 @@ internal static class VisualStudioInteraction
         return userAnswer == MessageBoxResult.OK;
     }
 
-    public static async Task ShowMessageBoxAsync(string msg) => await ShowMessageBoxAsync(m_Title, msg, showCancelButton: false);
+    public static async Task ShowMessageBoxAsync(string msg) => await ShowMessageBoxAsync(Title, msg, showCancelButton: false);
 
     public static async Task EnsureBuiltAsync(IReadOnlyCollection<Project> projects, Func<string, Task> writeMessageAsync)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var build = Dte.Solution.SolutionBuild;
         if (build.BuildState == vsBuildState.vsBuildStateInProgress) {
             throw new InvalidOperationException("Build in progress, please wait for it to complete before conversion.");
         }
+
+        if (GetUpdateWarningsOrNull() is {} warning) await writeMessageAsync(warning);
         if (projects.Count == 1 && build.ActiveConfiguration?.Name is { } configuration && projects.Single().UniqueName is {} uniqueName) {
             await writeMessageAsync($"Building project '{uniqueName}' prior to conversion for maximum accuracy...");
             build.BuildProject(configuration, uniqueName);
@@ -204,9 +203,21 @@ internal static class VisualStudioInteraction
         await TaskScheduler.Default;
     }
 
+    public static string GetUpdateWarningsOrNull()
+    {
+        if (FullVsVersion < LowestSupportedVersion && WeeksUpdatesStoppedFor > 0)
+        {
+            return
+                $"Deprecated: Code Converter no longer receives updates for Visual Studio {FullVsVersion}. Please update to the latest version of Visual Studio ({LowestSupportedVersion} at minimum).{Environment.NewLine}" +
+                $"See the {WeeksUpdatesStoppedFor} weeks of improvements you're missing at https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md";
+        }
+
+        return null;
+    }
+
     public static async Task WriteStatusBarTextAsync(IAsyncServiceProvider serviceProvider, string text)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var statusBar = await serviceProvider.GetServiceAsync<SVsStatusbar, IVsStatusbar>();
         if (statusBar == null)
             return;
@@ -224,7 +235,7 @@ internal static class VisualStudioInteraction
     public static async Task<Span?> GetFirstSelectedSpanInCurrentViewAsync(IAsyncServiceProvider serviceProvider,
         Func<string, bool> predicate, bool mustHaveFocus)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var span = await FirstSelectedSpanInCurrentViewPrivateAsync(serviceProvider, predicate, mustHaveFocus);
         await TaskScheduler.Default;
         return span;
@@ -233,7 +244,7 @@ internal static class VisualStudioInteraction
     public static async Task<(string FilePath, Span? Selection)> GetCurrentFilenameAndSelectionAsync(
         IAsyncServiceProvider asyncServiceProvider, Func<string, bool> predicate, bool mustHaveFocus)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
 
         var span = await GetFirstSelectedSpanInCurrentViewAsync(asyncServiceProvider, predicate, mustHaveFocus);
         var currentViewHostAsync =
@@ -250,7 +261,7 @@ internal static class VisualStudioInteraction
 
     public static async Task<CaretPosition> GetCaretPositionAsync(IAsyncServiceProvider serviceProvider)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var viewHost = await GetCurrentViewHostAsync(serviceProvider,false);
         ITextEdit edit = viewHost.TextView.TextBuffer.CreateEdit();
         var caretPositionAsync = new CaretPosition(edit, viewHost.TextView.Caret.Position.BufferPosition.Position);
@@ -260,7 +271,7 @@ internal static class VisualStudioInteraction
 
     public static async Task<Project> GetFirstProjectContainingAsync(string documentFilePath)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var containingProject = Dte.Solution.FindProjectItem(documentFilePath)?.ContainingProject;
         await TaskScheduler.Default;
         return containingProject;
@@ -279,7 +290,7 @@ internal static class VisualStudioInteraction
 
         public async Task InsertAsync(string text)
         {
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
             _textEdit.Insert(_position, text);
             _textEdit.Apply();
             _textEdit.Dispose();
@@ -305,7 +316,7 @@ internal static class VisualStudioInteraction
 
     private static async Task<IWpfTextViewHost> GetCurrentViewHostAsync(IAsyncServiceProvider serviceProvider, bool mustHaveFocus)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancelAllToken);
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(_cancelAllToken);
         var txtMgr = await serviceProvider.GetServiceAsync<SVsTextManager, IVsTextManager>();
         if (txtMgr == null) {
             return null;
