@@ -58,11 +58,15 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         SemanticModel semanticModel)
     {
         // In some projects there's a source declaration as well as the referenced one, which causes the first of these methods to fail
+        var symbolsWithName = semanticModel.Compilation
+            .GetSymbolsWithName(n => n.Equals(ConvertType.Name, StringComparison.Ordinal), SymbolFilter.Type).ToList();
+        
         var convertType =
             semanticModel.Compilation.GetTypeByMetadataName(ConvertType.FullName) ??
-            (ITypeSymbol)semanticModel.Compilation
-                .GetSymbolsWithName(n => n.Equals(ConvertType.Name, StringComparison.Ordinal), SymbolFilter.Type).First(s =>
+            (ITypeSymbol)symbolsWithName.FirstOrDefault(s =>
                     s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace, StringComparison.Ordinal));
+
+        if (convertType is null) return new Dictionary<ITypeSymbol, string>();
 
         var convertMethods = convertType.GetMembers().Where(m =>
             m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
