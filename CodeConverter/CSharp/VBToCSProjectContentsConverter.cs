@@ -49,9 +49,11 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
         SourceProject = await WithProjectLevelWinformsAdjustmentsAsync(project);
 
         var compilation = await project.GetCompilationAsync(_cancellationToken);
+#pragma warning disable RS1024 // Compare symbols correctly - analzyer bug, I'm intentionally using my own comparer, not the default ambiguous one. The default comparer wouldn't manage with cross-compilation comparison in all cases
         _typeToInheritors = compilation.GetAllNamespacesAndTypes().OfType<ITypeSymbol>()
             .Where(t => t.BaseType?.IsDefinedInSource() == true)
             .ToLookup(t => t.BaseType, TypeSymbolFullNameComparer.Instance);
+#pragma warning restore RS1024 // Compare symbols correctly
     }
 
     private class TypeSymbolFullNameComparer : IEqualityComparer<ITypeSymbol>

@@ -463,7 +463,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         var explicitImplementors = memberInfo.ExplicitInterfaceImplementations();
         if (explicitImplementors.Any()) {
             //https://github.com/icsharpcode/CodeConverter/issues/492
+#pragma warning disable RS1024 // Compare symbols correctly - analyzer bug, I'm using a string not the default ambiguous comparer
             var memberNames = memberInfo.ContainingType.GetMembers().ToLookup(s => UndottedMemberName(s.Name), StringComparer.OrdinalIgnoreCase);
+#pragma warning restore RS1024 // Compare symbols correctly
             string explicitMemberName = UndottedMemberName(memberInfo.Name);
             var hasDuplicateNames = memberNames[explicitMemberName].Count() > 1;
             if (hasDuplicateNames) id = SyntaxFactory.Identifier(NameGenerator.GenerateUniqueName(explicitMemberName, n => !memberNames.Contains(n) && _addedNames.Add(n)));

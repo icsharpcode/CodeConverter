@@ -71,9 +71,13 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
         var convertMethods = convertType.GetMembers().Where(m =>
             m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
+
+#pragma warning disable RS1024 // Compare symbols correctly - GroupBy and ToDictionary use the same logic to dedupe as to lookup, so it doesn't matter which equality is used
         var methodsByType = convertMethods
             .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}" })
             .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
+#pragma warning restore RS1024 // Compare symbols correctly
+
         return methodsByType;
     }
 

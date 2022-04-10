@@ -89,7 +89,9 @@ internal static partial class ITypeSymbolExtensions
         this ITypeSymbol type,
         HashSet<INamedTypeSymbol>? symbols = null)
     {
-        symbols ??= new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.IncludeNullability);
+#pragma warning disable RS1024 // Compare symbols correctly - analyzer bug, this is the comparer the docs recommend
+        symbols ??= new(SymbolEqualityComparer.IncludeNullability);
+#pragma warning restore RS1024 // Compare symbols correctly
 
         foreach (var interfaceType in type.Interfaces) {
             symbols.Add(interfaceType.OriginalDefinition);

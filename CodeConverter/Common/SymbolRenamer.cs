@@ -80,6 +80,7 @@ internal static class SymbolRenamer
         bool specialSymbolUsingName, bool caseSensitive)
     {
         var stringComparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+#pragma warning disable RS1024 // Compare symbols correctly - analzyer bug, I'm intentionally using my own comparer, not the default ambiguous one
         var methodsBySignature = methodSymbols
             .ToLookup(m => m.GetUnqualifiedMethodSignature(caseSensitive))
             .Where(g => g.Count() > 1)
@@ -91,6 +92,7 @@ internal static class SymbolRenamer
                     !specialSymbolUsingName).ToArray();
                 return symbolsWithNewNames;
             }).ToArray();
+#pragma warning restore RS1024 // Compare symbols correctly
 
         foreach (var newMethodNames in methodsBySignature.Select(m => m.NewName))
         {
