@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* VS2019 (16.10) is now the minimum supported version
 
 ### VB -> C#
 
