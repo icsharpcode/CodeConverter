@@ -75,7 +75,7 @@ internal class CommonConversions
         foreach (var name in declarator.Names) {
 
             var declaredSymbol = SemanticModel.GetDeclaredSymbol(name);
-            if (symbolsToSkip?.Contains(declaredSymbol) == true) continue;
+            if (symbolsToSkip?.Contains(declaredSymbol, SymbolEqualityComparer.IncludeNullability) == true) continue;
             var declaredSymbolType = declaredSymbol.GetSymbolType();
             var equalsValueClauseSyntax = await ConvertEqualsValueClauseSyntaxAsync(declarator, name, vbInitValue, declaredSymbolType, declaredSymbol, initializerOrMethodDecl);
             var v = SyntaxFactory.VariableDeclarator(ConvertIdentifier(name.Identifier), null, equalsValueClauseSyntax);
@@ -107,7 +107,7 @@ internal class CommonConversions
         exp = op.Syntax as VBSyntax.ExpressionSyntax;
         var vbInitConstantValue = SemanticModel.GetConstantValue(exp);
         isNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null || exp is VBSyntax.LiteralExpressionSyntax les && les.IsKind(SyntaxKind.NothingLiteralExpression);
-        bool shouldPreferExplicitType = expConvertedType != null && (expConvertedType.HasCsKeyword() || !expConvertedType.Equals(op.Type));
+        bool shouldPreferExplicitType = expConvertedType != null && (expConvertedType.HasCsKeyword() || !expConvertedType.Equals(op.Type, SymbolEqualityComparer.IncludeNullability));
         return shouldPreferExplicitType;
     }
 
@@ -172,7 +172,7 @@ internal class CommonConversions
         CSSyntax.EqualsValueClauseSyntax equalsValueClauseSyntax, IMethodSymbol initSymbol, CSSyntax.VariableDeclaratorSyntax v)
     {
         var requireExplicitType = requireExplicitTypeForAll ||
-                                  vbInitializerType != null && !Equals(declaredSymbolType, vbInitializerType);
+                                  vbInitializerType != null && !SymbolEqualityComparer.IncludeNullability.Equals(declaredSymbolType, vbInitializerType);
         bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
         var typeSyntax = initSymbol == null || !initSymbol.IsAnonymousFunction()
             ? GetTypeSyntax(declaredSymbolType, useVar)
@@ -267,7 +267,7 @@ internal class CommonConversions
                     text = idSymbol.ContainingType.Name;
                     if (normalizedText.EndsWith("Attribute", StringComparison.OrdinalIgnoreCase))
                         text = text.Remove(text.Length - "Attribute".Length);
-                } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorWithValueInCsharp() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name.WithHalfWidthLatinCharacters().Equals("value", StringComparison.OrdinalIgnoreCase)) || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared)))) {
+                } else if (idSymbol.IsKind(SymbolKind.Parameter) && idSymbol.ContainingSymbol.IsAccessorWithValueInCsharp() && ((idSymbol.IsImplicitlyDeclared && idSymbol.Name.WithHalfWidthLatinCharacters().Equals("value", StringComparison.OrdinalIgnoreCase)) || idSymbol.Equals(idSymbol.ContainingSymbol.GetParameters().FirstOrDefault(x => !x.IsImplicitlyDeclared), SymbolEqualityComparer.IncludeNullability))) {
                     // The case above is basically that if the symbol is a parameter, and the corresponding definition is a property set definition
                     // AND the first explicitly declared parameter is this symbol, we need to replace it with value.
                     text = "value";

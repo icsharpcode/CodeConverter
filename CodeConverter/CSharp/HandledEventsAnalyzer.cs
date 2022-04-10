@@ -42,7 +42,7 @@ internal class HandledEventsAnalyzer
             .SelectMany(HandledEvents)
             .ToLookup(eventAndMethod => eventAndMethod.EventContainer);
         var eventsThatMayNeedInheritors = writtenWithEventsProperties
-            .Where(p => !p.Value.Item2 && p.Value.p.ContainingType.Equals(_type))
+            .Where(p => !p.Value.Item2 && p.Value.p.ContainingType.Equals(_type, SymbolEqualityComparer.IncludeNullability))
             .Select(p =>
                 (EventContainer: new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, p.Key), PropertyDetails: p.Value, Array.Empty<(EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)>()))
             .Where(e => !eventContainerToMethods.Contains(e.EventContainer));

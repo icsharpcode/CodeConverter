@@ -662,7 +662,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var explicitCastWouldHaveNoEffect = variableType?.SpecialType == SpecialType.System_Object || _semanticModel.GetTypeInfo(stmt.Expression).ConvertedType.IsEnumerableOfExactType(variableType);
             type = CommonConversions.GetTypeSyntax(varSymbol.GetSymbolType(), explicitCastWouldHaveNoEffect);
             var v = await stmt.ControlVariable.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-            if (_localsToInlineInLoop.Contains(varSymbol) && v is IdentifierNameSyntax vId) {
+            if (_localsToInlineInLoop.Contains(varSymbol, SymbolEqualityComparer.IncludeNullability) && v is IdentifierNameSyntax vId) {
                 id = vId.Identifier;
             } else {
                 id = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "current" + varSymbol.Name.ToPascalCase()));

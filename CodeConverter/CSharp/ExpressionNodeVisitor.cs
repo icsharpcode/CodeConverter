@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -519,7 +520,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         string prefix = $"arg{argName}";
         var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
-        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
+        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
         var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
 
         if (refLValue is ElementAccessExpressionSyntax eae) {
@@ -866,7 +867,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         }
 
         omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
-                          lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
+                          lhsTypeInfo.Type.IsEnumType() && SymbolEqualityComparer.IncludeNullability.Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
                           && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
                           && forceLhsTargetType == null && forceRhsTargetType == null;
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
@@ -1029,7 +1030,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         return (expressionSymbol != null
                 && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)
-                    && !expressionSymbol.Equals(invocationSymbol)));
+                    && !expressionSymbol.Equals(invocationSymbol, SymbolEqualityComparer.IncludeNullability)));
     }
 
     private ExpressionSyntax GetElementAtOrDefaultExpression(ISymbol expressionType,
@@ -1668,7 +1669,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 IsRefArrayAcces(expression)) {
 
                 var typeInfo = _semanticModel.GetTypeInfo(expression);
-                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
+                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability);
 
                 if (isTypeMismatch) {
                     return RefConversion.PreAndPostAssignment;

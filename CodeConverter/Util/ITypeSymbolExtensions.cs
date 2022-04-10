@@ -13,7 +13,7 @@ internal static class ITypeSymbolExtensions
 
     public static bool ContainsMember(this ITypeSymbol potentialContainer, ISymbol potentialMember)
     {
-        return potentialContainer.FollowProperty(t => t.BaseType).Contains(potentialMember.ContainingType);
+        return potentialContainer.FollowProperty(t => t.BaseType).Contains(potentialMember.ContainingType, SymbolEqualityComparer.IncludeNullability);
     }
 
     public static bool HasCsKeyword(this ITypeSymbol typeSymbol)

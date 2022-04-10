@@ -472,7 +472,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
             explicitImplementors = baseClassesAndInterfaces.Except(new[] { containingType })
                 .SelectMany(t => t.GetMembers().Where(m => memberInfo.Name.EndsWith(m.Name, StringComparison.InvariantCulture)))
-                .Where(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo) == true)
+                .Where(m => containingType.FindImplementationForInterfaceMember(m)?.Equals(memberInfo, SymbolEqualityComparer.IncludeNullability) == true)
                 .ToImmutableArray();
         }
 

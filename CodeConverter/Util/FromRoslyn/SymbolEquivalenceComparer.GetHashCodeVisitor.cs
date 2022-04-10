@@ -317,7 +317,7 @@ internal partial class SymbolEquivalenceComparer
 
         private static int CombineHashCodes(IPreprocessingSymbol x, int currentHash)
         {
-            return Hash.Combine(x.GetHashCode(), currentHash);
+            return Hash.Combine(SymbolEqualityComparer.IncludeNullability.GetHashCode(x), currentHash);
         }
     }
 }

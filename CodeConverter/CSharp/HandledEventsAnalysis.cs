@@ -68,7 +68,7 @@ internal class HandledEventsAnalysis
     public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForHandlingBaseMembers()
     {
         return _handlingMethodsByPropertyName.Values
-            .Where(m => m.EventContainer.Kind == EventContainerKind.Property && !_type.Equals(m.PropertyDetails.Property?.ContainingType))
+            .Where(m => m.EventContainer.Kind == EventContainerKind.Property && !_type.Equals(m.PropertyDetails.Property?.ContainingType, SymbolEqualityComparer.IncludeNullability))
             .Select(x => GetDeclarationsForHandlingBaseMembers(x));
     }
 

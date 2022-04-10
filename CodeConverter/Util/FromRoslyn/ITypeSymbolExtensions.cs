@@ -89,7 +89,7 @@ internal static partial class ITypeSymbolExtensions
         this ITypeSymbol type,
         HashSet<INamedTypeSymbol>? symbols = null)
     {
-        symbols ??= new HashSet<INamedTypeSymbol>(SymbolEquivalenceComparer.Instance);
+        symbols ??= new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.IncludeNullability);
 
         foreach (var interfaceType in type.Interfaces) {
             symbols.Add(interfaceType.OriginalDefinition);
@@ -383,7 +383,7 @@ internal static partial class ITypeSymbolExtensions
         return
             typeSymbol.AllInterfaces.Any(i => i.SpecialType == SpecialType.System_Collections_IEnumerable) &&
             typeSymbol.GetBaseTypesAndThis()
-                .Union(typeSymbol.GetOriginalInterfacesAndTheirBaseInterfaces())
+                .Union(typeSymbol.GetOriginalInterfacesAndTheirBaseInterfaces(), (IEqualityComparer<ITypeSymbol>)SymbolEqualityComparer.IncludeNullability)
                 .SelectAccessibleMembers<IMethodSymbol>(WellKnownMemberNames.CollectionInitializerAddMethodName, within)
                 .OfType<IMethodSymbol>()
                 .Any(m => m.Parameters.Any());
@@ -393,7 +393,7 @@ internal static partial class ITypeSymbolExtensions
     {
         if (typeSymbol != null) {
             var expressionOfT = compilation.ExpressionOfTType();
-            if (typeSymbol.OriginalDefinition.Equals(expressionOfT)) {
+            if (typeSymbol.OriginalDefinition.Equals(expressionOfT, SymbolEqualityComparer.IncludeNullability)) {
                 var typeArgument = ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
                 return typeArgument as INamedTypeSymbol;
             }
