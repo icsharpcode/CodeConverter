@@ -39,7 +39,7 @@ internal static class VisualStudioInteraction
     private static readonly Version LowestSupportedVersion = new(16, 10, 0, 0);
     private static readonly Version FullVsVersion = GetFullVsVersion();
     private static readonly string Title = "Code converter " + new AssemblyName(typeof(ProjectConversion).Assembly.FullName).Version.ToString(3) + " - Visual Studio " + (FullVsVersion?.ToString() ?? "unknown version");
-    private static readonly int WeeksUpdatesStoppedFor = (int) (DateTime.Now - new DateTime(2022, 05, 01)).TotalDays / 7;
+    private static readonly int WeeksUpdatesStoppedFor = (int) (DateTime.Now - new DateTime(2022, 04, 11)).TotalDays / 7;
 
     private static Version GetFullVsVersion()
     {
@@ -205,7 +205,7 @@ internal static class VisualStudioInteraction
 
     public static string GetUpdateWarningsOrNull()
     {
-        if (FullVsVersion < LowestSupportedVersion && WeeksUpdatesStoppedFor > 0)
+        if (FullVsVersion < LowestSupportedVersion && WeeksUpdatesStoppedFor > 1)
         {
             return
                 $"Deprecated: Code Converter no longer receives updates for Visual Studio {FullVsVersion}. Please update to the latest version of Visual Studio ({LowestSupportedVersion} at minimum).{Environment.NewLine}" +
