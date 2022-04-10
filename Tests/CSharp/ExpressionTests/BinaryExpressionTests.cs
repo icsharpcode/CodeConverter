@@ -282,7 +282,7 @@ internal partial class TestClass
         bool x = false;
         if ((a & b) == true)
             return;
-        if ((a is var arg1 && arg1.HasValue && !arg1.Value ? (bool?)false : !(b is { } arg2) ? null : arg2 ? arg1 : false) == true)
+        if ((a is var arg1 && arg1.HasValue && !arg1.Value ? false : !(b is { } arg2) ? null : arg2 ? arg1 : false) == true)
             return;
         if ((a & x) == true)
             return;
@@ -293,7 +293,7 @@ internal partial class TestClass
         if (x && a.GetValueOrDefault())
             return;
         var res = a & b;
-        res = a is var arg7 && arg7.HasValue && !arg7.Value ? (bool?)false : !(b is { } arg8) ? null : arg8 ? arg7 : false;
+        res = a is var arg7 && arg7.HasValue && !arg7.Value ? false : !(b is { } arg8) ? null : arg8 ? arg7 : false;
         res = a & x;
         res = a is var arg9 && arg9.HasValue && !arg9.Value ? false : x ? arg9 : false;
         res = x & a;
@@ -347,7 +347,7 @@ internal partial class TestClass
         if (x || a.GetValueOrDefault())
             return;
         var res = a | b;
-        res = a is var arg1 && arg1.GetValueOrDefault() ? (bool?)true : !(b is { } arg2) ? null : arg2 ? true : arg1;
+        res = a is var arg1 && arg1.GetValueOrDefault() ? true : !(b is { } arg2) ? null : arg2 ? true : arg1;
         res = a | x;
         res = a is var arg3 && arg3.GetValueOrDefault() ? true : x ? true : arg3;
         res = x | a;
@@ -531,7 +531,7 @@ internal partial class TestClass712
     {
         bool? var1 = default;
         bool? var2 = default;
-        return var1 is var arg1 && arg1.GetValueOrDefault() ? (bool?)true : !(!var2 is { } arg2) ? null : arg2 ? true : arg1;
+        return (object)(var1 is var arg1 && arg1.GetValueOrDefault() ? true : !(!var2 is { } arg2) ? null : arg2 ? true : arg1);
     }
 }");
     }
