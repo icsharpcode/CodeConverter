@@ -10,6 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [8.5.0] - 2022-04-10
+
+
+### Vsix
+
+* Last version supporting VS2017 and some earlier VS2019 versions (versions 15.7-16.9)
+
+### VB -> C#
+
 * Xml Namespace Imports now converted [#836](https://github.com/icsharpcode/CodeConverter/issues/836)
 * Use explicit cast when integral numeric types are casted to enum [#861](https://github.com/icsharpcode/CodeConverter/issues/861)
 * Correct inconsistent casing of event handlers [#854](https://github.com/icsharpcode/CodeConverter/issues/854)
