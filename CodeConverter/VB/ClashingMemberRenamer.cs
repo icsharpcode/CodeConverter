@@ -37,7 +37,9 @@ internal static class ClashingMemberRenamer
     }
 
     private static IEnumerable<(ISymbol Original, string NewName)> GetUniqueNamesForSymbolSet(IEnumerable<ISymbol> symbols) {
-        var membersByCaseInsensitiveName = symbols.ToLookup(SymbolRenamer.GetName, m => m, StringComparer.OrdinalIgnoreCase);
+#pragma warning disable RS1024 // Compare symbols correctly - analyzer bug, I'm using a string not the default ambiguous comparer
+        var membersByCaseInsensitiveName = symbols.ToLookup(SymbolRenamer.GetName, StringComparer.OrdinalIgnoreCase);
+#pragma warning restore RS1024 // Compare symbols correctly
         var names = new HashSet<string>(membersByCaseInsensitiveName.Select(ms => ms.Key),
             StringComparer.OrdinalIgnoreCase);
         var symbolsWithNewNames = membersByCaseInsensitiveName.Where(ms => ms.Count() > 1)

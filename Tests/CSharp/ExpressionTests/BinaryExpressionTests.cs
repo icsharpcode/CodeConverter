@@ -116,7 +116,7 @@ internal partial class TestClass
         x += 1d;
         x -= 2d;
         x *= 3d;
-        x = x / 4L;
+        x = (double)(x / 4L);
         x = Math.Pow(x, 5d);
     }
 }");

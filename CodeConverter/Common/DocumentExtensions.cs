@@ -113,8 +113,9 @@ internal static class DocumentExtensions
     {
         return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, warningText));
     }
-    private static OptionSet GetVBOptions(DocumentOptionSet options) {
-        return options.WithChangedOption(SimplificationOptions.PreferImplicitTypeInLocalDeclaration, false);
+    private static OptionSet GetVBOptions(DocumentOptionSet options)
+    {
+        return options;
     }
     private static OptionSet GetCSOptions(DocumentOptionSet options) {
         return options;

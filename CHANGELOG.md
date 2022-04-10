@@ -7,6 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* VS2019 (16.10) is now the minimum supported version
+
+### VB -> C#
+
+* Convert immediately executed lambdas without causing a compiler error [#869](https://github.com/icsharpcode/CodeConverter/issues/869)
+
+### C# -> VB
+
+
+## [8.5.0] - 2022-04-10
+
+
+### Vsix
+
+* Last version supporting VS2017 and some earlier VS2019 versions (versions 15.7-16.9)
 
 ### VB -> C#
 

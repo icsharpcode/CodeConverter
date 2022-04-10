@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Text;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.Common;
 
@@ -7,7 +8,11 @@ internal static class LanguageConversionExtensions {
         var tree= languageConversion.CreateTree(code);
         var root = tree.GetRoot();
         textSpan = null;
-        var rootChildren = root.ChildNodes().ToList();
+        
+        var rootChildren = root.ChildNodes()
+            //https://github.com/icsharpcode/CodeConverter/issues/825
+            .Select(c => c is GlobalStatementSyntax {Statement: var s} ? s : c)
+            .ToList();
         var requiresSurroundingClass = rootChildren.Any(languageConversion.MustBeContainedByClass);
         var requiresSurroundingMethod = rootChildren.All(languageConversion.CanBeContainedByMethod);
 

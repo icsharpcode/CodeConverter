@@ -46,7 +46,8 @@ namespace global::InnerNamespace
         }
     }
 }",
-            @"Namespace Global.InnerNamespace
+            @"
+Namespace Global.InnerNamespace
     Public Class Test
         Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
             Dim a = $""pre{t} t""
@@ -75,9 +76,10 @@ public class Test
         string a = $""Soak: {dt: d\\.h\\:mm\\:ss\\.f}"";
         return a;
     }
-}",  @"Public Class Test
+}",  @"
+Public Class Test
     Public Function InterStringDateFormat(ByVal dt As Date) As String
-        Dim a As String = $""Soak: {dt: d\.h\:mm\:ss\.f}""
+        Dim a = $""Soak: {dt: d\.h\:mm\:ss\.f}""
         Return a
     End Function
 End Class"
@@ -95,7 +97,7 @@ End Class"
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If(Equals(str, """"), True, False)
+        Dim result = If(Equals(str, """"), True, False)
     End Sub
 End Class");
     }
@@ -168,7 +170,7 @@ End Class");
     Public Sub TestMethod(ByVal b As Integer)
         Dim a As Integer
         DoAction(Sub() a = b)
-        Dim c As Integer = Me.DoFunc(Function() CSharpImpl.__Assign(a, b))
+        Dim c = Me.DoFunc(Function() CSharpImpl.__Assign(a, b))
     End Sub
 
     Public Sub DoAction(ByVal action As Action)
@@ -454,7 +456,7 @@ BC30491: Expression does not produce a value.");
 	}
 }", @"Public Class Test
     Public Shared Sub Main()
-        Dim y As Integer = 1
+        Dim y = 1
         y <<= 1
         y >>= 1
         y = y << 1
@@ -476,7 +478,7 @@ End Class");
 }",
             @"Public Class TestClass
     Private Sub TestMethod()
-        Dim x As Integer = 10
+        Dim x = 10
         x *= 3
         x /= 3
     End Sub
@@ -497,7 +499,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal str As String)
-        Dim length As Integer = If(str?.Length, -1)
+        Dim length = If(str?.Length, -1)
         Console.WriteLine(length)
         Console.ReadKey()
         Dim redirectUri As String = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri
@@ -709,7 +711,7 @@ End Namespace");
     public async Task CreateValueTupleTypeAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"(double Sum, int Count) t2 = (4.5, 3);",
-            @"Dim t2 As (Double, Integer) = (4.5, 3)"
+            @"Dim t2 = (4.5, 3)"
         );
     }
 
@@ -862,7 +864,7 @@ CS0103: The name 'Console' does not exist in the current context");
         Console.WriteLine(n);
 }",
             @"Private Shared Sub SimpleQuery()
-    Dim numbers As Integer() = {7, 9, 5, 3, 6}
+    Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -896,7 +898,7 @@ End Sub");
         }
     }",
             @"Public Shared Sub Linq40()
-    Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
+    Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
         .Remainder = __groupByKey1__,
         .Numbers = g
@@ -952,7 +954,7 @@ End Class
 
 Friend Class Test
     Public Sub Linq102()
-        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+        Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
         Dim products As Product() = GetProductList()
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
             .Category = c, p.ProductName
@@ -966,7 +968,7 @@ End Class
 
 3 source compilation errors:
 CS0103: The name 'GetProductList' does not exist in the current context
-CS1935: Could not find an implementation of the query pattern for source type 'string[]'.  'Join' not found.  Are you missing a reference to 'System.Core.dll' or a using directive for 'System.Linq'?
+CS1935: Could not find an implementation of the query pattern for source type 'string[]'.  'Join' not found.  Are you missing required assembly references or a using directive for 'System.Linq'?
 CS0103: The name 'Console' does not exist in the current context
 1 target compilation errors:
 BC30451: 'GetProductList' is not declared. It may be inaccessible due to its protection level.");
@@ -1003,7 +1005,7 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
         }
     }
 }", @"Public Sub Linq103()
-    Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+    Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
     Dim products = GetProductList()
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
         .Category = c,
@@ -1084,7 +1086,7 @@ Public Class TestClass
                                                 End Function
 
     Public Sub New()
-        Dim str As String = create(Me)
+        Dim str = create(Me)
     End Sub
 End Class");
     }
@@ -1187,7 +1189,7 @@ public class Class1 {
 
 Public Class Class1
     Public Sub Example(ByVal values As Date?())
-        Dim nullableDate As Date? = values.SingleOrDefault(Function(x) x IsNot Nothing)
+        Dim nullableDate = values.SingleOrDefault(Function(x) x IsNot Nothing)
     End Sub
 End Class", hasLineCommentConversionIssue: true);
     }
@@ -1227,10 +1229,10 @@ End Class", hasLineCommentConversionIssue: true);
 }",
             @"Public Class TestClass
     Public Sub New()
-        Dim i As Integer = 0
-        Dim j As Integer = 0
-        Dim s1 As String = ""string1""
-        Dim s2 As String = ""string2""
+        Dim i = 0
+        Dim j = 0
+        Dim s1 = ""string1""
+        Dim s2 = ""string2""
         Dim object1 As Object = s1
         Dim object2 As Object = s2
         If i = j Then DoSomething()

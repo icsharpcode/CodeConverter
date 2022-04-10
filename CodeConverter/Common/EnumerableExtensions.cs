@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.Common;
 
@@ -90,7 +91,13 @@ public static class EnumerableExtensions
         yield return singleElement;
     }
 
-    public static async Task<IEnumerable<T>> YieldAsync<T>(this Task<T> task) => (await task).Yield();
+    public static async Task<IEnumerable<T>> YieldAsync<T>(this Task<T> task)
+    {
+        await TaskScheduler.Default;
+#pragma warning disable VSTHRD003 // Avoid awaiting foreign Tasks - We've just switched away from the main thread so can't deadlock
+        return (await task).Yield();
+#pragma warning restore VSTHRD003 // Avoid awaiting foreign Tasks
+    }
 
     public static IEnumerable<T> YieldNotNull<T>(this T singleElement)
     {

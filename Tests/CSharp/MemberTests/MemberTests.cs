@@ -582,10 +582,7 @@ internal partial class ChildClass : IClass
         }
     }
 
-    int IClass.ReadOnlyProp // Comment moves because this line gets split
-    {
-        get => RenamedReadOnlyProperty;
-    }
+    int IClass.ReadOnlyProp { get => RenamedReadOnlyProperty; } // Comment moves because this line gets split
 
     public virtual int get_RenamedWriteOnlyPropParam(int i)
     {
@@ -610,10 +607,7 @@ internal partial class ChildClass : IClass
         }
     }
 
-    int IClass.WriteOnlyProp // Comment moves because this line gets split
-    {
-        set => RenamedWriteOnlyProperty = value;
-    }
+    int IClass.WriteOnlyProp { set => RenamedWriteOnlyProperty = value; } // Comment moves because this line gets split
 }");
     }
 
@@ -1896,11 +1890,7 @@ public partial class Foo : IFoo
     int IFoo.DoFoo() => doFoo();
 
     private int prop { get; set; }
-    int IFoo.Prop
-    {
-        get => prop;
-        set => prop = value;
-    }
+    int IFoo.Prop { get => prop; set => prop = value; }
 
     private int Consumer()
     {
@@ -1971,11 +1961,7 @@ public abstract partial class BaseFoo : IFoo
     int IFoo.DoFoo() => doFoo();
 
     protected internal virtual int prop { get; set; }
-    int IFoo.Prop
-    {
-        get => prop;
-        set => prop = value;
-    }
+    int IFoo.Prop { get => prop; set => prop = value; }
 }
 
 public partial class Foo : BaseFoo
@@ -2053,10 +2039,7 @@ public partial interface IFoo
 public abstract partial class BaseFoo : IUserContext
 {
     protected internal string ConnectedGroupID { get; private set; }
-    string IUserContext.GroupID
-    {
-        get => ConnectedGroupID;
-    }
+    string IUserContext.GroupID { get => ConnectedGroupID; }
 }
 
 public partial class Foo : BaseFoo, IFoo
@@ -2069,10 +2052,7 @@ public partial class Foo : BaseFoo, IFoo
         }
     }
 
-    string IFoo.ConnectedGroupId // Comment moves because this line gets split
-    {
-        get => ConnectedGroupID;
-    }
+    string IFoo.ConnectedGroupId { get => ConnectedGroupID; } // Comment moves because this line gets split
 
     private string Consumer()
     {
@@ -2161,17 +2141,9 @@ public partial interface IBar
 public partial class FooBar : IFoo, IBar
 {
     public int Foo { get; set; }
-    int IFoo.FooBarProp
-    {
-        get => Foo;
-        set => Foo = value;
-    }
+    int IFoo.FooBarProp { get => Foo; set => Foo = value; }
     public int Bar { get; set; }
-    int IBar.FooBarProp
-    {
-        get => Bar;
-        set => Bar = value;
-    }
+    int IBar.FooBarProp { get => Bar; set => Bar = value; }
 }");
     }
 
@@ -2236,11 +2208,7 @@ namespace TestNamespace
 public partial class Foo : TestNamespace.IFoo
 {
     public int FooPropRenamed { get; set; }
-    int TestNamespace.IFoo.FooProp
-    {
-        get => FooPropRenamed;
-        set => FooPropRenamed = value;
-    }
+    int TestNamespace.IFoo.FooProp { get => FooPropRenamed; set => FooPropRenamed = value; }
 }");
     }
 
@@ -2321,11 +2289,7 @@ public partial interface IFoo
 public partial class Foo : IFoo
 {
     public int FooPropRenamed { get; set; }
-    int IFoo.FooProp
-    {
-        get => FooPropRenamed;
-        set => FooPropRenamed = value;
-    }
+    int IFoo.FooProp { get => FooPropRenamed; set => FooPropRenamed = value; }
 }
 
 public partial class FooConsumer
@@ -2504,11 +2468,7 @@ public partial interface IFoo
 public partial class Foo : IFoo
 {
     public int FooPropRenamed { get; set; }
-    int IFoo.FooProp
-    {
-        get => FooPropRenamed;
-        set => FooPropRenamed = value;
-    }
+    int IFoo.FooProp { get => FooPropRenamed; set => FooPropRenamed = value; }
 }
 
 public partial class FooConsumer
@@ -2599,11 +2559,7 @@ public partial interface IFoo
 public partial class Foo : IFoo
 {
     public int FooPropRenamed { get; set; }
-    int IFoo.FooProp
-    {
-        get => FooPropRenamed;
-        set => FooPropRenamed = value;
-    }
+    int IFoo.FooProp { get => FooPropRenamed; set => FooPropRenamed = value; }
 }
 
 public partial class FooConsumer
@@ -2701,10 +2657,7 @@ public partial class Foo : IFoo
         }
     }
 
-    int IFoo.DoFoo
-    {
-        get => DoFooRenamed;
-    }
+    int IFoo.DoFoo { get => DoFooRenamed; }
 
     public virtual int DoFooRenamed  // Comment ends up out of order, but attached to correct method
     {
@@ -2722,10 +2675,7 @@ public partial class Foo : IFoo
         }
     }
 
-    int IFoo.DoBar
-    {
-        set => DoBarRenamed = value;
-    }
+    int IFoo.DoBar { set => DoBarRenamed = value; }
 
     public virtual int DoBarRenamed  // Comment ends up out of order, but attached to correct method
     {
@@ -2889,16 +2839,8 @@ public partial interface IBar
 public partial class Foo : IFoo, IBar
 {
     private int ExplicitProp { get; set; }
-    int IFoo.ExplicitProp
-    {
-        get => ExplicitProp;
-        set => ExplicitProp = value;
-    }
-    int IBar.ExplicitProp
-    {
-        get => ExplicitProp;
-        set => ExplicitProp = value;
-    }
+    int IFoo.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; }
+    int IBar.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; }
 }");
     }
 
@@ -2933,17 +2875,9 @@ public partial interface IBar
 public abstract partial class Foo : IFoo, IBar
 {
     protected abstract int ExplicitPropRenamed1 { get; set; }
-    int IFoo.ExplicitProp
-    {
-        get => ExplicitPropRenamed1;
-        set => ExplicitPropRenamed1 = value;
-    }
+    int IFoo.ExplicitProp { get => ExplicitPropRenamed1; set => ExplicitPropRenamed1 = value; }
     protected abstract int ExplicitPropRenamed2 { get; set; }
-    int IBar.ExplicitProp
-    {
-        get => ExplicitPropRenamed2;
-        set => ExplicitPropRenamed2 = value;
-    }
+    int IBar.ExplicitProp { get => ExplicitPropRenamed2; set => ExplicitPropRenamed2 = value; }
 }");
     }
 
@@ -2999,11 +2933,7 @@ public partial class Foo : BaseFoo, IFoo
     void IFoo.Save() => OnSave();
 
     protected override int MyProp { get; set; } = 6;
-    int IFoo.Prop
-    {
-        get => MyProp;
-        set => MyProp = value;
-    }
+    int IFoo.Prop { get => MyProp; set => MyProp = value; }
 }");
     }
 
@@ -3055,16 +2985,8 @@ public partial class Foo : IFoo, IBar
     void IBar.OnSave() => Save();
 
     public virtual int A { get; set; }
-    int IFoo.A
-    {
-        get => A;
-        set => A = value;
-    }
-    int IBar.B
-    {
-        get => A;
-        set => A = value;
-    }
+    int IFoo.A { get => A; set => A = value; }
+    int IBar.B { get => A; set => A = value; }
 }");
     }
 
@@ -3120,11 +3042,7 @@ public partial class Foo : BaseFoo, IFoo
     void IFoo.Save() => OnSave();
 
     public new int MyProp { get; set; } = 6;
-    int IFoo.Prop
-    {
-        get => MyProp;
-        set => MyProp = value;
-    }
+    int IFoo.Prop { get => MyProp; set => MyProp = value; }
 }");
     }
 
@@ -3175,16 +3093,8 @@ public partial class Foo : IFoo, IBar
         }
     }
 
-    int IFoo.ExplicitProp
-    {
-        get => ExplicitProp;
-        set => ExplicitProp = value;
-    }
-    int IBar.ExplicitProp // Comment moves because this line gets split
-    {
-        get => ExplicitProp;
-        set => ExplicitProp = value;
-    }
+    int IFoo.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; }
+    int IBar.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; } // Comment moves because this line gets split
 }");
     }
 
@@ -3275,16 +3185,8 @@ public abstract partial class BaseFoo : IFoo, IBar
         }
     }
 
-    int IFoo.FriendProp
-    {
-        get => FriendProp;
-        set => FriendProp = value;
-    }
-    int IBar.FriendProp // Comment moves because this line gets split
-    {
-        get => FriendProp;
-        set => FriendProp = value;
-    }
+    int IFoo.FriendProp { get => FriendProp; set => FriendProp = value; }
+    int IBar.FriendProp { get => FriendProp; set => FriendProp = value; } // Comment moves because this line gets split
 
     protected void ProtectedSub()
     {
@@ -3355,16 +3257,9 @@ public partial interface IFoo
 public partial class Foo : IFoo
 {
     public int ExplicitPropRenamed { get; set; }
-    int IFoo.ExplicitProp
-    {
-        get => ExplicitPropRenamed;
-        set => ExplicitPropRenamed = value;
-    }
+    int IFoo.ExplicitProp { get => ExplicitPropRenamed; set => ExplicitPropRenamed = value; }
     public int ExplicitRenamedReadOnlyProp { get; private set; }
-    int IFoo.ExplicitReadOnlyProp
-    {
-        get => ExplicitRenamedReadOnlyProp;
-    }
+    int IFoo.ExplicitReadOnlyProp { get => ExplicitRenamedReadOnlyProp; }
 
     private void Consumer()
     {
@@ -3404,14 +3299,8 @@ public partial interface IBar
 public partial class Foo : IFoo, IBar
 {
     public int ExplicitPropRenamed { get; private set; }
-    int IFoo.ExplicitProp
-    {
-        get => ExplicitPropRenamed;
-    }
-    int IBar.ExplicitProp
-    {
-        get => ExplicitPropRenamed;
-    }
+    int IFoo.ExplicitProp { get => ExplicitPropRenamed; }
+    int IBar.ExplicitProp { get => ExplicitPropRenamed; }
 }");
     }
 
@@ -3454,14 +3343,8 @@ public partial class Foo : IFoo, IBar
         }
     }
 
-    int IFoo.ExplicitProp
-    {
-        set => ExplicitPropRenamed = value;
-    }
-    int IBar.ExplicitProp // Comment moves because this line gets split
-    {
-        set => ExplicitPropRenamed = value;
-    }
+    int IFoo.ExplicitProp { set => ExplicitPropRenamed = value; }
+    int IBar.ExplicitProp { set => ExplicitPropRenamed = value; } // Comment moves because this line gets split
 }");
     }
 

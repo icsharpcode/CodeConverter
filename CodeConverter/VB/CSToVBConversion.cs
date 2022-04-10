@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.VB;
@@ -145,17 +146,16 @@ public class CSToVBConversion : ILanguageConversion
     public bool CanBeContainedByMethod(SyntaxNode node)
     {
         return node is CSSyntax.IncompleteMemberSyntax ||
-               node is CSSyntax.StatementSyntax ||
+               node is CSSyntax.StatementSyntax and not CSSyntax.LocalFunctionStatementSyntax ||
                node.ContainsSkippedText ||
                node.IsMissing ||
-               ParsedAsFieldButCouldBeLocalVariableDeclaration(node); ;
+               ParsedAsFieldButCouldBeLocalVariableDeclaration(node);
     }
 
     public bool MustBeContainedByClass(SyntaxNode node)
     {
         return node is CSSyntax.BaseMethodDeclarationSyntax || node is CSSyntax.BaseFieldDeclarationSyntax ||
-               node is CSSyntax.BasePropertyDeclarationSyntax ||
-               node is CSSyntax.GlobalStatementSyntax; //https://github.com/icsharpcode/CodeConverter/issues/825
+               node is CSSyntax.BasePropertyDeclarationSyntax || node is CSSyntax.LocalFunctionStatementSyntax;
     }
 
     private static bool ParsedAsFieldButCouldBeLocalVariableDeclaration(SyntaxNode node)

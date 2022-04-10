@@ -18,7 +18,7 @@ public static class AsyncEnumerableTaskExtensions
     /// <remarks>
     /// Inspired by https://stackoverflow.com/a/58564740/1128762
     /// </remarks>
-    public static async IAsyncEnumerable<TResult> ParallelSelectAwait<TArg, TResult>(this IEnumerable<TArg> source,
+    public static async IAsyncEnumerable<TResult> ParallelSelectAwaitAsync<TArg, TResult>(this IEnumerable<TArg> source,
         Func<TArg, Task<TResult>> selector, int maxDop, [EnumeratorCancellation] CancellationToken token = default)
     {
         var processor = new TransformBlock<TArg, TResult>(selector, new ExecutionDataflowBlockOptions {

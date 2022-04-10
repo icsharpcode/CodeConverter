@@ -118,7 +118,7 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
 }",
             @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer, a As Integer = 5
+        Dim b As Integer, a = 5
         b = System.Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
     End Sub
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
@@ -388,7 +388,6 @@ BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protecti
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         If Tiles IsNot Nothing Then
-
             For Each t As Tile In Tiles
                 Me.TileTray.Controls.Remove(t)
             Next
@@ -509,7 +508,7 @@ End Class");
 }",
             @"Private Sub Test()
     Dim lAB As Object = 5
-    Dim Ab As Integer = CInt(o)
+    Dim Ab = CInt(o)
 End Sub
 
 1 source compilation errors:
@@ -526,7 +525,7 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
 }",
             @"Private Sub Test()
     Dim lTest1 As Object = 5
-    Dim lTesT As Integer = CInt(o)
+    Dim lTesT = CInt(o)
 End Sub
 
 1 source compilation errors:
@@ -547,7 +546,7 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
             @"Public ReadOnly Property Test As Integer
     Get
         Dim lTest1 As Object = 5
-        Dim lTesT As Integer = CInt(o)
+        Dim lTesT = CInt(o)
         Return lTest1
     End Get
 End Property
@@ -584,12 +583,12 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
     Public Custom Event Test As EventHandler
         AddHandler(ByVal value As EventHandler)
             Dim lTeSt1 As Object = 5
-            Dim lTesT As Integer = CInt(o)
+            Dim lTesT = CInt(o)
             testField = [Delegate].Combine(testField, value)
         End AddHandler
         RemoveHandler(ByVal value As EventHandler)
             Dim lTeSt1 As Object = 5
-            Dim lTesT As Integer = CInt(o)
+            Dim lTesT = CInt(o)
             testField = [Delegate].Remove(testField, value)
         End RemoveHandler
         RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
@@ -748,8 +747,8 @@ End Namespace");
 }",
             @"Public Class TestClass
     Public Sub Method()
-        Dim vbLf As String = Microsoft.VisualBasic.vbLf
-        Dim vbCrLf As String = Microsoft.VisualBasic.vbCrLf
+        Dim vbLf = Microsoft.VisualBasic.vbLf
+        Dim vbCrLf = Microsoft.VisualBasic.vbCrLf
     End Sub
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }

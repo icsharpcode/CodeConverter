@@ -63,7 +63,7 @@ internal static class ProjectMergedDeclarationExtensions
         var projectDir = Path.Combine(vbProject.GetDirectoryPath(), "My Project");
 
         var compilation = await vbProject.GetCompilationAsync(cancellationToken);
-        var embeddedSourceTexts = await GetAllEmbeddedSourceText(compilation).Select((r, i) => (Text: r, Suffix: $".Static.{i+1}")).ToArrayAsync(cancellationToken);
+        var embeddedSourceTexts = await GetAllEmbeddedSourceTextAsync(compilation).Select((r, i) => (Text: r, Suffix: $".Static.{i+1}")).ToArrayAsync(cancellationToken);
         var generatedSourceTexts = (Text: await GetDynamicallyGeneratedSourceTextAsync(compilation), Suffix: ".Dynamic").Yield();
 
         foreach (var (text, suffix) in embeddedSourceTexts.Concat(generatedSourceTexts)) {
@@ -79,7 +79,7 @@ internal static class ProjectMergedDeclarationExtensions
         return vbProject.AddDocument(baseName, sourceText.ReNamespace(), filePath: Path.Combine(myProjectDirPath, baseName + ".Designer.vb")).Project;
     }
 
-    private static async IAsyncEnumerable<string> GetAllEmbeddedSourceText(Compilation compilation)
+    private static async IAsyncEnumerable<string> GetAllEmbeddedSourceTextAsync(Compilation compilation)
     {
         var roots = await compilation.SourceModule.GlobalNamespace.Locations.
             Where(l => !l.IsInSource).Select(CachedReflectedDelegates.GetEmbeddedSyntaxTree)

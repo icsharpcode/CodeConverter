@@ -305,6 +305,7 @@ CS0246: The type or namespace name 'SomeNamespace' could not be found (are you m
     }
 }",
             @"Imports System.Collections ' Moves outside namespace
+
 Namespace System
     Public Class TestClass
         Public Property [Property] As Hashtable

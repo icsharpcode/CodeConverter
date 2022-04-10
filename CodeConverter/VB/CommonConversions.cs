@@ -532,7 +532,7 @@ internal class CommonConversions
         }
 
         var operation = _semanticModel.GetAncestorOperationOrNull<IEventReferenceOperation>(parent);
-        if (operation == null || !operation.Event.Equals(symbol) || operation.Parent is IEventAssignmentOperation ||
+        if (operation == null || !operation.Event.Equals(symbol, SymbolEqualityComparer.IncludeNullability) || operation.Parent is IEventAssignmentOperation ||
             operation.Parent is IRaiseEventOperation || operation.Parent is IInvocationOperation ||
             operation.Parent is IConditionalAccessOperation cao && cao.WhenNotNull is IInvocationOperation) {
             return valueText;

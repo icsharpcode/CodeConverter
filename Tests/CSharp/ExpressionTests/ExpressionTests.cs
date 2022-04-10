@@ -1061,7 +1061,7 @@ internal partial class TestClass3
 
     private Rec TestMethod(string str)
     {
-        int length = str?.Length ?? -1;
+        int length = (str?.Length) ?? -1;
         Console.WriteLine(length);
         Console.ReadKey();
         return new Rec()?.Prop?.Prop?.Prop;
@@ -1178,6 +1178,28 @@ internal partial class TestClass
     {
         Func<int, int> test = (a) => a * 2;
         test(3);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task LambdaImmediatelyExecutedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue869
+    Sub Main
+        Dim i As Integer = Function() 
+                                Return 2 
+                        End Function() 
+        Console.WriteLine(i)
+    End Sub
+End Class", @"using System;
+
+public partial class Issue869
+{
+    public void Main()
+    {
+        int i = new Func<int>(() => 2)();
+        Console.WriteLine(i);
     }
 }");
     }
@@ -2096,7 +2118,7 @@ internal static partial class Module1
 {
     public static void Main()
     {
-        short x = true ? 50 : 100;
+        short x = true ? (short)50 : (short)100;
     }
 }
 ");

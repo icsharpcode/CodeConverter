@@ -131,7 +131,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer = 0
+        Dim b = 0
     End Sub
 End Class");
     }
@@ -238,7 +238,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = {1, 2, 3}
+        Dim b = {1, 2, 3}
     End Sub
 End Class");
     }
@@ -273,7 +273,7 @@ CS0820: Cannot initialize an implicitly-typed variable with an array initializer
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = New Integer() {1, 2, 3}
+        Dim b = New Integer() {1, 2, 3}
     End Sub
 End Class");
     }
@@ -289,7 +289,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer() = New Integer(2) {1, 2, 3}
+        Dim b = New Integer(2) {1, 2, 3}
     End Sub
 End Class");
     }
@@ -324,7 +324,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = {
+        Dim b = {
         {1, 2},
         {3, 4}}
     End Sub
@@ -345,7 +345,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(,) {
+        Dim b = New Integer(,) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -366,7 +366,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer(,) = New Integer(1, 1) {
+        Dim b = New Integer(1, 1) {
         {1, 2},
         {3, 4}}
     End Sub
@@ -403,7 +403,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
     }
@@ -419,7 +419,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
     }
@@ -435,7 +435,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
+        Dim b = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
     }
@@ -456,8 +456,8 @@ the_beginning:
 }", @"Friend Class Test
     Private Sub TestMethod()
 the_beginning:
-        Dim value As Integer = 1
-        Const myPIe As Double = Math.PI
+        Dim value = 1
+        Const myPIe = Math.PI
         Dim text = ""This is my text!""
         GoTo the_beginning
     End Sub
@@ -676,7 +676,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
-        For Each val As Integer In values
+        For Each val In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
         Next
@@ -817,7 +817,7 @@ End Class");
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal b As Integer(), ByVal s As Integer(), ByVal nbMessage As Integer)
-        For m As Integer = nbMessage To 1 Step -1
+        For m = nbMessage To 1 Step -1
             ' Loop body
         Next
     End Sub
@@ -896,9 +896,9 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
 }",
             @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim summary As Integer = 0
+        Dim summary = 0
 
-        For month As Integer = 1 To 12
+        For month = 1 To 12
             summary += month
         Next
     End Sub
@@ -957,7 +957,7 @@ End Class");
 }",
             @"Friend Class TestClass
     Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
-        Dim summary As Integer = 0
+        Dim summary = 0
         Dim action As Action = Sub()
                                    For Each c In counts
                                        Dim current = c
@@ -1054,13 +1054,13 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
         }
     }", @"Friend Class GotoTest1
     Private Shared Sub Main()
-        Dim x As Integer = 200, y As Integer = 4
-        Dim count As Integer = 0
-        Dim array As String(,) = New String(x - 1, y - 1) {}
+        Dim x = 200, y = 4
+        Dim count = 0
+        Dim array = New String(x - 1, y - 1) {}
 
-        For i As Integer = 0 To x - 1
+        For i = 0 To x - 1
 
-            For j As Integer = 0 To y - 1
+            For j = 0 To y - 1
                 array(i, j) = Threading.Interlocked.Increment(count).ToString()
             Next
         Next
@@ -1068,9 +1068,9 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
         Console.Write(""Enter the number to search for: "")
         Dim myNumber As String = Console.ReadLine()
 
-        For i As Integer = 0 To x - 1
+        For i = 0 To x - 1
 
-            For j As Integer = 0 To y - 1
+            For j = 0 To y - 1
 
                 If array(i, j).Equals(myNumber) Then
                     GoTo Found
@@ -1397,7 +1397,7 @@ Friend Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
 
-        For i As Integer = 0 To number - 1
+        For i = 0 To number - 1
             Yield i
         Next
     End Function

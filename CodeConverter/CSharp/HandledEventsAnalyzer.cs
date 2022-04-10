@@ -30,9 +30,11 @@ internal class HandledEventsAnalyzer
 
     private async Task<HandledEventsAnalysis> AnalyzeAsync()
     {
+#pragma warning disable RS1024 // Compare symbols correctly - bug in analyzer https://github.com/dotnet/roslyn-analyzers/issues/3427#issuecomment-929104517
         var ancestorPropsMembersByName = _type.GetBaseTypesAndThis().SelectMany(t => t.GetMembers().Where(m => m.IsKind(SymbolKind.Property)))
             .GroupBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(m => m.Key, g => g.First(), StringComparer.OrdinalIgnoreCase); // Uses the fact that GroupBy maintains addition order to get the closest declaration
+#pragma warning restore RS1024 // Compare symbols correctly
 
         var writtenWithEventsProperties = await ancestorPropsMembersByName.Values.OfType<IPropertySymbol>().ToAsyncEnumerable().ToDictionaryAwaitAsync(async p => p.Name, async p => (p, await IsNeverWrittenOrOverriddenAsync(p)), StringComparer.OrdinalIgnoreCase);
 
@@ -40,7 +42,7 @@ internal class HandledEventsAnalyzer
             .SelectMany(HandledEvents)
             .ToLookup(eventAndMethod => eventAndMethod.EventContainer);
         var eventsThatMayNeedInheritors = writtenWithEventsProperties
-            .Where(p => !p.Value.Item2 && p.Value.p.ContainingType.Equals(_type))
+            .Where(p => !p.Value.Item2 && p.Value.p.ContainingType.Equals(_type, SymbolEqualityComparer.IncludeNullability))
             .Select(p =>
                 (EventContainer: new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, p.Key), PropertyDetails: p.Value, Array.Empty<(EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)>()))
             .Where(e => !eventContainerToMethods.Contains(e.EventContainer));

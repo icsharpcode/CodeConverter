@@ -69,7 +69,7 @@ public class SolutionConverter
         _textReplacementConverter = new TextReplacementConverter(fileSystem);
     }
 
-    public async IAsyncEnumerable<ConversionResult> Convert()
+    public async IAsyncEnumerable<ConversionResult> ConvertAsync()
     {
         var projectsToUpdateReferencesOnly = _projectsToConvert.First().Solution.Projects.Except(_projectsToConvert);
         var solutionResult = string.IsNullOrWhiteSpace(_sourceSolutionContents) ? Enumerable.Empty<ConversionResult>() : ConvertSolutionFile().Yield();
@@ -82,14 +82,14 @@ public class SolutionConverter
 
     private async Task<IAsyncEnumerable<ConversionResult>> ConvertProjectsAsync()
     {
-        return _projectsToConvert.ToAsyncEnumerable().SelectMany(ConvertProject);
+        return _projectsToConvert.ToAsyncEnumerable().SelectMany(ConvertProjectAsync);
     }
 
-    private IAsyncEnumerable<ConversionResult> ConvertProject(Project project)
+    private IAsyncEnumerable<ConversionResult> ConvertProjectAsync(Project project)
     {
         var replacements = _projectReferenceReplacements.ToArray();
         _progress.Report(new ConversionProgress($"Begin converting {project.Name} at {DateTime.Now:HH:mm:ss}..."));
-        return ProjectConversion.ConvertProject(project, _languageConversion, _textReplacementConverter, _progress, _cancellationToken, replacements);
+        return ProjectConversion.ConvertProjectAsync(project, _languageConversion, _textReplacementConverter, _progress, _cancellationToken, replacements);
     }
 
     private IEnumerable<ConversionResult> UpdateProjectReferences(IEnumerable<Project> projectsToUpdateReferencesOnly)

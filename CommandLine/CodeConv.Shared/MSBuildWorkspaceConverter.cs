@@ -63,7 +63,7 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
             : LanguageNames.CSharp;
 
         var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
-        var results = SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).Convert();
+        var results = SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).ConvertAsync();
         await foreach (var r in results.WithCancellation(token)) yield return r;
     }
 
@@ -98,7 +98,7 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
         IEnumerable<Project> projectsToConvert)
     {
         var workspaceErrors = (await _workspace.GetValueAsync()).Diagnostics.GetErrorString();
-        var errors = await projectsToConvert.ParallelSelectAwait(async x => {
+        var errors = await projectsToConvert.ParallelSelectAwaitAsync(async x => {
             var c = await x.GetCompilationAsync() ?? throw new InvalidOperationException($"Compilation could not be created for {x.Language}");
             return new[] { CompilationWarnings.WarningsForCompilation(c, c.AssemblyName) };
         }, Env.MaxDop).ToArrayAsync();

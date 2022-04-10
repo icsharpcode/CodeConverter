@@ -24,7 +24,7 @@ internal partial class TestClass
     private void TestMethod()
     {
         string hello = ""Hello"";
-        XElement x = new XElement(""h1"", hello);
+        var x = new XElement(""h1"", hello);
     }
 }");
     }
@@ -46,7 +46,7 @@ internal partial class TestClass
     {
         int var1 = 1;
         int var2 = 2;
-        XElement x = new XElement(""h1"", var1, var2, new XElement(""span"", var2, var1));
+        var x = new XElement(""h1"", var1, var2, new XElement(""span"", var2, var1));
     }
 }");
     }
@@ -114,9 +114,9 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        XDocument catalog = new XDocument(new XElement(""Catalog"", new XElement(""Book"", new XAttribute(""id"", ""bk101""), new XElement(""Author"", ""Garghentini, Davide""), new XElement(""Title"", ""XML Developer's Guide""), new XElement(""Price"", ""44.95""), new XElement(""Description"", ""\r\n          An in-depth look at creating applications\r\n          with "", new XElement(""technology"", ""XML""), "". For\r\n          "", new XElement(""audience"", ""beginners""), "" or\r\n          "", new XElement(""audience"", ""advanced""), "" developers.\r\n        "")), new XElement(""Book"", new XAttribute(""id"", ""bk331""), new XElement(""Author"", ""Spencer, Phil""), new XElement(""Title"", ""Developing Applications with Visual Basic .NET""), new XElement(""Price"", ""45.95""), new XElement(""Description"", ""\r\n          Get the expert insights, practical code samples,\r\n          and best practices you need\r\n          to advance your expertise with "", new XElement(""technology"", ""Visual\r\n          Basic .NET""), "".\r\n          Learn how to create faster, more reliable applications\r\n          based on professional,\r\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\r\n        ""))));
-        XElement htmlOutput = new XElement(""html"", new XElement(""body"", from book in catalog.Elements(""Catalog"").Elements(""Book"")
-                                                                        select new XElement(""div"", new XElement(""h1"", book.Elements(""Title"").Value), new XElement(""h3"", ""By "" + book.Elements(""Author"").Value), new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value), new XElement(""h2"", ""Description""), TransformDescription((string)book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr""))));
+        var catalog = new XDocument(new XElement(""Catalog"", new XElement(""Book"", new XAttribute(""id"", ""bk101""), new XElement(""Author"", ""Garghentini, Davide""), new XElement(""Title"", ""XML Developer's Guide""), new XElement(""Price"", ""44.95""), new XElement(""Description"", ""\r\n          An in-depth look at creating applications\r\n          with "", new XElement(""technology"", ""XML""), "". For\r\n          "", new XElement(""audience"", ""beginners""), "" or\r\n          "", new XElement(""audience"", ""advanced""), "" developers.\r\n        "")), new XElement(""Book"", new XAttribute(""id"", ""bk331""), new XElement(""Author"", ""Spencer, Phil""), new XElement(""Title"", ""Developing Applications with Visual Basic .NET""), new XElement(""Price"", ""45.95""), new XElement(""Description"", ""\r\n          Get the expert insights, practical code samples,\r\n          and best practices you need\r\n          to advance your expertise with "", new XElement(""technology"", ""Visual\r\n          Basic .NET""), "".\r\n          Learn how to create faster, more reliable applications\r\n          based on professional,\r\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\r\n        ""))));
+        var htmlOutput = new XElement(""html"", new XElement(""body"", from book in catalog.Elements(""Catalog"").Elements(""Book"")
+                                                                   select new XElement(""div"", new XElement(""h1"", book.Elements(""Title"").Value), new XElement(""h3"", ""By "" + book.Elements(""Author"").Value), new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value), new XElement(""h2"", ""Description""), TransformDescription((string)book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr""))));
     }
 
     public string TransformDescription(string s)
@@ -145,8 +145,8 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        XElement b = new XElement(""someXmlTag"");
-        XElement c = new XElement(""someXmlTag"", new XElement(""bla"", new XAttribute(""anAttribute"", ""itsValue""), ""tata""), new XElement(""someContent"", ""tata""));
+        var b = new XElement(""someXmlTag"");
+        var c = new XElement(""someXmlTag"", new XElement(""bla"", new XAttribute(""anAttribute"", ""itsValue""), ""tata""), new XElement(""someContent"", ""tata""));
     }
 }");
     }
@@ -168,7 +168,7 @@ internal partial class TestClass
     private void TestMethod()
     {
         const string value1 = ""something"";
-        XElement xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", value1), new XAttribute(""Attr2"", 100));
+        var xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", value1), new XAttribute(""Attr2"", 100));
     }
 }");
     }
@@ -188,7 +188,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        XElement xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", ""something""));
+        var xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", ""something""));
     }
 }");
     }
@@ -210,7 +210,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        XElement xDocument = new XElement(""Test"");
+        var xDocument = new XElement(""Test"");
         var elements1 = xDocument.Elements(""Something"").SingleOrDefault()?.Elements(""SomethingElse"");
     }
 }");
@@ -276,10 +276,10 @@ internal static partial class Module1
     public static void Main()
     {
         // Create element by using the default global XML namespace. 
-        XElement inner = XmlImports.Apply(new XElement(XmlImports.Default + ""innerElement""));
+        var inner = XmlImports.Apply(new XElement(XmlImports.Default + ""innerElement""));
 
         // Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
-        XElement outer = XmlImports.Apply(new XElement(XmlImports.ns + ""outer"", new XElement(XmlImports.ns + ""innerElement""), new XElement(XmlImports.Default + ""siblingElement""), inner));
+        var outer = XmlImports.Apply(new XElement(XmlImports.ns + ""outer"", new XElement(XmlImports.ns + ""innerElement""), new XElement(XmlImports.Default + ""siblingElement""), inner));
 
         // Display element to see its final form. 
         Console.WriteLine(outer);

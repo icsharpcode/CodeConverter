@@ -9,5 +9,5 @@ public interface IProjectContentsConverter
     OptionalOperations OptionalOperations { get; }
     Task<SyntaxNode> SingleFirstPassAsync(Document document);
     Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults);
-    public IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, CancellationToken cancellationToken);
+    public IAsyncEnumerable<ConversionResult> GetAdditionalConversionResultsAsync(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, CancellationToken cancellationToken);
 }

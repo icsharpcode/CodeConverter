@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -60,17 +61,25 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         SemanticModel semanticModel)
     {
         // In some projects there's a source declaration as well as the referenced one, which causes the first of these methods to fail
+        var symbolsWithName = semanticModel.Compilation
+            .GetSymbolsWithName(n => n.Equals(ConvertType.Name, StringComparison.Ordinal), SymbolFilter.Type).ToList();
+        
         var convertType =
             semanticModel.Compilation.GetTypeByMetadataName(ConvertType.FullName) ??
-            (ITypeSymbol)semanticModel.Compilation
-                .GetSymbolsWithName(n => n.Equals(ConvertType.Name, StringComparison.Ordinal), SymbolFilter.Type).First(s =>
+            (ITypeSymbol)symbolsWithName.FirstOrDefault(s =>
                     s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace, StringComparison.Ordinal));
+
+        if (convertType is null) return new Dictionary<ITypeSymbol, string>();
 
         var convertMethods = convertType.GetMembers().Where(m =>
             m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
+
+#pragma warning disable RS1024 // Compare symbols correctly - GroupBy and ToDictionary use the same logic to dedupe as to lookup, so it doesn't matter which equality is used
         var methodsByType = convertMethods
             .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}" })
             .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
+#pragma warning restore RS1024 // Compare symbols correctly
+
         return methodsByType;
     }
 
@@ -517,7 +526,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         string prefix = $"arg{argName}";
         var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
-        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
+        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
         var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
 
         if (refLValue is ElementAccessExpressionSyntax eae) {
@@ -854,7 +863,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         }
 
         omitConversion |= lhsTypeInfo.Type != null && rhsTypeInfo.Type != null &&
-                          lhsTypeInfo.Type.IsEnumType() && Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
+                          lhsTypeInfo.Type.IsEnumType() && SymbolEqualityComparer.IncludeNullability.Equals(lhsTypeInfo.Type, rhsTypeInfo.Type)
                           && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
                           && forceLhsTargetType == null;
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
@@ -984,6 +993,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(invocationSymbol.Name)));
         }
 
+        if (invocationSymbol is IMethodSymbol m && convertedExpression is LambdaExpressionSyntax) {
+            convertedExpression = SyntaxFactory.ObjectCreationExpression(CommonConversions.GetFuncTypeSyntax(m), ExpressionSyntaxExtensions.CreateArgList(convertedExpression), null);
+        }
         return SyntaxFactory.InvocationExpression(convertedExpression, convertedArgumentList);
     }
 
@@ -1017,7 +1029,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         return (expressionSymbol != null
                 && (invocationSymbol?.Name == nameof(Enumerable.ElementAtOrDefault)
-                    && !expressionSymbol.Equals(invocationSymbol)));
+                    && !expressionSymbol.Equals(invocationSymbol, SymbolEqualityComparer.IncludeNullability)));
     }
 
     private ExpressionSyntax GetElementAtOrDefaultExpression(ISymbol expressionType,
@@ -1656,7 +1668,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 IsRefArrayAcces(expression)) {
 
                 var typeInfo = _semanticModel.GetTypeInfo(expression);
-                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType);
+                bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability);
 
                 if (isTypeMismatch) {
                     return RefConversion.PreAndPostAssignment;

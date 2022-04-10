@@ -24,10 +24,10 @@ internal static class SymbolRenamer
         return m.Name;
     }
 
-    public static async Task<Project> PerformRenamesAsync(Project project, IReadOnlyCollection<(ISymbol Original, string NewName)> symbolsWithNewNames)
+    public static async Task<Project> PerformRenamesAsync(Project project, IEnumerable<(ISymbol Original, string NewName)> symbolsWithNewNames)
     {
         var solution = project.Solution;
-        foreach (var (originalSymbol, newName) in symbolsWithNewNames) {
+        foreach (var (originalSymbol, newName) in symbolsWithNewNames.OrderByDescending(s => s.Original.DeclaringSyntaxReferences.Select(x => x.Span.End).Max())) {
             project = solution.GetProject(project.Id);
             var compilation = await project.GetCompilationAsync();
             ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).FirstOrDefault();
@@ -80,6 +80,7 @@ internal static class SymbolRenamer
         bool specialSymbolUsingName, bool caseSensitive)
     {
         var stringComparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+#pragma warning disable RS1024 // Compare symbols correctly - analzyer bug, I'm intentionally using my own comparer, not the default ambiguous one
         var methodsBySignature = methodSymbols
             .ToLookup(m => m.GetUnqualifiedMethodSignature(caseSensitive))
             .Where(g => g.Count() > 1)
@@ -91,6 +92,7 @@ internal static class SymbolRenamer
                     !specialSymbolUsingName).ToArray();
                 return symbolsWithNewNames;
             }).ToArray();
+#pragma warning restore RS1024 // Compare symbols correctly
 
         foreach (var newMethodNames in methodsBySignature.Select(m => m.NewName))
         {
