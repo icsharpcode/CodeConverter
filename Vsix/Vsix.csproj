@@ -51,15 +51,14 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Build against VS 15.7 -->
-    <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="2.8.2" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="15.0.1" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="3.11.0" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.10.31321.278" ExcludeAssets="runtime">
+      <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <!-- Avoids needing the VSSDK MSI installed. Version is the VS version used during compilation, not where the VSIX will be installed -->
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.0.4201-preview4">
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.1.4054">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Newtonsoft.Json">
-      <Version>9.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.Data.Common">
       <Version>4.3.0</Version>
@@ -77,26 +76,6 @@
       <ResourceName>Menus.ctmenu</ResourceName>
       <SubType>Designer</SubType>
     </VSCTCompile>
-    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\Microsoft.Bcl.AsyncInterfaces.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-      <Link>Lib\Microsoft.Bcl.AsyncInterfaces.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Runtime.CompilerServices.Unsafe.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-      <Link>Lib\System.Runtime.CompilerServices.Unsafe.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Threading.Tasks.Dataflow.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-      <Link>Lib\System.Threading.Tasks.Dataflow.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\CommandLine\CodeConv.NetFramework\$(OutputPath)\System.Threading.Tasks.Extensions.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-      <Link>Lib\System.Threading.Tasks.Extensions.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Images\refactoringessentials-logo90.png">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -132,7 +111,6 @@
     <Compile Include="..\CommandLine\CodeConv.Shared\Util\AppDomainExtensions.cs">
       <Link>AppDomainExtensions.cs</Link>
     </Compile>
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="OleMenuCommandWithBlockingStatus.cs" />
     <Compile Include="CodeConversion.cs" />
     <Compile Include="ConvertCSToVBCommand.cs" />

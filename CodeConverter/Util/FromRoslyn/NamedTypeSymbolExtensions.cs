@@ -15,7 +15,7 @@ internal static class NamedTypeSymbolExtensions
             return null;
         }
 
-        if (!type.GetAttributes().Where(a => Equals(a.AttributeClass, designerGeneratedAttribute)).Any()) {
+        if (!type.GetAttributes().Where(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, designerGeneratedAttribute)).Any()) {
             return null;
         }
 

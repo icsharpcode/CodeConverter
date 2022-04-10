@@ -555,7 +555,7 @@ internal partial class SymbolEquivalenceComparer
                 // equality.  This will properly handle things like the VB case where two
                 // anonymous types will be considered the same if they have properties that
                 // differ in casing.
-                if (x.Equals(y))
+                if (x.Equals(y, SymbolEqualityComparer.IncludeNullability))
                 {
                     return true;
                 }

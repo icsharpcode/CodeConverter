@@ -6,7 +6,7 @@ internal static class SemanticModelSymbolSetExtensions
 
     public static IEnumerable<IEnumerable<ISymbol>> GetCsSymbolsPerScope(this SemanticModel semanticModel, ISymbol symbol)
     {
-        return GetCsLocalSymbolsPerScope(semanticModel, symbol).Select(y => y.Union(symbol.Yield()));
+        return GetCsLocalSymbolsPerScope(semanticModel, symbol).Select(y => y.Union(symbol.Yield(), SymbolEqualityComparer.IncludeNullability));
     }
 
     /// <remarks>

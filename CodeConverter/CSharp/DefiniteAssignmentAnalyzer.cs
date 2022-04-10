@@ -7,6 +7,6 @@ internal static class DefiniteAssignmentAnalyzer
     {
         if (!methodFlow.ReadInside.Contains(localSymbol)) return true;
         var unassignedVariables = methodFlow.GetVbUnassignedVariables();
-        return unassignedVariables != null && !unassignedVariables.Contains(localSymbol);
+        return unassignedVariables != null && !unassignedVariables.Contains(localSymbol, SymbolEqualityComparer.IncludeNullability);
     }
 }

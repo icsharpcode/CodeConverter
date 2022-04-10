@@ -137,8 +137,8 @@ internal class TypeConversionAnalyzer
                 return TypeConversionKind.NonDestructiveCast;
             }
 
-            if (vbType.Equals(vbConvertedType) ||
-                (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType())) ||
+            if (vbType.Equals(vbConvertedType, SymbolEqualityComparer.IncludeNullability) ||
+                (vbConvertedType.IsNullable() && vbType.Equals(vbConvertedType.GetNullableUnderlyingType(), SymbolEqualityComparer.IncludeNullability)) ||
                 vbConvertedType.SpecialType == SpecialType.System_Object) {
                 return TypeConversionKind.Identity;
             }
@@ -323,7 +323,7 @@ internal class TypeConversionAnalyzer
     private static TypeConversionKind AnalyzeVbConversion(bool alwaysExplicit, ITypeSymbol vbType,
         ITypeSymbol vbConvertedType, Conversion vbConversion)
     {
-        if (vbType.Equals(vbConvertedType) || vbConversion.IsIdentity) {
+        if (vbType.Equals(vbConvertedType, SymbolEqualityComparer.IncludeNullability) || vbConversion.IsIdentity) {
             return TypeConversionKind.Identity;
         }
 

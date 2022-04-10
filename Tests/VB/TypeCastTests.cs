@@ -34,7 +34,7 @@ End Sub
     string s = (string) o;
 }", @"Private Sub Test()
     Dim o As Object = ""Test""
-    Dim s As String = CStr(o)
+    Dim s = CStr(o)
 End Sub");
     }
 
@@ -48,7 +48,7 @@ End Sub");
     System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>) o;
 }", @"Private Sub Test()
     Dim o As Object = New List(Of Integer)()
-    Dim l As List(Of Integer) = CType(o, List(Of Integer))
+    Dim l = CType(o, List(Of Integer))
 End Sub");
     }
 
@@ -137,7 +137,7 @@ End Sub");
     char CR = (char)0xD;
 }",
             @"Private Sub Test()
-    Dim CR As Char = Microsoft.VisualBasic.ChrW(&HD)
+    Dim CR = Microsoft.VisualBasic.ChrW(&HD)
 End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
     [Fact]

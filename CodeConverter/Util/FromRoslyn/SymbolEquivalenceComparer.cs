@@ -182,12 +182,12 @@ internal partial class SymbolEquivalenceComparer :
 
     private static bool IsConstructedFromSelf(INamedTypeSymbol symbol)
     {
-        return symbol.Equals(symbol.ConstructedFrom);
+        return symbol.Equals(symbol.ConstructedFrom, SymbolEqualityComparer.IncludeNullability);
     }
 
     private static bool IsConstructedFromSelf(IMethodSymbol symbol)
     {
-        return symbol.Equals(symbol.ConstructedFrom);
+        return symbol.Equals(symbol.ConstructedFrom, SymbolEqualityComparer.IncludeNullability);
     }
 
     private static bool IsObjectType(ISymbol symbol)

@@ -1,3 +1,4 @@
+
 Namespace CSharpNetStandardLib
     Public Class Class1
         Public Sub MethodOnlyDifferingInTypeParameterCount()

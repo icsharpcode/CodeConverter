@@ -12,7 +12,7 @@ public class StandaloneStatementTests : ConverterTestBase
         await TestConversionCSharpToVisualBasicAsync(
             @"int num = 4;
 num = 5;",
-            @"Dim num As Integer = 4
+            @"Dim num = 4
 num = 5",
             expectSurroundingMethodBlock: true);
     }

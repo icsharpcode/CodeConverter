@@ -576,7 +576,7 @@ EndProject";
 
     private static async Task<string> GetConvertedCodeAsync(SolutionConverter slnConverter, Project referencingProject)
     {
-        var conversionResult = await slnConverter.Convert()
+        var conversionResult = await slnConverter.ConvertAsync()
             .SingleAsync(result => result.SourcePathOrNull == referencingProject.FilePath);
 
         return conversionResult.ConvertedCode;

@@ -369,7 +369,7 @@ internal static partial class RoslynISymbolExtensions
         // nested type of that owner and I'm allowed access to everything inside of it.
         var current = withinType.OriginalDefinition;
         while (current != null) {
-            if (current.Equals(originalContainingType)) {
+            if (current.Equals(originalContainingType, SymbolEqualityComparer.IncludeNullability)) {
                 return true;
             }
 

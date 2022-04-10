@@ -57,7 +57,7 @@ internal class CodeConversion
         try {
             await EnsureBuiltAsync(selectedProjects);
             await _joinableTaskFactory.RunAsync(async () => {
-                var convertedFiles = ConvertProjectUnhandled<TLanguageConversion>(selectedProjects, cancellationToken);
+                var convertedFiles = ConvertProjectUnhandledAsync<TLanguageConversion>(selectedProjects, cancellationToken);
                 await WriteConvertedFilesAndShowSummaryAsync(convertedFiles);
             });
         } catch (OperationCanceledException) {
@@ -73,7 +73,7 @@ internal class CodeConversion
             var containingProject = await VisualStudioInteraction.GetFirstProjectContainingAsync(documentsFilePath.First());
             await EnsureBuiltAsync(containingProject is null ? Array.Empty<Project>() : new[]{containingProject});
             await _joinableTaskFactory.RunAsync(async () => {
-                var result = ConvertDocumentsUnhandled<TLanguageConversion>(documentsFilePath, cancellationToken);
+                var result = ConvertDocumentsUnhandledAsync<TLanguageConversion>(documentsFilePath, cancellationToken);
                 await WriteConvertedFilesAndShowSummaryAsync(result);
             });
         } catch (OperationCanceledException) {
@@ -260,7 +260,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         return await ProjectConversion.ConvertSingleAsync<TLanguageConversion>(document, new SingleConversionOptions {SelectedTextSpan = selectedTextSpan, AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()}, CreateOutputWindowProgress(), cancellationToken);
     }
 
-    private async IAsyncEnumerable<ConversionResult> ConvertDocumentsUnhandled<TLanguageConversion>(
+    private async IAsyncEnumerable<ConversionResult> ConvertDocumentsUnhandledAsync<TLanguageConversion>(
         IReadOnlyCollection<string> documentsPath,
         [EnumeratorCancellation] CancellationToken cancellationToken) where TLanguageConversion : ILanguageConversion, new()
     {
@@ -297,7 +297,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         return convertTextOnly;
     }
 
-    private async IAsyncEnumerable<ConversionResult> ConvertProjectUnhandled<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private async IAsyncEnumerable<ConversionResult> ConvertProjectUnhandledAsync<TLanguageConversion>(IReadOnlyCollection<Project> selectedProjects, [EnumeratorCancellation] CancellationToken cancellationToken)
         where TLanguageConversion : ILanguageConversion, new()
     {
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -315,7 +315,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         var conversionOptions = new ConversionOptions {AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()};
         var solutionConverter = SolutionConverter.CreateFor<TLanguageConversion>(projects, conversionOptions: conversionOptions, progress: CreateOutputWindowProgress(), cancellationToken: cancellationToken);
 
-        await foreach (var result in solutionConverter.Convert()) yield return result;
+        await foreach (var result in solutionConverter.ConvertAsync()) yield return result;
     }
 
     private async Task<TimeSpan> GetAbandonOptionalTasksAfterAsync() => TimeSpan.FromMinutes((await GetOptions()).FormattingTimeout);

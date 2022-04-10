@@ -71,10 +71,10 @@ public class ProjectConversion
         documents = documents.Select(doc => projectContentsConverter.SourceProject.GetDocument(doc.Id)).ToList();
 
         var conversion = new ProjectConversion(projectContentsConverter, documents, Enumerable.Empty<TextDocument>(), languageConversion, cancellationToken);
-        await foreach (var result in conversion.Convert(progress).WithCancellation(cancellationToken)) yield return result;
+        await foreach (var result in conversion.ConvertAsync(progress).WithCancellation(cancellationToken)) yield return result;
     }
 
-    public static async IAsyncEnumerable<ConversionResult> ConvertProject(Project project,
+    public static async IAsyncEnumerable<ConversionResult> ConvertProjectAsync(Project project,
         ILanguageConversion languageConversion, TextReplacementConverter textReplacementConverter,
         IProgress<ConversionProgress> progress,
         [EnumeratorCancellation] CancellationToken cancellationToken,
@@ -83,16 +83,16 @@ public class ProjectConversion
         using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
         var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
         var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
-        var convertProjectContents = ConvertProjectContents(projectContentsConverter, languageConversion, progress, cancellationToken);
+        var convertProjectContents = ConvertProjectContentsAsync(projectContentsConverter, languageConversion, progress, cancellationToken);
 
-        var results = WithProjectFile(projectContentsConverter, textReplacementConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
+        var results = WithProjectFileAsync(projectContentsConverter, textReplacementConverter, languageConversion, sourceFilePaths, convertProjectContents, replacements);
         await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
 
         progress.Report(new ConversionProgress($"Finished converting {project.Name} at {DateTime.Now:HH:mm:ss}..."));
     }
 
     /// <remarks>Perf: Keep lazy so that we don't keep an extra copy of all files in memory at once</remarks>
-    private static async IAsyncEnumerable<ConversionResult> WithProjectFile(IProjectContentsConverter projectContentsConverter, TextReplacementConverter textReplacementConverter,
+    private static async IAsyncEnumerable<ConversionResult> WithProjectFileAsync(IProjectContentsConverter projectContentsConverter, TextReplacementConverter textReplacementConverter,
         ILanguageConversion languageConversion, ImmutableHashSet<string> originalSourcePaths,
         IAsyncEnumerable<ConversionResult> convertProjectContents, (string Find, string Replace, bool FirstOnly)[] replacements)
     {
@@ -158,7 +158,7 @@ public class ProjectConversion
     }
 
 
-    private static async IAsyncEnumerable<ConversionResult> ConvertProjectContents(
+    private static async IAsyncEnumerable<ConversionResult> ConvertProjectContentsAsync(
         IProjectContentsConverter projectContentsConverter, ILanguageConversion languageConversion,
         IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -171,15 +171,15 @@ public class ProjectConversion
 
         var projectConversion = new ProjectConversion(projectContentsConverter, documentsToConvert, projectContentsConverter.SourceProject.AdditionalDocuments, languageConversion, cancellationToken);
 
-        var results = projectConversion.Convert(progress);
+        var results = projectConversion.ConvertAsync(progress);
         await foreach (var result in results.WithCancellation(cancellationToken)) yield return result;
     }
 
 
-    private async IAsyncEnumerable<ConversionResult> Convert(IProgress<ConversionProgress> progress)
+    private async IAsyncEnumerable<ConversionResult> ConvertAsync(IProgress<ConversionProgress> progress)
     {
         var phaseProgress = StartPhase(progress, "Phase 1 of 2:");
-        var firstPassResults = _documentsToConvert.ParallelSelectAwait(d => FirstPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
+        var firstPassResults = _documentsToConvert.ParallelSelectAwaitAsync(d => FirstPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
         var (proj1, docs1) = await _projectContentsConverter.GetConvertedProjectAsync(await firstPassResults.ToArrayAsync(_cancellationToken));
 
         var warnings = await GetProjectWarningsAsync(_projectContentsConverter.SourceProject, proj1);
@@ -189,11 +189,11 @@ public class ProjectConversion
         }
 
         phaseProgress = StartPhase(progress, "Phase 2 of 2:");
-        var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwait(d => SecondPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
+        var secondPassResults = proj1.GetDocuments(docs1).ParallelSelectAwaitAsync(d => SecondPassLoggedAsync(d, phaseProgress), Env.MaxDop, _cancellationToken);
         await foreach (var result in secondPassResults.Select(CreateConversionResult).WithCancellation(_cancellationToken)) {
             yield return result;
         }
-        await foreach (var result in _projectContentsConverter.GetAdditionalConversionResults(_additionalDocumentsToConvert, _cancellationToken)) {
+        await foreach (var result in _projectContentsConverter.GetAdditionalConversionResultsAsync(_additionalDocumentsToConvert, _cancellationToken)) {
             yield return result;
         }
     }

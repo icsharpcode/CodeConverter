@@ -5,7 +5,7 @@ internal static class IAssemblySymbolExtensions
     public static bool IsSameAssemblyOrHasFriendAccessTo(this IAssemblySymbol assembly, IAssemblySymbol toAssembly)
     {
         return
-            Equals(assembly, toAssembly) ||
+            SymbolEqualityComparer.IncludeNullability.Equals(assembly, toAssembly) ||
             (assembly.IsInteractive && toAssembly.IsInteractive) ||
             toAssembly.GivesAccessTo(assembly);
     }

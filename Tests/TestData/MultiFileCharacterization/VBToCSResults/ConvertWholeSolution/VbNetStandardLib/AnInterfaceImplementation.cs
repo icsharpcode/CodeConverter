@@ -11,10 +11,7 @@ namespace VbNetStandardLib
             }
         }
 
-        string AnInterface.AnInterfaceProperty
-        {
-            get => APropertyWithDifferentName;
-        }
+        string AnInterface.AnInterfaceProperty { get => APropertyWithDifferentName; }
 
         public void AMethodWithDifferentName()
         {

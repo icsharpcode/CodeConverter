@@ -67,7 +67,7 @@ internal class CSToVBProjectContentsConverter : IProjectContentsConverter
         return _convertedVbProject.WithDocuments(firstPassResults);
     }
 
-    public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
+    public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResultsAsync(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         yield break;
     }
