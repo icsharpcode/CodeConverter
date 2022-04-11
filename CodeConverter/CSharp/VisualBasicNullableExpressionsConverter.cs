@@ -47,7 +47,7 @@ internal class VisualBasicNullableExpressionsConverter
         var identifier = SyntaxFactory.Identifier(arg);
         name = SyntaxFactory.IdentifierName(identifier);
 
-        return SyntaxFactory.IsPatternExpression(expr, SyntaxFactory.VarPattern(SyntaxFactory.SingleVariableDesignation(identifier))).NormalizeWhitespace();
+        return SyntaxFactory.IsPatternExpression(expr, SyntaxFactory.VarPattern(SyntaxFactory.SingleVariableDesignation(identifier)));
     }
 
     private ExpressionSyntax PatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
