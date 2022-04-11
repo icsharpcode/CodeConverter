@@ -226,7 +226,7 @@ public partial class Class1
     public int Bar2(ref Class1 c1)
     {
         var argc1 = this;
-        if (c1 is object && Strings.Len(Bar3(ref argc1)) != 0)
+        if (c1 is not null && Strings.Len(Bar3(ref argc1)) != 0)
         {
             return 1;
         }

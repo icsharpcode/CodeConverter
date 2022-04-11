@@ -25,7 +25,7 @@ namespace WindowsAppVb.My
                 {
                     if (ReferenceEquals(value, m_FolderForm))
                         return;
-                    if (value is object)
+                    if (value is not null)
                         throw new ArgumentException("Property can only be set to Nothing");
                     Dispose__Instance__(ref m_FolderForm);
                 }
@@ -48,7 +48,7 @@ namespace WindowsAppVb.My
                 {
                     if (ReferenceEquals(value, m_WinformsDesignerTest))
                         return;
-                    if (value is object)
+                    if (value is not null)
                         throw new ArgumentException("Property can only be set to Nothing");
                     Dispose__Instance__(ref m_WinformsDesignerTest);
                 }

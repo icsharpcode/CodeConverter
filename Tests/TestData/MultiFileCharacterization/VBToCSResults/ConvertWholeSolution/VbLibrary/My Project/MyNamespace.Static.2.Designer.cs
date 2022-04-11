@@ -88,17 +88,17 @@ namespace VbLibrary.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
         {
-            if (obj is object)
+            if (obj is not null)
             {
                 XElement elem = obj as XElement;
-                if (elem is object)
+                if (elem is not null)
                 {
                     return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                 }
                 else
                 {
                     IEnumerable elems = obj as IEnumerable;
-                    if (elems is object)
+                    if (elems is not null)
                     {
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
@@ -111,10 +111,10 @@ namespace VbLibrary.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
         {
-            if (obj is object)
+            if (obj is not null)
             {
                 IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
-                if (elems is object)
+                if (elems is not null)
                 {
                     return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                 }
@@ -154,7 +154,7 @@ namespace VbLibrary.My
             internal object ProcessObject(object obj)
             {
                 XElement elem = obj as XElement;
-                if (elem is object)
+                if (elem is not null)
                 {
                     return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                 }
@@ -168,19 +168,19 @@ namespace VbLibrary.My
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
         {
-            if (e is object)
+            if (e is not null)
             {
                 var a = e.FirstAttribute;
-                while (a is object)
+                while (a is not null)
                 {
                     var nextA = a.NextAttribute;
                     if (a.IsNamespaceDeclaration)
                     {
                         var ns = a.Annotation<XNamespace>();
                         string prefix = a.Name.LocalName;
-                        if (ns is object)
+                        if (ns is not null)
                         {
-                            if (inScopePrefixes is object && inScopeNs is object)
+                            if (inScopePrefixes is not null && inScopeNs is not null)
                             {
                                 int lastIndex = inScopePrefixes.Length - 1;
                                 for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
@@ -202,12 +202,12 @@ namespace VbLibrary.My
                                 }
                             }
 
-                            if (a is object)
+                            if (a is not null)
                             {
                                 // Prefix is not in scope 
                                 // Now check whether it's going to be in scope because it is in the attributes list 
 
-                                if (attributes is object)
+                                if (attributes is not null)
                                 {
                                     int lastIndex = attributes.Count - 1;
                                     for (int i = 0, loopTo1 = lastIndex; i <= loopTo1; i++)
@@ -215,7 +215,7 @@ namespace VbLibrary.My
                                         var currentA = attributes[i];
                                         string currentInScopePrefix = currentA.Name.LocalName;
                                         var currentInScopeNs = currentA.Annotation<XNamespace>();
-                                        if (currentInScopeNs is object)
+                                        if (currentInScopeNs is not null)
                                         {
                                             if (prefix.Equals(currentInScopePrefix))
                                             {
@@ -233,7 +233,7 @@ namespace VbLibrary.My
                                     }
                                 }
 
-                                if (a is object)
+                                if (a is not null)
                                 {
                                     // Prefix is definitely not in scope  
                                     a.Remove();

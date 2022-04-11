@@ -469,7 +469,7 @@ public partial class TestClass
         y[2, 3] = 1;
         var oldY = y;
         y = new int[7, 9];
-        if (oldY is object)
+        if (oldY is not null)
             for (var i = 0; i <= oldY.Length / oldY.GetLength(1) - 1; ++i)
                 Array.Copy(oldY, i * oldY.GetLength(1), y, i * y.GetLength(1), Math.Min(oldY.GetLength(1), y.GetLength(1)));
         return numArray2;
