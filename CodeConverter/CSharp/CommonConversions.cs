@@ -672,11 +672,10 @@ internal class CommonConversions
         return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
     }
 
-    public static CSSyntax.BinaryExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
+    public static ExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
     {
         if (isReferenceType) {
-            // When we upgrade the CodeAnalysis version, we'll be able to use a RecursivePattern of "{}" instead
-            return SyntaxFactory.BinaryExpression(CSSyntaxKind.IsExpression, otherArgument, ValidSyntaxFactory.ObjectType);
+            return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.UnaryPattern(SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression)));
         }
         return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
     }
@@ -684,8 +683,7 @@ internal class CommonConversions
     public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
     {
         if (isReferenceType) {
-            return SyntaxFactory.IsPatternExpression(otherArgument,
-                SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression));
+            return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression));
         }
 
         return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);

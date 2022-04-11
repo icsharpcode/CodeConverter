@@ -367,7 +367,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        if (MyEvent is object)
+        if (MyEvent is not null)
             MyEvent(this, EventArgs.Empty);
     }
 }
