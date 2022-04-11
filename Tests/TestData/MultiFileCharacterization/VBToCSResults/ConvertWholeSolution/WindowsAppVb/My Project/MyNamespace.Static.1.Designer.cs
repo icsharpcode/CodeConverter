@@ -261,7 +261,7 @@ namespace WindowsAppVb.My
             {
                 if (Instance is null || Instance.IsDisposed)
                 {
-                    if (m_FormBeingCreated is object)
+                    if (m_FormBeingCreated is not null)
                     {
                         if (m_FormBeingCreated.ContainsKey(typeof(T)) == true)
                         {
@@ -278,7 +278,7 @@ namespace WindowsAppVb.My
                     {
                         return new T();
                     }
-                    catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is object)
+                    catch (System.Reflection.TargetInvocationException ex) when (ex.InnerException is not null)
                     {
                         string BetterMessage = Microsoft.VisualBasic.CompilerServices.Utils.GetResourceString("WinForms_SeeInnerException", ex.InnerException.Message);
                         throw new InvalidOperationException(BetterMessage, ex.InnerException);

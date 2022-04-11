@@ -16,7 +16,7 @@ namespace WindowsAppVb
         {
             try
             {
-                if (disposing && components is object)
+                if (disposing && components is not null)
                 {
                     components.Dispose();
                 }

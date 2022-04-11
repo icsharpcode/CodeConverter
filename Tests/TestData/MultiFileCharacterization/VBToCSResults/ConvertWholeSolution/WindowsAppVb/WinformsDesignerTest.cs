@@ -17,11 +17,11 @@ namespace WindowsAppVb
         private void CheckedChangedOrButtonClicked(object sender, EventArgs e)
         {
             string formConstructedText = "Form constructed";
-            if (My.MyProject.Forms.m_WinformsDesignerTest is object && (My.MyProject.Forms.WinformsDesignerTest.Text ?? "") != (formConstructedText ?? ""))
+            if (My.MyProject.Forms.m_WinformsDesignerTest is not null && (My.MyProject.Forms.WinformsDesignerTest.Text ?? "") != (formConstructedText ?? ""))
             {
                 My.MyProject.Forms.WinformsDesignerTest.Text = formConstructedText;
             }
-            else if (My.MyProject.Forms.m_WinformsDesignerTest is object && My.MyProject.Forms.m_WinformsDesignerTest is object)
+            else if (My.MyProject.Forms.m_WinformsDesignerTest is not null && My.MyProject.Forms.m_WinformsDesignerTest is not null)
             {
                 My.MyProject.Forms.WinformsDesignerTest = null;
             }
