@@ -260,11 +260,11 @@ internal class TypeConversionAnalyzer
         var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
 
         bool isConvertToString =
-                (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing)  && vbConvertedType.SpecialType == SpecialType.System_String;
-        bool isConvertFractionalToInt = 
-                !csConversion.IsImplicit && 
-                (vbType.IsFractionalNumericType() || vbType.IsNullable(out var underlyingType) && underlyingType.IsFractionalNumericType()) && 
-                vbConvertedType.IsIntegralType();
+            (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing) && vbConvertedType.SpecialType == SpecialType.System_String;
+        bool isConvertFractionalToInt =
+            !csConversion.IsImplicit &&
+            (vbType.IsFractionalNumericType() || vbType.IsNullable(out var underlyingType) && underlyingType.IsFractionalNumericType()) &&
+            vbConvertedType.IsIntegralType();
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
             if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
