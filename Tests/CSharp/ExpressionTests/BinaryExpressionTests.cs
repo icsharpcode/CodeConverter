@@ -347,7 +347,7 @@ internal partial class TestClass
         if (x || a.GetValueOrDefault())
             return;
         var res = a | b;
-        res = a is var arg1 && arg1.GetValueOrDefault() ? true : !(b is { } arg2) ? null : arg2 ? true : arg1;
+        res = a is var arg1 && arg1.GetValueOrDefault() ? true : b is not { } arg2 ? null : arg2 ? true : arg1;
         res = a | x;
         res = a is var arg3 && arg3.GetValueOrDefault() ? true : x ? true : arg3;
         res = x | a;
@@ -531,7 +531,7 @@ internal partial class TestClass712
     {
         bool? var1 = default;
         bool? var2 = default;
-        return (object)(var1 is var arg1 && arg1.GetValueOrDefault() ? true : !(!var2 is { } arg2) ? null : arg2 ? true : arg1);
+        return (object)(var1 is var arg1 && arg1.GetValueOrDefault() ? true : !var2 is not { } arg2 ? null : arg2 ? true : arg1);
     }
 }");
     }

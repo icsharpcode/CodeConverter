@@ -7,12 +7,13 @@ namespace ICSharpCode.CodeConverter.CSharp;
 internal class VisualBasicNullableExpressionsConverter
 {
     private static readonly IsPatternExpressionSyntax NotFormattedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is {}"));
+    private static readonly IsPatternExpressionSyntax NotFormattedNegatedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is not {}"));
 
     private static ExpressionSyntax CastToNullableBool(object literal) => ValidSyntaxFactory.CastExpression(NullableBoolType, LiteralConversions.GetLiteralExpression(literal));
     private static readonly NullableTypeSyntax NullableBoolType = SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword)));
-    private static readonly ExpressionSyntax Null = CastToNullableBool(null);
-    private static readonly ExpressionSyntax False = CastToNullableBool(false);
-    private static readonly ExpressionSyntax True = CastToNullableBool(true);
+    private static readonly ExpressionSyntax Null = ValidSyntaxFactory.CastExpression(NullableBoolType, ValidSyntaxFactory.NullExpression);
+    private static readonly ExpressionSyntax False = ValidSyntaxFactory.CastExpression(NullableBoolType, ValidSyntaxFactory.FalseExpression);
+    private static readonly ExpressionSyntax True = ValidSyntaxFactory.CastExpression(NullableBoolType, ValidSyntaxFactory.TrueExpression);
 
     private int _argCounter;
 
@@ -58,6 +59,18 @@ internal class VisualBasicNullableExpressionsConverter
 
         var recursivePattern = (RecursivePatternSyntax)NotFormattedIsPattern.Pattern;
         return NotFormattedIsPattern.WithExpression(expr).WithPattern(recursivePattern.WithDesignation(variable));
+    }
+
+    private ExpressionSyntax NegatedPatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
+    {
+        var identifier = SyntaxFactory.Identifier(GetArgName());
+        name = SyntaxFactory.IdentifierName(identifier);
+        var variable = SyntaxFactory.SingleVariableDesignation(identifier);
+        var unaryPattern = (UnaryPatternSyntax)NotFormattedNegatedIsPattern.Pattern;
+        var recursivePattern = (RecursivePatternSyntax)unaryPattern.Pattern;
+
+        unaryPattern = unaryPattern.WithPattern(recursivePattern.WithDesignation(variable));
+        return NotFormattedNegatedIsPattern.WithExpression(expr).WithPattern(unaryPattern);
     }
 
     private static bool IsSupported(VBasic.SyntaxKind op)
@@ -143,11 +156,11 @@ internal class VisualBasicNullableExpressionsConverter
         }
 
         var lhsPattern = PatternVar(lhs, out var lhsName);
-        var rhsPattern = PatternObject(rhs, out var rhsName);
+        var rhsPattern = NegatedPatternObject(rhs, out var rhsName);
 
         var whenFalse = !isRhsNullable ?
             rhs.Conditional(True, lhsName) :
-            rhsPattern.Negate().Conditional(Null, rhsName.Conditional(True, lhsName));
+            rhsPattern.Conditional(Null, rhsName.Conditional(True, lhsName));
 
         return lhsPattern.And(lhsName.GetValueOrDefault()).Conditional(True, whenFalse);
     }

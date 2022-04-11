@@ -97,6 +97,8 @@ public static class ValidSyntaxFactory
     public static PredefinedTypeSyntax ObjectType => SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
     public static LiteralExpressionSyntax NullExpression => SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
     public static LiteralExpressionSyntax DefaultExpression => SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+    public static LiteralExpressionSyntax TrueExpression => SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
+    public static LiteralExpressionSyntax FalseExpression => SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
 
     public static IdentifierNameSyntax NameOf() => SyntaxFactory.IdentifierName(
         SyntaxFactory.Identifier(SyntaxTriviaList.Empty, SyntaxKind.NameOfKeyword, "nameof", "nameof", SyntaxTriviaList.Empty)
