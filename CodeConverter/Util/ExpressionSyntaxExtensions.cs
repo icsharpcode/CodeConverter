@@ -35,7 +35,6 @@ internal static class ExpressionSyntaxExtensions
     /// </summary>
     public static SyntaxToken? ExtractAnonymousTypeMemberName(this VBSyntax.ExpressionSyntax input)
     {
-        bool isNameDictionaryAccess;
         Stack<VBSyntax.ConditionalAccessExpressionSyntax> conditionalAccessStack = null;
         while (true) {
             switch (input.Kind()) {
@@ -76,8 +75,6 @@ internal static class ExpressionSyntaxExtensions
                     }
 
                     conditionalAccessStack = null;
-
-                    isNameDictionaryAccess = input.Kind() == VBasic.SyntaxKind.DictionaryAccessExpression;
                     input = memberAccess.Name;
                     continue;
                 }

@@ -4,7 +4,7 @@
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
-internal static partial class IParameterSymbolExtensions
+internal static class IParameterSymbolExtensions
 {
     public static bool IsRefOrOut(this IParameterSymbol symbol)
     {

@@ -4,7 +4,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 /// <remarks>
 /// From Microsoft.CodeAnalysis.Shared.Extensions
 /// </remarks>
-internal static partial class IMethodSymbolExtensions
+internal static class IMethodSymbolExtensions
 {
     public static bool CompatibleSignatureToDelegate(this IMethodSymbol method, INamedTypeSymbol delegateType)
     {

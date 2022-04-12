@@ -87,7 +87,7 @@ internal class CommonConversions
             }
 
             if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
-                var variableDeclaration = CreateVariableDeclaration(declarator, preferExplicitType,
+                var variableDeclaration = CreateVariableDeclaration(preferExplicitType,
                     requireExplicitTypeForAll, vbInitializerType, declaredSymbolType, equalsValueClauseSyntax,
                     initSymbol, v);
                 csVars[k] = (variableDeclaration, declaredSymbolType);
@@ -167,7 +167,7 @@ internal class CommonConversions
         return "initial" + vbName.Identifier.ValueText.ToPascalCase();
     }
 
-    private CSSyntax.VariableDeclarationSyntax CreateVariableDeclaration(VariableDeclaratorSyntax vbDeclarator, bool preferExplicitType,
+    private CSSyntax.VariableDeclarationSyntax CreateVariableDeclaration(bool preferExplicitType,
         bool requireExplicitTypeForAll, ITypeSymbol vbInitializerType, ITypeSymbol declaredSymbolType,
         CSSyntax.EqualsValueClauseSyntax equalsValueClauseSyntax, IMethodSymbol initSymbol, CSSyntax.VariableDeclaratorSyntax v)
     {
@@ -211,7 +211,7 @@ internal class CommonConversions
         var originalNames = vbType.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>()
             .Select(i => i.ToString()).ToList();
 
-        return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, n) =>
+        return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, _) =>
         {
             var originalName = originalNames.FirstOrDefault(on => string.Equals(on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
             return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
@@ -352,7 +352,7 @@ internal class CommonConversions
     private static bool? RequiresNewKeyword(ISymbol declaredSymbol)
     {
         if (declaredSymbol.IsOverride) return false;
-        if (declaredSymbol is IPropertySymbol propertySymbol || declaredSymbol is IMethodSymbol methodSymbol) {
+        if (declaredSymbol is IPropertySymbol || declaredSymbol is IMethodSymbol) {
             var methodSignature = declaredSymbol.GetUnqualifiedMethodOrPropertySignature(true);
             return declaredSymbol.ContainingType.FollowProperty(s => s.BaseType).Skip(1).Any(t => t.GetMembers()
                 .Any(s => s.Name == declaredSymbol.Name && (s is IPropertySymbol || s is IMethodSymbol) && s.GetUnqualifiedMethodOrPropertySignature(true) == methodSignature));
@@ -369,14 +369,14 @@ internal class CommonConversions
         return declaredSymbol == null || !declaredSymbol.IsType() || declaredSymbol.ContainingType == null;
     }
 
-    private static SyntaxToken? ConvertModifier(SyntaxToken m, TokenContext context = TokenContext.Global)
+    private static SyntaxToken? ConvertModifier(SyntaxToken m)
     {
         SyntaxKind vbSyntaxKind = VisualBasicExtensions.Kind(m);
         switch (vbSyntaxKind) {
             case SyntaxKind.DateKeyword:
                 return SyntaxFactory.Identifier("DateTime");
         }
-        var token = vbSyntaxKind.ConvertToken(context);
+        var token = vbSyntaxKind.ConvertToken();
         return token == CSSyntaxKind.None ? null : new SyntaxToken?(SyntaxFactory.Token(token));
     }
 
@@ -386,13 +386,13 @@ internal class CommonConversions
         var remainingModifiers = modifiers.ToList();
         if (declaredAccessibility != Accessibility.NotApplicable) {
             remainingModifiers = remainingModifiers.Where(m => !m.IsVbVisibility(false, false)).ToList();
-            foreach (var visibilitySyntaxKind in CsSyntaxAccessibilityKindForContext(declaredAccessibility, context)) {
+            foreach (var visibilitySyntaxKind in CsSyntaxAccessibilityKindForContext(declaredAccessibility)) {
                 yield return SyntaxFactory.Token(visibilitySyntaxKind);
             }
         }
 
-        foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m, context))) {
-            var m = ConvertModifier(token, context);
+        foreach (var token in remainingModifiers.Where(m => !IgnoreInContext(m))) {
+            var m = ConvertModifier(token);
             if (m.HasValue) yield return m.Value;
         }
         if (context == TokenContext.MemberInModule &&
@@ -400,11 +400,9 @@ internal class CommonConversions
             yield return SyntaxFactory.Token(CSSyntaxKind.StaticKeyword);
     }
 
-    private static IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKindForContext(Accessibility declaredAccessibility,
-        TokenContext context)
+    private static IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKindForContext(Accessibility declaredAccessibility)
     {
         return CsSyntaxAccessibilityKind(declaredAccessibility);
-
     }
 
     private static IEnumerable<CSSyntaxKind> CsSyntaxAccessibilityKind(Accessibility declaredAccessibility)
@@ -427,7 +425,7 @@ internal class CommonConversions
         }
     }
 
-    private static bool IgnoreInContext(SyntaxToken m, TokenContext context)
+    private static bool IgnoreInContext(SyntaxToken m)
     {
         switch (VisualBasicExtensions.Kind(m)) {
             case SyntaxKind.OptionalKeyword:
@@ -642,12 +640,6 @@ internal class CommonConversions
             ?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 
-    public ISymbol GetDeclaredCsOriginalSymbolOrNull(VBasic.VisualBasicSyntaxNode node)
-    {
-        var declaredSymbol = SemanticModel.GetDeclaredSymbol(node);
-        return declaredSymbol != null ? GetCsOriginalSymbolOrNull(declaredSymbol) : null;
-    }
-
     public ISymbol GetCsOriginalSymbolOrNull(ISymbol symbol)
     {
         if (symbol == null) return null;
@@ -702,7 +694,7 @@ internal class CommonConversions
                 if (globalNameNode != null)
                     nameSyntax = nameSyntax.ReplaceNodes(
                         (globalNameNode.Parent as CSSyntax.QualifiedNameSyntax).Yield(),
-                        (orig, rewrite) => orig.Right);
+                        (orig, _) => orig.Right);
                 return nameSyntax;
             case INamespaceSymbol ns:
                 return SyntaxFactory.ParseName(ns.GetFullMetadataName());

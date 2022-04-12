@@ -682,29 +682,11 @@ internal class CommonConversions
         return GetSymbol(syntax).IsKind(SymbolKind.Event);
     }
 
-    private bool IsEventReference(CS.CSharpSyntaxNode syntax)
-    {
-        var operation = _semanticModel.GetOperation(syntax.Parent);
-        return operation is IEventReferenceOperation;
-    }
-
     private ISymbol GetSymbol(CS.CSharpSyntaxNode syntax)
     {
         return syntax.SyntaxTree == _semanticModel.SyntaxTree
             ? _semanticModel.GetSymbolInfo(syntax).Symbol
             : null;
-    }
-
-    private ITypeSymbol GetTypeSymbol(CS.CSharpSyntaxNode syntax)
-    {
-        return syntax.SyntaxTree == _semanticModel.SyntaxTree
-            ? _semanticModel.GetTypeInfo(syntax).Type
-            : null;
-    }
-
-    public string GetFullyQualifiedName(INamespaceOrTypeSymbol symbol)
-    {
-        return GetFullyQualifiedNameSyntax(symbol).ToString();
     }
 
     public NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol, bool allowGlobalPrefix = true)
@@ -716,7 +698,7 @@ internal class CommonConversions
                     return nameSyntax;
                 var globalNameNode = nameSyntax.DescendantNodes().OfType<GlobalNameSyntax>().FirstOrDefault();
                 if (globalNameNode != null)
-                    nameSyntax = nameSyntax.ReplaceNodes((globalNameNode.Parent as QualifiedNameSyntax).Yield(), (orig, rewrite) => orig.Right);
+                    nameSyntax = nameSyntax.ReplaceNodes((globalNameNode.Parent as QualifiedNameSyntax).Yield(), (orig, _) => orig.Right);
                 return nameSyntax;
             case INamespaceSymbol ns:
                 return SyntaxFactory.ParseName(ns.GetFullMetadataName());

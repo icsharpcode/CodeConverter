@@ -16,20 +16,7 @@ namespace ICSharpCode.CodeConverter.Util;
 
 internal static class SyntaxNodeExtensions
 {
-    private static SyntaxTrivia _endOfLine = SyntaxFactory.EndOfLine(Environment.NewLine);
-
-    public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxNode node)
-    {
-        var current = node.Parent;
-
-        while (current != null) {
-            yield return current;
-
-            current = current is IStructuredTriviaSyntax
-                ? ((IStructuredTriviaSyntax)current).ParentTrivia.Token.Parent
-                : current.Parent;
-        }
-    }
+    private static readonly SyntaxTrivia _endOfLine = SyntaxFactory.EndOfLine(Environment.NewLine);
 
     public static IEnumerable<TNode> GetAncestors<TNode>(this SyntaxNode node)
         where TNode : SyntaxNode
@@ -79,12 +66,6 @@ internal static class SyntaxNodeExtensions
                 ? ((IStructuredTriviaSyntax)current).ParentTrivia.Token.Parent
                 : current.Parent;
         }
-    }
-
-    public static bool HasAncestor<TNode>(this SyntaxNode node)
-        where TNode : SyntaxNode
-    {
-        return node.GetAncestors<TNode>().Any();
     }
 
     public static ISymbol GetEnclosingDeclaredTypeSymbol(this SyntaxNode node, SemanticModel semanticModel)
@@ -158,10 +139,10 @@ internal static class SyntaxNodeExtensions
 
     public static T WithoutSourceMapping<T>(this T converted) where T : SyntaxNode
     {
-        converted = converted.ReplaceTokens(converted.DescendantTokens(), (o, r) =>
+        converted = converted.ReplaceTokens(converted.DescendantTokens(), (_, r) =>
             r.WithoutSourceMapping()
         );
-        return converted.ReplaceNodes(converted.DescendantNodes(), (o, r) =>
+        return converted.ReplaceNodes(converted.DescendantNodes(), (_, r) =>
             WithoutSourceMappingNonRecursive(r)
         ).WithoutSourceMappingNonRecursive();
     }
@@ -497,12 +478,6 @@ internal static class SyntaxNodeExtensions
                 
         return $"Cannot convert {nodeType}, {string.Join(Environment.NewLine, errorStringLines)}{Environment.NewLine}{Environment.NewLine}" +
                $"{fullCodeHeading}{Environment.NewLine}{node.ToFullString()}{Environment.NewLine}";
-    }
-
-    public static string DescribeConversionWarning(this SyntaxNode node, string addtlInfo)
-    {
-        return $"{addtlInfo}{Environment.NewLine}" +
-               $"{node.NormalizeWhitespace().ToFullString()}{Environment.NewLine}";
     }
 
     private static string Truncate(this string input, int maxLength = 30, string truncationIndicator = "...")

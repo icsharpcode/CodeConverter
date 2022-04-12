@@ -10,7 +10,6 @@ public class SolutionConverter
     private readonly List<(string Find, string Replace, bool FirstOnly)> _projectReferenceReplacements;
     private readonly IProgress<ConversionProgress> _progress;
     private readonly ILanguageConversion _languageConversion;
-    private readonly SolutionFileTextEditor _solutionFileTextEditor;
     private readonly CancellationToken _cancellationToken;
     private readonly TextReplacementConverter _textReplacementConverter;
 
@@ -47,14 +46,13 @@ public class SolutionConverter
         var solutionFileTextEditor = new SolutionFileTextEditor();
         var projectReferenceReplacements = solutionFileTextEditor.GetProjectFileProjectReferenceReplacements(projTuples, sourceSolutionContents);
 
-        return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, languageConversion, solutionFileTextEditor, fileSystem, progress ?? new Progress<ConversionProgress>(), cancellationToken);
+        return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, languageConversion, fileSystem, progress ?? new Progress<ConversionProgress>(), cancellationToken);
     }
 
     private SolutionConverter(string solutionFilePath,
         string sourceSolutionContents, IReadOnlyCollection<Project> projectsToConvert,
         List<(string Find, string Replace, bool FirstOnly)> projectReferenceReplacements,
-        ILanguageConversion languageConversion,
-        SolutionFileTextEditor solutionFileTextEditor, IFileSystem fileSystem,
+        ILanguageConversion languageConversion, IFileSystem fileSystem,
         IProgress<ConversionProgress> showProgressMessage,
         CancellationToken cancellationToken)
     {
@@ -65,7 +63,6 @@ public class SolutionConverter
         _progress = showProgressMessage;
         _languageConversion = languageConversion;
         _cancellationToken = cancellationToken;
-        _solutionFileTextEditor = solutionFileTextEditor;
         _textReplacementConverter = new TextReplacementConverter(fileSystem);
     }
 

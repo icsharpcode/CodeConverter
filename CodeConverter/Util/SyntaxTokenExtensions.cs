@@ -5,34 +5,6 @@ namespace ICSharpCode.CodeConverter.Util;
 
 internal static class SyntaxTokenExtensions
 {
-    public static SyntaxNode GetAncestor(this SyntaxToken token, Func<SyntaxNode, bool> predicate)
-    {
-        return token.GetAncestor<SyntaxNode>(predicate);
-    }
-
-    public static T GetAncestor<T>(this SyntaxToken token, Func<T, bool> predicate = null)
-        where T : SyntaxNode
-    {
-        return token.Parent != null
-            ? token.Parent.FirstAncestorOrSelf(predicate)
-            : default(T);
-    }
-
-    public static IEnumerable<T> GetAncestors<T>(this SyntaxToken token)
-        where T : SyntaxNode
-    {
-        return token.Parent != null
-            ? token.Parent.AncestorsAndSelf().OfType<T>()
-            : Enumerable.Empty<T>();
-    }
-
-    public static IEnumerable<SyntaxNode> GetAncestors(this SyntaxToken token, Func<SyntaxNode, bool> predicate)
-    {
-        return token.Parent != null
-            ? token.Parent.AncestorsAndSelf().Where(predicate)
-            : Enumerable.Empty<SyntaxNode>();
-    }
-
     public static int Width(this SyntaxToken token)
     {
         return token.Span.Length;
@@ -46,11 +18,6 @@ internal static class SyntaxTokenExtensions
     public static bool IsKindOrHasMatchingText(this SyntaxToken token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind)
     {
         return VisualBasicExtensions.Kind(token) == kind || token.HasMatchingText(kind);
-    }
-
-    public static bool HasMatchingText(this SyntaxToken token, SyntaxKind kind)
-    {
-        return token.ToString() == SyntaxFacts.GetText(kind);
     }
 
     public static bool HasMatchingText(this SyntaxToken token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind)

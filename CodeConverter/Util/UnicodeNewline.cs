@@ -111,49 +111,39 @@ internal static class NewLine
     /// <returns>0 == no new line, otherwise it returns either 1 or 2 depending of the length of the delimiter.</returns>
     /// <param name="curChar">The current character.</param>
     /// <param name = "length">The length of the delimiter</param>
-    /// <param name = "type">The type of the delimiter</param>
     /// <param name="nextChar">A callback getting the next character (may be null).</param>
-    public static bool TryGetDelimiterLengthAndType(char curChar, out int length, out UnicodeNewline type, Func<char> nextChar = null)
+    public static bool TryGetDelimiterLengthAndType(char curChar, out int length, Func<char> nextChar = null)
     {
         if (curChar == CR) {
             if (nextChar != null && nextChar() == LF) {
                 length = 2;
-                type = UnicodeNewline.CRLF;
             } else {
                 length = 1;
-                type = UnicodeNewline.CR;
             }
             return true;
         }
 
         switch (curChar) {
             case LF:
-                type = UnicodeNewline.LF;
                 length = 1;
                 return true;
             case NEL:
-                type = UnicodeNewline.NEL;
                 length = 1;
                 return true;
             case VT:
-                type = UnicodeNewline.VT;
                 length = 1;
                 return true;
             case FF:
-                type = UnicodeNewline.FF;
                 length = 1;
                 return true;
             case LS:
-                type = UnicodeNewline.LS;
                 length = 1;
                 return true;
             case PS:
-                type = UnicodeNewline.PS;
                 length = 1;
                 return true;
         }
         length = -1;
-        type = UnicodeNewline.Unknown;
         return false;
     }
 
@@ -197,13 +187,12 @@ internal static class NewLine
         Contract.Requires(text != null);
         var sb = new StringBuilder();
         int length = default(int);
-        UnicodeNewline type = default(UnicodeNewline);
 
         for (int i = 0, loopTo = text.Length - 1; i <= loopTo; i++) {
             char ch = text[i];
             // Do not delete the next line
             int j = i;
-            if (TryGetDelimiterLengthAndType(ch, out length, out type, () => j < text.Length - 1 ? text[j + 1] : SubstituteChar)) {
+            if (TryGetDelimiterLengthAndType(ch, out length, () => j < text.Length - 1 ? text[j + 1] : SubstituteChar)) {
                 i += length - 1;
                 continue;
             }

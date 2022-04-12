@@ -8,9 +8,9 @@ namespace ICSharpCode.CodeConverter.VB.Trivia;
 
 public static class VisualBasicSyntaxFactory
 {
-    public readonly static SyntaxToken NothingKeyword = SyntaxFactory.Token(SyntaxKind.NothingKeyword);
+    public static readonly SyntaxToken NothingKeyword = SyntaxFactory.Token(SyntaxKind.NothingKeyword);
     /* TODO ERROR: Skipped RegionDirectiveTrivia */
-    public readonly static Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax NothingExpression = SyntaxFactory.NothingLiteralExpression(NothingKeyword);
+    public static readonly Microsoft.CodeAnalysis.VisualBasic.Syntax.LiteralExpressionSyntax NothingExpression = SyntaxFactory.NothingLiteralExpression(NothingKeyword);
     public static readonly SyntaxToken AndAlsoKeyword = SyntaxFactory.Token(SyntaxKind.AndAlsoKeyword);
     public static readonly SyntaxToken AndKeyword = SyntaxFactory.Token(SyntaxKind.AndKeyword);
     public static readonly SyntaxToken AsteriskToken = SyntaxFactory.Token(SyntaxKind.AsteriskToken);

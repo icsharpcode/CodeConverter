@@ -2,6 +2,7 @@
 using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.VB;
@@ -27,7 +28,7 @@ public class CSToVBConversion : ILanguageConversion
     }
     public async Task<Document> SingleSecondPassAsync(Document doc)
     {
-        return await doc.SimplifyStatementsAsync<VBSyntax.ImportsStatementSyntax, VBSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+        return await doc.SimplifyStatementsAsync<ImportsStatementSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
     }
 
     public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
@@ -40,7 +41,7 @@ public class CSToVBConversion : ILanguageConversion
 
     public IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings()
     {
-        return ProjectTypeGuids.VbToCsTypeGuids.Select((vbCs, i) => (vbCs.Item2, vbCs.Item1)).ToArray();
+        return ProjectTypeGuids.VbToCsTypeGuids.Select((vbCs, _) => (vbCs.Item2, vbCs.Item1)).ToArray();
     }
 
     public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()

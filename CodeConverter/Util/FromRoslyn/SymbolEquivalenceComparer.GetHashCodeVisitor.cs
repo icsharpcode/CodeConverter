@@ -125,7 +125,7 @@ internal partial class SymbolEquivalenceComparer
 
         private static int CombineHashCodes<T>(ImmutableArray<T> array, int currentHash, Func<int, T, int> func)
         {
-            return array.Aggregate<int, T>(currentHash, func);
+            return array.Aggregate(currentHash, func);
         }
 
         private int CombineHashCodes(IMethodSymbol x, int currentHash)

@@ -19,8 +19,4 @@ internal static class ExceptionUtilities
         // We do not throw from here because we don't want all Watson reports to be bucketed to this call.
         return new InvalidOperationException(output);
     }
-
-    internal static Exception Unreachable {
-        get { return new InvalidOperationException("This program location is thought to be unreachable."); }
-    }
 }

@@ -8,32 +8,32 @@ internal class CsExpander : ISyntaxExpander
 {
     public static ISyntaxExpander Instance { get; } = new CsExpander();
 
-    public SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+    public SyntaxNode ExpandNode(SyntaxNode node, SemanticModel semanticModel,
         Workspace workspace)
     {
         SyntaxNode expandedNode = Simplifier.Expand(node, semanticModel, workspace);
-        return WithoutGlobalOverqualification(node, expandedNode);
+        return WithoutGlobalOverqualification(expandedNode);
     }
 
     /// <summary>
     /// The VB reduction step doesn't seem to reduce things qualified with global, so don't add it anywhere it isn't already
     /// </summary>
-    private static SyntaxNode WithoutGlobalOverqualification(SyntaxNode node, SyntaxNode expandedNode)
+    private static SyntaxNode WithoutGlobalOverqualification(SyntaxNode expandedNode)
     {
         var aliasNodes = expandedNode.GetAnnotatedNodes(Simplifier.Annotation).Select(syntaxNode =>
             LeftMostDescendant(syntaxNode).Parent).OfType<AliasQualifiedNameSyntax>().Where(n => n.Alias.IsGlobalId()).ToArray();
         if (aliasNodes.Any()) {
-            return expandedNode.ReplaceNodes(aliasNodes, (orig, rewrite) => rewrite.Name.WithLeadingTrivia(rewrite.GetLeadingTrivia()));
+            return expandedNode.ReplaceNodes(aliasNodes, (_, rewrite) => rewrite.Name.WithLeadingTrivia(rewrite.GetLeadingTrivia()));
         }
         return expandedNode;
     }
 
-    public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
+    public bool ShouldExpandWithinNode(SyntaxNode node, SemanticModel semanticModel)
     {
-        return !ShouldExpandNode(node, root, semanticModel);
+        return !ShouldExpandNode(node, semanticModel);
     }
 
-    public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel)
+    public bool ShouldExpandNode(SyntaxNode node, SemanticModel semanticModel)
     {
         return (node is NameSyntax || node is MemberAccessExpressionSyntax) && !IsOriginalSymbolGenericMethod(semanticModel, node);
     }

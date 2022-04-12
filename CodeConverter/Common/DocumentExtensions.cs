@@ -8,8 +8,8 @@ namespace ICSharpCode.CodeConverter.Common;
 
 internal static class DocumentExtensions
 {
-    public static async Task<Document> SimplifyStatementsAsync<TUsingDirectiveSyntax, TExpressionSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
-        where TUsingDirectiveSyntax : SyntaxNode where TExpressionSyntax : SyntaxNode
+    public static async Task<Document> SimplifyStatementsAsync<TUsingDirectiveSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
+        where TUsingDirectiveSyntax : SyntaxNode
     {
         Func<SyntaxNode, bool> wouldBeSimplifiedIncorrectly =
             convertedDocument.Project.Language == LanguageNames.VisualBasic
@@ -30,7 +30,7 @@ internal static class DocumentExtensions
         var toSimplify = originalRoot
             .DescendantNodes()
             .Where(n => !doNotSimplify.Contains(n));
-        var newRoot = originalRoot.ReplaceNodes(toSimplify, (orig, rewritten) =>
+        var newRoot = originalRoot.ReplaceNodes(toSimplify, (_, rewritten) =>
             rewritten.WithAdditionalAnnotations(Simplifier.Annotation)
         );
 
@@ -70,11 +70,11 @@ internal static class DocumentExtensions
         var workspace = document.Project.Solution.Workspace;
         var root = await document.GetSyntaxRootAsync(cancellationToken);
         try {
-            var filteredNodes = root.DescendantNodes(n => expander.ShouldExpandWithinNode(n, root, semanticModel))
-                .Where(n => expander.ShouldExpandNode(n, root, semanticModel));
+            var filteredNodes = root.DescendantNodes(n => expander.ShouldExpandWithinNode(n, semanticModel))
+                .Where(n => expander.ShouldExpandNode(n, semanticModel));
 
             var newRoot = root.ReplaceNodes(filteredNodes, 
-                (node, rewrittenNode) => TryExpandNode(expander, node, root, semanticModel, workspace, cancellationToken)
+                (node, _) => TryExpandNode(expander, node, semanticModel, workspace, cancellationToken)
             );
 
             return document.WithSyntaxRoot(newRoot);
@@ -84,11 +84,11 @@ internal static class DocumentExtensions
         }
     }
 
-    private static SyntaxNode TryExpandNode(ISyntaxExpander expander, SyntaxNode node, SyntaxNode root, SemanticModel semanticModel, Workspace workspace, CancellationToken cancellationToken)
+    private static SyntaxNode TryExpandNode(ISyntaxExpander expander, SyntaxNode node, SemanticModel semanticModel, Workspace workspace, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         try {
-            return expander.ExpandNode(node, root, semanticModel, workspace);
+            return expander.ExpandNode(node, semanticModel, workspace);
         } catch (Exception ex) {
             var warningText = new ExceptionWithNodeInformation(ex, node, "Conversion warning").ToString();
             return WithWarningAnnotation(node, warningText);

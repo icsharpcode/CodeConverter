@@ -10,18 +10,16 @@ internal class LineTriviaMapper
     private readonly SyntaxNode _target;
     private readonly SyntaxNode _source;
     private readonly TextLineCollection _sourceLines;
-    private readonly TextLineCollection _targetLines;
     private readonly IReadOnlyDictionary<int, TextLine> _targetLeadingTextLineFromSourceLine;
     private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
     private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new();
     private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new();
     private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new();
 
-    private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, TextLineCollection targetLines, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+    private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
     {
         _source = source;
         _sourceLines = sourceLines;
-        _targetLines = targetLines;
         _target = target;
         _targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
         _targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
@@ -48,7 +46,7 @@ internal class LineTriviaMapper
             .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Max(GetPosition)));
 
         var sourceLines = source.GetText().Lines;
-        var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetLines, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+        var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
 
         return lineTriviaMapper.GetTargetWithSourceTrivia();
     }

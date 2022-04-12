@@ -130,8 +130,8 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
     private bool TryConvertIfNotNullRaiseEvent(CSSyntax.IfStatementSyntax node, out StatementSyntax raiseEventStatement)
     {
         raiseEventStatement = null;
-        return TryGetBinaryExpression(node, out var comparisonExpression, CS.SyntaxKind.NotEqualsExpression, CS.SyntaxKind.NullLiteralExpression)
-               && TryConvertRaiseEvent(node.Statement, comparisonExpression, ref raiseEventStatement);
+        return TryGetBinaryExpression(node, out _, CS.SyntaxKind.NotEqualsExpression, CS.SyntaxKind.NullLiteralExpression)
+               && TryConvertRaiseEvent(node.Statement, ref raiseEventStatement);
     }
 
     private static bool TryGetBinaryExpression(CSSyntax.IfStatementSyntax node, out CSSyntax.BinaryExpressionSyntax binaryExpressionSyntax, CS.SyntaxKind notEqualsExpression, CS.SyntaxKind operand)
@@ -150,8 +150,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         return condition;
     }
 
-    private bool TryConvertRaiseEvent(CSSyntax.StatementSyntax resultStatement,
-        CSSyntax.BinaryExpressionSyntax be, ref StatementSyntax raiseEventStatement)
+    private bool TryConvertRaiseEvent(CSSyntax.StatementSyntax resultStatement, ref StatementSyntax raiseEventStatement)
     {
         CSSyntax.ExpressionStatementSyntax singleStatement;
         if (resultStatement is CSSyntax.BlockSyntax block)

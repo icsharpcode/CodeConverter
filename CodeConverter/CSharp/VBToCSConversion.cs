@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.VisualBasic;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 
@@ -201,7 +202,7 @@ End Class";
 
     public async Task<Document> SingleSecondPassAsync(Document doc)
     {
-        var simplifiedDocument = await doc.SimplifyStatementsAsync<CSSyntax.UsingDirectiveSyntax, CSSyntax.ExpressionSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+        var simplifiedDocument = await doc.SimplifyStatementsAsync<UsingDirectiveSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
 
         // Can't add a reference to Microsoft.VisualBasic if there's no project file, so hint to install the package
         if (_vbToCsProjectContentsConverter.SourceProject.AssemblyName == FabricatedAssemblyName) {

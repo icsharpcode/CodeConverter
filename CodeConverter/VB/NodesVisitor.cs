@@ -35,7 +35,6 @@ namespace ICSharpCode.CodeConverter.VB;
 /// </summary>
 internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 {
-    private readonly Document _document;
     private readonly CS.CSharpCompilation _compilation;
     private readonly SemanticModel _semanticModel;
     private readonly VisualBasicCompilation _vbViewOfCsSymbols;
@@ -55,10 +54,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return $"__{v}{_placeholder++}__";
     }
 
-    public NodesVisitor(Document document, CS.CSharpCompilation compilation, SemanticModel semanticModel,
-        VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, int numberOfLines)
+    public NodesVisitor(CS.CSharpCompilation compilation, SemanticModel semanticModel,
+        VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator)
     {
-        _document = document;
         _compilation = compilation;
         _semanticModel = semanticModel;
         _vbViewOfCsSymbols = vbViewOfCsSymbols;
@@ -1503,7 +1501,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 foreach (var clause in ConvertQueryBody(body.Continuation.Body)) {
                     var groupKeyAccesses = clause.DescendantNodes().OfType<MemberAccessExpressionSyntax>()
                         .Where(node => IsGroupKeyAccess(node, csGroupId));
-                    yield return clause.ReplaceNodes(groupKeyAccesses, (_, rewrite) => SyntaxFactory.IdentifierName(newGroupKeyName));
+                    yield return clause.ReplaceNodes(groupKeyAccesses, (_, _) => SyntaxFactory.IdentifierName(newGroupKeyName));
                 }
             }
         }
@@ -1796,8 +1794,6 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     private TypeSyntax GetOverloadedFormalParameterTypeOrNull(CSSyntax.ExpressionSyntax argumentChildExpression)
     {
-        var y = _semanticModel.GetSymbolInfo(argumentChildExpression);
-
         if (argumentChildExpression?.Parent is CSSyntax.ArgumentSyntax nameArgument &&
             nameArgument.Parent?.Parent is CSSyntax.InvocationExpressionSyntax ies) {
             var argIndex = ies.ArgumentList.Arguments.IndexOf(nameArgument);
