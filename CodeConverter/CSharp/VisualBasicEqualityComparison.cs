@@ -84,7 +84,8 @@ internal class VisualBasicEqualityComparison
 
     private static bool IsNonEmptyStringLiteral(VBSyntax.ExpressionSyntax vbExpr)
     {
-        return vbExpr.SkipIntoParens().IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
+        vbExpr = vbExpr.SkipIntoParens();
+        return vbExpr.IsKind(VBSyntaxKind.StringLiteralExpression) && vbExpr is VBSyntax.LiteralExpressionSyntax literal && !IsEmptyString(literal);
     }
 
     public ExpressionSyntax VbCoerceToNonNullString(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo, bool knownNotNull = false)
@@ -97,8 +98,8 @@ internal class VisualBasicEqualityComparison
             return csNode;
         }
 
-        csNode = typeInfo.Type.SpecialType == SpecialType.System_String
-            ? SyntaxFactory.ParenthesizedExpression(Coalesce(csNode, EmptyStringExpression()))
+        csNode = typeInfo.Type?.SpecialType == SpecialType.System_String
+            ? Coalesce(csNode, EmptyStringExpression()).AddParens()
             : Coalesce(csNode, EmptyCharArrayExpression());
 
         return VbCoerceToString(csNode, typeInfo);
@@ -106,7 +107,7 @@ internal class VisualBasicEqualityComparison
 
     public static ExpressionSyntax VbCoerceToString(ExpressionSyntax csNode, TypeInfo typeInfo)
     {
-        return typeInfo.Type.SpecialType switch
+        return typeInfo.Type?.SpecialType switch
         {
             SpecialType.System_String => csNode,
             SpecialType.System_Char => SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(csNode, nameof(ToString))),
@@ -188,11 +189,26 @@ internal class VisualBasicEqualityComparison
 
     private bool IsNothingOrEmpty(VBSyntax.ExpressionSyntax expressionSyntax)
     {
+        expressionSyntax = expressionSyntax.SkipIntoParens();
+
         if (expressionSyntax is VBSyntax.LiteralExpressionSyntax les &&
-            (les.IsKind(VBSyntaxKind.NothingLiteralExpression) ||
-             IsEmptyString(les))) return true;
+            (les.IsKind(VBSyntaxKind.NothingLiteralExpression) || IsEmptyString(les))) {
+            return true;
+        }
+
+        bool IsStringEmptyExpression() =>
+            expressionSyntax is VBSyntax.MemberAccessExpressionSyntax memberAccess && memberAccess.IsKind(VBSyntaxKind.SimpleMemberAccessExpression) &&
+            memberAccess.Expression is VBSyntax.PredefinedTypeSyntax predefinedType && predefinedType.Keyword.IsKind(VBSyntaxKind.StringKeyword) &&
+            memberAccess.Name.Identifier.ValueText.Equals("Empty", StringComparison.OrdinalIgnoreCase);
+
+        if (IsStringEmptyExpression()) {
+            return true;
+        }
+
         var constantAnalysis = _semanticModel.GetConstantValue(expressionSyntax);
         return constantAnalysis.HasValue && (constantAnalysis.Value == null || constantAnalysis.Value as string == "");
+
+
     }
 
     private static bool IsEmptyString(VBSyntax.LiteralExpressionSyntax les)
