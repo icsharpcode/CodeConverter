@@ -101,7 +101,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
             .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
             .Select(g => g.First())
-            .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(x => SyntaxFactory.UsingDirective(SyntaxFactory.NameEquals(XmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
+            .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(_ => SyntaxFactory.UsingDirective(SyntaxFactory.NameEquals(XmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
 
         return SyntaxFactory.CompilationUnit(
             SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
@@ -235,7 +235,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         IEnumerable<MemberDeclarationSyntax> WithAdditionalMembers(IEnumerable<MemberDeclarationSyntax> convertedMembers)
         {
-            var otherPartsOfType = GetAllPartsOfType(parentType, namedTypeSymbol).ToArray();
+            var otherPartsOfType = GetAllPartsOfType(namedTypeSymbol).ToArray();
             var constructorFieldInitializersFromOtherParts = otherPartsOfType
                 .Where(t => (!Equals(t.Type.SyntaxTree.FilePath, _semanticModel.SyntaxTree.FilePath) ||
                              !t.Type.Span.Equals(parentType.Span)))
@@ -254,7 +254,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         }
     }
 
-    private IEnumerable<(VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)> GetAllPartsOfType(VBSyntax.TypeBlockSyntax parentTypeBlock, ITypeSymbol parentType)
+    private IEnumerable<(VBSyntax.TypeBlockSyntax Type, SemanticModel SemanticModel)> GetAllPartsOfType(ITypeSymbol parentType)
     {
         return parentType.DeclaringSyntaxReferences
             .Select(t => t.GetSyntax().Parent as VBSyntax.TypeBlockSyntax)
@@ -267,7 +267,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return tbs.Members.OfType<VBSyntax.FieldDeclarationSyntax>()
             .SelectMany(f => f.Declarators.SelectMany(d => d.Names.Select(n => (n, d.Initializer))))
             .Where(f => !semanticModel.IsDefinitelyStatic(f.n, f.Initializer?.Value))
-            .Select(f => CreateInitializer(f));
+            .Select(CreateInitializer);
     }
 
     private Assignment CreateInitializer((VBSyntax.ModifiedIdentifierSyntax n, VBSyntax.EqualsValueSyntax Initializer) f)
@@ -432,7 +432,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         }
         var members = SyntaxFactory.SeparatedList(await node.Members.SelectAsync(async m => await m.AcceptAsync<EnumMemberDeclarationSyntax>(TriviaConvertingDeclarationVisitor)));
         return SyntaxFactory.EnumDeclaration(
-            SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers, TokenContext.Global), CommonConversions.ConvertIdentifier(stmt.Identifier),
+            SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers), CommonConversions.ConvertIdentifier(stmt.Identifier),
             baseList,
             members
         );
@@ -470,7 +470,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         }
 
         return SyntaxFactory.DelegateDeclaration(
-            SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Global),
+            SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers),
             returnType, CommonConversions.ConvertIdentifier(node.Identifier),
             typeParameters,
             await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),

@@ -11,16 +11,13 @@ internal class CSToVBProjectContentsConverter : IProjectContentsConverter
 {
     private readonly VisualBasicCompilationOptions _vbCompilationOptions;
     private readonly VisualBasicParseOptions _vbParseOptions;
-    private Project _sourceCsProject;
     private Project _convertedVbProject;
     private VisualBasicCompilation _vbViewOfCsSymbols;
     private Project _vbReferenceProject;
-    private readonly IProgress<ConversionProgress> _progress;
     private readonly CancellationToken _cancellationToken;
 
     public CSToVBProjectContentsConverter(ConversionOptions conversionOptions, IProgress<ConversionProgress> progress, CancellationToken cancellationToken)
     {
-        _progress = progress;
         _cancellationToken = cancellationToken;
         OptionalOperations = new OptionalOperations(conversionOptions.AbandonOptionalTasksAfter, progress, cancellationToken);
         var vbCompilationOptions =
@@ -49,7 +46,6 @@ internal class CSToVBProjectContentsConverter : IProjectContentsConverter
     {
         // TODO: Don't throw away solution-wide effects - write them to referencing files, and use in conversion of any other projects being converted at the same time.
         project = await ClashingMemberRenamer.RenameClashingSymbolsAsync(project);
-        _sourceCsProject = project;
         _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
         _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
         _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);

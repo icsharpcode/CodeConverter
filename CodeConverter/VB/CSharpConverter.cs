@@ -16,9 +16,9 @@ internal static class CSharpConverter
                    throw new InvalidOperationException(NullRootError(document));
 
         var vbSyntaxGenerator = SyntaxGenerator.GetGenerator(vbReferenceProject);
-        var numberOfLines = tree.GetLineSpan(root.FullSpan, cancellationToken).EndLinePosition.Line;
+        _ = tree.GetLineSpan(root.FullSpan, cancellationToken).EndLinePosition.Line;
 
-        var visualBasicSyntaxVisitor = new NodesVisitor(document, (CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, numberOfLines);
+        var visualBasicSyntaxVisitor = new NodesVisitor((CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator);
         var converted = (VBSyntax.CompilationUnitSyntax)root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
 
         return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);

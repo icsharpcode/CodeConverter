@@ -24,11 +24,6 @@ internal static class SyntaxTriviaExtensions
         {VBasic.SyntaxKind.ExternalChecksumDirectiveTrivia, CS.SyntaxKind.LineDirectiveTrivia}, // Even more random guess
     };
 
-    private static readonly Dictionary<CS.SyntaxKind, VBasic.SyntaxKind> CSToVBSyntaxKinds =
-        VBToCSSyntaxKinds
-            .ToLookup(kvp => kvp.Value, kvp => kvp.Key)
-            .ToDictionary(g => g.Key, g => g.First());
-
     public static CS.SyntaxKind? GetCSKind(this SyntaxTrivia t)
     {
         return VBToCSSyntaxKinds.TryGetValue(VBasic.VisualBasicExtensions.Kind(t), out var csKind) ? csKind : null;
@@ -89,11 +84,6 @@ internal static class SyntaxTriviaExtensions
         }
 
         throw new NotImplementedException($"Comment cannot be parsed:\r\n'{commentText}'");
-    }
-
-    public static SyntaxTriviaList AsTrivia(this string s)
-    {
-        return CS.SyntaxFactory.ParseLeadingTrivia(s ?? String.Empty);
     }
 
     public static bool IsWhitespaceOrEndOfLine(this SyntaxTrivia trivia)

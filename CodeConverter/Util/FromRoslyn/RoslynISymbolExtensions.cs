@@ -3,7 +3,7 @@
 /// <remarks>
 /// From https://github.com/dotnet/roslyn/blob/2b12b9f3b8fe8895694280648b523bc4fd95211f/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/ISymbolExtensions_Accessibility.cs#L13
 /// </remarks>
-internal static partial class RoslynISymbolExtensions
+internal static class RoslynISymbolExtensions
 {
     /// <summary>
     /// Checks if 'symbol' is accessible from within 'within'.
@@ -30,7 +30,7 @@ internal static partial class RoslynISymbolExtensions
         IAssemblySymbol within,
         ITypeSymbol throughType = null)
     {
-        return IsSymbolAccessibleCore(symbol, within, throughType, out var failedThroughTypeCheck);
+        return IsSymbolAccessibleCore(symbol, within, throughType, out bool _);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ internal static partial class RoslynISymbolExtensions
         INamedTypeSymbol within,
         ITypeSymbol throughType = null)
     {
-        return IsSymbolAccessible(symbol, within, throughType, out var failedThroughTypeCheck);
+        return IsSymbolAccessible(symbol, within, throughType, out bool _);
     }
 
     /// <summary>

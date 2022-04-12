@@ -332,9 +332,12 @@ internal class QueryConverter
     private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)
     {
         if (!gs.Items.Any()) return CommonConversions.CsEscapedIdentifier("Group");
-        var name = gs.AggregationVariables.Select(v => v.Aggregation is VBSyntax.FunctionAggregationSyntax f
-                ? f.FunctionName : v.Aggregation is VBSyntax.GroupAggregationSyntax g ? v.NameEquals?.Identifier.Identifier : default(SyntaxToken?))
-            .SingleOrDefault(x => x != null) ?? gs.Keys.Select(k => k.NameEquals.Identifier.Identifier).Single();
+        var name = gs.AggregationVariables.Select(v => v.Aggregation switch
+            {
+                VBSyntax.FunctionAggregationSyntax f => f.FunctionName,
+                VBSyntax.GroupAggregationSyntax => v.NameEquals?.Identifier.Identifier,
+                _ => default
+            }).SingleOrDefault(x => x != null) ?? gs.Keys.Select(k => k.NameEquals.Identifier.Identifier).Single();
         return CommonConversions.ConvertIdentifier(name);
     }
 

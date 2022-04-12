@@ -8,7 +8,7 @@ namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 /// <remarks>
 /// From Microsoft.CodeAnalysis.Shared.Extensions
 /// </remarks>
-internal static partial class ITypeSymbolExtensions
+internal static class ITypeSymbolExtensions
 {
     private const string DefaultParameterName = "p";
     private const string DefaultBuiltInParameterName = "v";
@@ -406,25 +406,6 @@ internal static partial class ITypeSymbolExtensions
         }
 
         return null;
-    }
-
-    public static IEnumerable<T> GetAccessibleMembersInBaseTypes<T>(this ITypeSymbol containingType, ISymbol within) where T : class, ISymbol
-    {
-        if (containingType == null) {
-            return SpecializedCollections.EmptyEnumerable<T>();
-        }
-
-        var types = containingType.GetBaseTypes();
-        return types.SelectMany(x => x.GetMembers().OfType<T>().Where(m => m.IsAccessibleWithin(within)));
-    }
-
-    public static ImmutableArray<T> GetAccessibleMembersInThisAndBaseTypes<T>(this ITypeSymbol? containingType, ISymbol within) where T : class, ISymbol
-    {
-        if (containingType == null) {
-            return ImmutableArray<T>.Empty;
-        }
-
-        return containingType.GetBaseTypesAndThis().SelectAccessibleMembers<T>(within).ToImmutableArray();
     }
 
     public static bool? AreMoreSpecificThan(this IList<ITypeSymbol> t1, IList<ITypeSymbol> t2)

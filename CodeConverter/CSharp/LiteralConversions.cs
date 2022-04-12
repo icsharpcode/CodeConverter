@@ -5,7 +5,7 @@ using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
-internal class LiteralConversions
+internal static class LiteralConversions
 {
     private static readonly char[] _vbTypeLiteralNonHexSpecifierCharacters = "%&@!#SILRUsilru".ToCharArray();
     private static readonly char[] _vbTypeLiteralSpecifierCharacters = "%&@!#SILDFRUsildfru".ToCharArray();

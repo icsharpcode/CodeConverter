@@ -1,11 +1,10 @@
-using System.Collections.ObjectModel;
 using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.Common;
 
 public static class EnumerableExtensions
 {
-    public static IEnumerable<T> Do<T>(this IEnumerable<T> source, Action<T> action)
+    public static void Do<T>(this IEnumerable<T> source, Action<T> action)
     {
         if (source == null) {
             throw new ArgumentNullException(nameof(source));
@@ -16,8 +15,7 @@ public static class EnumerableExtensions
         }
 
         // perf optimization. try to not use enumerator if possible
-        var list = source as IList<T>;
-        if (list != null) {
+        if (source is IList<T> list) {
             for (int i = 0, count = list.Count; i < count; i++) {
                 action(list[i]);
             }
@@ -26,17 +24,6 @@ public static class EnumerableExtensions
                 action(value);
             }
         }
-
-        return source;
-    }
-
-    public static IReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
-    {
-        if (source == null) {
-            throw new ArgumentNullException(nameof(source));
-        }
-
-        return new ReadOnlyCollection<T>(source.ToList());
     }
 
     public static IEnumerable<T> Concat<T>(this IEnumerable<T> source, T value)
@@ -63,18 +50,6 @@ public static class EnumerableExtensions
     }
 
     public static T OnlyOrDefault<T>(this IEnumerable<T> source, Func<T, bool> predicate = null)
-    {
-        if (predicate != null) source = source.Where(predicate);
-        T previous = default(T);
-        int count = 0;
-        foreach (var element in source) {
-            previous = element;
-            if (++count > 1) return default(T);
-        }
-        return count == 1 ? previous : default(T);
-    }
-
-    public static T SelectFirst<T>(this IEnumerable<T> source, Func<T, bool> predicate = null)
     {
         if (predicate != null) source = source.Where(predicate);
         T previous = default(T);

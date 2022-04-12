@@ -117,7 +117,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
     }
 
-    public async override Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node)
+    public override async Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node)
     {
         _extraUsingDirectives.Add("System.Xml.Linq");
         var arguments = SyntaxFactory.SeparatedList(
@@ -142,18 +142,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 .Concat(SyntaxFactory.Argument(await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield())
         );
         return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XAttribute")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
-    }
-       
-    private CSharpSyntaxNode InterpolatedString(SyntaxList<InterpolatedStringContentSyntax> interpolationsList)
-    {
-        _extraUsingDirectives.Add("System.Xml.Linq");
-        var interpolatedString = SyntaxFactory.InterpolatedStringExpression(SyntaxFactory.Token(SyntaxKind.InterpolatedVerbatimStringStartToken), interpolationsList, SyntaxFactory.Token(SyntaxKind.InterpolatedStringEndToken));
-        return SyntaxFactory.InvocationExpression(
-                SyntaxFactory.MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName("XElement"),
-                    SyntaxFactory.IdentifierName("Parse")))
-            .WithArgumentList(ExpressionSyntaxExtensions.CreateArgList(interpolatedString));
     }
 
     public override async Task<CSharpSyntaxNode> VisitXmlString(VBasic.Syntax.XmlStringSyntax node) =>
@@ -348,7 +336,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             return !convertedType.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);
         }
 
-        if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, typeInfo.Type, convertedType, out char chr)) {
+        if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
             return CommonConversions.Literal(chr);
         }
 
@@ -582,11 +570,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return NeedsVariableForArgument(node, refKind);
     }
 
-    private static AssignmentExpressionSyntax Assign(ExpressionSyntax left, IdentifierNameSyntax right)
-    {
-        return SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, left, right);
-    }
-
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
     {
         return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
@@ -773,7 +756,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         if (node.IsKind(VBasic.SyntaxKind.AddressOfExpression)) {
             return ConvertAddressOf(node, expr);
         }
-        var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
+        var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
         SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
 
         if (kind == SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
@@ -869,7 +852,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
         rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
 
-        var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken(TokenContext.Local);
+        var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
         var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
         var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
@@ -932,7 +915,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<CSharpSyntaxNode> ConvertOrReplaceInvocationAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol)
     {
         var expressionSymbol = _semanticModel.GetSymbolInfo(node.Expression).ExtractBestMatch<ISymbol>();
-        if ((await SubstituteVisualBasicMethodOrNullAsync(node, invocationSymbol, expressionSymbol) ??
+        if ((await SubstituteVisualBasicMethodOrNullAsync(node, expressionSymbol) ??
              await WithRemovedRedundantConversionOrNullAsync(node, expressionSymbol)) is { } csEquivalent) {
             return csEquivalent;
         }
@@ -1121,7 +1104,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
         bool RequiresLocalFunction(RefConversion possibleInline, VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
         {
-            var refConversion = GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out var argName, out var refKind);
+            var refConversion = GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out string _, out _);
             if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
             if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
             var argExpression = sas.Expression.SkipIntoParens();
@@ -1720,7 +1703,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
             (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
             (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
-            (VBSyntax.MidExpressionSyntax e) => _semanticModel.Compilation.GetTypeByMetadataName("Microsoft.VisualBasic.CompilerServices.StringType")?.GetMembers("MidStmtStr").FirstOrDefault(),
+            (VBSyntax.MidExpressionSyntax _) => _semanticModel.Compilation.GetTypeByMetadataName("Microsoft.VisualBasic.CompilerServices.StringType")?.GetMembers("MidStmtStr").FirstOrDefault(),
             _ => { throw new NotSupportedException(); }
         );
         return symbol;
@@ -1772,7 +1755,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         );
     }
 
-    private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol invocationSymbol, ISymbol symbol)
+    private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol)
     {
         ExpressionSyntax cSharpSyntaxNode = null;
         if (symbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && symbol.Name == "ChrW" || symbol?.Name == "Chr") {

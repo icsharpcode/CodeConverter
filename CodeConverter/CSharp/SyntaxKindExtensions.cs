@@ -5,13 +5,13 @@ namespace ICSharpCode.CodeConverter.CSharp;
 public static class SyntaxKindExtensions
 {
 
-    public static SyntaxToken ConvertToken(this SyntaxToken t, TokenContext context = TokenContext.Global)
+    public static SyntaxToken ConvertToken(this SyntaxToken t)
     {
         Microsoft.CodeAnalysis.VisualBasic.SyntaxKind vbSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.Kind(t);
-        return SyntaxFactory.Token(ConvertToken(vbSyntaxKind, context));
+        return SyntaxFactory.Token(ConvertToken(vbSyntaxKind));
     }
 
-    public static SyntaxKind ConvertToken(this Microsoft.CodeAnalysis.VisualBasic.SyntaxKind t, TokenContext context = TokenContext.Global)
+    public static SyntaxKind ConvertToken(this Microsoft.CodeAnalysis.VisualBasic.SyntaxKind t)
     {
         switch (t) {
             case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.None:

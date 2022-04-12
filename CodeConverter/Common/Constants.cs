@@ -1,6 +1,6 @@
 ﻿namespace ICSharpCode.CodeConverter.Common;
 
-internal class Constants
+internal static class Constants
 {
     private const string UnlikelyToAppearInCodeOtherThanThisSolution = "50E26D7D27174AAEABCA70DEBD52E2FA";
     public const string MergedMsVbNamespace = "MergedMsVbNamespace" + UnlikelyToAppearInCodeOtherThanThisSolution;

@@ -318,7 +318,7 @@ public class ProjectConversion
         progress.Report($"{relativePath} - {action} started");
     }
 
-    private WipFileConversion<T> LogEnd<T>(WipFileConversion<T> convertedFile, string action, IProgress<string> progress)
+    private void LogEnd<T>(WipFileConversion<T> convertedFile, string action, IProgress<string> progress)
     {
         var indentedException = string.Join(Environment.NewLine, convertedFile.Errors)
             .Replace(Environment.NewLine, Environment.NewLine + "    ").TrimEnd();
@@ -335,7 +335,6 @@ public class ProjectConversion
         }
 
         progress.Report(output);
-        return convertedFile;
     }
 
     private string PathRelativeToSolutionDir(string path)

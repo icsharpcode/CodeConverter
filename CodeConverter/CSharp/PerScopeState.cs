@@ -40,10 +40,9 @@ internal class PerScopeState
         return additionalLocal;
     }
 
-    public T HoistToTopLevel<T>(T additionalField) where T : IHoistedNode
+    public void HoistToTopLevel<T>(T additionalField) where T : IHoistedNode
     {
         _hoistedNodesPerScope.Last().Add(additionalField);
-        return additionalField;
     }
 
     public IReadOnlyCollection<AdditionalDeclaration> GetDeclarations()
@@ -159,11 +158,5 @@ internal class PerScopeState
         }
         if (scopesToExit.Any()) yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
         yield return SyntaxFactory.BreakStatement();
-    }
-        
-    public bool ShouldMakeBreakable()
-    {
-        var scopeState = _hoistedNodesPerScope.Peek();
-        return scopeState.ExitableKind == VBasic.SyntaxKind.TryKeyword && scopeState.HoistedNodes.OfType<IfTrueBreak>().Any();
     }
 }

@@ -94,7 +94,6 @@ public static class ValidSyntaxFactory
     /// </remarks>
     public static DeclarationPatternSyntax VarPattern(SyntaxToken varName) => SyntaxFactory.DeclarationPattern(VarType, SyntaxFactory.SingleVariableDesignation(varName));
 
-    public static PredefinedTypeSyntax ObjectType => SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
     public static LiteralExpressionSyntax NullExpression => SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
     public static LiteralExpressionSyntax DefaultExpression => SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
     public static LiteralExpressionSyntax TrueExpression => SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);

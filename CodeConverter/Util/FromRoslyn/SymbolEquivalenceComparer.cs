@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
@@ -42,7 +41,6 @@ internal partial class SymbolEquivalenceComparer :
     private readonly ImmutableArray<GetHashCodeVisitor> _getHashCodeVisitors;
 
     public static readonly SymbolEquivalenceComparer Instance = new(SimpleNameAssemblyComparer.Instance, distinguishRefFromOut: false);
-    public static readonly SymbolEquivalenceComparer IgnoreAssembliesInstance = new(assemblyComparerOpt: null, distinguishRefFromOut: false);
 
     private readonly IEqualityComparer<IAssemblySymbol> _assemblyComparerOpt;
 
@@ -121,29 +119,12 @@ internal partial class SymbolEquivalenceComparer :
         }
     }
 
-    public bool ReturnTypeEquals(IMethodSymbol x, IMethodSymbol y, Dictionary<INamedTypeSymbol, INamedTypeSymbol> equivalentTypesWithDifferingAssemblies = null)
-    {
-        return GetEquivalenceVisitor().ReturnTypesAreEquivalent(x, y, equivalentTypesWithDifferingAssemblies);
-    }
-
     /// <summary>
     /// Compares given symbols <paramref name="x"/> and <paramref name="y"/> for equivalence.
     /// </summary>
     public bool Equals(ISymbol x, ISymbol y)
     {
         return EqualsCore(x, y, null);
-    }
-
-    /// <summary>
-    /// Compares given symbols <paramref name="x"/> and <paramref name="y"/> for equivalence and populates <paramref name="equivalentTypesWithDifferingAssemblies"/>
-    /// with equivalent non-nested named type key-value pairs that are contained in different assemblies.
-    /// These equivalent named type key-value pairs represent possibly equivalent forwarded types, but this API doesn't perform any type forwarding equivalence checks. 
-    /// </summary>
-    /// <remarks>This API is only supported for <see cref="SymbolEquivalenceComparer.IgnoreAssembliesInstance"/>.</remarks>
-    public bool Equals(ISymbol x, ISymbol y, Dictionary<INamedTypeSymbol, INamedTypeSymbol> equivalentTypesWithDifferingAssemblies)
-    {
-        Debug.Assert(_assemblyComparerOpt == null);
-        return EqualsCore(x, y, equivalentTypesWithDifferingAssemblies);
     }
 
     private bool EqualsCore(ISymbol x, ISymbol y, Dictionary<INamedTypeSymbol, INamedTypeSymbol> equivalentTypesWithDifferingAssemblies)

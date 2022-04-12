@@ -180,19 +180,6 @@ internal static class CSharpUtil
         throw new ArgumentOutOfRangeException(nameof(op));
     }
 
-    public static T WithBody<T>(this T method, BlockSyntax body) where T : BaseMethodDeclarationSyntax
-    {
-        if (method == null)
-            throw new ArgumentNullException(nameof(method));
-        var m = method as MethodDeclarationSyntax;
-        if (m != null)
-            return (T)((BaseMethodDeclarationSyntax)m.WithBody(body));
-        var d = method as DestructorDeclarationSyntax;
-        if (d != null)
-            return (T)((BaseMethodDeclarationSyntax)d.WithBody(body));
-        throw new NotSupportedException();
-    }
-
     public static IEnumerable<TOut> FollowProperty<TOut>(this TOut start, Func<TOut, TOut> getProperty) where TOut : class
     {
         return FollowProperty<TOut, TOut>(start, getProperty);

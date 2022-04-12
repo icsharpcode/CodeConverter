@@ -11,11 +11,4 @@ public class PropertyDeclarationParameters : DeclarationParameters
     {
         Accessors = accessors;
     }
-
-    public PropertyDeclarationParameters(SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList modifiers,
-        TypeSyntax returnType, AccessorListSyntax accessors, SyntaxToken identifier)
-        : base(attributes, modifiers, returnType, identifier)
-    {
-        Accessors = accessors;
-    }
 }

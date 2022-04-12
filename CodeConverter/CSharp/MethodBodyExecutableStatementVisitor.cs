@@ -185,7 +185,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
                 ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
         }
-        var kind = node.Kind().ConvertToken(TokenContext.Local);
+        var kind = node.Kind().ConvertToken();
 
             
         var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
@@ -281,7 +281,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var arrayResize = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), argumentList);
             return SingleStatement(arrayResize);
         }
-        var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds, node.SpanStart);
+        var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds);
         if (!preserve) return SingleStatement(newArrayAssignment);
 
         var lastIdentifierText = node.Expression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>().Last().Identifier.Text;
@@ -381,8 +381,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     }
 
     private ExpressionStatementSyntax CreateNewArrayAssignment(VBSyntax.ExpressionSyntax vbArrayExpression,
-        ExpressionSyntax csArrayExpression, List<ExpressionSyntax> convertedBounds,
-        int nodeSpanStart)
+        ExpressionSyntax csArrayExpression, List<ExpressionSyntax> convertedBounds)
     {
         var convertedType = (IArrayTypeSymbol) _semanticModel.GetTypeInfo(vbArrayExpression).ConvertedType;
         var arrayRankSpecifierSyntax = SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(convertedBounds));
@@ -743,7 +742,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName);
                     var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
                     var relationalValue = await relational.Value.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-                    var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(TokenContext.Local), csLeft, relationalValue);
+                    var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, relationalValue);
                     labels.Add(VarWhen(varName, binaryExp));
                 } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
                     var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));

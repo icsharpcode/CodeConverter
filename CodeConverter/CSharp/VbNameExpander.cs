@@ -11,10 +11,10 @@ internal class VbNameExpander : ISyntaxExpander
     private static readonly SyntaxToken _dotToken = SyntaxFactory.Token(SyntaxKind.DotToken);
     public static ISyntaxExpander Instance { get; } = new VbNameExpander();
 
-    public bool ShouldExpandWithinNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel) =>
-        !ShouldExpandNode(node, root, semanticModel) && !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax);
+    public bool ShouldExpandWithinNode(SyntaxNode node, SemanticModel semanticModel) =>
+        !ShouldExpandNode(node, semanticModel) && !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax);
 
-    public bool ShouldExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel) =>
+    public bool ShouldExpandNode(SyntaxNode node, SemanticModel semanticModel) =>
         ShouldExpandName(node) || ShouldExpandMemberAccess(node, semanticModel);
 
     private static bool ShouldExpandMemberAccess(SyntaxNode node, SemanticModel semanticModel)
@@ -32,7 +32,7 @@ internal class VbNameExpander : ISyntaxExpander
     private static bool ShouldExpandName(SyntaxNode node) =>
         node is NameSyntax && NameCanBeExpanded(node);
 
-    public SyntaxNode ExpandNode(SyntaxNode node, SyntaxNode root, SemanticModel semanticModel,
+    public SyntaxNode ExpandNode(SyntaxNode node, SemanticModel semanticModel,
         Workspace workspace)
     {
         var symbol = semanticModel.GetSymbolInfo(node).Symbol;

@@ -77,7 +77,7 @@ internal class TypeConversionAnalyzer
     {
         switch (conversionKind) {
             case TypeConversionKind.FractionalNumberRoundThenCast:
-                csNode = AddRoundInvocation(vbNode, csNode, vbType, vbConvertedType);
+                csNode = AddRoundInvocation(csNode);
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.EnumConversionThenCast:
                 var underlyingType = ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType;
@@ -155,7 +155,7 @@ internal class TypeConversionAnalyzer
         var csConvertedType = GetCSType(vbConvertedType);
 
         if (csType != null && csConvertedType != null &&
-            TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, vbCompilation, isConst, forceSourceType != null, out TypeConversionKind analyzeConversion)) {
+            TryAnalyzeCsConversion(vbNode, csType, csConvertedType, vbConversion, vbConvertedType, vbType, isConst, forceSourceType != null, out TypeConversionKind analyzeConversion)) {
             return analyzeConversion;
         }
 
@@ -174,7 +174,7 @@ internal class TypeConversionAnalyzer
         type ??= typeInfo.Type;
         convertedType ??= typeInfo.ConvertedType;
         if (type.IsNumericType()) {
-            var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
+            VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
             type = GetTypeOrNull(vbNode, type.SpecialType) ?? type;
         }
         return (type, convertedType);
@@ -251,8 +251,7 @@ internal class TypeConversionAnalyzer
     }
 
     private bool TryAnalyzeCsConversion(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol csType,
-        ITypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType,
-        VBasic.VisualBasicCompilation vbCompilation, bool isConst, bool sourceForced,
+        ITypeSymbol csConvertedType, Conversion vbConversion, ITypeSymbol vbConvertedType, ITypeSymbol vbType, bool isConst, bool sourceForced,
         out TypeConversionKind typeConversionKind)
     {
         var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
@@ -263,7 +262,7 @@ internal class TypeConversionAnalyzer
             !csConversion.IsImplicit && vbType.IsFractionalNumericType() && vbConvertedType.IsNumericType() && !vbConvertedType.IsFractionalNumericType();
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
-            if (ConvertStringToCharLiteral(vbNode, vbType, vbConvertedType, out _)) {
+            if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
                 typeConversionKind =
                     TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                 return true;
@@ -318,11 +317,7 @@ internal class TypeConversionAnalyzer
     {
         return _semanticModel.GetOperation(vbNode).Parent is IConversionOperation co && co.IsImplicit && co.Operand.ConstantValue.HasValue;
     }
-    private bool IsExplicitNumericConversion(VBSyntax.ExpressionSyntax vbNode)
-    {
-        return _semanticModel.GetOperation(vbNode).Parent is IConversionOperation co &&
-               !co.IsImplicit; //&& co.Operand.i && co.Operand.ConstantValue.HasValue;
-    }
+
     private static TypeConversionKind AnalyzeVbConversion(bool alwaysExplicit, ITypeSymbol vbType,
         ITypeSymbol vbConvertedType, Conversion vbConversion)
     {
@@ -343,10 +338,8 @@ internal class TypeConversionAnalyzer
         return TypeConversionKind.Unknown;
     }
 
-    public ExpressionSyntax AddRoundInvocation(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
+    private ExpressionSyntax AddRoundInvocation(ExpressionSyntax csNode)
     {
- 
-        // Add to specify we're using System for Math.Round
         _extraUsingDirectives.Add("System");
         var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
             SyntaxFactory.IdentifierName("Math"),  SyntaxFactory.IdentifierName("Round"));
@@ -415,7 +408,6 @@ internal class TypeConversionAnalyzer
     }
 
     public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,
-        ITypeSymbol type,
         ITypeSymbol convertedType,
         out char chr)
     {
