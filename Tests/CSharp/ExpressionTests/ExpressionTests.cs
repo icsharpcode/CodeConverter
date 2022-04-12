@@ -7,6 +7,43 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 public class ExpressionTests : ConverterTestBase
 {
     [Fact]
+    public async Task ComparingStringsUsesCoerceToNonNullOnlyWhenNeededAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a as String)
+        Dim result = a = ("""")
+        result = """" = a
+        result = a = (String.Empty)
+        result = String.Empty = a
+        result = a = (Nothing)
+        result = Nothing = a
+        result = a Is Nothing
+        result = a IsNot Nothing
+        result = a = a
+        result = a = (""test"")
+        result = ""test"" = a
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(string a)
+    {
+        bool result = string.IsNullOrEmpty(a);
+        result = string.IsNullOrEmpty(a);
+        result = string.IsNullOrEmpty(a);
+        result = string.IsNullOrEmpty(a);
+        result = string.IsNullOrEmpty(a);
+        result = string.IsNullOrEmpty(a);
+        result = a is null;
+        result = a is not null;
+        result = (a ?? """") == (a ?? """");
+        result = a == ""test"";
+        result = ""test"" == a;
+    }
+}");
+    }
+
+    [Fact]
     public async Task ConversionOfNotUsesParensIfNeededAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
