@@ -20,8 +20,10 @@ public class CodeWithOptions
 
     public string Text { get; private set; }
     public string FromLanguage { get; private set; }
+    [Obsolete("This option has no effect. Please use a code formatter to format the output code.")]
     public int FromLanguageVersion { get; private set; }
     public string ToLanguage { get; private set; }
+    [Obsolete("This option has no effect. Please use a code formatter to format the output code.")]
     public int ToLanguageVersion { get; private set; }
 
     public IReadOnlyCollection<PortableExecutableReference> References { get; set; } = new List<PortableExecutableReference>();
@@ -31,21 +33,31 @@ public class CodeWithOptions
         Text = text ?? throw new ArgumentNullException(nameof(text));
         FromLanguage = LanguageNames.CSharp;
         ToLanguage = LanguageNames.VisualBasic;
-        FromLanguageVersion = 6;
-        ToLanguageVersion = 14;
     }
 
-    public CodeWithOptions SetFromLanguage(string name = LanguageNames.CSharp, int version = 6)
+    public CodeWithOptions SetFromLanguage(string name = LanguageNames.CSharp)
     {
         FromLanguage = name;
-        FromLanguageVersion = version;
         return this;
     }
 
-    public CodeWithOptions SetToLanguage(string name = LanguageNames.VisualBasic, int version = 14)
+    public CodeWithOptions SetToLanguage(string name = LanguageNames.VisualBasic)
     {
         ToLanguage = name;
-        ToLanguageVersion = version;
+        return this;
+    }
+
+    [Obsolete("The version option has no effect, the latest version will be used.")]
+    public CodeWithOptions SetFromLanguage(string name, int version)
+    {
+        FromLanguage = name;
+        return this;
+    }
+
+    [Obsolete("The version option has no effect, the latest version will be used. Please use a code formatter to format the output code.")]
+    public CodeWithOptions SetToLanguage(string name, int version)
+    {
+        ToLanguage = name;
         return this;
     }
 
