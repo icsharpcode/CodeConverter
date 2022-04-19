@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Globalization;
 using System.Linq;
@@ -31,7 +32,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private readonly Stack<ExpressionSyntax> _withBlockLhs = new();
     private readonly ITypeContext _typeContext;
     private readonly QueryConverter _queryConverter;
-    private readonly Lazy<IDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
+    private readonly Lazy<IReadOnlyDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
     private readonly LambdaConverter _lambdaConverter;
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
@@ -53,11 +54,11 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
         _convertMethodsLookupByReturnType =
-            new Lazy<IDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
+            new Lazy<IReadOnlyDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
         _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
     }
 
-    private static Dictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(
+    private static IReadOnlyDictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(
         SemanticModel semanticModel)
     {
         // In some projects there's a source declaration as well as the referenced one, which causes the first of these methods to fail
@@ -69,7 +70,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             (ITypeSymbol)symbolsWithName.FirstOrDefault(s =>
                     s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace, StringComparison.Ordinal));
 
-        if (convertType is null) return new Dictionary<ITypeSymbol, string>();
+        if (convertType is null) return ImmutableDictionary<ITypeSymbol, string>.Empty;
 
         var convertMethods = convertType.GetMembers().Where(m =>
             m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
