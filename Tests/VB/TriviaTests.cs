@@ -75,7 +75,6 @@ Namespace ANamespace 'namespace
                 Debug.WriteLine(1) ' Check debug window
                 Debug.WriteLine(2)
             End If 'argument1 != null
-
             argument3 = Nothing '3
 #Else 'ElseDirective keeps comments
             argument = new object();
@@ -83,7 +82,8 @@ Namespace ANamespace 'namespace
             Console.Write(3)
         End Sub 'End of method
     End Class 'End of class
-End Namespace' Last line comment");
+End Namespace
+' Last line comment");
     }
 
     [Fact]

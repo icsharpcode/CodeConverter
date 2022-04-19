@@ -29,7 +29,6 @@ internal class LineTriviaMapper
     /// For each source line:
     /// * Add leading trivia to the start of the first target line containing a node converted from that source line
     /// * Add trailing trivia to the end of the last target line containing a node converted from that source line
-    /// Makes no attempt to convert whitespace/newline-only trivia
     /// Currently doesn't deal with any within-line trivia (i.e. /* block comments */)
     /// </summary>
     public static SyntaxNode MapSourceTriviaToTarget<TSource, TTarget>(TSource source, TTarget target)
@@ -113,7 +112,7 @@ internal class LineTriviaMapper
         var sourceLine = _sourceLines[sourceLineIndex];
         var endOfSourceLine = sourceLine.FindLastTokenWithinLine(_source);
 
-        if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
+        if (endOfSourceLine.TrailingTrivia.Any()) {
             _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
         }
 
@@ -135,7 +134,7 @@ internal class LineTriviaMapper
         var sourceLine = _sourceLines[sourceLineIndex];
         var startOfSourceLine = sourceLine.FindFirstTokenWithinLine(_source);
 
-        if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
+        if (startOfSourceLine.LeadingTrivia.Any()) {
             _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
         }
 

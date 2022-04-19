@@ -33,6 +33,7 @@ public partial class TestClass506
 {
     public void Deposit(int Item, bool ColaOnly, bool MonteCarloLogActive, Func<bool> InDevEnv)
     {
+
         if (ColaOnly) // just log the Cola value
         {
             Console.WriteLine(1);
@@ -131,6 +132,7 @@ End Class",
             @"using System;
 
 public partial class VisualBasicClass : System.Windows.Forms.Form
+
 {
 
     #region  Members 
@@ -144,6 +146,7 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
     public VisualBasicClass()
     {
         Load += Eventhandler_Load;
+
     }
 
     #endregion
@@ -300,5 +303,37 @@ internal partial class TestClass
         argument3 = default;
     }
 }");
+    }
+
+    [Fact]
+    public async Task StatementNewlinesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"<Display(Name:=""Reinsurance Year"")> _
+Public SelectedReinsuranceYear As Int16
+
+<Display(Name:=""Record Type"")> _
+Public SelectedRecordType As String
+
+<Display(Name:=""Release Date"")> _
+Public ReleaseDate As Nullable(Of Date)", @"
+internal partial class SurroundingClass
+{
+    [Display(Name = ""Reinsurance Year"")]
+    public short SelectedReinsuranceYear;
+
+    [Display(Name = ""Record Type"")]
+    public string SelectedRecordType;
+
+    [Display(Name = ""Release Date"")]
+    public DateTime? ReleaseDate;
+}
+2 source compilation errors:
+BC30002: Type 'Display' is not defined.
+BC30661: Field or property 'Name' is not found.
+3 target compilation errors:
+CS0246: The type or namespace name 'DisplayAttribute' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'Display' could not be found (are you missing a using directive or an assembly reference?)
+CS0246: The type or namespace name 'Name' could not be found (are you missing a using directive or an assembly reference?)");
     }
 }
