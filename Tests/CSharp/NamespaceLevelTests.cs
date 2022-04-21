@@ -14,6 +14,7 @@ public class NamespaceLevelTests : ConverterTestBase
 End Namespace", @"
 namespace Test
 {
+
 }");
     }
 

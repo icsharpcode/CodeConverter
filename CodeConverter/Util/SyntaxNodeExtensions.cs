@@ -321,33 +321,33 @@ internal static class SyntaxNodeExtensions
         return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
     }
 
-    public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken, bool markAsMapped = false) where T : SyntaxNode
+    public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
     {
         var firstConvertedToken = node.GetFirstToken();
-        return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken, markAsMapped));
+        return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken));
     }
 
-    public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken, bool markAsMapped = false)
+    public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken)
     {
         if (sourceToken == null) return node;
         var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
         var withLeadingTrivia = node.WithLeadingTrivia(convertedTrivia);
-        return markAsMapped ? withLeadingTrivia.WithAlreadyMappedStartLineAnnotation(sourceToken.Value.Span.Start) : withLeadingTrivia;
+        return withLeadingTrivia.WithAlreadyMappedStartLineAnnotation(sourceToken.Value.Span.Start);
     }
 
-    public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken, TriviaKinds triviaKinds = null, bool markAsMapped = false) where T : SyntaxNode
+    public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
     {
         var lastConvertedToken = node.GetLastToken();
-        return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken, triviaKinds, markAsMapped));
+        return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken));
     }
 
-    public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, TriviaKinds triviaKinds = null, bool markAsMapped = false)
+    public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, bool markAsMapped = true)
     {
-        triviaKinds ??= TriviaKinds.All;
         if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
-        var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia.Where(triviaKinds.ShouldAccept).ToArray());
+        var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia.ToArray());
         var withConvertedTrailingTrivia = node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
-        return markAsMapped ? withConvertedTrailingTrivia.WithAlreadyMappedEndLineAnnotation(otherToken.Value.Span.End) : withConvertedTrailingTrivia;
+        if (markAsMapped) withConvertedTrailingTrivia = withConvertedTrailingTrivia.WithAlreadyMappedEndLineAnnotation(otherToken.Value.Span.End);
+        return withConvertedTrailingTrivia;
     }
 
     public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)

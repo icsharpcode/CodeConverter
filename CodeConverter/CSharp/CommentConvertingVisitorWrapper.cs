@@ -24,11 +24,9 @@ internal class CommentConvertingVisitorWrapper
     public async Task<SeparatedSyntaxList<TOut>> AcceptAsync<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, SourceTriviaMapKind sourceTriviaMap) where TIn : VisualBasicSyntaxNode where TOut : CSharpSyntaxNode
     {
         var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandledAsync<TOut>(n, sourceTriviaMap));
-        var convertedSeparators = vbNodes.GetSeparators().Select(s =>
-            CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
-                .WithConvertedTrailingTriviaFrom(s, TriviaKinds.FormattingOnly)
-                .WithSourceMappingFrom(s)
-        );
+        var convertedSeparators = vbNodes.GetSeparators().Select(s => CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
+            .WithConvertedTrailingTriviaFrom(s, false)
+            .WithSourceMappingFrom(s));
         return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
     }
 
@@ -63,14 +61,14 @@ internal class CommentConvertingVisitorWrapper
                 return (T)(object)csCus
                     .WithSourceStartLineAnnotation(vbNode.SyntaxTree.GetLineSpan(new TextSpan(0, 0)))
                     .WithEndOfFileToken(csCus.EndOfFileToken
-                        .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken, true).WithSourceMappingFrom(vbCus.EndOfFileToken)
+                        .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
                     );
             case VBSyntax.XmlElementSyntax vbXes when converted is CSSyntax.ExpressionSyntax csXes:
                 var lastToken = csXes.GetLastToken();
                 return (T)(object)csXes
-                    .ReplaceToken(lastToken, lastToken.WithConvertedLeadingTriviaFrom(vbXes.EndTag.GetFirstToken(), true))
-                    .WithConvertedLeadingTriviaFrom(vbXes.GetFirstToken(), true)
-                    .WithConvertedTrailingTriviaFrom(vbXes.GetLastToken(), markAsMapped: true);
+                    .ReplaceToken(lastToken, lastToken.WithConvertedLeadingTriviaFrom(vbXes.EndTag.GetFirstToken()))
+                    .WithConvertedLeadingTriviaFrom(vbXes.GetFirstToken())
+                    .WithConvertedTrailingTriviaFrom(vbXes.GetLastToken());
         }
         return converted.WithVbSourceMappingFrom(vbNode);
     }

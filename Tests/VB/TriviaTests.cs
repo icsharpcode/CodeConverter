@@ -83,6 +83,7 @@ Namespace ANamespace 'namespace
         End Sub 'End of method
     End Class 'End of class
 End Namespace
+
 ' Last line comment");
     }
 
@@ -98,6 +99,7 @@ namespace ANamespace //namespace
 Namespace ANamespace 'namespace
     ' start of block - namespace
 End Namespace 'end namespace
+
 ' Last line comment");
     }
 }
