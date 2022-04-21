@@ -323,7 +323,7 @@ internal static class SyntaxNodeExtensions
 
     public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
     {
-        return node.TrailingTrivia.Where(x => !x.IsWhitespaceOrEndOfLine());
+        return node.TrailingTrivia;
     }
 
     public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
@@ -365,9 +365,6 @@ internal static class SyntaxNodeExtensions
         }
 
         if (t.IsKind(VBSyntaxKind.EndOfLineTrivia)) {
-            // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
-            // e.g. ToString\r\n()
-            // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
             yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.EndOfLineTrivia, t.ToString());
             yield break;
         }
