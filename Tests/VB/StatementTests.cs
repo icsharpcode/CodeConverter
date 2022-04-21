@@ -81,10 +81,8 @@ End Class");
         While True 'Becomes while loop
             If arg = 3 Then Exit While
             Select Case arg
-                Case 1
- 'From switch
-                Case 2
-                    'From switch
+                Case 1 'From switch
+                Case 2 'From switch
                 Case Else
                     Continue While ' Outer while loop
             End Select
@@ -323,7 +321,6 @@ End Class");
         Dim b = {
             {1, 2},
                     {3, 4}}
-
     End Sub
 End Class");
     }
@@ -345,7 +342,6 @@ End Class");
         Dim b = New Integer(,) {
             {1, 2},
                     {3, 4}}
-
     End Sub
 End Class");
     }
@@ -367,7 +363,6 @@ End Class");
         Dim b = New Integer(1, 1) {
             {1, 2},
                         {3, 4}}
-
     End Sub
 End Class
 
@@ -581,9 +576,7 @@ CS0103: The name 'Console' does not exist in the current context");
         b = 0
         While b = 0
             If b = 2 Then Continue While
-
             If b = 3 Then Exit While
-
             b = 1
         End While
     End Sub
@@ -649,9 +642,7 @@ End Class");
         b = 0
         Do
             If b = 2 Then Continue Do
-
             If b = 3 Then Exit Do
-
             b = 1
         Loop While b = 0
     End Sub
@@ -677,9 +668,7 @@ End Class");
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
             If val = 2 Then Continue For
-
             If val = 3 Then Exit For
-
         Next
     End Sub
 End Class");
@@ -704,9 +693,7 @@ End Class");
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
             If val = 2 Then Continue For
-
             If val = 3 Then Exit For
-
         Next
     End Sub
 End Class
@@ -731,7 +718,6 @@ BC30516: Overload resolution failed because no accessible 'Val' accepts this num
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
-
         SyncLock nullObject
             Console.WriteLine(nullObject)
         End SyncLock
@@ -1110,7 +1096,6 @@ CS0103: The name 'Console' does not exist in the current context");
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
-
     End Sub
 End Class
 
@@ -1227,8 +1212,6 @@ End Class");
     Private Sub TestMethod(ByVal number As Integer)
         Select Case number
             Case 0, 1, 2
-
-
                 Console.Write(""number is 0, 1, 2"")
             Case 3
                 Console.Write(""section 3"")
@@ -1401,7 +1384,6 @@ class TestClass
 Friend Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
-
         For i = 0 To number - 1
             Yield i
         Next

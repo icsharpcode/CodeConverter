@@ -124,7 +124,7 @@ internal class LineTriviaMapper
         var endOfSourceLine = sourceLine.FindLastTokenWithinLine(_source);
         if (_trailingPositionsAlreadyMapped.Contains(endOfSourceLine.Span.End)) return;
 
-        var triviaToUse = !endOfSourceLine.TrailingTrivia.Any() ? _trailingTriviaCarriedOver : _trailingTriviaCarriedOver.Concat(endOfSourceLine.TrailingTrivia).ToList();
+        var triviaToUse = !endOfSourceLine.TrailingTrivia.Any() || endOfSourceLine.TrailingTrivia.OnlyOrDefault().IsEndOfLine() ? _trailingTriviaCarriedOver : _trailingTriviaCarriedOver.Concat(endOfSourceLine.TrailingTrivia).ToList();
 
         if (triviaToUse.Any()) {
             var targetLine = GetTargetLine(sourceLineIndex, false);

@@ -116,7 +116,6 @@ namespace Prefix.VbLibrary.My
     #ElseIf _MYAPPLICATIONTYPE = "Windows" Then
     */
     internal partial class MyApplication : Microsoft.VisualBasic.ApplicationServices.ApplicationBase
-
     {
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYAPPLICATIONTYPE = "Console" Then
@@ -140,7 +139,6 @@ namespace Prefix.VbLibrary.My
     #If _MYCOMPUTERTYPE = "Windows" Then
     */
     internal partial class MyComputer : Microsoft.VisualBasic.Devices.Computer
-
     {
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYCOMPUTERTYPE = "Web" Then
@@ -152,7 +150,6 @@ namespace Prefix.VbLibrary.My
         [DebuggerHidden()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public MyComputer() : base()
-
         {
         }
     }
@@ -353,7 +350,6 @@ namespace Prefix.VbLibrary.My
                 {
                     return instance;
                 }
-
             }
 
             [DebuggerHidden()]
@@ -365,7 +361,6 @@ namespace Prefix.VbLibrary.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyWebServices() : base()
-
             {
             }
         }
@@ -451,7 +446,6 @@ namespace Prefix.VbLibrary.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public ThreadSafeObjectProvider() : base()
-
             {
             }
 

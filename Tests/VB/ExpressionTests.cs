@@ -19,8 +19,7 @@ World!"";
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello,
-World!""
-    End Sub
+World!"" End Sub
 End Class");
     }
 
@@ -592,7 +591,6 @@ End Class
 
 Friend Class Converter
     Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
-
     .Converters = {}
 }
 End Class");
@@ -698,8 +696,6 @@ Imports System.Collections.Generic
 Namespace PreHOPL
     Friend Module Program
         Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
-
-
 {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
 }
         Private Sub Main(ByVal args As String())
@@ -872,8 +868,6 @@ CS0103: The name 'Console' does not exist in the current context");
 
     Dim res = From n In numbers Where n > 5 Select n
 
-
-
     For Each n In res
         Console.WriteLine(n)
     Next
@@ -908,9 +902,6 @@ End Sub");
     Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
 
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
-
-
-
 .Remainder = __groupByKey1__,
 .Numbers = g
 }
@@ -966,17 +957,9 @@ Friend Class Test
     Public Sub Linq102()
         Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
 
-
-
-
-
-
         Dim products As Product() = GetProductList()
 
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
-
-
-
 .Category = c, p.ProductName
 }
 
@@ -1027,17 +1010,9 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
 }", @"Public Sub Linq103()
     Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
 
-
-
-
-
-
     Dim products = GetProductList()
 
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
-
-
-
 .Category = c,
 .Products = ps
 }
@@ -1263,23 +1238,14 @@ End Class", hasLineCommentConversionIssue: true);
         Dim object1 As Object = s1
         Dim object2 As Object = s2
         If i = j Then DoSomething()
-
         If i = s2 Then DoSomething()
-
         If i = object1 Then DoSomething()
-
         If s1 = j Then DoSomething()
-
         If Equals(s1, s2) Then DoSomething()
-
         If s1 Is object2 Then DoSomething()
-
         If object1 = j Then DoSomething()
-
         If object1 Is s2 Then DoSomething()
-
         If object1 Is object2 Then DoSomething()
-
     End Sub
     Public Sub DoSomething()
     End Sub
@@ -1328,7 +1294,6 @@ Imports System.Collections.Concurrent
 
 Public Class TestClass
     Private pendingOrders As ConcurrentDictionary(Of Guid, TaskCompletionSource(Of Boolean))
-
     Private orderComplete As TaskCompletionSource(Of Boolean)
     Private Sub Sdk_OnOrderCompleted(ByVal sender As Object, ByVal e As OrderOutcome)
         Dim tcs As TaskCompletionSource(Of Boolean) = Nothing

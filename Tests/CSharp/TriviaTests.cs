@@ -46,7 +46,6 @@ public partial class TestClass506
         {
             Console.WriteLine(3);
         }
-
         if (MonteCarloLogActive && InDevEnv()) // Special logging for dev debugging
         {
             Console.WriteLine(4);
@@ -132,7 +131,6 @@ End Class",
             @"using System;
 
 public partial class VisualBasicClass : System.Windows.Forms.Form
-
 {
 
     #region  Members 

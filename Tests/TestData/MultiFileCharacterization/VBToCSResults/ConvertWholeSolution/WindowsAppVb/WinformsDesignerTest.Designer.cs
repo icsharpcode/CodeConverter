@@ -9,7 +9,6 @@ namespace WindowsAppVb
 {
     [DesignerGenerated()]
     public partial class WinformsDesignerTest : Form
-
     {
 
         // Form overrides dispose to clean up the component list.
@@ -27,7 +26,6 @@ namespace WindowsAppVb
             {
                 base.Dispose(disposing);
             }
-
         }
 
         // Required by the Windows Form Designer

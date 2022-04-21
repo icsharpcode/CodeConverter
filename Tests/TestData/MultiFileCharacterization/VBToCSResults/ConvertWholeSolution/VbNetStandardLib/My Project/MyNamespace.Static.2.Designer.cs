@@ -51,7 +51,6 @@ namespace Microsoft.VisualBasic
                 {
                     Result = string.CompareOrdinal(Left, Right);
                 }
-
                 if (Result == 0)
                 {
                     return 0;
@@ -64,7 +63,6 @@ namespace Microsoft.VisualBasic
                 {
                     return -1;
                 }
-
             }
         }
         [Embedded()]
@@ -115,7 +113,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException();
                 }
-
             }
             public static bool ToBoolean(string Value)
             {
@@ -145,7 +142,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static bool ToBoolean(object Value)
             {
@@ -230,7 +226,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static byte ToByte(object Value)
             {
@@ -316,7 +311,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             [CLSCompliant(false)]
             public static sbyte ToSByte(object Value)
@@ -402,7 +396,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static short ToShort(object Value)
             {
@@ -488,7 +481,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             [CLSCompliant(false)]
             public static ushort ToUShort(object Value)
@@ -574,7 +566,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static int ToInteger(object Value)
             {
@@ -660,7 +651,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             [CLSCompliant(false)]
             public static uint ToUInteger(object Value)
@@ -746,7 +736,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static long ToLong(object Value)
             {
@@ -832,7 +821,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             [CLSCompliant(false)]
             public static ulong ToULong(object Value)
@@ -909,7 +897,6 @@ namespace Microsoft.VisualBasic
                 {
                     return 0m;
                 }
-
             }
             public static decimal ToDecimal(string Value)
             {
@@ -934,7 +921,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e2.Message, e2);
                 }
-
             }
             public static decimal ToDecimal(object Value)
             {
@@ -1010,15 +996,6 @@ namespace Microsoft.VisualBasic
                 }
                 NormalizedNumberFormat = GetNormalizedNumberFormat(NumberFormat);
                 const System.Globalization.NumberStyles flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
-
-
-
-
-
-
-
-
-
                 Value = ToHalfwidthNumbers(Value, culture);
                 try
                 {
@@ -1032,34 +1009,15 @@ namespace Microsoft.VisualBasic
                 {
                     throw Ex;
                 }
-
             }
             private static System.Globalization.NumberFormatInfo GetNormalizedNumberFormat(System.Globalization.NumberFormatInfo InNumberFormat)
             {
                 System.Globalization.NumberFormatInfo OutNumberFormat;
                 if (InNumberFormat.CurrencyDecimalSeparator is not null && InNumberFormat.NumberDecimalSeparator is not null && InNumberFormat.CurrencyGroupSeparator is not null && InNumberFormat.NumberGroupSeparator is not null && InNumberFormat.CurrencyDecimalSeparator.Length == 1 && InNumberFormat.NumberDecimalSeparator.Length == 1 && InNumberFormat.CurrencyGroupSeparator.Length == 1 && InNumberFormat.NumberGroupSeparator.Length == 1 && InNumberFormat.CurrencyDecimalSeparator[0] == InNumberFormat.NumberDecimalSeparator[0] && InNumberFormat.CurrencyGroupSeparator[0] == InNumberFormat.NumberGroupSeparator[0] && InNumberFormat.CurrencyDecimalDigits == InNumberFormat.NumberDecimalDigits)
-
-
-
-
-
-
-
-
-
-
-
                 {
                     return InNumberFormat;
                 }
-
                 if (InNumberFormat.CurrencyDecimalSeparator is not null && InNumberFormat.NumberDecimalSeparator is not null && InNumberFormat.CurrencyDecimalSeparator.Length == InNumberFormat.NumberDecimalSeparator.Length && InNumberFormat.CurrencyGroupSeparator is not null && InNumberFormat.NumberGroupSeparator is not null && InNumberFormat.CurrencyGroupSeparator.Length == InNumberFormat.NumberGroupSeparator.Length)
-
-
-
-
-
-
                 {
                     int i;
                     var loopTo = InNumberFormat.CurrencyDecimalSeparator.Length - 1;
@@ -1077,16 +1035,13 @@ namespace Microsoft.VisualBasic
                     return InNumberFormat;
                 }
 
-
             MisMatch:
                 ;
 
                 OutNumberFormat = (System.Globalization.NumberFormatInfo)InNumberFormat.Clone();
                 OutNumberFormat.CurrencyDecimalSeparator = OutNumberFormat.NumberDecimalSeparator;
-
                 OutNumberFormat.CurrencyGroupSeparator = OutNumberFormat.NumberGroupSeparator;
                 OutNumberFormat.CurrencyDecimalDigits = OutNumberFormat.NumberDecimalDigits;
-
                 return OutNumberFormat;
             }
             public static float ToSingle(string Value)
@@ -1104,7 +1059,6 @@ namespace Microsoft.VisualBasic
                     }
                     double Result = ParseDouble(Value);
                     if ((Result < float.MinValue || Result > float.MaxValue) && !double.IsInfinity(Result))
-
                     {
                         throw new OverflowException();
                     }
@@ -1114,7 +1068,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static float ToSingle(object Value)
             {
@@ -1199,7 +1152,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException(e.Message, e);
                 }
-
             }
             public static double ToDouble(object Value)
             {
@@ -1272,15 +1224,6 @@ namespace Microsoft.VisualBasic
                 var NumberFormat = culture.NumberFormat;
                 NormalizedNumberFormat = GetNormalizedNumberFormat(NumberFormat);
                 const System.Globalization.NumberStyles flags = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingSign | System.Globalization.NumberStyles.AllowParentheses | System.Globalization.NumberStyles.AllowTrailingWhite | System.Globalization.NumberStyles.AllowCurrencySymbol;
-
-
-
-
-
-
-
-
-
                 Value = ToHalfwidthNumbers(Value, culture);
                 try
                 {
@@ -1294,14 +1237,11 @@ namespace Microsoft.VisualBasic
                 {
                     throw Ex;
                 }
-
             }
             public static DateTime ToDate(string Value)
             {
                 DateTime ParsedDate;
                 const System.Globalization.DateTimeStyles ParseStyle = System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.NoCurrentDateDefault;
-
-
                 var Culture = GetCultureInfo();
                 bool result = DateTime.TryParse(ToHalfwidthNumbers(Value, Culture), Culture, ParseStyle, out ParsedDate);
                 if (result)
@@ -1312,7 +1252,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new InvalidCastException();
                 }
-
             }
             public static DateTime ToDate(object Value)
             {
@@ -1413,7 +1352,6 @@ namespace Microsoft.VisualBasic
             {
                 long TimeTicks = Value.TimeOfDay.Ticks;
                 if (TimeTicks == Value.Ticks || Value.Year == 1899 && Value.Month == 12 && Value.Day == 30)
-
                 {
                     return Value.ToString("T");
                 }
@@ -1425,7 +1363,6 @@ namespace Microsoft.VisualBasic
                 {
                     return Value.ToString("G");
                 }
-
             }
             public static new string ToString(decimal Value)
             {
@@ -1445,7 +1382,6 @@ namespace Microsoft.VisualBasic
                         return StringValue;
                     }
                 }
-
                 if (Value is Enum)
                 {
                     Value = GetEnumValue(Value);
@@ -1514,7 +1450,6 @@ namespace Microsoft.VisualBasic
                         return new string(CharArray);
                     }
                 }
-
                 throw new InvalidCastException();
             }
             public static new string ToString(bool Value)
@@ -1527,7 +1462,6 @@ namespace Microsoft.VisualBasic
                 {
                     return bool.FalseString;
                 }
-
             }
             public static new string ToString(byte Value)
             {
@@ -1583,7 +1517,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new FormatException();
                 }
-
                 return true;
             }
             internal static bool IsHexOrOctValue(string Value, ref ulong ui64Value)
@@ -1624,7 +1557,6 @@ namespace Microsoft.VisualBasic
                 {
                     throw new FormatException();
                 }
-
                 return true;
             }
             public static T ToGenericParameter<T>(object Value)
@@ -1698,7 +1630,6 @@ namespace Microsoft.VisualBasic
                 {
                     return (T)Value;
                 }
-
             }
         }
         [Embedded()]
@@ -1772,13 +1703,11 @@ namespace Microsoft.VisualBasic
                     var loopTo1 = arySrc.Length / lenSrcLastRank - 1;
                     for (i = 0; i <= loopTo1; i++)
                         Array.Copy(arySrc, i * lenSrcLastRank, aryDest, i * lenDestLastRank, lenCopy);
-
                 }
                 else
                 {
                     Array.Copy(arySrc, aryDest, lLength);
                 }
-
                 return aryDest;
             }
         }
@@ -1800,7 +1729,6 @@ namespace Microsoft.VisualBasic
                     {
                         return count >= limit;
                     }
-
                 }
                 public static bool ForNextCheckR8(double count, double limit, double StepValue)
                 {
@@ -1812,7 +1740,6 @@ namespace Microsoft.VisualBasic
                     {
                         return count >= limit;
                     }
-
                 }
                 public static bool ForNextCheckDec(decimal count, decimal limit, decimal StepValue)
                 {
@@ -1824,7 +1751,6 @@ namespace Microsoft.VisualBasic
                     {
                         return count >= limit;
                     }
-
                 }
             }
         }
@@ -1841,10 +1767,8 @@ namespace Microsoft.VisualBasic
         [System.Runtime.CompilerServices.CompilerGenerated()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         internal sealed class IncompleteInitialization : Exception
-
         {
             public IncompleteInitialization() : base()
-
             {
             }
         }
@@ -1853,7 +1777,6 @@ namespace Microsoft.VisualBasic
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.CompilerGenerated()]
         internal sealed class StandardModuleAttribute : Attribute
-
         {
         }
         [Embedded()]
@@ -1861,7 +1784,6 @@ namespace Microsoft.VisualBasic
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.CompilerGenerated()]
         internal sealed class DesignerGeneratedAttribute : Attribute
-
         {
         }
         [Embedded()]
@@ -1869,7 +1791,6 @@ namespace Microsoft.VisualBasic
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.CompilerGenerated()]
         internal sealed class OptionCompareAttribute : Attribute
-
         {
         }
         [Embedded()]
@@ -1877,7 +1798,6 @@ namespace Microsoft.VisualBasic
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.CompilerGenerated()]
         internal sealed class OptionTextAttribute : Attribute
-
         {
         }
     }
@@ -1886,7 +1806,6 @@ namespace Microsoft.VisualBasic
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.CompilerServices.CompilerGenerated()]
     internal sealed class HideModuleNameAttribute : Attribute
-
     {
     }
     [Embedded()]

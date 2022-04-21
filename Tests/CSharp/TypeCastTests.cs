@@ -510,7 +510,6 @@ public partial class MultipleCasts
         {
             return (T)Value;
         }
-
     }
 }");
     }

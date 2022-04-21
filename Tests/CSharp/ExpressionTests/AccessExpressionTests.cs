@@ -374,7 +374,6 @@ End Class", @"
 internal static partial class AppBuilderUseExtensions
 {
     public static object Use<T>(this string app, params object[] args)
-
     {
         return null;
     }
@@ -430,7 +429,6 @@ internal partial class BaseTestClass
 }
 
 internal partial class TestClass : BaseTestClass
-
 {
 
     private void TestMethod()
@@ -460,7 +458,6 @@ public partial class BaseController
 }
 
 public partial class ActualController : BaseController
-
 {
 
     public void Do()
@@ -619,8 +616,6 @@ public partial class TestIssue479
     {
         var hD = new Issue479();
         Console.WriteLine(""Traditional access returns "" + hD[""X""] + Constants.vbCrLf + ""Default property access returns "" + hD[""X""] + Constants.vbCrLf + ""Dictionary access returns "" + hD[""X""]);
-
-
     }
 }");
     }
@@ -753,15 +748,11 @@ public partial class MoreParsing
     public void DoGet()
     {
         var anon = new { TheType = GetEnumValues<TheType>() };
-
-
     }
 
     private IDictionary<int, string> GetEnumValues<TEnum>()
     {
         return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
-
-
     }
 }");
     }

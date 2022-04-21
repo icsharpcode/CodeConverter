@@ -104,7 +104,6 @@ namespace WindowsAppVb.My
     #If _MYAPPLICATIONTYPE = "WindowsForms" Then
     */
     internal partial class MyApplication : Microsoft.VisualBasic.ApplicationServices.WindowsFormsApplicationBase
-
     {
         /* TODO ERROR: Skipped IfDirectiveTrivia
         #If TARGET = "winexe" Then
@@ -121,7 +120,6 @@ namespace WindowsAppVb.My
             finally
             {
             }
-
             MyProject.Application.Run(Args);
         }
         /* TODO ERROR: Skipped EndIfDirectiveTrivia
@@ -153,7 +151,6 @@ namespace WindowsAppVb.My
     #If _MYCOMPUTERTYPE = "Windows" Then
     */
     internal partial class MyComputer : Microsoft.VisualBasic.Devices.Computer
-
     {
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYCOMPUTERTYPE = "Web" Then
@@ -165,7 +162,6 @@ namespace WindowsAppVb.My
         [DebuggerHidden()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public MyComputer() : base()
-
         {
         }
     }
@@ -273,7 +269,6 @@ namespace WindowsAppVb.My
                     {
                         m_FormBeingCreated = new Hashtable();
                     }
-
                     m_FormBeingCreated.Add(typeof(T), null);
                     try
                     {
@@ -288,13 +283,11 @@ namespace WindowsAppVb.My
                     {
                         m_FormBeingCreated.Remove(typeof(T));
                     }
-
                 }
                 else
                 {
                     return Instance;
                 }
-
             }
 
             [DebuggerHidden()]
@@ -307,7 +300,6 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyForms() : base()
-
             {
             }
 
@@ -395,7 +387,6 @@ namespace WindowsAppVb.My
                 {
                     return instance;
                 }
-
             }
 
             [DebuggerHidden()]
@@ -407,7 +398,6 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyWebServices() : base()
-
             {
             }
         }
@@ -493,7 +483,6 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public ThreadSafeObjectProvider() : base()
-
             {
             }
 

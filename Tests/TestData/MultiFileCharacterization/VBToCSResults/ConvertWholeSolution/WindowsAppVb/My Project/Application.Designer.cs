@@ -23,7 +23,6 @@ namespace WindowsAppVb.My
 
         [DebuggerStepThrough()]
         public MyApplication() : base(Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
-
         {
             IsSingleInstance = false;
             EnableVisualStyles = true;

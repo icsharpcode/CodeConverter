@@ -101,7 +101,6 @@ internal partial class TestClass
     public string LastName { get; set; }
 
     public string get_FullName(bool lastNameFirst, bool isFirst)
-
     {
         if (lastNameFirst)
         {
@@ -111,10 +110,8 @@ internal partial class TestClass
         {
             return FirstName + "" "" + LastName;
         }
-
         // Bug: Comment moves inside generated method
     }
-
 
     internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
     {
@@ -151,11 +148,9 @@ End Class", @"
 public partial class Class1
 {
     public float get_SomeProp(int index)
-
     {
         return 1.5f;
     }
-
 
     public void set_SomeProp(int index, float value)
     {
@@ -200,12 +195,10 @@ internal partial class TestClass
     public string LastName { get; set; }
 
     public string get_FullName(bool isFirst = false)
-
     {
         return FirstName + "" "" + LastName;
         // Bug: Comment moves inside generated get method
     }
-
 
     internal void set_FullName(bool isFirst = false, string value = default)
     {
@@ -263,11 +256,9 @@ public partial class ParameterizedPropertiesAndEnumTest
     }
 
     public string get_MyProp(int blah)
-
     {
         return blah.ToString();
     }
-
 
     public void set_MyProp(int blah, string value)
     {
@@ -524,14 +515,11 @@ public partial interface IFoo
     void set_Prop(int x = 1, int y = 2, int value = default);
 }
 public partial class SomeClass : IFoo
-
 {
     internal int get_Prop2(int x = 1, int y = 2)
-
     {
         return default;
     }
-
 
     internal void set_Prop2(int x = 1, int y = 2, int value = default)
     {
@@ -617,14 +605,11 @@ public partial interface IFoo
     void set_Prop(int x = 1, int y = 2, int z = 3, int value = default);
 }
 public partial class SomeClass : IFoo
-
 {
     internal int get_Prop2(int x = 1, int y = 2, int z = 3)
-
     {
         return default;
     }
-
 
     internal void set_Prop2(int x = 1, int y = 2, int z = 3, int value = default)
     {
@@ -758,7 +743,6 @@ public partial class Class1
             {
                 _y = """";
             }
-
         }
     }
 }");

@@ -19,7 +19,6 @@ namespace WindowsAppVb.My
     [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.1.0.0")]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
     internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
-
     {
 
         private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());

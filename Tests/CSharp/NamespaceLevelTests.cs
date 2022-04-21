@@ -51,7 +51,6 @@ internal partial class A<T>
 {
 }
 internal partial class B : A<string>
-
 {
 }");
     }
@@ -184,7 +183,6 @@ namespace Aaa
         public abstract bool FOO { get; set; }
     }
     internal partial class NotBase : Base
-
     {
 
         public override void UPPER()
@@ -294,7 +292,6 @@ namespace Test.@class
 End Interface", @"using System;
 
 internal partial interface ITest : IDisposable
-
 {
 
     void Test();
@@ -332,7 +329,6 @@ internal enum ExceptionResource
 End Class", @"using System;
 
 internal abstract partial class ClassA : IDisposable
-
 {
 
     protected abstract void Test();
@@ -353,8 +349,6 @@ internal abstract partial class ClassA : IDisposable
 End Class", @"using System;
 
 internal abstract partial class ClassA : EventArgs, IDisposable
-
-
 {
 
     protected abstract void Test();
@@ -374,7 +368,6 @@ internal abstract partial class ClassA : EventArgs, IDisposable
 End Structure", @"using System;
 
 internal partial struct MyType : IComparable<MyType>
-
 {
 
     private void Test()
@@ -429,7 +422,6 @@ End Class",
             @"using System;
 
 internal partial class test : IComparable
-
 {
 }
 1 source compilation errors:
@@ -447,7 +439,6 @@ End Class",
             @"using System;
 
 internal partial class ClassImplementsInterface2 : IComparable
-
 {
 }
 1 source compilation errors:
@@ -467,7 +458,6 @@ End Class",
             @"using System.IO;
 
 internal partial class ClassInheritsClass : InvalidDataException
-
 {
 }
 1 source compilation errors:
@@ -485,7 +475,6 @@ End Class",
             @"using System.IO;
 
 internal partial class ClassInheritsClass2 : InvalidDataException
-
 {
 }
 1 source compilation errors:
@@ -504,7 +493,6 @@ CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataExcept
     End Sub
 End Class",
             @"public partial class DataSet1 : System.Data.DataSet
-
 {
     public DataSet1() : base()
     {
@@ -1053,7 +1041,6 @@ internal static partial class Module1
     /// The fact that this class doesn't contain a definition for GetImplName is crucial to the repro
     /// </summary>
     public partial class ErrorSite : BaseImpl
-
     {
         public object PublicGetImplName()
         {
@@ -1063,7 +1050,6 @@ internal static partial class Module1
     }
 
     public partial class OverrideImpl : ErrorSite
-
     {
         protected override string GetImplName()
         {

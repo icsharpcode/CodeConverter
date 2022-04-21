@@ -23,14 +23,11 @@ namespace VbNetStandardLib.My
         {
         }
         public static string get_Value(IEnumerable<XElement> source)
-
         {
             foreach (XElement item in source)
                 return item.Value;
-
             return null;
         }
-
 
         public static void set_Value(IEnumerable<XElement> source, string value)
         {
@@ -41,14 +38,11 @@ namespace VbNetStandardLib.My
             }
         }
         public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
-
         {
             foreach (XElement item in source)
                 return Conversions.ToString(item.Attribute(name));
-
             return null;
         }
-
 
         public static void set_AttributeValue(IEnumerable<XElement> source, XName name, string value)
         {
@@ -59,11 +53,9 @@ namespace VbNetStandardLib.My
             }
         }
         public static string get_AttributeValue(XElement source, XName name)
-
         {
             return Conversions.ToString(source.Attribute(name));
         }
-
 
         public static void set_AttributeValue(XElement source, XName name, string value)
         {
@@ -103,7 +95,6 @@ namespace VbNetStandardLib.My
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
                 }
-
             }
             return obj;
         }
@@ -121,7 +112,6 @@ namespace VbNetStandardLib.My
                 {
                     return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
                 }
-
             }
             return obj;
         }
@@ -157,7 +147,6 @@ namespace VbNetStandardLib.My
                 {
                     return obj;
                 }
-
             }
         }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

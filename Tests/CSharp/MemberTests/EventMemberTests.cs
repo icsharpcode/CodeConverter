@@ -107,7 +107,6 @@ public partial interface IFileSystem
 }
 
 public partial class FileSystemWin : IFileSystem
-
 {
 
     public event IFileSystem.FileChangedEventHandler FileChanged;
@@ -264,7 +263,6 @@ internal partial class Class1
     }
 
     public Class1(object obj) : this(7)
-
     {
     }
 
@@ -348,7 +346,6 @@ public partial class Class1
     }
 
     public Class1(object obj) : this()
-
     {
     }
 }
@@ -477,7 +474,6 @@ using System.Windows.Forms;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class BaseForm : Form
-
 {
     private Button _BaseButton;
 
@@ -505,7 +501,6 @@ internal partial class BaseForm : Form
 
 [DesignerGenerated]
 internal partial class BaseForm : Form
-
 {
 
     private void InitializeComponent()
@@ -516,7 +511,6 @@ internal partial class BaseForm : Form
 
 [DesignerGenerated]
 internal partial class Form1 : BaseForm
-
 {
     internal override Button BaseButton
     {
@@ -623,7 +617,6 @@ public partial class Form1
 }
 
 public partial class Form1 : System.Windows.Forms.Form
-
 {
 
     private void InitializeComponent()

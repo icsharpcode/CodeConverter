@@ -46,7 +46,6 @@ BC32042: Too few type arguments to 'List(Of T)'.");
 obj = null;",
             @"Private Sub SurroundingSub()
     Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
-
 .AllowMultiple = True,
 .Inherited = False
     }

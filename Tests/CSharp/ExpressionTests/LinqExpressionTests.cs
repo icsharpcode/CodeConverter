@@ -87,7 +87,6 @@ End Sub",
               select n;
     foreach (var n in res)
         Console.WriteLine(n);
-
 }");
     }
 
@@ -120,7 +119,6 @@ End Sub",
 
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
-
     }
 }");
     }
@@ -176,7 +174,6 @@ internal partial class Test
 
         foreach (var v in q)
             Console.WriteLine($""{v.ProductName}: {v.Category}"");
-
     }
 }");
     }
@@ -237,7 +234,6 @@ internal partial class Test
 
             foreach (var p in v.Products)
                 Console.WriteLine(""   "" + p.ProductName);
-
         }
     }
 }");
@@ -257,7 +253,6 @@ End Function", @"private static string FindPicFilePath(List<FileInfo> AList, str
                                   where (FileInfo1.Name.Substring(0, 6) ?? """") == (picId ?? """")
                                   select FileInfo1)
         return FileInfo.FullName;
-
     return string.Empty;
 }");
     }
@@ -348,11 +343,6 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
     var words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
 
     return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
-
-
-
-
-
 }");
     }
 
@@ -598,7 +588,6 @@ public partial class Class717
 
         foreach (var m in r)
             Console.WriteLine(m);
-
     }
 }");
     }
@@ -682,10 +671,8 @@ public partial class AccountEntry
 internal static partial class Ext
 {
     public static IEnumerable<AccountEntry> Reduce(this IEnumerable<AccountEntry> accountEntries)
-
     {
         return from _accountEntry in accountEntries
-
                where _accountEntry.Amount > 0m
                group _accountEntry by new
                {
@@ -717,7 +704,6 @@ internal static partial class Ext
                                                from _claimDetail in _accountEntry.AccountEntryClaimDetails
                                                select _claimDetail).Reduce().ToList()
                };
-
     }
 }");
     }

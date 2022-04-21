@@ -83,7 +83,6 @@ Namespace ANamespace 'namespace
         End Sub 'End of method
     End Class 'End of class
 End Namespace
-
 ' Last line comment");
     }
 

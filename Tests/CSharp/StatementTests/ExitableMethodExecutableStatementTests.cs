@@ -566,7 +566,6 @@ public partial class VisualBasicClass779
         finally
         {
         }
-
     }
 
     private bool To_Show_Cost()
@@ -625,7 +624,6 @@ public partial class VisualBasicClass779
             finally
             {
             }
-
         }
     }
 
@@ -691,7 +689,6 @@ public partial class VisualBasicClass779
                     {
                         break;
                     }
-
                 }
                 finally
                 {

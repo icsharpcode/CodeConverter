@@ -485,7 +485,6 @@ internal abstract partial class TestClass
 }
 
 internal partial class ChildClass : TestClass
-
 {
 
     public override string ReadOnlyProp { get; }
@@ -557,15 +556,12 @@ internal partial interface IClass
 }
 
 internal partial class ChildClass : IClass
-
 {
 
     public virtual int get_RenamedPropertyParam(int i)
-
     {
         return 1;
     }
-
 
     public virtual void set_RenamedPropertyParam(int i, int value)
     {
@@ -587,11 +583,9 @@ internal partial class ChildClass : IClass
     int IClass.ReadOnlyProp { get => RenamedReadOnlyProperty; } // Comment moves because this line gets split
 
     public virtual int get_RenamedWriteOnlyPropParam(int i)
-
     {
         return 1;
     }
-
 
     public virtual void set_RenamedWriteOnlyPropParam(int i, int value)
     {
@@ -647,22 +641,17 @@ internal partial interface IClass
 }
 
 internal partial class ChildClass : IClass
-
 {
 
     public virtual string get_ReadOnlyProp(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     public virtual void set_WriteOnlyProp(int i, string value)
-
     {
         throw new NotImplementedException();
     }
-
 }");
     }
 
@@ -773,33 +762,26 @@ internal partial interface IClass
 }
 
 internal partial class ChildClass : IClass
-
 {
 
     public string get_ReadOnlyPropRenamed(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     string IClass.get_ReadOnlyPropToRename(int i) => get_ReadOnlyPropRenamed(i);
 
     public virtual void set_WriteOnlyPropRenamed(int i, string value)
-
     {
         throw new NotImplementedException();
     }
-
 
     void IClass.set_WriteOnlyPropToRename(int i, string value) => set_WriteOnlyPropRenamed(i, value);
 
     public virtual string get_PropRenamed(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     public virtual void set_PropRenamed(int i, string value)
     {
@@ -810,29 +792,23 @@ internal partial class ChildClass : IClass
     void IClass.set_PropToRename(int i, string value) => set_PropRenamed(i, value);
 
     private string get_ReadOnlyPropNonPublic(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     string IClass.get_ReadOnlyPropNonPublic(int i) => get_ReadOnlyPropNonPublic(i);
 
     protected internal virtual void set_WriteOnlyPropNonPublic(int i, string value)
-
     {
         throw new NotImplementedException();
     }
-
 
     void IClass.set_WriteOnlyPropNonPublic(int i, string value) => set_WriteOnlyPropNonPublic(i, value);
 
     internal virtual string get_PropNonPublic(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     internal virtual void set_PropNonPublic(int i, string value)
     {
@@ -843,29 +819,23 @@ internal partial class ChildClass : IClass
     void IClass.set_PropNonPublic(int i, string value) => set_PropNonPublic(i, value);
 
     protected internal virtual string get_ReadOnlyPropRenamedNonPublic(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     string IClass.get_ReadOnlyPropToRenameNonPublic(int i) => get_ReadOnlyPropRenamedNonPublic(i);
 
     private void set_WriteOnlyPropRenamedNonPublic(int i, string value)
-
     {
         throw new NotImplementedException();
     }
-
 
     void IClass.set_WriteOnlyPropToRenameNonPublic(int i, string value) => set_WriteOnlyPropRenamedNonPublic(i, value);
 
     internal virtual string get_PropToRenameNonPublic(int i)
-
     {
         throw new NotImplementedException();
     }
-
 
     internal virtual void set_PropToRenameNonPublic(int i, string value)
     {
@@ -938,7 +908,6 @@ internal partial class TestClass
 }
 
 internal partial class TestSubclass : TestClass
-
 {
 
     public new void TestMethod()
@@ -965,12 +934,10 @@ End Module", @"
 internal static partial class TestClass
 {
     public static void TestMethod(this string str)
-
     {
     }
 
     public static void TestMethod2Parameters(this string str, string other)
-
     {
     }
 }");
@@ -990,7 +957,6 @@ End Module", @"
 internal static partial class TestClass
 {
     public static void TestMethod(this string str)
-
     {
     }
 }");
@@ -1022,7 +988,6 @@ End Module", @"using System;
 public static partial class MyExtensions
 {
     public static void Add<T>(ref T[] arr, T item)
-
     {
         Array.Resize(ref arr, arr.Length + 1);
         arr[arr.Length - 1] = item;
@@ -1058,7 +1023,6 @@ End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
-
     {
     }
 }
@@ -1095,7 +1059,6 @@ End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
-
     {
     }
 }
@@ -1105,7 +1068,6 @@ internal partial class ExtendedClass
 }
 
 internal partial class DerivedClass : ExtendedClass
-
 {
 
     public void TestExtensionConsumer()
@@ -1135,7 +1097,6 @@ End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this NestingClass.ExtendedClass extendedClass)
-
     {
     }
 }
@@ -1170,7 +1131,6 @@ End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
-
     {
     }
 }
@@ -1235,7 +1195,6 @@ End Class", @"
 internal partial class TestClass
 {
     ~TestClass()
-
     {
     }
 }");
@@ -1262,7 +1221,6 @@ Public Class B
         End Get
     End Property
 End Class", @"public partial class C : B
-
 {
 
     public override object X
@@ -1343,7 +1301,6 @@ internal abstract partial class TestClass1
 }
 
 internal partial class TestClass2 : TestClass1
-
 {
     public new static void CreateStatic()
     {
@@ -1534,7 +1491,6 @@ public partial class TestClass
 public partial class TestClass // VB doesn't require partial here (when just a single class omits it)
 {
     partial void DoNothing();
-
 }");
     }
 
@@ -1674,12 +1630,8 @@ internal partial class AsyncCode
     {
         async Task<int> a1() => 3;
         async Task<int> a2() => await Task.FromResult(3);
-
-
         async void a3() => await Task.CompletedTask;
         async void a4() => await Task.CompletedTask;
-
-
     }
 
     public async Task<int> AsyncFunc()
@@ -1732,33 +1684,28 @@ using System.Threading.Tasks;
 internal static partial class TaskExtensions
 {
     public async static Task<T> Then<T>(this Task task, Func<Task<T>> f)
-
     {
         await task;
         return await f();
     }
 
     public async static Task Then(this Task task, Func<Task> f)
-
     {
         await task;
         await f();
     }
 
     public async static Task<U> Then<T, U>(this Task<T> task, Func<T, Task<U>> f)
-
     {
         return await f(await task);
     }
 
     public async static Task Then<T>(this Task<T> task, Func<T, Task> f)
-
     {
         await f(await task);
     }
 
     public async static Task ThenExit<T>(this Task<T> task, Func<T, Task> f)
-
     {
         await f(await task);
         return;
@@ -1802,7 +1749,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
     public int FooDifferentCase(out string str2)
     {
@@ -1834,7 +1780,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int BarDifferentName(ref string str, int i)
@@ -1882,7 +1827,6 @@ public partial interface IBar
 }
 
 public partial class FooBar : IFoo, IBar
-
 {
 
     public int Foo(ref string str, int i)
@@ -1939,7 +1883,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     private int doFoo()
@@ -1957,9 +1900,6 @@ public partial class Foo : IFoo
         var foo = new Foo();
         IFoo interfaceInstance = foo;
         return foo.doFoo() + foo.doFoo() + interfaceInstance.DoFoo() + interfaceInstance.DoFoo() + foo.prop + foo.prop + interfaceInstance.Prop + interfaceInstance.Prop;
-
-
-
     }
 
 }
@@ -2015,7 +1955,6 @@ public partial interface IFoo
 }
 
 public abstract partial class BaseFoo : IFoo
-
 {
 
     protected internal virtual int doFoo()
@@ -2031,7 +1970,6 @@ public abstract partial class BaseFoo : IFoo
 }
 
 public partial class Foo : BaseFoo
-
 {
 
     protected internal override int doFoo()
@@ -2047,11 +1985,6 @@ public partial class Foo : BaseFoo
         IFoo interfaceInstance = foo;
         BaseFoo baseClass = foo;
         return foo.doFoo() + foo.doFoo() + interfaceInstance.DoFoo() + interfaceInstance.DoFoo() + baseClass.doFoo() + baseClass.doFoo() + foo.prop + foo.prop + interfaceInstance.Prop + interfaceInstance.Prop + baseClass.prop + baseClass.prop;
-
-
-
-
-
     }
 }
 ");
@@ -2110,7 +2043,6 @@ public partial interface IFoo
 }
 
 public abstract partial class BaseFoo : IUserContext
-
 {
 
     protected internal string ConnectedGroupID { get; private set; }
@@ -2119,8 +2051,6 @@ public abstract partial class BaseFoo : IUserContext
 }
 
 public partial class Foo : BaseFoo, IFoo
-
-
 {
 
     protected internal new string ConnectedGroupID
@@ -2140,9 +2070,6 @@ public partial class Foo : BaseFoo, IFoo
         BaseFoo baseFoo = foo;
         IUserContext iUserContext = foo;
         return foo.ConnectedGroupID + foo.ConnectedGroupID + ifoo.ConnectedGroupId + ifoo.ConnectedGroupId + baseFoo.ConnectedGroupID + baseFoo.ConnectedGroupID + iUserContext.GroupID + iUserContext.GroupID;
-
-
-
     }
 
 }
@@ -2180,7 +2107,6 @@ public partial interface IBar
 }
 
 public partial class FooBar : IFoo, IBar
-
 {
 
     public int Foo(ref string str, int i)
@@ -2225,7 +2151,6 @@ public partial interface IBar
 }
 
 public partial class FooBar : IFoo, IBar
-
 {
 
     public int Foo { get; set; }
@@ -2262,7 +2187,6 @@ namespace TestNamespace
 }
 
 public partial class Foo : TestNamespace.IFoo
-
 {
 
     public int DoFooRenamed(ref string str, int i)
@@ -2298,7 +2222,6 @@ namespace TestNamespace
 }
 
 public partial class Foo : TestNamespace.IFoo
-
 {
 
     public int FooPropRenamed { get; set; }
@@ -2335,7 +2258,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int DoFooRenamed(ref string str, int i)
@@ -2384,7 +2306,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int FooPropRenamed { get; set; }
@@ -2431,7 +2352,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int DoFoo(string str, int i)
@@ -2478,7 +2398,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int FooProp { get; set; }
@@ -2524,7 +2443,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int DoFooRenamed(ref string str, int i)
@@ -2573,7 +2491,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int FooPropRenamed { get; set; }
@@ -2620,7 +2537,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int DoFooRenamed(ref string str, int i)
@@ -2669,7 +2585,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int FooPropRenamed { get; set; }
@@ -2712,7 +2627,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int MyClassDoFooRenamed(ref string str, int i)
@@ -2765,7 +2679,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int MyClassDoFooRenamed
@@ -2843,7 +2756,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     private int ExplicitFunc(ref string str, int i)
@@ -2854,11 +2766,9 @@ public partial class Foo : IFoo
     int IFoo.ExplicitFunc(ref string str, int i) => ExplicitFunc(ref str, i);
 
     private int get_ExplicitProp(string str)
-
     {
         return 5;
     }
-
 
     private void set_ExplicitProp(string str, int value)
     {
@@ -2906,15 +2816,12 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public virtual int get_PropParams(string str)
-
     {
         return 5;
     }
-
 
     public virtual void set_PropParams(string str, int value)
     {
@@ -2962,7 +2869,6 @@ public partial interface IBar
 }
 
 public partial class Foo : IFoo, IBar
-
 {
 
     private int ExplicitProp { get; set; }
@@ -2999,7 +2905,6 @@ public partial interface IBar
     int ExplicitProp { get; set; }
 }
 public abstract partial class Foo : IFoo, IBar
-
 {
 
     protected abstract int ExplicitPropRenamed1 { get; set; }
@@ -3052,8 +2957,6 @@ public abstract partial class BaseFoo
 }
 
 public partial class Foo : BaseFoo, IFoo
-
-
 {
 
     protected override void OnSave()
@@ -3105,7 +3008,6 @@ public partial interface IBar
 }
 
 public partial class Foo : IFoo, IBar
-
 {
 
     public virtual void Save()
@@ -3165,8 +3067,6 @@ public abstract partial class BaseFoo
 }
 
 public partial class Foo : BaseFoo, IFoo
-
-
 {
 
     public new void OnSave()
@@ -3215,7 +3115,6 @@ public partial interface IBar
 }
 
 public partial class Foo : IFoo, IBar
-
 {
 
     private int ExplicitProp
@@ -3306,7 +3205,6 @@ public partial interface IBar
 }
 
 public abstract partial class BaseFoo : IFoo, IBar
-
 {
 
     internal virtual int FriendProp
@@ -3351,7 +3249,6 @@ public abstract partial class BaseFoo : IFoo, IBar
 }
 
 public partial class Foo : BaseFoo
-
 {
 
     protected internal override void ProtectedInternalSub()
@@ -3393,7 +3290,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     public int ExplicitPropRenamed { get; set; }
@@ -3438,7 +3334,6 @@ public partial interface IBar
 }
 
 public partial class Foo : IFoo, IBar
-
 {
 
     public int ExplicitPropRenamed { get; private set; }
@@ -3478,7 +3373,6 @@ public partial interface IBar
 }
 
 public partial class Foo : IFoo, IBar
-
 {
 
     public int ExplicitPropRenamed
@@ -3537,7 +3431,6 @@ public partial interface IBar
 }
 
 public partial class Foo : IFoo, IBar
-
 {
 
     private int ExplicitFunc(ref string str, int i)
@@ -3549,11 +3442,9 @@ public partial class Foo : IFoo, IBar
     int IBar.ExplicitFunc(ref string str, int i) => ExplicitFunc(ref str, i);
 
     private int get_ExplicitProp(string str)
-
     {
         return 5;
     }
-
 
     private void set_ExplicitProp(string str, int value)
     {
@@ -3598,7 +3489,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     private int ExplicitFunc(string str = """", int i2 = 1)
@@ -3609,11 +3499,9 @@ public partial class Foo : IFoo
     int IFoo.ExplicitFunc(string str, int i2) => ExplicitFunc(str, i2);
 
     private int get_ExplicitProp(string str = """")
-
     {
         return 5;
     }
-
 
     private void set_ExplicitProp(string str = """", int value = default)
     {
@@ -3650,7 +3538,6 @@ public partial interface IFoo
 }
 
 internal partial class Foo : IFoo
-
 {
 
     public int BarDifferentName(ref string str, int i)
@@ -3760,12 +3647,10 @@ internal partial class StaticLocalConvertedToField
 
     private int _OtherName_sPrevPosition1 = default;
     public int get_OtherName(int x)
-
     {
         _OtherName_sPrevPosition1 += 1;
         return _OtherName_sPrevPosition1;
     }
-
 }");
     }
 
@@ -3849,8 +3734,7 @@ internal static partial class StaticLocalConvertedToField
     }
 
     private static int _OtherName_sPrevPosition1 = default;
-    public static int OtherName(int x)
-    // Comment also moves with declaration
+    public static int OtherName(int x) // Comment also moves with declaration
     {
         return _OtherName_sPrevPosition1;
     }
@@ -3875,8 +3759,7 @@ End Class", @"using System;
 internal partial class StaticLocalConvertedToField
 {
     private static int _OtherName_sPrevPosition = default;
-    public static void OtherName(bool x)
-    // Comment moves with declaration
+    public static void OtherName(bool x) // Comment moves with declaration
     {
         Console.WriteLine(_OtherName_sPrevPosition);
     }

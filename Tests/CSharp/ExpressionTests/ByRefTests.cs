@@ -209,7 +209,6 @@ public partial class Class1
             bool argb1 = true == false;
             Bar(ref argb1);
         }
-
     }
 
     public void Foo5()
@@ -324,7 +323,6 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
-
 {
 
     private int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str)

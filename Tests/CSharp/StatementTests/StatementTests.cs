@@ -162,16 +162,12 @@ public partial class TestFunc
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
 
-
-
     private void TestMethod()
     {
         bool index(List<string> pList) => pList.All(x => true);
         bool index2(List<string> pList) => pList.All(x => false);
         bool index3(List<int> pList) => pList.All(x => true);
         bool isTrue(List<string> pList) => pList.All(x => true);
-
-
         bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
         void write() => Console.WriteLine(1);
     }
@@ -666,11 +662,9 @@ internal partial class TestClass
         using (var cmd = new SqlCommand())
         {
             cmd.ExecuteNonQuery();
-
             cmd?.ExecuteNonQuery();
             cmd.ExecuteNonQuery();
             cmd?.ExecuteNonQuery();
-
         }
     }
 }");
@@ -700,9 +694,7 @@ public partial class VisualBasicClass
     {
         var str = default(SomeStruct);
         str.ArrField = new string[2];
-
         str.ArrProp = new string[3];
-
     }
 }
 
@@ -1270,7 +1262,6 @@ internal partial class TestClass
         {
             b = 3;
         }
-
     }
 }");
     }
@@ -1335,11 +1326,9 @@ internal partial class TestClass
                 }
             }
             else if ((w[c].ToString() ?? """") == (needle ?? """"))
-
             {
                 return c;
             }
-
         }
         return -1;
     }
@@ -1368,7 +1357,6 @@ internal partial class TestClass
 
         lock (nullObject)
             Console.WriteLine(nullObject);
-
     }
 }");
     }
@@ -1860,7 +1848,6 @@ internal partial class TestClass
             Console.WriteLine(""finally"");
         }
 
-
         try
         {
             Console.WriteLine(""try"");
@@ -1874,7 +1861,6 @@ internal partial class TestClass
             Console.WriteLine(""catch2"");
         }
 
-
         try
         {
             Console.WriteLine(""try"");
@@ -1883,7 +1869,6 @@ internal partial class TestClass
         {
             Console.WriteLine(""finally"");
         }
-
     }
 }");
     }
@@ -2012,14 +1997,12 @@ internal partial class TestClass
     private object FuncReturningNull()
     {
         int zeroLambda(object y) => default;
-
         return default;
     }
 
     private int FuncReturningZero()
     {
         object nullLambda(object y) => default;
-
         return default;
     }
 
@@ -2027,8 +2010,6 @@ internal partial class TestClass
     {
         int FuncReturningAssignedValueRet = default;
         void aSub(object y) { return; };
-
-
         FuncReturningAssignedValueRet = 3;
         return FuncReturningAssignedValueRet;
     }
@@ -2059,7 +2040,6 @@ internal partial class TestClass
             yield break;
         for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
             yield return i;
-
         yield break;
     }
 }");

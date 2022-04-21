@@ -7,4 +7,3 @@ Namespace NetCore
         End Sub
     End Class
 End Namespace
-

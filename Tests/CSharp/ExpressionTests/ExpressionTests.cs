@@ -838,7 +838,6 @@ internal partial class TestClass
         {
             return default;
         }
-
     }
 }");
     }
@@ -1050,7 +1049,6 @@ End Class", @"using System.Collections;
 using System.Collections.Generic;
 
 internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
-
 {
     public bool TryGetValue(int key, out int value)
     {
@@ -1352,8 +1350,6 @@ internal partial class TestClass
     {
         return await ExecuteAuthenticatedAsync(async () => await DoSomethingAsync());
 
-
-
     }
     private async Task<bool> ExecuteAuthenticatedAsync(Func<Task<bool>> myFunc)
     {
@@ -1487,8 +1483,6 @@ public partial class AnonymousLambdaTypeConversionTest
     public void Foo()
     {
         CallThing(new Action(() => SomeMethod()));
-
-
         CallThing(new Action<object>(a => SomeMethod()));
         CallThing(new Func<bool>(() =>
         {
@@ -1550,7 +1544,6 @@ internal partial class TestClassBase
     }
 }
 internal partial class TestClass : TestClassBase
-
 {
     private void TestMethod()
     {
@@ -1897,7 +1890,6 @@ public partial class Test
                             return x;
                         }
 
-
                         break;
                     }
                 case 5:
@@ -1910,7 +1902,6 @@ public partial class Test
                         {
                             x = 5;
                         }
-
 
                         break;
                     }
@@ -1928,7 +1919,6 @@ public partial class Test
                         {
                             return x;
                         }
-
 
                         break;
                     }
@@ -1998,7 +1988,6 @@ public partial class Test
                         {
                             return x;
                         }
-
                     }
                 case 14:
                     {
@@ -2028,7 +2017,6 @@ public partial class Test
                         {
                             return x;
                         }
-
                     }
             }
         }
@@ -2082,7 +2070,6 @@ public partial class Foo
         {
             Bar?.Invoke(this, e);
         }
-
     }
 }");
     }
@@ -2117,7 +2104,6 @@ End Class", @"
 public partial class Class1
 {
     ~Class1()
-
     {
     }
 }");
@@ -2183,8 +2169,6 @@ public partial class MoreParsing
     public void DoGet()
     {
         var anon = new { ANumber = 5 };
-
-
         var sameAnon = Identity(anon);
         var repeated = Enumerable.Repeat(anon, 5).ToList();
     }

@@ -24,14 +24,11 @@ namespace ConsoleApp1.My
         {
         }
         public static string get_Value(IEnumerable<XElement> source)
-
         {
             foreach (XElement item in source)
                 return item.Value;
-
             return null;
         }
-
 
         public static void set_Value(IEnumerable<XElement> source, string value)
         {
@@ -42,14 +39,11 @@ namespace ConsoleApp1.My
             }
         }
         public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
-
         {
             foreach (XElement item in source)
                 return Conversions.ToString(item.Attribute(name));
-
             return null;
         }
-
 
         public static void set_AttributeValue(IEnumerable<XElement> source, XName name, string value)
         {
@@ -60,11 +54,9 @@ namespace ConsoleApp1.My
             }
         }
         public static string get_AttributeValue(XElement source, XName name)
-
         {
             return Conversions.ToString(source.Attribute(name));
         }
-
 
         public static void set_AttributeValue(XElement source, XName name, string value)
         {
@@ -104,7 +96,6 @@ namespace ConsoleApp1.My
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
                 }
-
             }
             return obj;
         }
@@ -122,7 +113,6 @@ namespace ConsoleApp1.My
                 {
                     return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
                 }
-
             }
             return obj;
         }
@@ -158,7 +148,6 @@ namespace ConsoleApp1.My
                 {
                     return obj;
                 }
-
             }
         }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

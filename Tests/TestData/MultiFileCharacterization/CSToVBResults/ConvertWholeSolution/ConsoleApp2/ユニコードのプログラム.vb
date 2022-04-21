@@ -16,4 +16,3 @@ Namespace ConsoleApp2
 
     End Class
 End Namespace
-

@@ -9,4 +9,3 @@ Namespace CSharpNetStandardLib
         End Sub
     End Class
 End Namespace
-

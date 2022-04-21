@@ -76,7 +76,6 @@ internal partial class Program
     var someArray = new int[] { 1, 2, 3 };
     for (short index = 0, loopTo = (short)(someArray.Length - 1); index <= loopTo; index++)
         Console.WriteLine(index);
-
 }");
     }
 
@@ -96,7 +95,6 @@ End Sub", @"public void Main()
     var loopTo = (int)Math.Round(Conversion.Int(foo * 3f));
     for (index = (int)Math.Round(Conversion.Int(foo)); index <= loopTo; index++)
         Console.WriteLine(index);
-
 }");
     }
 
@@ -117,7 +115,6 @@ internal partial class Issue453
     {
         for (int i = startIndex, loopTo = endIndex; i <= loopTo; i += -0)
             Debug.WriteLine(i);
-
     }
 }");
     }
@@ -139,7 +136,6 @@ internal partial class Issue453
     {
         for (int i = startIndex, loopTo = endIndex; i >= loopTo; i -= 5)
             Debug.WriteLine(i);
-
     }
 }");
     }
@@ -161,7 +157,6 @@ internal partial class Issue453
     {
         for (int i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += step)
             Debug.WriteLine(i);
-
     }
 }");
     }
@@ -203,16 +198,12 @@ internal partial class ForEnumAsync
     {
         for (MyEnum i = startIndex, loopTo = endIndex; (int)step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
             Debug.WriteLine(i);
-
         for (MyEnum i2 = startIndex, loopTo1 = endIndex; (int)step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
             Debug.WriteLine(i2);
-
         for (MyEnum i3 = startIndex, loopTo2 = endIndex; i3 <= loopTo2; i3 += 3)
             Debug.WriteLine(i3);
-
         for (MyEnum i4 = startIndex; i4 <= (MyEnum)4; i4++)
             Debug.WriteLine(i4);
-
     }
 }");
     }
@@ -237,7 +228,6 @@ internal partial class Program
         object zs = new[] { 1, 2, 3 };
         foreach (var z in (IEnumerable)zs)
             Console.WriteLine(z);
-
     }
 }");
     }
@@ -261,7 +251,6 @@ internal partial class TestClass
         int[] b = default, s = default;
         for (int i = 0, loopTo = end; i <= loopTo; i++)
             b[i] = s[i];
-
     }
 }
 1 source compilation errors:
@@ -339,7 +328,6 @@ internal partial class TestClass
         int[] b = default, s = default;
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
-
     }
 }");
     }
@@ -398,7 +386,6 @@ internal partial class GotoTest1
 
             for (int j = 0, loopTo1 = y - 1; j <= loopTo1; j++)
                 array[i, j] = System.Threading.Interlocked.Increment(ref count).ToString();
-
         }
 
         Console.Write(""Enter the number to search for: "");
