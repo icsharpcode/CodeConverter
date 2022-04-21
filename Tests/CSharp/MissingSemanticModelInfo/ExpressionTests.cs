@@ -22,7 +22,6 @@ End Class", @"
 internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
-
     private void TestMethod()
     {
         int num = 0;
@@ -50,7 +49,6 @@ End Class", @"
 internal partial class TestClass
 {
     public System.Some.UnknownType SomeProperty { get; set; }
-
     private void TestMethod()
     {
         var value = SomeProperty(new object());
@@ -88,6 +86,7 @@ public partial class Class1
     {
         return x;
     }
+
 }
 1 source compilation errors:
 BC30002: Type 'SomeClass' is not defined.
@@ -111,6 +110,7 @@ public partial class Class1
     {
         for (this.Index = 0; this.Index <= 10; this.Index++)
         {
+
         }
     }
 }
@@ -236,11 +236,11 @@ public partial class EnumAndValTest
                     tPos = 0;
                     break;
                 }
-
             case ""LEFTTOP"":
             case ""1"":
                 {
                     tPos = (PositionEnum)1;
+
                     break;
                 }
 
@@ -250,10 +250,8 @@ public partial class EnumAndValTest
                     break;
                 }
         }
-
         return tPos;
     }
-
     public string PositionEnumStringFromConstant(PositionEnum pS)
     {
         string tS;
@@ -264,10 +262,10 @@ public partial class EnumAndValTest
                     tS = ""NONE"";
                     break;
                 }
-
             case (PositionEnum)1:
                 {
                     tS = ""LEFTTOP"";
+
                     break;
                 }
 
@@ -277,7 +275,6 @@ public partial class EnumAndValTest
                     break;
                 }
         }
-
         return tS;
     }
 }
@@ -305,6 +302,7 @@ End Class",
 
 public partial class CastToSameTypeTest
 {
+
     public void PositionEnumFromString(char c)
     {
         switch (c)
@@ -314,7 +312,6 @@ public partial class CastToSameTypeTest
                     Console.WriteLine(1);
                     break;
                 }
-
             case ',':
                 {
                     Console.WriteLine(2);
@@ -337,7 +334,6 @@ End Class", @"
 internal partial class TestClass
 {
     private System.SomeUnknownType DefaultDate { get; set; }
-
     private void TestMethod()
     {
         var a = DefaultDate(1, 2, 3).Blawer(1, 2, 3);
@@ -398,6 +394,7 @@ internal partial class A
         int y = 3;
         if (x == null || (object)y == null)
         {
+
         }
     }
 }

@@ -87,34 +87,35 @@ End Class", @"using System.IO;
 
 public partial interface IFileSystem
 {
+
     event FileChangedEventHandler FileChanged;
 
     delegate void FileChangedEventHandler(string FileData);
-
     event FileCreatedEventHandler FileCreated;
 
     delegate void FileCreatedEventHandler(string FileData);
-
     event FileDeletedEventHandler FileDeleted;
 
     delegate void FileDeletedEventHandler(string FileData);
-
     event FileRenamedEventHandler FileRenamed;
 
     delegate void FileRenamedEventHandler(RenamedEventArgs e);
-
     event WatcherErrorEventHandler WatcherError;
 
     delegate void WatcherErrorEventHandler(ErrorEventArgs e);
+
 }
 
 public partial class FileSystemWin : IFileSystem
+
 {
+
     public event IFileSystem.FileChangedEventHandler FileChanged;
     public event IFileSystem.FileCreatedEventHandler FileCreated;
     public event IFileSystem.FileDeletedEventHandler FileDeleted;
     public event IFileSystem.FileRenamedEventHandler FileRenamed;
     public event IFileSystem.WatcherErrorEventHandler WatcherError;
+
 }");
     }
 
@@ -193,7 +194,6 @@ internal partial class MyEventClass
 internal partial class Class1
 {
     private MyEventClass MyEventClassInstance;
-
     public void EventClassInstance_TestEvent()
     {
     }
@@ -264,6 +264,7 @@ internal partial class Class1
     }
 
     public Class1(object obj) : this(7)
+
     {
     }
 
@@ -347,6 +348,7 @@ public partial class Class1
     }
 
     public Class1(object obj) : this()
+
     {
     }
 }
@@ -416,6 +418,7 @@ public partial class TestHandlesAdded
         POW_btnV2DBM.Text = "">>"";
         POW_btnV2DBM.UseVisualStyleBackColor = true;
     }
+
 }
 
 public partial class TestHandlesAdded
@@ -424,6 +427,7 @@ public partial class TestHandlesAdded
 
     public void POW_btnV2DBM_Click()
     {
+
     }
 }
 2 source compilation errors:
@@ -473,6 +477,7 @@ using System.Windows.Forms;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class BaseForm : Form
+
 {
     private Button _BaseButton;
 
@@ -500,7 +505,9 @@ internal partial class BaseForm : Form
 
 [DesignerGenerated]
 internal partial class BaseForm : Form
+
 {
+
     private void InitializeComponent()
     {
         _BaseButton = new Button();
@@ -509,6 +516,7 @@ internal partial class BaseForm : Form
 
 [DesignerGenerated]
 internal partial class Form1 : BaseForm
+
 {
     internal override Button BaseButton
     {
@@ -538,19 +546,18 @@ internal partial class Form1 : BaseForm
     {
         InitializeComponent();
     }
-
     private void InitializeComponent()
     {
         Button1 = new Button();
         Button1.Click += new EventHandler(MultiClickHandler);
     }
-
     internal Button Button1;
 }
 
 internal partial class Form1
 {
     private void MultiClickHandler(object sender, EventArgs e)
+
     {
     }
 }
@@ -612,12 +619,15 @@ using System.Runtime.CompilerServices;
 public partial class Form1
 {
     private void MultiClickHandler(object sender, EventArgs e)
+
     {
     }
 }
 
 public partial class Form1 : System.Windows.Forms.Form
+
 {
+
     private void InitializeComponent()
     {
         _Button1 = new System.Windows.Forms.Button();
@@ -651,7 +661,6 @@ public partial class Form1 : System.Windows.Forms.Form
             }
         }
     }
-
     private System.Windows.Forms.Button _Button2;
 
     internal virtual System.Windows.Forms.Button Button2

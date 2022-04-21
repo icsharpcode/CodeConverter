@@ -159,9 +159,10 @@ public partial class TestFunc
 {
     public Func<int, int> pubIdent = (row) => row;
     public Func<int, object> pubWrite = (row) => Console.WriteLine(row);
-
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
+
+
 
     private void TestMethod()
     {
@@ -169,6 +170,8 @@ public partial class TestFunc
         bool index2(List<string> pList) => pList.All(x => false);
         bool index3(List<int> pList) => pList.All(x => true);
         bool isTrue(List<string> pList) => pList.All(x => true);
+
+
         bool isTrueWithNoStatement(List<string> pList) => pList.All(x => true);
         void write() => Console.WriteLine(1);
     }
@@ -250,27 +253,22 @@ internal partial class ContrivedFuncInferenceExample
         {
             return new Blah(p1);
         }
-
         public static implicit operator Func<List<string>, bool>(Blah p1)
         {
             return p1.Check;
         }
-
         public static Blah operator -(Blah p1, Blah p2)
         {
             return new Blah();
         }
-
         public static Blah operator +(Blah p1, Blah p2)
         {
             return new Blah();
         }
-
         public static bool operator <=(Blah p1, Blah p2)
         {
             return p1.Check(new List<string>());
         }
-
         public static bool operator >=(Blah p1, Blah p2)
         {
             return p2.Check(new List<string>());
@@ -489,7 +487,6 @@ End Class", @"
 internal partial class Program
 {
     private static int[][] My2darray;
-
     public static void Main(string[] args)
     {
         My2darray = new int[7][];
@@ -522,6 +519,7 @@ public partial class Class1
     private void test123(object sender, EventArgs e)
     {
         test = new List<int>[43];
+
         Tuple<int, int>[] test1;
         test1 = new Tuple<int, int>[43];
     }
@@ -628,6 +626,7 @@ internal static partial class Module1
     public static void Main()
     {
         var myArray = new SomeStruct[1];
+
         {
             ref var withBlock = ref myArray[0];
             withBlock.FieldA = 3;
@@ -667,9 +666,11 @@ internal partial class TestClass
         using (var cmd = new SqlCommand())
         {
             cmd.ExecuteNonQuery();
+
             cmd?.ExecuteNonQuery();
             cmd.ExecuteNonQuery();
             cmd?.ExecuteNonQuery();
+
         }
     }
 }");
@@ -699,14 +700,15 @@ public partial class VisualBasicClass
     {
         var str = default(SomeStruct);
         str.ArrField = new string[2];
+
         str.ArrProp = new string[3];
+
     }
 }
 
 public partial struct SomeStruct
 {
     public string[] ArrField;
-
     public string[] ArrProp { get; set; }
 }");
     }
@@ -1086,6 +1088,7 @@ internal partial class Test
     {
     the_beginning:
         ;
+
         int value = 1;
         const double myPIe = 2d * Math.PI;
         string text = ""This is my text!"";
@@ -1250,6 +1253,7 @@ internal partial class TestClass
     private void TestMethod(int a)
     {
         int b;
+
         if (a == 0)
         {
             b = 0;
@@ -1266,6 +1270,7 @@ internal partial class TestClass
         {
             b = 3;
         }
+
     }
 }");
     }
@@ -1290,7 +1295,6 @@ internal partial class TestClass
             Console.WriteLine(2);
             return;
         }
-
         Console.WriteLine(3);
     }
 }");
@@ -1320,6 +1324,7 @@ internal partial class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
+
         for (int c = startCol, loopTo = w.Length; c <= loopTo; c++)
         {
             if (string.IsNullOrEmpty(needle))
@@ -1330,11 +1335,12 @@ internal partial class TestClass
                 }
             }
             else if ((w[c].ToString() ?? """") == (needle ?? """"))
+
             {
                 return c;
             }
-        }
 
+        }
         return -1;
     }
 }");
@@ -1359,8 +1365,10 @@ internal partial class TestClass
     {
         if (nullObject is null)
             throw new ArgumentNullException(nameof(nullObject));
+
         lock (nullObject)
             Console.WriteLine(nullObject);
+
     }
 }");
     }
@@ -1482,10 +1490,10 @@ internal partial class TestClass
                     Console.Write(""number is 0, 1, 2"");
                     break;
                 }
-
             case 5:
                 {
                     Console.Write(""section 5"");
+
                     break;
                 }
 
@@ -1528,10 +1536,10 @@ public partial class TestClass
                 {
                     return ""this week"";
                 }
-
             case var case4 when case4 > 0:
                 {
                     return daysAgo / 7 + "" weeks ago"";
+
                 }
 
             default:
@@ -1574,15 +1582,14 @@ public partial class TestClass
                 {
                     return ""ab"";
                 }
-
             case var case2 when case2 == (Strings.UCase(""c"") ?? """"):
                 {
                     return ""c"";
                 }
-
             case ""d"":
                 {
                     return ""d"";
+
                 }
 
             default:
@@ -1635,17 +1642,16 @@ public partial class TestClass2
                     // we do not work on weekends
                     return false;
                 }
-
             case object _ when !IsSqlAlive():
                 {
                     // Database unavailable
                     return false;
                 }
-
             case object _ when Something is int:
                 {
                     // Do something with the Integer
                     return true;
+
                 }
 
             default:
@@ -1691,13 +1697,12 @@ public partial class TestClass2
                 {
                     break;
                 }
-
             case 4:
                 {
                     break;
                 }
-
             case var case1 when case1 > 4:
+
                 {
                     break;
                 }
@@ -1730,7 +1735,8 @@ Private Function Test(astr_Temp As String) As Nullable(Of Boolean)
             Return Nothing
     End Select
 End Function
-End Class", @"using System.Globalization;
+End Class", @"
+using System.Globalization;
 
 internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
 {
@@ -1742,10 +1748,10 @@ internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
                 {
                     return true;
                 }
-
             case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 {
                     return false;
+
                 }
 
             default:
@@ -1780,11 +1786,13 @@ internal partial class Issue707SelectCaseAsyncClass
     private bool? Exists(char? sort)
     {
         switch (Strings.LCase(Conversions.ToString(sort) + """") ?? """")
+
         {
             case var @case when @case == """":
             case var case1 when case1 == """":
                 {
                     return false;
+
                 }
 
             default:
@@ -1861,6 +1869,7 @@ internal partial class TestClass
             Console.WriteLine(""finally"");
         }
 
+
         try
         {
             Console.WriteLine(""try"");
@@ -1874,6 +1883,7 @@ internal partial class TestClass
             Console.WriteLine(""catch2"");
         }
 
+
         try
         {
             Console.WriteLine(""try"");
@@ -1882,6 +1892,7 @@ internal partial class TestClass
         {
             Console.WriteLine(""finally"");
         }
+
     }
 }");
     }
@@ -1921,7 +1932,6 @@ internal static partial class Main
                 {
                     return "" "";
                 }
-
             case EWhere.Bottom:
                 {
                     return ""_ "";
@@ -1929,6 +1939,7 @@ internal static partial class Main
         }
 
         return default;
+
     }
 }");
     }
@@ -1962,6 +1973,7 @@ public partial class NonStringSelect
                 case var @case when @case == typeof(string):
                     {
                         return false;
+
                     }
 
                 default:
@@ -2010,12 +2022,16 @@ internal partial class TestClass
     private object FuncReturningNull()
     {
         int zeroLambda(object y) => default;
+
+
         return default;
     }
 
     private int FuncReturningZero()
     {
         object nullLambda(object y) => default;
+
+
         return default;
     }
 
@@ -2023,6 +2039,8 @@ internal partial class TestClass
     {
         int FuncReturningAssignedValueRet = default;
         void aSub(object y) { return; };
+
+
         FuncReturningAssignedValueRet = 3;
         return FuncReturningAssignedValueRet;
     }
@@ -2053,6 +2071,7 @@ internal partial class TestClass
             yield break;
         for (int i = 0, loopTo = number - 1; i <= loopTo; i++)
             yield return i;
+
         yield break;
     }
 }");

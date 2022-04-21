@@ -11,6 +11,7 @@ namespace Microsoft.VisualBasic
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.CompilerServices.CompilerGenerated()]
     internal sealed class Embedded : Attribute
+
     {
     }
 }

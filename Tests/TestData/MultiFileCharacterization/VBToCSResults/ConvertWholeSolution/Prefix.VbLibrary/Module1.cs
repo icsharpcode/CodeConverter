@@ -4,6 +4,7 @@ using Microsoft.VisualBasic.CompilerServices;
 
 namespace Prefix.VbLibrary
 {
+
     static class Module1
     {
         private static Dictionary<int, int> dict = new Dictionary<int, int>();
@@ -20,5 +21,6 @@ namespace Prefix.VbLibrary
         {
             Console.Write((int)AClass.NestedEnum.First);
         }
+
     }
 }

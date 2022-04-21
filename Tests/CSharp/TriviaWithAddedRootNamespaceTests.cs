@@ -26,6 +26,7 @@ namespace ANamespace
     /// <summary> Form for viewing the my. </summary>
 /// <remarks> David, 10/1/2020. </remarks>
     public partial class MyForm : isr.Automata.Finite.Forms.BimanualToggleForm
+
     {
     }
 }

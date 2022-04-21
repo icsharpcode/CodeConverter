@@ -56,7 +56,6 @@ internal partial class TestClass
                 return default;
             return m_test3;
         }
-
         set
         {
             if (7 == int.Parse(""7""))
@@ -102,6 +101,7 @@ internal partial class TestClass
     public string LastName { get; set; }
 
     public string get_FullName(bool lastNameFirst, bool isFirst)
+
     {
         if (lastNameFirst)
         {
@@ -111,8 +111,13 @@ internal partial class TestClass
         {
             return FirstName + "" "" + LastName;
         }
+
         // Bug: Comment moves inside generated method
     }
+
+
+
+
 
     internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
     {
@@ -149,9 +154,13 @@ End Class", @"
 public partial class Class1
 {
     public float get_SomeProp(int index)
+
     {
         return 1.5f;
     }
+
+
+
 
     public void set_SomeProp(int index, float value)
     {
@@ -196,10 +205,15 @@ internal partial class TestClass
     public string LastName { get; set; }
 
     public string get_FullName(bool isFirst = false)
+
     {
         return FirstName + "" "" + LastName;
         // Bug: Comment moves inside generated get method
     }
+
+
+
+
 
     internal void set_FullName(bool isFirst = false, string value = default)
     {
@@ -257,13 +271,18 @@ public partial class ParameterizedPropertiesAndEnumTest
     }
 
     public string get_MyProp(int blah)
+
     {
         return blah.ToString();
     }
 
+
+
+
     public void set_MyProp(int blah, string value)
     {
     }
+
 
     public void ReturnWhatever(MyEnum m)
     {
@@ -274,12 +293,10 @@ public partial class ParameterizedPropertiesAndEnumTest
                 {
                     return;
                 }
-
             case MyEnum.First:
                 {
                     return;
                 }
-
             case (MyEnum)3:
                 {
                     set_MyProp(4, enumerableThing.ToArray()[(int)m]);
@@ -404,7 +421,6 @@ internal partial class TestClass
         {
             return _Items[index];
         }
-
         set
         {
             _Items[index] = value;
@@ -427,7 +443,6 @@ internal partial class TestClass
         {
             return m_test3;
         }
-
         set
         {
             m_test3 = value;
@@ -518,13 +533,17 @@ public partial interface IFoo
     int get_Prop(int x = 1, int y = 2);
     void set_Prop(int x = 1, int y = 2, int value = default);
 }
-
 public partial class SomeClass : IFoo
+
 {
     internal int get_Prop2(int x = 1, int y = 2)
+
     {
         return default;
     }
+
+
+
 
     internal void set_Prop2(int x = 1, int y = 2, int value = default)
     {
@@ -549,6 +568,7 @@ public partial class SomeClass : IFoo
         set_Prop2(x: 10, value: 1);
         set_Prop2(y: -2, x: -1, value: 1);
         set_Prop2(x: -1, y: -2, value: 1);
+
         IFoo foo = this;
         foo.set_Prop(value: 1);
         foo.set_Prop(-1, -2, 1);
@@ -608,13 +628,17 @@ public partial interface IFoo
     int get_Prop(int x = 1, int y = 2, int z = 3);
     void set_Prop(int x = 1, int y = 2, int z = 3, int value = default);
 }
-
 public partial class SomeClass : IFoo
+
 {
     internal int get_Prop2(int x = 1, int y = 2, int z = 3)
+
     {
         return default;
     }
+
+
+
 
     internal void set_Prop2(int x = 1, int y = 2, int z = 3, int value = default)
     {
@@ -639,6 +663,7 @@ public partial class SomeClass : IFoo
         set_Prop2(z: 30, value: 1);
         set_Prop2(10, value: 1);
         set_Prop2(value: 1);
+
         IFoo foo = this;
         foo.set_Prop(value: 1);
         foo.set_Prop(y: 20, value: 1);
@@ -669,14 +694,12 @@ End Class", @"
 internal partial class TestClass
 {
     private int[] _Items;
-
     public int[] Items
     {
         get
         {
             return _Items;
         }
-
         set
         {
             _Items = value;
@@ -725,7 +748,6 @@ public partial class Class1
             return FooRet;
         }
     }
-
     public string X
     {
         get
@@ -737,9 +759,7 @@ public partial class Class1
             return XRet;
         }
     }
-
     public string _y;
-
     public string Y
     {
         set
@@ -752,6 +772,7 @@ public partial class Class1
             {
                 _y = """";
             }
+
         }
     }
 }");

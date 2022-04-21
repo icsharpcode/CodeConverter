@@ -8,6 +8,7 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
+
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -26,11 +27,14 @@ namespace VbNetStandardLib.My.Resources
     [CompilerGenerated()]
     public class FolderRes
     {
+
         private static System.Resources.ResourceManager resourceMan;
+
         private static System.Globalization.CultureInfo resourceCulture;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal FolderRes() : base()
+
         {
         }
 
@@ -47,7 +51,6 @@ namespace VbNetStandardLib.My.Resources
                     var temp = new System.Resources.ResourceManager("VbNetStandardLib.FolderRes", typeof(FolderRes).Assembly);
                     resourceMan = temp;
                 }
-
                 return resourceMan;
             }
         }
@@ -63,7 +66,6 @@ namespace VbNetStandardLib.My.Resources
             {
                 return resourceCulture;
             }
-
             set
             {
                 resourceCulture = value;

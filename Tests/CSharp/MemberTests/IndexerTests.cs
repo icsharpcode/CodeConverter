@@ -32,14 +32,15 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
+
 {
+
     public virtual int this[string str]
     {
         get
         {
             return 1;
         }
-
         set
         {
         }
@@ -80,19 +81,22 @@ public partial interface IFoo
 }
 
 public abstract partial class Foo : IFoo
+
 {
+
     public abstract int this[string str] { get; set; }
 }
 
 public partial class FooChild : Foo
+
 {
+
     public override int this[string str]
     {
         get
         {
             return 1;
         }
-
         set
         {
         }
@@ -133,19 +137,22 @@ public partial interface IFoo
 }
 
 public abstract partial class Foo : IFoo
+
 {
+
     public abstract int this[string str] { get; set; }
 }
 
 public partial class FooChild : Foo
+
 {
+
     public override int this[string str]
     {
         get
         {
             return 1;
         }
-
         set
         {
         }
@@ -178,7 +185,9 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
+
 {
+
     public virtual int this[string str]
     {
         get
@@ -213,7 +222,9 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
+
 {
+
     public virtual int this[string str]
     {
         set

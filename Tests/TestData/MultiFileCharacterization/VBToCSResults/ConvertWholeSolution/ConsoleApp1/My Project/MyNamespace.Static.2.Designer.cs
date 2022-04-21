@@ -23,13 +23,21 @@ namespace ConsoleApp1.My
         private InternalXmlHelper()
         {
         }
-
         public static string get_Value(IEnumerable<XElement> source)
+
         {
             foreach (XElement item in source)
                 return item.Value;
+
             return null;
         }
+
+
+
+
+
+
+
 
         public static void set_Value(IEnumerable<XElement> source, string value)
         {
@@ -39,13 +47,21 @@ namespace ConsoleApp1.My
                 break;
             }
         }
-
         public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
+
         {
             foreach (XElement item in source)
                 return Conversions.ToString(item.Attribute(name));
+
             return null;
         }
+
+
+
+
+
+
+
 
         public static void set_AttributeValue(IEnumerable<XElement> source, XName name, string value)
         {
@@ -55,17 +71,20 @@ namespace ConsoleApp1.My
                 break;
             }
         }
-
         public static string get_AttributeValue(XElement source, XName name)
+
         {
             return Conversions.ToString(source.Attribute(name));
         }
+
+
+
+
 
         public static void set_AttributeValue(XElement source, XName name, string value)
         {
             source.SetAttributeValue(name, value);
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateAttribute(XName name, object value)
         {
@@ -73,10 +92,8 @@ namespace ConsoleApp1.My
             {
                 return null;
             }
-
             return new XAttribute(name, value);
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateNamespaceAttribute(XName name, XNamespace ns)
         {
@@ -84,7 +101,6 @@ namespace ConsoleApp1.My
             a.AddAnnotation(ns);
             return a;
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
         {
@@ -103,11 +119,10 @@ namespace ConsoleApp1.My
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
                 }
-            }
 
+            }
             return obj;
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
         {
@@ -122,11 +137,10 @@ namespace ConsoleApp1.My
                 {
                     return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
                 }
-            }
 
+            }
             return obj;
         }
-
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -135,7 +149,6 @@ namespace ConsoleApp1.My
             private readonly string[] m_inScopePrefixes;
             private readonly XNamespace[] m_inScopeNs;
             private readonly List<XAttribute> m_attributes;
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal RemoveNamespaceAttributesClosure(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes)
             {
@@ -143,13 +156,11 @@ namespace ConsoleApp1.My
                 m_inScopeNs = inScopeNs;
                 m_attributes = attributes;
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal XElement ProcessXElement(XElement elem)
             {
                 return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal object ProcessObject(object obj)
             {
@@ -162,27 +173,31 @@ namespace ConsoleApp1.My
                 {
                     return obj;
                 }
+
             }
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
         {
             if (e is not null)
             {
                 var a = e.FirstAttribute;
+
                 while (a is not null)
                 {
                     var nextA = a.NextAttribute;
+
                     if (a.IsNamespaceDeclaration)
                     {
                         var ns = a.Annotation<XNamespace>();
                         string prefix = a.Name.LocalName;
+
                         if (ns is not null)
                         {
                             if (inScopePrefixes is not null && inScopeNs is not null)
                             {
                                 int lastIndex = inScopePrefixes.Length - 1;
+
                                 for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
                                 {
                                     string currentInScopePrefix = inScopePrefixes[i];
@@ -247,8 +262,8 @@ namespace ConsoleApp1.My
                     a = nextA;
                 }
             }
-
             return e;
         }
+
     }
 }

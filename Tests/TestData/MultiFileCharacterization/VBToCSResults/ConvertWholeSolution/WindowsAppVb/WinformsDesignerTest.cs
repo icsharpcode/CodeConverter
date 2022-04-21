@@ -9,9 +9,9 @@ namespace WindowsAppVb
         {
             InitializeComponent();
         }
-
         private void Button1_Click(object sender, EventArgs e)
         {
+
         }
 
         private void CheckedChangedOrButtonClicked(object sender, EventArgs e)
@@ -29,18 +29,22 @@ namespace WindowsAppVb
 
         private void WinformsDesignerTest_EnsureSelfEventsWork(object sender, EventArgs e)
         {
+
         }
 
         private void WinformsDesignerTest_MouseClick()
         {
+
         }
 
         private void ButtonMouseClickWithNoArgs()
         {
+
         }
 
         private void ButtonMouseClickWithNoArgs2()
         {
+
         }
 
         public void Init()

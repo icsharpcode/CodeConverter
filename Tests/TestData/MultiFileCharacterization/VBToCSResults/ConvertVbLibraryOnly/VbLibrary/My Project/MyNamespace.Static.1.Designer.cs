@@ -120,6 +120,7 @@ namespace VbLibrary.My
     #ElseIf _MYAPPLICATIONTYPE = "Console" Then
     */
     internal partial class MyApplication : Microsoft.VisualBasic.ApplicationServices.ConsoleApplicationBase
+
     {
         /* TODO ERROR: Skipped EndIfDirectiveTrivia
         #End If '_MYAPPLICATIONTYPE = "WindowsForms"
@@ -139,6 +140,7 @@ namespace VbLibrary.My
     #If _MYCOMPUTERTYPE = "Windows" Then
     */
     internal partial class MyComputer : Microsoft.VisualBasic.Devices.Computer
+
     {
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYCOMPUTERTYPE = "Web" Then
@@ -150,6 +152,7 @@ namespace VbLibrary.My
         [DebuggerHidden()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public MyComputer() : base()
+
         {
         }
     }
@@ -168,6 +171,7 @@ namespace VbLibrary.My
         internal static MyComputer Computer
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_ComputerObjectProvider.GetInstance;
@@ -185,12 +189,12 @@ namespace VbLibrary.My
         internal static MyApplication Application
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_AppObjectProvider.GetInstance;
             }
         }
-
         private readonly static ThreadSafeObjectProvider<MyApplication> m_AppObjectProvider = new ThreadSafeObjectProvider<MyApplication>();
         /* TODO ERROR: Skipped EndIfDirectiveTrivia
         #End If
@@ -202,12 +206,12 @@ namespace VbLibrary.My
         internal static Microsoft.VisualBasic.ApplicationServices.User User
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_UserObjectProvider.GetInstance;
             }
         }
-
         private readonly static ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User> m_UserObjectProvider = new ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User>();
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYUSERTYPE = "Web" Then
@@ -305,6 +309,7 @@ namespace VbLibrary.My
         internal static MyWebServices WebServices
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_MyWebServicesObjectProvider.GetInstance;
@@ -315,27 +320,25 @@ namespace VbLibrary.My
         [MyGroupCollection("System.Web.Services.Protocols.SoapHttpClientProtocol", "Create__Instance__", "Dispose__Instance__", "")]
         internal sealed class MyWebServices
         {
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override bool Equals(object o)
             {
                 return base.Equals(o);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override int GetHashCode()
             {
                 return base.GetHashCode();
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             internal new Type GetType()
             {
                 return typeof(MyWebServices);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override string ToString()
@@ -354,6 +357,7 @@ namespace VbLibrary.My
                 {
                     return instance;
                 }
+
             }
 
             [DebuggerHidden()]
@@ -365,6 +369,7 @@ namespace VbLibrary.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyWebServices() : base()
+
             {
             }
         }
@@ -436,6 +441,7 @@ namespace VbLibrary.My
                 #Else
                 */
                 [DebuggerHidden()]
+
                 get
                 {
                     if (m_ThreadStaticValue is null)
@@ -450,6 +456,7 @@ namespace VbLibrary.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public ThreadSafeObjectProvider() : base()
+
             {
             }
 

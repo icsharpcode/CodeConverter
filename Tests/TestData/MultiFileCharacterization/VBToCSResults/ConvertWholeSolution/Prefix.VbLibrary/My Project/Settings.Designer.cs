@@ -13,11 +13,14 @@ using Microsoft.VisualBasic;
 
 namespace Prefix.VbLibrary.My
 {
+
     [System.Runtime.CompilerServices.CompilerGenerated()]
     [System.CodeDom.Compiler.GeneratedCode("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.1.0.0")]
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
     internal sealed partial class MySettings : System.Configuration.ApplicationSettingsBase
+
     {
+
         private static MySettings defaultInstance = (MySettings)Synchronized(new MySettings());
 
         #region My.Settings Auto-Save Functionality
@@ -66,11 +69,13 @@ namespace Prefix.VbLibrary.My
 
 namespace Prefix.VbLibrary.My
 {
+
     [HideModuleName()]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
     internal static class MySettingsProperty
     {
+
         [System.ComponentModel.Design.HelpKeyword("My.Settings")]
         internal static MySettings Settings
         {

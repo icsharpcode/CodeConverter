@@ -132,7 +132,9 @@ internal partial class Class1
     {
         var x = new ArrayList();
         x.Add(""a"");
+
         var xs = new string[2];
+
         xs[0] = Conversions.ToString(x[0]);
     }
 }" + Environment.NewLine);
@@ -179,7 +181,6 @@ public partial class AShape
 {
     private RectangleF PaneArea;
     private int _OuterGap;
-
     public void SetSize(Rectangle clientRectangle)
     {
         var area = (RectangleF)clientRectangle;
@@ -304,6 +305,7 @@ internal partial class Class1
         res = (TestEnum)Conversions.ToInteger(5.7d);
         res = (TestEnum)5UL;
         res = (TestEnum)5;
+
         var otherEnum = TestEnum2.None;
         res = (TestEnum)otherEnum;
     }
@@ -495,7 +497,6 @@ public partial class MultipleCasts
         {
             return default;
         }
-
         var reflectedType = typeof(T);
         if (Equals(reflectedType, typeof(short)))
         {
@@ -509,6 +510,7 @@ public partial class MultipleCasts
         {
             return (T)Value;
         }
+
     }
 }");
     }

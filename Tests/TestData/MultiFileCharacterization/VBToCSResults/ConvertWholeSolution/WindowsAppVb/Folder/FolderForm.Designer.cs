@@ -8,6 +8,7 @@ namespace WindowsAppVb
 {
     [DesignerGenerated()]
     public partial class FolderForm : Form
+
     {
 
         // Form overrides dispose to clean up the component list.
@@ -25,6 +26,7 @@ namespace WindowsAppVb
             {
                 base.Dispose(disposing);
             }
+
         }
 
         // Required by the Windows Form Designer
@@ -208,11 +210,13 @@ namespace WindowsAppVb
             Controls.Add(ToolStrip1);
             Name = "FolderForm";
             Text = "DesignTime images: 123123 then 9 blank, Runtime: 123123123123111 - check tooltips" + "";
+
             ToolStrip1.ResumeLayout(false);
             ToolStrip1.PerformLayout();
             Load += new EventHandler(FolderForm_Load);
             ResumeLayout(false);
             PerformLayout();
+
         }
 
         internal ToolStrip ToolStrip1;

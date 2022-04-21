@@ -8,19 +8,21 @@ namespace WindowsAppVb.My
     {
         internal partial class MyForms
         {
+
             [EditorBrowsable(EditorBrowsableState.Never)]
             public FolderForm m_FolderForm;
 
             public FolderForm FolderForm
             {
                 [DebuggerHidden]
+
                 get
                 {
                     m_FolderForm = Create__Instance__(m_FolderForm);
                     return m_FolderForm;
                 }
-
                 [DebuggerHidden]
+
                 set
                 {
                     if (ReferenceEquals(value, m_FolderForm))
@@ -31,19 +33,21 @@ namespace WindowsAppVb.My
                 }
             }
 
+
             [EditorBrowsable(EditorBrowsableState.Never)]
             public WinformsDesignerTest m_WinformsDesignerTest;
 
             public WinformsDesignerTest WinformsDesignerTest
             {
                 [DebuggerHidden]
+
                 get
                 {
                     m_WinformsDesignerTest = Create__Instance__(m_WinformsDesignerTest);
                     return m_WinformsDesignerTest;
                 }
-
                 [DebuggerHidden]
+
                 set
                 {
                     if (ReferenceEquals(value, m_WinformsDesignerTest))
@@ -53,6 +57,9 @@ namespace WindowsAppVb.My
                     Dispose__Instance__(ref m_WinformsDesignerTest);
                 }
             }
+
         }
+
+
     }
 }

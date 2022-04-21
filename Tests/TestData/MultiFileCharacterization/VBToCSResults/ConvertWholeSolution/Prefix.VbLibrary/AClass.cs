@@ -38,7 +38,6 @@ namespace Prefix.VbLibrary
                     {
                         return;
                     }
-
                 case AnEnumType.AnEnumMember:
                     {
                         return;

@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyProduct("Prefix.VbLibrary")]
 [assembly: AssemblyCopyright("Copyright © HP Inc. 2021")]
 [assembly: AssemblyTrademark("")]
+
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM

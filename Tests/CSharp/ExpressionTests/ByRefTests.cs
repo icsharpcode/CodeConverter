@@ -88,7 +88,6 @@ End Class", @"
 public partial class Class1
 {
     private Class1 C1 { get; set; }
-
     private Class1 _c2;
     private object _o1;
 
@@ -210,6 +209,7 @@ public partial class Class1
             bool argb1 = true == false;
             Bar(ref argb1);
         }
+
     }
 
     public void Foo5()
@@ -230,7 +230,6 @@ public partial class Class1
         {
             return 1;
         }
-
         return 0;
     }
 
@@ -238,6 +237,7 @@ public partial class Class1
     {
         return """";
     }
+
 }");
     }
 
@@ -267,9 +267,9 @@ public partial class Class1
             Bar(ref argx);
         }
     }
-
     public void Bar(ref SqlConnection x)
     {
+
     }
 }");
     }
@@ -324,7 +324,9 @@ public partial interface IFoo
 }
 
 public partial class Foo : IFoo
+
 {
+
     private int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str)
     {
         return 5;
@@ -352,7 +354,6 @@ public partial class Class1
     }
 
     private Class1 _p1 = Foo__p1();
-
     public static Class1 Foo(ref Class1 c1)
     {
         return c1;
@@ -390,6 +391,7 @@ End Module", @"using System;
 
 internal static partial class Module1
 {
+
     public partial class TestClass
     {
         public string Foo { get; private set; }
@@ -416,6 +418,7 @@ internal static partial class Module1
     {
         Console.WriteLine(value);
     }
+
 }");
     }
 
@@ -462,6 +465,7 @@ using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.Visua
 
 public partial class MyTestClass
 {
+
     private int Prop { get; set; }
     private int Prop2 { get; set; }
 
@@ -478,20 +482,22 @@ public partial class MyTestClass
 
     public void UsesRef(bool someBool, int someInt)
     {
+
         TakesRefVoid(ref someInt); // Convert directly
         int argvrbTst = 1;
         TakesRefVoid(ref argvrbTst); // Requires variable before
         int argvrbTst1 = Prop2;
         TakesRefVoid(ref argvrbTst1);
         Prop2 = argvrbTst1; // Requires variable before, and to assign back after
+
         bool a = TakesRef(ref someInt); // Convert directly
         int argvrbTst2 = 2;
         bool b = TakesRef(ref argvrbTst2); // Requires variable before
         int argvrbTst3 = Prop;
         bool c = TakesRef(ref argvrbTst3);
         Prop = argvrbTst3; // Requires variable before, and to assign back after
-        bool localTakesRef() { int argvrbTst = 3 * Conversions.ToInteger(a); var ret = TakesRef(ref argvrbTst); return ret; }
 
+        bool localTakesRef() { int argvrbTst = 3 * Conversions.ToInteger(a); var ret = TakesRef(ref argvrbTst); return ret; }
         bool localTakesRef1() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
 
         if (16 > someInt || TakesRef(ref someInt)) // Convert directly
@@ -506,7 +512,6 @@ public partial class MyTestClass
         {
             someInt -= 2;
         }
-
         Console.WriteLine(someInt);
     }
 }");
@@ -549,6 +554,7 @@ public partial class Issue567
         DoSomething(ref arr2[2, 2]);
         Debug.Assert(arr2[2, 2] == ""test"");
     }
+
 }");
     }
 
@@ -600,6 +606,7 @@ public partial class Issue567
         tmp1[1] = argstr1;
         Debug.Assert(Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(Other.lst2[1], 5.ToString(), false)));
     }
+
 }
 
 internal static partial class Other
@@ -633,15 +640,18 @@ public partial class Issue856
         double argresult = (double)decimalTarget;
         double.TryParse(""123"", out argresult);
         decimalTarget = (decimal)argresult;
+
         var longTarget = default(long);
         int argresult1 = (int)longTarget;
         int.TryParse(""123"", out argresult1);
         longTarget = argresult1;
+
         var intTarget = default(int);
         long argresult2 = intTarget;
         long.TryParse(""123"", out argresult2);
         intTarget = (int)argresult2;
     }
+
 }");
     }
 

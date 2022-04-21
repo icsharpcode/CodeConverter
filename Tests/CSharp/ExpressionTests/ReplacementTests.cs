@@ -78,7 +78,8 @@ Public Class SimpleMyProjectMethodReplacementsWork
         x = Computer.Info.OSPlatform
         x = Computer.Info.OSVersion
     End Sub
-End Class", @"using System;
+End Class", @"
+using System;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;

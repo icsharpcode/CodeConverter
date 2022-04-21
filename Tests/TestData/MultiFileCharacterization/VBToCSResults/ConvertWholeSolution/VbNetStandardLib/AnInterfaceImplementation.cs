@@ -2,7 +2,9 @@
 namespace VbNetStandardLib
 {
     public class AnInterfaceImplementation : AnInterface
+
     {
+
         public string APropertyWithDifferentName
         {
             get

@@ -8,6 +8,7 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
+
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -27,11 +28,14 @@ namespace WindowsAppVb.My.Resources
     [CompilerGenerated()]
     public class Resource1
     {
+
         private static System.Resources.ResourceManager resourceMan;
+
         private static System.Globalization.CultureInfo resourceCulture;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resource1() : base()
+
         {
         }
 
@@ -48,7 +52,6 @@ namespace WindowsAppVb.My.Resources
                     var temp = new System.Resources.ResourceManager("WindowsAppVb.Resource1", typeof(Resource1).Assembly);
                     resourceMan = temp;
                 }
-
                 return resourceMan;
             }
         }
@@ -64,7 +67,6 @@ namespace WindowsAppVb.My.Resources
             {
                 return resourceCulture;
             }
-
             set
             {
                 resourceCulture = value;

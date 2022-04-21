@@ -180,7 +180,6 @@ public partial class EnumToString
         None = 0,
         TEST2 = 2
     }
-
     private void TEest2(Tes aEnum)
     {
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
@@ -350,6 +349,7 @@ public partial class Class1
                     break;
                 }
         }
+
     }
 }");
     }
@@ -390,7 +390,9 @@ internal static partial class Module1
                     Console.WriteLine(""b"");
                     break;
                 }
+
         }
+
     }
 }
 1 target compilation errors:
@@ -428,7 +430,6 @@ public partial class Class1
     {
         return 1;
     }
-
     public int Baz { get; set; }
 }");
     }
@@ -497,7 +498,6 @@ End Class", @"
 public partial class A
 {
     public static int x = 2;
-
     public void Test()
     {
         var tmp = this;
@@ -585,7 +585,6 @@ public partial class VisualBasicClass
         {
         }
     }
-
     private bool Validate(IEnumerable<short> w)
     {
         return true;
@@ -670,6 +669,7 @@ public partial class Class1
 
     public void Foo(DayOfWeek? x)
     {
+
     }
 }");
     }
@@ -838,6 +838,7 @@ internal partial class TestClass
         {
             return default;
         }
+
     }
 }");
     }
@@ -992,6 +993,7 @@ public partial class Issue445MissingParameter
         mySuperFunction(7, optionalSomething: new object());
     }
 
+
     private void mySuperFunction(int intSomething, object p = null, object optionalSomething = null)
     {
         throw new NotImplementedException();
@@ -1048,6 +1050,7 @@ End Class", @"using System.Collections;
 using System.Collections.Generic;
 
 internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
+
 {
     public bool TryGetValue(int key, out int value)
     {
@@ -1065,9 +1068,7 @@ internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
     public abstract IEnumerator<KeyValuePair<int, int>> GetEnumerator();
     public abstract IEnumerator IEnumerable_GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => IEnumerable_GetEnumerator();
-
     public abstract int this[int key] { get; }
-
     public abstract IEnumerable<int> Keys { get; }
     public abstract IEnumerable<int> Values { get; }
     public abstract int Count { get; }
@@ -1095,7 +1096,6 @@ internal partial class TestClass3
     {
         public Rec Prop { get; private set; } = new Rec();
     }
-
     private Rec TestMethod(string str)
     {
         int length = (str?.Length) ?? -1;
@@ -1151,6 +1151,7 @@ internal partial class Issue480
     {
         var x = new { Foo };
     }
+
 }");
     }
 
@@ -1189,7 +1190,6 @@ internal partial class TestClass
     private void DoStuff(object a)
     {
     }
-
     private void TestMethod()
     {
         DoStuff(new[] { 1, 2 });
@@ -1236,6 +1236,8 @@ public partial class Issue869
     public void Main()
     {
         int i = new Func<int>(() => 2)();
+
+
         Console.WriteLine(i);
     }
 }");
@@ -1268,6 +1270,7 @@ internal partial class TestClass
                 return a / (double)b;
             return 0d;
         };
+
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
     }
@@ -1310,6 +1313,7 @@ internal partial class TestClass
                 return a / (double)b;
             return 0d;
         };
+
         Func<int, int, Task<int>> test3 = async (a, b) => a % b;
         Func<Task<int>> test4 = async () =>
         {
@@ -1317,6 +1321,7 @@ internal partial class TestClass
             int x = 3;
             return 3;
         };
+
         await test1(3);
     }
 }");
@@ -1346,13 +1351,14 @@ internal partial class TestClass
     public async Task<bool> mySub()
     {
         return await ExecuteAuthenticatedAsync(async () => await DoSomethingAsync());
-    }
 
+
+
+    }
     private async Task<bool> ExecuteAuthenticatedAsync(Func<Task<bool>> myFunc)
     {
         return await myFunc();
     }
-
     private async Task<bool> DoSomethingAsync()
     {
         return true;
@@ -1387,6 +1393,7 @@ internal partial class TestClass
                 return Operators.DivideObject(a, b);
             return 0;
         };
+
         object test3(object a, object b) => Operators.ModObject(a, b);
         test(3);
     }
@@ -1435,6 +1442,7 @@ using System.Diagnostics;
 
 public partial class TargetTypeTestClass
 {
+
     private static void Main()
     {
         var actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
@@ -1479,6 +1487,8 @@ public partial class AnonymousLambdaTypeConversionTest
     public void Foo()
     {
         CallThing(new Action(() => SomeMethod()));
+
+
         CallThing(new Action<object>(a => SomeMethod()));
         CallThing(new Func<bool>(() =>
         {
@@ -1539,8 +1549,8 @@ internal partial class TestClassBase
     {
     }
 }
-
 internal partial class TestClass : TestClassBase
+
 {
     private void TestMethod()
     {
@@ -1596,14 +1606,12 @@ public enum TestState
 public partial class test
 {
     private TestState _state;
-
     public TestState State
     {
         get
         {
             return _state;
         }
-
         set
         {
             if (!_state.Equals(value))
@@ -1748,16 +1756,15 @@ public partial class EnumTest
                     activity = 1;
                     break;
                 }
-
             case UserInterface.Spectrum:
                 {
                     activity = 2;
                     break;
                 }
-
             case UserInterface.Wisdom:
                 {
                     activity = 3;
+
                     break;
                 }
 
@@ -1867,23 +1874,19 @@ public partial class Test
                     {
                         continue;
                     }
-
                 case 1:
                     {
                         x = 1;
                         break;
                     }
-
                 case 2:
                     {
                         return 2;
                     }
-
                 case 3:
                     {
                         throw new Exception();
                     }
-
                 case 4:
                     {
                         if (true)
@@ -1895,9 +1898,9 @@ public partial class Test
                             return x;
                         }
 
+
                         break;
                     }
-
                 case 5:
                     {
                         if (true)
@@ -1909,9 +1912,9 @@ public partial class Test
                             x = 5;
                         }
 
+
                         break;
                     }
-
                 case 6:
                     {
                         if (true)
@@ -1927,9 +1930,9 @@ public partial class Test
                             return x;
                         }
 
+
                         break;
                     }
-
                 case 7:
                     {
                         if (true)
@@ -1939,21 +1942,18 @@ public partial class Test
 
                         break;
                     }
-
                 case 8:
                     {
                         if (true)
                             return x;
                         break;
                     }
-
                 case 9:
                     {
                         if (true)
                             x = 9;
                         break;
                     }
-
                 case 10:
                     {
                         if (true)
@@ -1962,7 +1962,6 @@ public partial class Test
                             x = 10;
                         break;
                     }
-
                 case 11:
                     {
                         if (true)
@@ -1971,7 +1970,6 @@ public partial class Test
                             return x;
                         break;
                     }
-
                 case 12:
                     {
                         if (true)
@@ -1979,7 +1977,6 @@ public partial class Test
                         else
                             return x;
                     }
-
                 case 13:
                     {
                         if (true)
@@ -2002,8 +1999,8 @@ public partial class Test
                         {
                             return x;
                         }
-                    }
 
+                    }
                 case 14:
                     {
                         if (true)
@@ -2019,6 +2016,7 @@ public partial class Test
                             break;
                         }
 
+
                         break;
                     }
 
@@ -2032,10 +2030,10 @@ public partial class Test
                         {
                             return x;
                         }
+
                     }
             }
         }
-
         return x;
     }
 }");
@@ -2086,6 +2084,7 @@ public partial class Foo
         {
             Bar?.Invoke(this, e);
         }
+
     }
 }");
     }
@@ -2120,6 +2119,8 @@ End Class", @"
 public partial class Class1
 {
     ~Class1()
+
+
     {
     }
 }");
@@ -2185,6 +2186,8 @@ public partial class MoreParsing
     public void DoGet()
     {
         var anon = new { ANumber = 5 };
+
+
         var sameAnon = Identity(anon);
         var repeated = Enumerable.Repeat(anon, 5).ToList();
     }

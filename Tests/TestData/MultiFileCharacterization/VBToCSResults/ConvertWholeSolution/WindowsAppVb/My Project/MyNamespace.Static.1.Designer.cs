@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+
+
 using System.Collections;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -104,6 +106,7 @@ namespace WindowsAppVb.My
     #If _MYAPPLICATIONTYPE = "WindowsForms" Then
     */
     internal partial class MyApplication : Microsoft.VisualBasic.ApplicationServices.WindowsFormsApplicationBase
+
     {
         /* TODO ERROR: Skipped IfDirectiveTrivia
         #If TARGET = "winexe" Then
@@ -152,6 +155,7 @@ namespace WindowsAppVb.My
     #If _MYCOMPUTERTYPE = "Windows" Then
     */
     internal partial class MyComputer : Microsoft.VisualBasic.Devices.Computer
+
     {
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYCOMPUTERTYPE = "Web" Then
@@ -163,6 +167,7 @@ namespace WindowsAppVb.My
         [DebuggerHidden()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public MyComputer() : base()
+
         {
         }
     }
@@ -181,6 +186,7 @@ namespace WindowsAppVb.My
         internal static MyComputer Computer
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_ComputerObjectProvider.GetInstance;
@@ -198,12 +204,12 @@ namespace WindowsAppVb.My
         internal static MyApplication Application
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_AppObjectProvider.GetInstance;
             }
         }
-
         private readonly static ThreadSafeObjectProvider<MyApplication> m_AppObjectProvider = new ThreadSafeObjectProvider<MyApplication>();
         /* TODO ERROR: Skipped EndIfDirectiveTrivia
         #End If
@@ -215,12 +221,12 @@ namespace WindowsAppVb.My
         internal static Microsoft.VisualBasic.ApplicationServices.User User
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_UserObjectProvider.GetInstance;
             }
         }
-
         private readonly static ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User> m_UserObjectProvider = new ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User>();
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYUSERTYPE = "Web" Then
@@ -246,6 +252,7 @@ namespace WindowsAppVb.My
         internal static MyForms Forms
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_MyFormsObjectProvider.GetInstance;
@@ -287,11 +294,13 @@ namespace WindowsAppVb.My
                     {
                         m_FormBeingCreated.Remove(typeof(T));
                     }
+
                 }
                 else
                 {
                     return Instance;
                 }
+
             }
 
             [DebuggerHidden()]
@@ -304,6 +313,7 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyForms() : base()
+
             {
             }
 
@@ -315,19 +325,16 @@ namespace WindowsAppVb.My
             {
                 return base.Equals(o);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public override int GetHashCode()
             {
                 return base.GetHashCode();
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal new Type GetType()
             {
                 return typeof(MyForms);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public override string ToString()
             {
@@ -347,6 +354,7 @@ namespace WindowsAppVb.My
         internal static MyWebServices WebServices
         {
             [DebuggerHidden()]
+
             get
             {
                 return m_MyWebServicesObjectProvider.GetInstance;
@@ -357,27 +365,25 @@ namespace WindowsAppVb.My
         [MyGroupCollection("System.Web.Services.Protocols.SoapHttpClientProtocol", "Create__Instance__", "Dispose__Instance__", "")]
         internal sealed class MyWebServices
         {
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override bool Equals(object o)
             {
                 return base.Equals(o);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override int GetHashCode()
             {
                 return base.GetHashCode();
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             internal new Type GetType()
             {
                 return typeof(MyWebServices);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override string ToString()
@@ -396,6 +402,7 @@ namespace WindowsAppVb.My
                 {
                     return instance;
                 }
+
             }
 
             [DebuggerHidden()]
@@ -407,6 +414,7 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public MyWebServices() : base()
+
             {
             }
         }
@@ -478,6 +486,7 @@ namespace WindowsAppVb.My
                 #Else
                 */
                 [DebuggerHidden()]
+
                 get
                 {
                     if (m_ThreadStaticValue is null)
@@ -492,6 +501,7 @@ namespace WindowsAppVb.My
             [DebuggerHidden()]
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public ThreadSafeObjectProvider() : base()
+
             {
             }
 

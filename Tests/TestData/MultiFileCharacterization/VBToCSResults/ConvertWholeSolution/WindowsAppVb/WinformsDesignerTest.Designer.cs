@@ -9,6 +9,7 @@ namespace WindowsAppVb
 {
     [DesignerGenerated()]
     public partial class WinformsDesignerTest : Form
+
     {
 
         // Form overrides dispose to clean up the component list.
@@ -26,6 +27,7 @@ namespace WindowsAppVb
             {
                 base.Dispose(disposing);
             }
+
         }
 
         // Required by the Windows Form Designer
@@ -119,6 +121,7 @@ namespace WindowsAppVb
             MouseClick += new MouseEventHandler(WinformsDesignerTest_MouseClick);
             ResumeLayout(false);
             PerformLayout();
+
         }
 
         public static bool TestSub([Optional, DefaultParameterValue(false)] ref bool IsDefault)
