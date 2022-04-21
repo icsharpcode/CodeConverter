@@ -300,6 +300,12 @@ internal static class SyntaxNodeExtensions
         return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
     }
 
+    public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+    {
+        var firstConvertedToken = node.GetFirstToken();
+        return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken));
+    }
+
     public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken)
     {
         if (sourceToken == null) return node;

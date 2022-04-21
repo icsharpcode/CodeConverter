@@ -64,6 +64,8 @@ internal class CommentConvertingVisitorWrapper
                     .WithEndOfFileToken(csCus.EndOfFileToken
                         .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
                     );
+            case VBSyntax.XmlElementSyntax vbXes when converted is CSSyntax.ExpressionSyntax csXes:
+                return (T)(object)csXes.WithConvertedLeadingTriviaFrom(vbXes.StartTag.LessThanToken).WithConvertedTrailingTriviaFrom(vbXes.EndTag.GetLastToken());
         }
         return converted.WithVbSourceMappingFrom(vbNode);
     }
