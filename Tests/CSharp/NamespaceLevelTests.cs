@@ -10,6 +10,8 @@ public class NamespaceLevelTests : ConverterTestBase
     public async Task TestNamespaceAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Namespace Test
+
+
 End Namespace", @"
 namespace Test
 {
@@ -304,6 +306,7 @@ internal partial interface ITest : IDisposable
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Friend Enum ExceptionResource
+
     Argument_ImplementIComparable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired

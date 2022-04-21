@@ -17,7 +17,9 @@ public class ExpressionTests : ConverterTestBase
 World!"";
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim x = ""Hello,
 World!""
     End Sub
@@ -48,8 +50,11 @@ namespace global::InnerNamespace
 }",
             @"
 Namespace Global.InnerNamespace
+
     Public Class Test
+
         Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
+
             Dim a = $""pre{t} t""
             Dim b = $""pre{t} """" t""
             Dim c = $""pre{t} """"\ t""
@@ -78,7 +83,9 @@ public class Test
     }
 }",  @"
 Public Class Test
+
     Public Function InterStringDateFormat(ByVal dt As Date) As String
+
         Dim a = $""Soak: {dt: d\.h\:mm\:ss\.f}""
         Return a
     End Function
@@ -96,7 +103,9 @@ End Class"
         bool result = (str == """") ? true : false;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dim result = If(Equals(str, """"), True, False)
     End Sub
 End Class");
@@ -116,6 +125,7 @@ End Class");
     public int Bar;
 
 }", @"Public Class DefaultLiteralExpression
+
     Public ReadOnly Property Foo As Boolean
         Get
             Return Bar = Nothing
@@ -123,6 +133,7 @@ End Class");
     End Property
 
     Public Bar As Integer
+
 End Class");
     }
 
@@ -140,6 +151,7 @@ End Class");
     public string Bar;
 
 }", @"Public Class Test
+
     Public ReadOnly Property Foo As Boolean
         Get
             Return Bar Is Nothing 'Crashes conversion to VB
@@ -147,6 +159,7 @@ End Class");
     End Property
 
     Public Bar As String
+
 End Class");
     }
 
@@ -172,11 +185,9 @@ End Class");
         DoAction(Sub() a = b)
         Dim c = Me.DoFunc(Function() CSharpImpl.__Assign(a, b))
     End Sub
-
     Public Sub DoAction(ByVal action As Action)
         action()
     End Sub
-
     Public Function DoFunc(ByVal func As Func(Of Integer)) As Integer
         Return func()
     End Function
@@ -209,10 +220,13 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
         return -1;
     }
 }", @"Friend Class TestClass
+
     Private Shared Function GetLength(ByVal node As Object) As Integer
+
         Dim s As String = Nothing
 
         If CSharpImpl.__Assign(s, TryCast(node, String)) IsNot Nothing Then
+
             Return s.Length
         End If
 
@@ -247,7 +261,9 @@ class TestClass
 }", @"Imports System.Collections.Generic
 
 Friend Class TestClass
+
     Private Shared Function [Do]() As Boolean
+
         Dim d = New Dictionary(Of String, String)()
         Dim output As String = Nothing
         Return d.TryGetValue("""", output)
@@ -269,7 +285,9 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
@@ -327,9 +345,11 @@ BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its
     {
     }
 }", @"Friend Class TestClass
+
     Private n As String = NameOf(TestMethod)
 
     Private Sub TestMethod()
+
     End Sub
 End Class");
     }
@@ -344,7 +364,9 @@ End Class");
         Console.WriteLine(str ?? ""<null>"");
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Console.WriteLine(If(str, ""<null>""))
     End Sub
 End Class
@@ -373,7 +395,6 @@ CS0103: The name 'Console' does not exist in the current context");
             @"Friend Class TestClass
     Private prop As String
     Private prop2 As String
-
     Private ReadOnly Property [Property] As String
         Get
             Dim z = (Function() 3)()
@@ -383,7 +404,6 @@ CS0103: The name 'Console' does not exist in the current context");
                             End Function())
         End Get
     End Property
-
     Private Function CreateProperty() As String
         Return """"
     End Function
@@ -406,7 +426,9 @@ CS0149: Method name expected");
         Console.ReadKey();
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dim length As Integer
         length = str.Length
         Console.WriteLine(""Test"" & length)
@@ -428,7 +450,9 @@ CS0103: The name 'Console' does not exist in the current context");
         Dispatcher.Invoke(new Action(() => Console.WriteLine(1)));
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dispatcher.Invoke(New Action(Function() Console.WriteLine(1)))
     End Sub
 End Class
@@ -455,7 +479,9 @@ BC30491: Expression does not produce a value.");
         y = y >> 1;
 	}
 }", @"Public Class Test
+
     Public Shared Sub Main()
+
         Dim y = 1
         y <<= 1
         y >>= 1
@@ -498,7 +524,9 @@ End Class");
         string redirectUri = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dim length = If(str?.Length, -1)
         Console.WriteLine(length)
         Console.ReadKey()
@@ -531,12 +559,16 @@ class TestClass
             LastName = ""Playstead"",
         };
     }
-}", @"Friend Class StudentName
+}", @"
+Friend Class StudentName
+
     Public LastName, FirstName As String
 End Class
 
 Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dim student2 As StudentName = New StudentName With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
@@ -558,7 +590,9 @@ End Class");
         };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal str As String)
+
         Dim student2 = New With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
@@ -586,13 +620,16 @@ internal class Converter
 }", @"Imports System.Collections.Generic
 
 Friend Class SomeSettings
+
     Public Property Converters As IList(Of Object)
 End Class
 
 Friend Class Converter
+
     Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
-        .Converters = {}
-    }
+
+    .Converters = {}
+}
 End Class");
     }
 
@@ -608,9 +645,11 @@ End Class");
         this.member = 0;
     }
 }", @"Friend Class TestClass
+
     Private member As Integer
 
     Private Sub TestMethod()
+
         member = 0
     End Sub
 End Class");
@@ -631,6 +670,7 @@ class TestClass : BaseTestClass
         base.member = 0;
     }
 }", @"Friend Class BaseTestClass
+
     Public member As Integer
 End Class
 
@@ -638,6 +678,7 @@ Friend Class TestClass
     Inherits BaseTestClass
 
     Private Sub TestMethod()
+
         member = 0
     End Sub
 End Class");
@@ -649,7 +690,9 @@ End Class");
         await TestConversionCSharpToVisualBasicAsync(@"public static bool AreTwoObjectsReferenceEqual()
 {
     return new object() == new object();
-}", @"Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
+}", @"
+Public Shared Function AreTwoObjectsReferenceEqual() As Boolean
+
     Return New Object() Is New Object()
 End Function");
     }
@@ -662,6 +705,7 @@ End Function");
     IReadOnlyCollection<(string, string)> GetProjectTypeGuidMappings();
     IEnumerable<(string, string)> GetProjectFileReplacementRegexes();
 }", @"Public Interface ILanguageConversion
+
     Function GetProjectTypeGuidMappings() As IReadOnlyCollection(Of (String, String))
     Function GetProjectFileReplacementRegexes() As IEnumerable(Of (String, String))
 End Interface
@@ -695,12 +739,16 @@ namespace PreHOPL
 Imports System.Collections.Generic
 
 Namespace PreHOPL
-    Friend Module Program
-        Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
-            {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
-        }
 
+    Friend Module Program
+
+        Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
+
+
+{""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
+}
         Private Sub Main(ByVal args As String())
+
             dict(""SAY"").Item2.DynamicInvoke(""Hello World!"")
         End Sub
     End Module
@@ -711,7 +759,8 @@ End Namespace");
     public async Task CreateValueTupleTypeAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"(double Sum, int Count) t2 = (4.5, 3);",
-            @"Dim t2 = (4.5, 3)"
+            @"
+Dim t2 = (4.5, 3)"
         );
     }
 
@@ -730,11 +779,15 @@ End Namespace");
         test(3);
     }
 }", @"Friend Class TestClass
+
+
     Private Shared m_Event1 As Action(Of Integer) = Sub()
                                                     End Sub
 
     Private Sub TestMethod()
+
         Dim test = Function(ByVal a As Integer) a * 2
+
         test(3)
     End Sub
 End Class
@@ -758,7 +811,9 @@ static class Program
 }", @"Imports System
 
 Friend Module Program
+
     Private Sub Main(ByVal args As String())
+
         Dim x As Action(Of String) = Sub(__) Environment.Exit(0)
     End Sub
 End Module");
@@ -782,14 +837,16 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim test As Func(Of Integer, Integer) = Function(a) a * 2
         Dim test2 As Func(Of Integer, Integer, Integer) = Function(a, b)
                                                               If b > 0 Then Return a / b
                                                               Return 0
                                                           End Function
-
         Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
+
         test(3)
     End Sub
 End Class");
@@ -811,7 +868,9 @@ class TestClass
 Imports System.Collections.Generic
 
 Friend Class TestClass
+
     Private Sub TestMethod()
+
         Call New List(Of Integer)().ForEach(Sub(x) Console.WriteLine(x))
     End Sub
 End Class");
@@ -833,11 +892,14 @@ End Class");
         Console.WriteLine(result);
     }
 }", @"Friend Class TestClass
+
     Private Function SomeAsyncMethod() As Task(Of Integer)
+
         Return Task.FromResult(0)
     End Function
 
     Private Async Sub TestMethod()
+
         Dim result As Integer = Await SomeAsyncMethod()
         Console.WriteLine(result)
     End Sub
@@ -863,9 +925,14 @@ CS0103: The name 'Console' does not exist in the current context");
     foreach (var n in res)
         Console.WriteLine(n);
 }",
-            @"Private Shared Sub SimpleQuery()
+            @"
+Private Shared Sub SimpleQuery()
+
     Dim numbers = {7, 9, 5, 3, 6}
+
     Dim res = From n In numbers Where n > 5 Select n
+
+
 
     For Each n In res
         Console.WriteLine(n)
@@ -897,17 +964,24 @@ End Sub");
             }
         }
     }",
-            @"Public Shared Sub Linq40()
+            @"
+Public Shared Sub Linq40()
+
     Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
+
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
-        .Remainder = __groupByKey1__,
-        .Numbers = g
-    }
+
+
+
+.Remainder = __groupByKey1__,
+.Numbers = g
+}
 
     For Each g In numberGroups
-        Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
 
+        Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
         For Each n In g.Numbers
+
             Console.WriteLine(n)
         Next
     Next
@@ -954,13 +1028,25 @@ End Class
 
 Friend Class Test
     Public Sub Linq102()
+
         Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+
+
+
+
+
+
         Dim products As Product() = GetProductList()
+
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
-            .Category = c, p.ProductName
-        }
+
+
+
+.Category = c, p.ProductName
+}
 
         For Each v In q
+
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
         Next
     End Sub
@@ -1004,18 +1090,31 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
             Console.WriteLine(""   "" + p.ProductName);
         }
     }
-}", @"Public Sub Linq103()
+}", @"
+Public Sub Linq103()
+
     Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+
+
+
+
+
+
     Dim products = GetProductList()
+
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
-        .Category = c,
-        .Products = ps
-    }
+
+
+
+.Category = c,
+.Products = ps
+}
 
     For Each v In q
-        Console.WriteLine(v.Category & "":"")
 
+        Console.WriteLine(v.Category & "":"")
         For Each p In v.Products
+
             Console.WriteLine(""   "" & p.ProductName)
         Next
     Next
@@ -1045,11 +1144,11 @@ BC32023: Expression is of type '?', which is not a collection type.");
 }",
             @"Public Class TestClass
     Inherits ObjectModel.ObservableCollection(Of String)
-
     Public Sub New()
         AddHandler PropertyChanged, Sub(o, e)
                                         If Equals(e.PropertyName, ""AnyProperty"") Then
                                             Add(""changed"")
+
                                         Else
                                             RemoveAt(0)
                                         End If
@@ -1080,11 +1179,11 @@ Public Class TestClass
     Private create As Func(Of Object, String) = Function(o)
                                                     If TypeOf o Is TestClass Then
                                                         Return ""first""
+
                                                     Else
                                                         Return ""second""
                                                     End If
                                                 End Function
-
     Public Sub New()
         Dim str = create(Me)
     End Sub
@@ -1120,7 +1219,9 @@ End Class");
     }
 }",
             @"Public Class WhyWeNeedToCastNothing
+
     Public Sub Example(ByVal vbInitValue As Integer?)
+
         Dim withDefault = If(vbInitValue IsNot Nothing, 7, DirectCast(Nothing, Integer?))
         Dim withNull = If(vbInitValue IsNot Nothing, CType(8, Integer?), Nothing)
     End Sub
@@ -1156,7 +1257,9 @@ public partial class WhyWeNeedToCastNothing
             @"Imports System
 
 Public Partial Class WhyWeNeedToCastNothing
+
     Public Shared Sub CorrectOverloadChosen()
+
         Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
         Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
         Console.WriteLine(""null"" & Identity(DirectCast(Nothing, String)))
@@ -1164,10 +1267,12 @@ Public Partial Class WhyWeNeedToCastNothing
     End Sub
 
     Public Shared Function Identity(ByVal vbInitValue As Integer?) As Integer?
+
         Return If(Not vbInitValue.HasValue, 4011, vbInitValue)
     End Function
 
     Public Shared Function Identity(ByVal vbInitValue As String) As String
+
         Return If(Equals(vbInitValue, Nothing), ""null"", vbInitValue)
     End Function
 End Class");
@@ -1236,16 +1341,24 @@ End Class", hasLineCommentConversionIssue: true);
         Dim object1 As Object = s1
         Dim object2 As Object = s2
         If i = j Then DoSomething()
-        If i = s2 Then DoSomething()
-        If i = object1 Then DoSomething()
-        If s1 = j Then DoSomething()
-        If Equals(s1, s2) Then DoSomething()
-        If s1 Is object2 Then DoSomething()
-        If object1 = j Then DoSomething()
-        If object1 Is s2 Then DoSomething()
-        If object1 Is object2 Then DoSomething()
-    End Sub
 
+        If i = s2 Then DoSomething()
+
+        If i = object1 Then DoSomething()
+
+        If s1 = j Then DoSomething()
+
+        If Equals(s1, s2) Then DoSomething()
+
+        If s1 Is object2 Then DoSomething()
+
+        If object1 = j Then DoSomething()
+
+        If object1 Is s2 Then DoSomething()
+
+        If object1 Is object2 Then DoSomething()
+
+    End Sub
     Public Sub DoSomething()
     End Sub
 End Class
@@ -1293,9 +1406,10 @@ Imports System.Collections.Concurrent
 
 Public Class TestClass
     Private pendingOrders As ConcurrentDictionary(Of Guid, TaskCompletionSource(Of Boolean))
-    Private orderComplete As TaskCompletionSource(Of Boolean)
 
+    Private orderComplete As TaskCompletionSource(Of Boolean)
     Private Sub Sdk_OnOrderCompleted(ByVal sender As Object, ByVal e As OrderOutcome)
+
         Dim tcs As TaskCompletionSource(Of Boolean) = Nothing
         pendingOrders.TryRemove(e.OrderId, tcs)
         tcs.SetResult(e.Success)
@@ -1303,10 +1417,12 @@ Public Class TestClass
 End Class
 
 Public Class OrderOutcome
+
     Public Property OrderId As Guid
     Public Property Success As Boolean
 
     Public Sub New(ByVal orderId As Guid, ByVal success As Boolean)
+
         Me.OrderId = orderId
         Me.Success = success
     End Sub

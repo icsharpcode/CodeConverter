@@ -47,16 +47,13 @@ public class DerivedClass : BaseClass {
 }",
             @"Public MustInherit Class BaseClass
     Public Property Property1 As Integer
-
     Public Sub New()
     End Sub
 End Class
 
 Public Class DerivedClass
     Inherits BaseClass
-
     Public Property Property2 As Integer
-
     Public Sub TestMethod2()
         Property2 = CSharpImpl.__Assign(Property1, 10)
     End Sub
@@ -118,6 +115,7 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
 }",
             @"Friend Class TestClass
     Private Sub TestMethod()
+
         Dim b As Integer, a = 5
         b = System.Math.Min(System.Threading.Interlocked.Increment(a), a - 1)
     End Sub
@@ -144,9 +142,11 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
+
         RaiseEvent MyEvent(Me, EventArgs.Empty)
         RaiseEvent MyEvent(Me, EventArgs.Empty)
         RaiseEvent MyEvent(Me, EventArgs.Empty)
@@ -175,11 +175,14 @@ public class Foo
 }", @"Imports System
 
 Public Class Foo
+
     Public Event Bar As EventHandler(Of EventArgs)
 
     Protected Sub OnBar(ByVal e As EventArgs)
+
         If BarEvent Is Nothing Then
             Debug.WriteLine(""No subscriber"")
+
         Else
             RaiseEvent Bar(Me, e)
         End If
@@ -205,9 +208,11 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
+
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
@@ -230,9 +235,11 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
+
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
@@ -255,9 +262,11 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
+
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
@@ -280,9 +289,11 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
+
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
 End Class");
@@ -302,7 +313,9 @@ End Class");
         if (FullImage != null) DrawImage();
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         If FullImage IsNot Nothing Then DrawImage()
     End Sub
 End Class
@@ -330,7 +343,9 @@ BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protecti
         if (FullImage != null) e.DrawImage();
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         If FullImage IsNot Nothing Then e.DrawImage()
     End Sub
 End Class
@@ -357,7 +372,9 @@ BC30451: 'e' is not declared. It may be inaccessible due to its protection level
         if (FullImage != null) { DrawImage(); }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         If FullImage IsNot Nothing Then
             DrawImage()
         End If
@@ -386,7 +403,9 @@ BC30451: 'DrawImage' is not declared. It may be inaccessible due to its protecti
         if (Tiles != null) foreach (Tile t in Tiles) this.TileTray.Controls.Remove(t);
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         If Tiles IsNot Nothing Then
             For Each t As Tile In Tiles
                 Me.TileTray.Controls.Remove(t)
@@ -440,20 +459,25 @@ static class TestClass
 Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
+
     <Extension()>
     Private Function TypeSwitch(ByVal obj As Object, ByVal matchFunc1 As Func(Of String, Object), ByVal matchFunc2 As Func(Of Integer, Object), ByVal defaultFunc As Func(Of Object, Object)) As Object
+
         Return Nothing
     End Function
 
     Private Function ConvertInt(ByVal node As Integer) As Object
+
         Return node
     End Function
 
     Private Function ConvertString(ByVal node As String) As Object
+
         Return node
     End Function
 
     Public Function Convert(ByVal node As Object) As Object
+
         Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
                                                                                                                                              Throw New NotImplementedException($""Conversion for '{node.GetType()}' not implemented"")
                                                                                                                                          End Function)
@@ -469,6 +493,7 @@ End Module");
 {
     public int CR = 0x0D * 0b1;
 }", @"Friend Class Test
+
     Public CR As Integer = &H0D * &B1
 End Class");
     }
@@ -488,6 +513,7 @@ End Class");
     public decimal UInt64Start  = 0x8000000000000000;
     public decimal UInt64End    = 0xFFFFFFFFFFFFFFFF;
 }", @"Friend Class Test
+
     Public Int32Start As Decimal = &H0
     Public Int32End As Decimal = &H7FFFFFFF
     Public UInt32Start As Decimal = &H80000000UI
@@ -506,7 +532,8 @@ End Class");
     object aB = 5;
     int Ab = (int) o;
 }",
-            @"Private Sub Test()
+            @"
+Private Sub Test()
     Dim lAB As Object = 5
     Dim Ab = CInt(o)
 End Sub
@@ -523,7 +550,8 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
     object test = 5;
     int tesT = (int) o;
 }",
-            @"Private Sub Test()
+            @"
+Private Sub Test()
     Dim lTest1 As Object = 5
     Dim lTesT = CInt(o)
 End Sub
@@ -543,7 +571,8 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
         return test;
     }
 }",
-            @"Public ReadOnly Property Test As Integer
+            @"
+Public ReadOnly Property Test As Integer
     Get
         Dim lTest1 As Object = 5
         Dim lTesT = CInt(o)
@@ -611,7 +640,8 @@ BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protect
     int tesT = (int)test;
     return tesT;
 }",
-            @"Private Function Method(ByVal test As Object) As Integer
+            @"
+Private Function Method(ByVal test As Object) As Integer
     Dim lTesT As Integer = test
     Return lTesT
 End Function");
@@ -636,11 +666,9 @@ End Function");
             SetValue(value)
         End Set
     End Property
-
     Private Function GetValue() As Integer
         Return 0
     End Function
-
     Private Sub SetValue(ByVal value As Integer)
     End Sub
 End Class
@@ -664,7 +692,6 @@ public class TestClass {
 
 Public Class TestClass
     Private valueField As EventHandler
-
     Public Custom Event Value As EventHandler
         AddHandler(ByVal value As EventHandler)
             valueField = [Delegate].Combine(valueField, value)
@@ -701,9 +728,7 @@ End Interface
 
 Public Class TestClass
     Implements IInterface
-
     Private propField As Integer
-
     Private Property Prop As Integer Implements IInterface.Prop
         Get
             Return propField
@@ -726,7 +751,6 @@ End Class");
             @"Namespace System
     Public Class TestClass
         Private testField As Integer
-
         Public ReadOnly Property Test As Integer
             Get
                 Return testField
@@ -782,10 +806,12 @@ Public Class AdditionalLocals
     Private ReadOnly _additionalLocals As Stack(Of Dictionary(Of String, Integer)) = New Stack(Of Dictionary(Of String, Integer))()
 
     Public Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of String, Integer)) Implements IEnumerable(Of KeyValuePair(Of String, Integer)).GetEnumerator
+
         Return _additionalLocals.Peek().GetEnumerator()
     End Function
 
     Private Function GetEnumerator1() As IEnumerator Implements IEnumerable.GetEnumerator
+
         Return _additionalLocals.Peek().GetEnumerator()
     End Function
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);

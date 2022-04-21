@@ -21,18 +21,18 @@ public class StatementTests : ConverterTestBase
         ;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         If True Then
         End If
-
         While True
         End While
-
         While True
         End While
-
         Do
         Loop While True
+
     End Sub
 End Class");
     }
@@ -82,20 +82,23 @@ End Class");
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal arg As Integer)
         While True 'Becomes while loop
-            If arg = 3 Then Exit While
 
+            If arg = 3 Then Exit While
             Select Case arg
-                Case 1 'From switch
-                Case 2 'From switch
+
+                Case 1
+ 'From switch
+                Case 2
+                    'From switch
+
                 Case Else
                     Continue While ' Outer while loop
             End Select
-
             For i = 0 To arg - 1 ' Becomes For Next loop
+
                 If arg <> 1 Then Exit For ' From inner for loop
                 Continue For ' Inner for loop
             Next
-
             Continue While ' Outer while loop
         End While
     End Sub
@@ -113,7 +116,9 @@ End Class");
         b = 0;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As Integer
         b = 0
     End Sub
@@ -130,7 +135,9 @@ End Class");
         int b = 0;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = 0
     End Sub
 End Class");
@@ -146,7 +153,9 @@ End Class");
         var b = 0;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = 0
     End Sub
 End Class");
@@ -163,7 +172,9 @@ End Class");
         b = new string(""test"");
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As String
         b = New String(""test"")
     End Sub
@@ -183,7 +194,9 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         string b = new string(""test"");
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As String = New String(""test"")
     End Sub
 End Class
@@ -202,7 +215,9 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         var b = new string(""test"");
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New String(""test"")
     End Sub
 End Class
@@ -221,7 +236,9 @@ CS1503: Argument 1: cannot convert from 'string' to 'char*'");
         int[] b;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As Integer()
     End Sub
 End Class");
@@ -237,7 +254,9 @@ End Class");
         int[] b = { 1, 2, 3 };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = {1, 2, 3}
     End Sub
 End Class");
@@ -253,7 +272,9 @@ End Class");
         var b = { 1, 2, 3 };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = {1, 2, 3}
     End Sub
 End Class
@@ -272,7 +293,9 @@ CS0820: Cannot initialize an implicitly-typed variable with an array initializer
         int[] b = new int[] { 1, 2, 3 };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New Integer() {1, 2, 3}
     End Sub
 End Class");
@@ -288,7 +311,9 @@ End Class");
         int[] b = new int[3] { 1, 2, 3 };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New Integer(2) {1, 2, 3}
     End Sub
 End Class");
@@ -304,7 +329,9 @@ End Class");
         int[,] b;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As Integer(,)
     End Sub
 End Class");
@@ -323,10 +350,13 @@ End Class");
         };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = {
-        {1, 2},
-        {3, 4}}
+            {1, 2},
+                    {3, 4}}
+
     End Sub
 End Class");
     }
@@ -344,10 +374,13 @@ End Class");
         };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New Integer(,) {
-        {1, 2},
-        {3, 4}}
+            {1, 2},
+                    {3, 4}}
+
     End Sub
 End Class");
     }
@@ -365,10 +398,13 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New Integer(1, 1) {
-        {1, 2},
-        {3, 4}}
+            {1, 2},
+                        {3, 4}}
+
     End Sub
 End Class
 
@@ -386,7 +422,9 @@ CS1002: ; expected");
         int[][] b;
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As Integer()()
     End Sub
 End Class");
@@ -402,7 +440,9 @@ End Class");
         int[][] b = { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
@@ -418,7 +458,9 @@ End Class");
         int[][] b = new int[][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New Integer()() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
@@ -434,7 +476,9 @@ End Class");
         int[][] b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
 End Class");
@@ -455,6 +499,7 @@ the_beginning:
     }
 }", @"Friend Class Test
     Private Sub TestMethod()
+
 the_beginning:
         Dim value = 1
         Const myPIe = Math.PI
@@ -478,11 +523,13 @@ End Class");
             b = 3;
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal a As Integer)
-        Dim b As Integer
 
+    Private Sub TestMethod(ByVal a As Integer)
+
+        Dim b As Integer
         If a = 0 Then
             b = 0
+
         Else
             b = 3
         End If
@@ -509,15 +556,17 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal a As Integer)
-        Dim b As Integer
 
+    Private Sub TestMethod(ByVal a As Integer)
+
+        Dim b As Integer
         If a = 0 Then
             b = 0
         ElseIf a = 1 Then
             b = 1
         ElseIf a = 2 OrElse a = 3 Then
             b = 2
+
         Else
             b = 3
         End If
@@ -543,7 +592,9 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Public Shared Sub TestMethod()
+
         If True Then
             Dim x = 1
             Console.WriteLine(x)
@@ -579,13 +630,17 @@ CS0103: The name 'Console' does not exist in the current context");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As Integer
         b = 0
-
         While b = 0
+
             If b = 2 Then Continue While
+
             If b = 3 Then Exit While
+
             b = 1
         End While
     End Sub
@@ -646,14 +701,19 @@ End Class");
         while (b == 0);
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         Dim b As Integer
         b = 0
-
         Do
+
             If b = 2 Then Continue Do
+
             If b = 3 Then Exit Do
+
             b = 1
+
         Loop While b = 0
     End Sub
 End Class");
@@ -675,10 +735,15 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal values As Integer())
+
         For Each val In values
+
             If val = 2 Then Continue For
+
             If val = 3 Then Exit For
+
         Next
     End Sub
 End Class");
@@ -700,10 +765,15 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal values As Integer())
+
         For Each val In values
+
             If val = 2 Then Continue For
+
             If val = 3 Then Exit For
+
         Next
     End Sub
 End Class
@@ -726,7 +796,9 @@ BC30516: Overload resolution failed because no accessible 'Val' accepts this num
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal nullObject As Object)
+
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
 
         SyncLock nullObject
@@ -751,7 +823,9 @@ CS0103: The name 'Console' does not exist in the current context");
             b[i] = s[i];
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer, ByVal unknownCondition As Boolean)
+
         i = 0
 
         While unknownCondition
@@ -774,7 +848,9 @@ End Class");
         }
     }
 }", @"Friend Class TestClassForWithUnknownConditionAndBlockAsync
+
     Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer, ByVal unknownCondition As Boolean)
+
         i = 0
 
         While unknownCondition
@@ -795,7 +871,9 @@ End Class");
         for (i = 0; i < end; i++) b[i] = s[i];
     }
 }", @"Friend Class TestClassForWithSingleStatementAsync
+
     Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer)
+
         For i = 0 To [end] - 1
             b(i) = s(i)
         Next
@@ -816,8 +894,11 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal b As Integer(), ByVal s As Integer(), ByVal nbMessage As Integer)
+
         For m = nbMessage To 1 Step -1
+
             ' Loop body
         Next
     End Sub
@@ -836,7 +917,9 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         For i = 0 To [end] - 1
             b(i) = s(i)
         Next
@@ -866,7 +949,9 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod()
+
         For i = [end] To 1 Step -1
             b(i) = s(i)
         Next
@@ -897,7 +982,6 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
             @"Friend Class TestClass
     Private Sub TestMethod()
         Dim summary = 0
-
         For month = 1 To 12
             summary += month
         Next
@@ -987,8 +1071,11 @@ CS0246: The type or namespace name 'Action' could not be found (are you missing 
         return originalText;
     }
 }", @"Public Class SolutionConverter
+
     Private Shared Function ApplyReplacements(ByVal originalText As String, ByVal replacements As IEnumerable(Of (String, String))) As String
+
         For Each oldValueNewValue In replacements
+
             Dim oldValue = oldValueNewValue.Item1
             Dim newValue = oldValueNewValue.Item2
             originalText = Regex.Replace(originalText, oldValue, newValue, RegexOptions.IgnoreCase)
@@ -1053,7 +1140,9 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
             Console.ReadKey();
         }
     }", @"Friend Class GotoTest1
+
     Private Shared Sub Main()
+
         Dim x = 200, y = 4
         Dim count = 0
         Dim array = New String(x - 1, y - 1) {}
@@ -1066,6 +1155,7 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
         Next
 
         Console.Write(""Enter the number to search for: "")
+
         Dim myNumber As String = Console.ReadLine()
 
         For i = 0 To x - 1
@@ -1073,6 +1163,7 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
             For j = 0 To y - 1
 
                 If array(i, j).Equals(myNumber) Then
+
                     GoTo Found
                 End If
             Next
@@ -1080,10 +1171,13 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
 
         Console.WriteLine(""The number {0} was not found."", myNumber)
         GoTo Finish
+
 Found:
         Console.WriteLine(""The number {0} is found."", myNumber)
+
 Finish:
         Console.WriteLine(""End of search."")
+
         Console.WriteLine(""Press any key to exit."")
         Console.ReadKey()
     End Sub
@@ -1104,8 +1198,11 @@ CS0103: The name 'Console' does not exist in the current context");
             throw new ArgumentNullException(nameof(nullObject));
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal nullObject As Object)
+
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
+
     End Sub
 End Class
 
@@ -1141,19 +1238,24 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
+
     Public Event SomethingHappening As EventHandler
 
     Private Sub TestMethod(ByVal e As EventHandler)
+
         AddHandler SomethingHappening, e
         AddHandler SomethingHappening, AddressOf MyHandler
     End Sub
 
     Private Sub TestMethod2(ByVal e As EventHandler)
+
         RemoveHandler SomethingHappening, e
         RemoveHandler SomethingHappening, AddressOf MyHandler
     End Sub
 
     Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
+
+
     End Sub
 End Class");
     }
@@ -1218,19 +1320,26 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal number As Integer)
+
         Select Case number
             Case 0, 1, 2
+
+
                 Console.Write(""number is 0, 1, 2"")
+
             Case 3
                 Console.Write(""section 3"")
                 GoTo _Select0_Case5
             Case 4
                 Console.Write(""section 4"")
                 GoTo _Select0_CaseDefault
+
             Case 5
 _Select0_Case5:
                 Console.Write(""section 5"")
+
             Case Else
 _Select0_CaseDefault:
                 Console.Write(""default section"") ' Block moves to end - 1
@@ -1260,7 +1369,9 @@ CS0103: The name 'Console' does not exist in the current context");
         }
     }
 }", @"Friend Class TestClass
+
     Private Sub TestMethod(ByVal number As Double)
+
         Select Case number
             Case 3
                 Console.Write(""section 3"")
@@ -1268,6 +1379,7 @@ CS0103: The name 'Console' does not exist in the current context");
             Case 5.5
 _Select0_Case5_5:
                 Console.Write(""section 5"")
+
         End Select
     End Sub
 End Class
@@ -1293,12 +1405,16 @@ CS0103: The name 'Console' does not exist in the current context");
         return false;
     }
 }", @"Friend Class TestClass
-    Public Function IsFive(ByVal aNum As Integer) As Boolean
-        Select Case aNum
-            Case = 5
-                Return True
-        End Select
 
+    Public Function IsFive(ByVal aNum As Integer) As Boolean
+
+        Select Case aNum
+
+            Case = 5
+
+                Return True
+
+        End Select
         Return False
     End Function
 End Class");
@@ -1340,22 +1456,26 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
+
     Private Shared Function Log(ByVal message As String) As Boolean
+
         Console.WriteLine(message)
         Return False
     End Function
 
     Private Sub TestMethod(ByVal number As Integer)
+
         Try
             Console.WriteLine(""try"")
         Catch e As Exception
             Console.WriteLine(""catch1"")
+
         Catch
             Console.WriteLine(""catch all"")
+
         Finally
             Console.WriteLine(""finally"")
         End Try
-
         Try
             Console.WriteLine(""try"")
         Catch __unusedIOException1__ As IOException
@@ -1363,9 +1483,9 @@ End Class");
         Catch e As Exception When Log(e.Message)
             Console.WriteLine(""catch2"")
         End Try
-
         Try
             Console.WriteLine(""try"")
+
         Finally
             Console.WriteLine(""finally"")
         End Try
@@ -1394,7 +1514,9 @@ class TestClass
 }", @"Imports System.Collections.Generic
 
 Friend Class TestClass
+
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
+
         If number < 0 Then Return
 
         For i = 0 To number - 1
@@ -1420,7 +1542,6 @@ End Class");
 }",
             @"Friend Class TestClass
     Private field As Integer
-
     Private Sub New(ByVal param As Integer)
         field = param
     End Sub
@@ -1428,7 +1549,6 @@ End Class");
     Private Shared Sub TestMethod()
         Call New TestClass(10).Initialize()
     End Sub
-
     Private Sub Initialize()
     End Sub
 End Class");

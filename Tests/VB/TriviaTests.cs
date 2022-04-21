@@ -78,7 +78,7 @@ Namespace ANamespace 'namespace
             argument3 = Nothing '3
 #Else 'ElseDirective keeps comments
             argument = new object();
-#End If 'EndIfDirective keeps comments
+#End If
             Console.Write(3)
         End Sub 'End of method
     End Class 'End of class

@@ -1230,7 +1230,9 @@ End Sub", @"public SurroundingClass()
     public async Task TestStaticConstructorAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"Shared Sub New()
+            @"
+Shared Sub New()
+
 End Sub", @"static SurroundingClass()
 {
 }");

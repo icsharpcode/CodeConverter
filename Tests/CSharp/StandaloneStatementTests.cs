@@ -68,7 +68,8 @@ obj = null;",
     public async Task SingleAssigmentAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"Dim x = 3",
+            @"
+Dim x = 3",
             @"int x = 3;",
             expectSurroundingBlock: true);
     }
@@ -77,7 +78,8 @@ obj = null;",
     public async Task SingleFieldDeclarationAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"Private x As Integer = 3",
+            @"
+Private x As Integer = 3",
             @"private int x = 3;");
     }
 
@@ -86,6 +88,7 @@ obj = null;",
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Public Class Test
+
 End Class",
             @"
 public partial class Test
@@ -97,7 +100,8 @@ public partial class Test
     public async Task SingleAbstractMethodAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"Protected MustOverride Sub abs()",
+            @"
+Protected MustOverride Sub abs()",
             @"protected abstract void abs();");
     }
 
@@ -106,6 +110,7 @@ public partial class Test
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Namespace nam
+
 End Namespace",
             @"
 namespace nam

@@ -45,7 +45,9 @@ public class X
             @"Imports s = System.String
 
 Public Class X
+
     Private Function GetStr() As s
+
         Return s.Empty
     End Function
 End Class");
@@ -60,7 +62,9 @@ End Class");
     {
     }
 }", @"Namespace Test.class
+
     Friend Class TestClass(Of T)
+
     End Class
 End Namespace");
     }
@@ -76,10 +80,11 @@ End Namespace");
         static void Test2() {}
     }
 }", @"Namespace Test.class
+
     Friend Module TestClass
+
         Public Sub Test()
         End Sub
-
         Private Sub Test2()
         End Sub
     End Module
@@ -104,13 +109,17 @@ namespace Test
 }
 ",
             @"Namespace Test.class
+
     Public MustInherit Class TestClass
+
     End Class
 End Namespace
 
 Namespace Test
+
     Public Class Test1
         Inherits [class].TestClass
+
     End Class
 End Namespace");
     }
@@ -124,7 +133,9 @@ End Namespace");
     {
     }
 }", @"Namespace Test.class
+
     Friend NotInheritable Class TestClass
+
     End Class
 End Namespace");
     }
@@ -185,6 +196,7 @@ End Enum");
 {
     Argument_ImplementIComparable
 }", @"Public Enum ExceptionResource As Byte
+
     Argument_ImplementIComparable
 End Enum");
     }
@@ -276,6 +288,7 @@ class ThisUri
 Imports SO = System.Data.SqlClient.SqlCommandBuilder
 
 Friend Class ThisUri
+
     Private s As System.Data.SqlClient.SqlCommand
     Private so As System.Data.SqlClient.SqlCommandBuilder
 End Class");
@@ -320,8 +333,8 @@ namespace System {
     using Linq;
 }",
             @"Imports System.Linq
-
 Namespace System
+
 End Namespace");
     }
 
@@ -348,10 +361,12 @@ public interface iDisplay
     Public Property Name As String Implements iDisplay.Name
 
     Public Sub DisplayName() Implements iDisplay.DisplayName
+
     End Sub
 End Class
 
 Public Interface iDisplay
+
     Property Name As String
     Sub DisplayName()
 End Interface");
@@ -380,10 +395,12 @@ public interface iDisplay
     Private Property Name As String Implements iDisplay.Name
 
     Private Sub DisplayName() Implements iDisplay.DisplayName
+
     End Sub
 End Class
 
 Public Interface iDisplay
+
     Property Name As String
     Sub DisplayName()
 End Interface
@@ -407,7 +424,6 @@ public interface iDisplay {
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-
     Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
         Get
             Throw New NotImplementedException()
@@ -490,10 +506,8 @@ End Class
 
 Public NotInheritable Class TestClass(Of T As {Class1, New})
     Private Shared task As Task
-
     Shared Sub New()
     End Sub
-
     Public Shared Function Method() As Task
         Return task
     End Function
@@ -530,13 +544,10 @@ End Module");
     Private Const Name As String = ""a""
     Friend Const Name1 As String = ""b""
     Public Const Name2 As String = ""c""
-
     Public Sub Initialize()
     End Sub
-
     Friend Sub Initialize1()
     End Sub
-
     Private Sub Initialize2()
     End Sub
 End Module");
@@ -558,7 +569,6 @@ End Interface
 
 Public Class TestClass
     Implements ITestInterface(Of String)
-
     Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
     End Sub
 End Class
@@ -577,7 +587,6 @@ public class TestClass : INotifyPropertyChanged {
 
 Public Class TestClass
     Implements INotifyPropertyChanged
-
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 End Class");
     }
@@ -589,7 +598,6 @@ End Class");
 }",
             @"Public Class TestClass
     Implements System.ComponentModel.INotifyPropertyChanged
-
     Public Event PropertyChanged As System.ComponentModel.PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }

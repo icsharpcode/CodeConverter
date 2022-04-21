@@ -25,7 +25,8 @@ num = 5",
     {
         await TestConversionCSharpToVisualBasicAsync(
             @"list.ForEach(i => Console.Write(""{0}\t"", i));",
-            @"list.ForEach(Sub(i) Console.Write(""{0}"" & vbTab, i))
+            @"
+list.ForEach(Sub(i) Console.Write(""{0}"" & vbTab, i))
 
 1 source compilation errors:
 CS0103: The name 'list' does not exist in the current context
@@ -122,7 +123,8 @@ End Namespace");
             @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",
-            @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task
+            @"
+Me.DataContext = From task In tasks Where task.Priority Is pri Select task
 
 3 source compilation errors:
 CS1061: 'SurroundingClass' does not contain a definition for 'DataContext' and no accessible extension method 'DataContext' accepting a first argument of type 'SurroundingClass' could be found (are you missing a using directive or an assembly reference?)
