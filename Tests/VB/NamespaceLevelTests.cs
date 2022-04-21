@@ -13,6 +13,7 @@ public class NamespaceLevelTests : ConverterTestBase
 {
 
 }", @"Namespace Test
+
 End Namespace");
     }
 
@@ -79,7 +80,6 @@ End Namespace");
     Friend Module TestClass
         Public Sub Test()
         End Sub
-
         Private Sub Test2()
         End Sub
     End Module
@@ -138,7 +138,6 @@ End Namespace");
     void Test ();
 }", @"Friend Interface ITest
     Inherits IDisposable
-
     Sub Test()
 End Interface");
     }
@@ -153,7 +152,6 @@ End Interface");
     void Test2 ();
 }", @"Friend Interface ITest
     Inherits IDisposable
-
     Sub Test()
     Sub Test2()
 End Interface");
@@ -190,7 +188,7 @@ End Enum");
     }
 
     [Fact]
-    public async Task TestClassInheritanceListAsync()
+    public async Task TestClassInheritanceList1Async()
     {
         await TestConversionCSharpToVisualBasicAsync(
             @"abstract class ClassA : System.IDisposable
@@ -198,7 +196,6 @@ End Enum");
     protected abstract void Test();
 }", @"Friend MustInherit Class ClassA
     Implements IDisposable
-
     Protected MustOverride Sub Test()
 End Class
 
@@ -206,7 +203,11 @@ End Class
 CS0535: 'ClassA' does not implement interface member 'IDisposable.Dispose()'
 1 target compilation errors:
 BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposable'.");
+    }
 
+    [Fact]
+    public async Task TestClassInheritanceList2Async()
+    {
         await TestConversionCSharpToVisualBasicAsync(
             @"abstract class ClassA : System.EventArgs, System.IDisposable
 {
@@ -214,7 +215,6 @@ BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposabl
 }", @"Friend MustInherit Class ClassA
     Inherits EventArgs
     Implements IDisposable
-
     Protected MustOverride Sub Test()
 End Class
 
@@ -233,7 +233,6 @@ BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposabl
     void Test() {}
 }", @"Friend Structure MyType
     Implements IComparable(Of MyType)
-
     Private Sub Test()
     End Sub
 End Structure
@@ -344,7 +343,6 @@ public interface iDisplay
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-
     Public Property Name As String Implements iDisplay.Name
 
     Public Sub DisplayName() Implements iDisplay.DisplayName
@@ -376,7 +374,6 @@ public interface iDisplay
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-
     Private Property Name As String Implements iDisplay.Name
 
     Private Sub DisplayName() Implements iDisplay.DisplayName
@@ -407,7 +404,6 @@ public interface iDisplay {
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-
     Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
         Get
             Throw New NotImplementedException()
@@ -490,10 +486,8 @@ End Class
 
 Public NotInheritable Class TestClass(Of T As {Class1, New})
     Private Shared task As Task
-
     Shared Sub New()
     End Sub
-
     Public Shared Function Method() As Task
         Return task
     End Function
@@ -530,13 +524,10 @@ End Module");
     Private Const Name As String = ""a""
     Friend Const Name1 As String = ""b""
     Public Const Name2 As String = ""c""
-
     Public Sub Initialize()
     End Sub
-
     Friend Sub Initialize1()
     End Sub
-
     Private Sub Initialize2()
     End Sub
 End Module");
@@ -558,7 +549,6 @@ End Interface
 
 Public Class TestClass
     Implements ITestInterface(Of String)
-
     Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
     End Sub
 End Class
@@ -577,7 +567,6 @@ public class TestClass : INotifyPropertyChanged {
 
 Public Class TestClass
     Implements INotifyPropertyChanged
-
     Public Event PropertyChanged As PropertyChangedEventHandler Implements INotifyPropertyChanged.PropertyChanged
 End Class");
     }
@@ -589,7 +578,6 @@ End Class");
 }",
             @"Public Class TestClass
     Implements System.ComponentModel.INotifyPropertyChanged
-
     Public Event PropertyChanged As System.ComponentModel.PropertyChangedEventHandler Implements System.ComponentModel.INotifyPropertyChanged.PropertyChanged
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }

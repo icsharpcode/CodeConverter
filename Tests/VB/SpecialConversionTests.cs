@@ -47,16 +47,13 @@ public class DerivedClass : BaseClass {
 }",
             @"Public MustInherit Class BaseClass
     Public Property Property1 As Integer
-
     Public Sub New()
     End Sub
 End Class
 
 Public Class DerivedClass
     Inherits BaseClass
-
     Public Property Property2 As Integer
-
     Public Sub TestMethod2()
         Property2 = CSharpImpl.__Assign(Property1, 10)
     End Sub
@@ -636,11 +633,9 @@ End Function");
             SetValue(value)
         End Set
     End Property
-
     Private Function GetValue() As Integer
         Return 0
     End Function
-
     Private Sub SetValue(ByVal value As Integer)
     End Sub
 End Class
@@ -664,7 +659,6 @@ public class TestClass {
 
 Public Class TestClass
     Private valueField As EventHandler
-
     Public Custom Event Value As EventHandler
         AddHandler(ByVal value As EventHandler)
             valueField = [Delegate].Combine(valueField, value)
@@ -701,9 +695,7 @@ End Interface
 
 Public Class TestClass
     Implements IInterface
-
     Private propField As Integer
-
     Private Property Prop As Integer Implements IInterface.Prop
         Get
             Return propField
@@ -726,7 +718,6 @@ End Class");
             @"Namespace System
     Public Class TestClass
         Private testField As Integer
-
         Public ReadOnly Property Test As Integer
             Get
                 Return testField
@@ -778,7 +769,6 @@ Imports System.Collections.Generic
 
 Public Class AdditionalLocals
     Implements IEnumerable(Of KeyValuePair(Of String, Integer))
-
     Private ReadOnly _additionalLocals As Stack(Of Dictionary(Of String, Integer)) = New Stack(Of Dictionary(Of String, Integer))()
 
     Public Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of String, Integer)) Implements IEnumerable(Of KeyValuePair(Of String, Integer)).GetEnumerator

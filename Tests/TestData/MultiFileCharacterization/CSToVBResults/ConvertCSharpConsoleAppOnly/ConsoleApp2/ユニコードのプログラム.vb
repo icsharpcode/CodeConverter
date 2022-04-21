@@ -13,5 +13,6 @@ Namespace ConsoleApp2
                 class1.MethodOnlyDifferingInTypeParameterCount(Of Object, String)()
             Next
         End Sub
+
     End Class
 End Namespace

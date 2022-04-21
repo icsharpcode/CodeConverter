@@ -24,13 +24,10 @@ public class StatementTests : ConverterTestBase
     Private Sub TestMethod()
         If True Then
         End If
-
         While True
         End While
-
         While True
         End While
-
         Do
         Loop While True
     End Sub
@@ -83,19 +80,16 @@ End Class");
     Private Sub TestMethod(ByVal arg As Integer)
         While True 'Becomes while loop
             If arg = 3 Then Exit While
-
             Select Case arg
                 Case 1 'From switch
                 Case 2 'From switch
                 Case Else
                     Continue While ' Outer while loop
             End Select
-
             For i = 0 To arg - 1 ' Becomes For Next loop
                 If arg <> 1 Then Exit For ' From inner for loop
                 Continue For ' Inner for loop
             Next
-
             Continue While ' Outer while loop
         End While
     End Sub
@@ -325,8 +319,8 @@ End Class");
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = {
-        {1, 2},
-        {3, 4}}
+            {1, 2},
+                    {3, 4}}
     End Sub
 End Class");
     }
@@ -346,8 +340,8 @@ End Class");
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = New Integer(,) {
-        {1, 2},
-        {3, 4}}
+            {1, 2},
+                    {3, 4}}
     End Sub
 End Class");
     }
@@ -367,8 +361,8 @@ End Class");
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = New Integer(1, 1) {
-        {1, 2},
-        {3, 4}}
+            {1, 2},
+                        {3, 4}}
     End Sub
 End Class
 
@@ -480,7 +474,6 @@ End Class");
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
-
         If a = 0 Then
             b = 0
         Else
@@ -511,7 +504,6 @@ End Class");
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal a As Integer)
         Dim b As Integer
-
         If a = 0 Then
             b = 0
         ElseIf a = 1 Then
@@ -582,7 +574,6 @@ CS0103: The name 'Console' does not exist in the current context");
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
-
         While b = 0
             If b = 2 Then Continue While
             If b = 3 Then Exit While
@@ -649,7 +640,6 @@ End Class");
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
-
         Do
             If b = 2 Then Continue Do
             If b = 3 Then Exit Do
@@ -728,7 +718,6 @@ BC30516: Overload resolution failed because no accessible 'Val' accepts this num
 }", @"Friend Class TestClass
     Private Sub TestMethod(ByVal nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
-
         SyncLock nullObject
             Console.WriteLine(nullObject)
         End SyncLock
@@ -897,7 +886,6 @@ BC30451: 's' is not declared. It may be inaccessible due to its protection level
             @"Friend Class TestClass
     Private Sub TestMethod()
         Dim summary = 0
-
         For month = 1 To 12
             summary += month
         Next
@@ -1066,12 +1054,11 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
         Next
 
         Console.Write(""Enter the number to search for: "")
+
         Dim myNumber As String = Console.ReadLine()
 
         For i = 0 To x - 1
-
             For j = 0 To y - 1
-
                 If array(i, j).Equals(myNumber) Then
                     GoTo Found
                 End If
@@ -1080,10 +1067,13 @@ BC30451: 'RegexOptions' is not declared. It may be inaccessible due to its prote
 
         Console.WriteLine(""The number {0} was not found."", myNumber)
         GoTo Finish
+
 Found:
         Console.WriteLine(""The number {0} is found."", myNumber)
+
 Finish:
         Console.WriteLine(""End of search."")
+
         Console.WriteLine(""Press any key to exit."")
         Console.ReadKey()
     End Sub
@@ -1154,6 +1144,7 @@ Friend Class TestClass
     End Sub
 
     Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
+
     End Sub
 End Class");
     }
@@ -1298,7 +1289,6 @@ CS0103: The name 'Console' does not exist in the current context");
             Case = 5
                 Return True
         End Select
-
         Return False
     End Function
 End Class");
@@ -1355,7 +1345,6 @@ End Class");
         Finally
             Console.WriteLine(""finally"")
         End Try
-
         Try
             Console.WriteLine(""try"")
         Catch __unusedIOException1__ As IOException
@@ -1363,7 +1352,6 @@ End Class");
         Catch e As Exception When Log(e.Message)
             Console.WriteLine(""catch2"")
         End Try
-
         Try
             Console.WriteLine(""try"")
         Finally
@@ -1396,7 +1384,6 @@ class TestClass
 Friend Class TestClass
     Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
-
         For i = 0 To number - 1
             Yield i
         Next
@@ -1420,7 +1407,6 @@ End Class");
 }",
             @"Friend Class TestClass
     Private field As Integer
-
     Private Sub New(ByVal param As Integer)
         field = param
     End Sub
@@ -1428,7 +1414,6 @@ End Class");
     Private Shared Sub TestMethod()
         Call New TestClass(10).Initialize()
     End Sub
-
     Private Sub Initialize()
     End Sub
 End Class");

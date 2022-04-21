@@ -430,6 +430,7 @@ internal partial class BaseTestClass
 
 internal partial class TestClass : BaseTestClass
 {
+
     private void TestMethod()
     {
         member = 0;
@@ -458,6 +459,7 @@ public partial class BaseController
 
 public partial class ActualController : BaseController
 {
+
     public void Do()
     {
         Request.StatusCode = 200;
@@ -542,6 +544,7 @@ public partial class Class1
 {
     public void Bar()
     {
+
     }
 
     public void Foo()

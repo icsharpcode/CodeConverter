@@ -280,6 +280,7 @@ internal partial class TestClass
         bool? a = default;
         bool? b = default;
         bool x = false;
+
         if ((a & b) == true)
             return;
         if ((a is var arg1 && arg1.HasValue && !arg1.Value ? false : !(b is { } arg2) ? null : arg2 ? arg1 : false) == true)
@@ -292,12 +293,14 @@ internal partial class TestClass
             return;
         if (x && a.GetValueOrDefault())
             return;
+
         var res = a & b;
         res = a is var arg7 && arg7.HasValue && !arg7.Value ? false : !(b is { } arg8) ? null : arg8 ? arg7 : false;
         res = a & x;
         res = a is var arg9 && arg9.HasValue && !arg9.Value ? false : x ? arg9 : false;
         res = x & a;
         res = x ? a : false;
+
     }
 }");
         }
@@ -334,6 +337,7 @@ internal partial class TestClass
         bool? a = default;
         bool? b = default;
         bool x = false;
+
         if ((a | b) == true)
             return;
         if (a.GetValueOrDefault() || b.GetValueOrDefault())
@@ -346,12 +350,14 @@ internal partial class TestClass
             return;
         if (x || a.GetValueOrDefault())
             return;
+
         var res = a | b;
         res = a is var arg1 && arg1.GetValueOrDefault() ? true : b is not { } arg2 ? null : arg2 ? true : arg1;
         res = a | x;
         res = a is var arg3 && arg3.GetValueOrDefault() ? true : x ? true : arg3;
         res = x | a;
         res = x ? true : a;
+
     }
 }");
         }
@@ -394,18 +400,21 @@ internal partial class TestClass
         int? x = default;
         int? y = default;
         int a = 0;
+
         var res = x is var arg1 && y is { } arg2 && arg1.HasValue ? arg1 == arg2 : (bool?)null;
         res = x is var arg3 && y is { } arg4 && arg3.HasValue ? arg3 != arg4 : (bool?)null;
         res = x is var arg5 && y is { } arg6 && arg5.HasValue ? arg5 > arg6 : (bool?)null;
         res = x is var arg7 && y is { } arg8 && arg7.HasValue ? arg7 >= arg8 : (bool?)null;
         res = x is var arg9 && y is { } arg10 && arg9.HasValue ? arg9 < arg10 : (bool?)null;
         res = x is var arg11 && y is { } arg12 && arg11.HasValue ? arg11 <= arg12 : (bool?)null;
+
         res = a is var arg13 && y is { } arg14 ? arg13 == arg14 : (bool?)null;
         res = a is var arg15 && y is { } arg16 ? arg15 != arg16 : (bool?)null;
         res = a is var arg17 && y is { } arg18 ? arg17 > arg18 : (bool?)null;
         res = a is var arg19 && y is { } arg20 ? arg19 >= arg20 : (bool?)null;
         res = a is var arg21 && y is { } arg22 ? arg21 < arg22 : (bool?)null;
         res = a is var arg23 && y is { } arg24 ? arg23 <= arg24 : (bool?)null;
+
         res = a is var arg26 && x is { } arg25 ? arg25 == arg26 : (bool?)null;
         res = a is var arg28 && x is { } arg27 ? arg27 != arg28 : (bool?)null;
         res = a is var arg30 && x is { } arg29 ? arg29 > arg30 : (bool?)null;
@@ -454,6 +463,7 @@ internal partial class TestClass
         int? x = default;
         int? y = default;
         int a = 0;
+
         if (x is var arg1 && y is { } arg2 && arg1.HasValue && arg1 == arg2)
             return;
         if (x is var arg3 && y is { } arg4 && arg3.HasValue && arg3 != arg4)
@@ -466,6 +476,7 @@ internal partial class TestClass
             return;
         if (x is var arg11 && y is { } arg12 && arg11.HasValue && arg11 <= arg12)
             return;
+
         if (a is var arg13 && y is { } arg14 && arg13 == arg14)
             return;
         if (a is var arg15 && y is { } arg16 && arg15 != arg16)
@@ -478,6 +489,7 @@ internal partial class TestClass
             return;
         if (a is var arg23 && y is { } arg24 && arg23 <= arg24)
             return;
+
         if (a is var arg26 && x is { } arg25 && arg25 == arg26)
             return;
         if (a is var arg28 && x is { } arg27 && arg27 != arg28)

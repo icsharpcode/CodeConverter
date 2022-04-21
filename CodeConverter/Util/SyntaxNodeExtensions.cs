@@ -2,6 +2,7 @@ using System.Text;
 using ICSharpCode.CodeConverter.VB.Trivia;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
@@ -125,6 +126,26 @@ internal static class SyntaxNodeExtensions
         if (converted == null) return null;
         var linespan = fromSource.SyntaxTree.GetLineSpan(fromSource.Span);
         return converted.WithSourceStartLineAnnotation(linespan).WithSourceEndLineAnnotation(linespan);
+    }
+
+    public static SyntaxToken WithAlreadyMappedStartLineAnnotation(this SyntaxToken token, int sourcePosition)
+    {
+        return token.WithAdditionalAnnotations(AnnotationConstants.MarkLeadingTriviaAsMapped(sourcePosition));
+    }
+    
+    public static SyntaxToken WithAlreadyMappedEndLineAnnotation(this SyntaxToken node, int sourcePosition)
+    {
+        return node.WithAdditionalAnnotations(AnnotationConstants.MarkTrailingTriviaAsMapped(sourcePosition));
+    }
+
+    public static T WithAlreadyMappedStartLineAnnotation<T>(this T node, int sourcePosition) where T : SyntaxNode
+    {
+        return node.WithAdditionalAnnotations(AnnotationConstants.MarkLeadingTriviaAsMapped(sourcePosition));
+    }
+
+    public static T WithAlreadyMappedEndLineAnnotation<T>(this T node, int sourcePosition) where T : SyntaxNode
+    {
+        return node.WithAdditionalAnnotations(AnnotationConstants.MarkTrailingTriviaAsMapped(sourcePosition));
     }
 
     public static T WithSourceStartLineAnnotation<T>(this T node, FileLinePositionSpan sourcePosition) where T : SyntaxNode
@@ -300,30 +321,38 @@ internal static class SyntaxNodeExtensions
         return node.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
     }
 
+    public static T WithConvertedLeadingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
+    {
+        var firstConvertedToken = node.GetFirstToken();
+        return node.ReplaceToken(firstConvertedToken, firstConvertedToken.WithConvertedLeadingTriviaFrom(fromToken));
+    }
+
     public static SyntaxToken WithConvertedLeadingTriviaFrom(this SyntaxToken node, SyntaxToken? sourceToken)
     {
         if (sourceToken == null) return node;
         var convertedTrivia = ConvertTrivia(sourceToken.Value.LeadingTrivia);
-        return node.WithLeadingTrivia(convertedTrivia);
+        var withLeadingTrivia = node.WithLeadingTrivia(convertedTrivia);
+        return withLeadingTrivia.WithAlreadyMappedStartLineAnnotation(sourceToken.Value.Span.Start);
     }
 
-    public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken, TriviaKinds triviaKinds = null) where T : SyntaxNode
+    public static T WithConvertedTrailingTriviaFrom<T>(this T node, SyntaxToken fromToken) where T : SyntaxNode
     {
         var lastConvertedToken = node.GetLastToken();
-        return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken, triviaKinds));
+        return node.ReplaceToken(lastConvertedToken, lastConvertedToken.WithConvertedTrailingTriviaFrom(fromToken));
     }
 
-    public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, TriviaKinds triviaKinds = null)
+    public static SyntaxToken WithConvertedTrailingTriviaFrom(this SyntaxToken node, SyntaxToken? otherToken, bool markAsMapped = true)
     {
-        triviaKinds ??= TriviaKinds.All;
         if (!otherToken.HasValue || !otherToken.Value.HasTrailingTrivia) return node;
-        var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia.Where(triviaKinds.ShouldAccept).ToArray());
-        return node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
+        var convertedTrivia = ConvertTrivia(otherToken.Value.TrailingTrivia.ToArray());
+        var withConvertedTrailingTrivia = node.WithTrailingTrivia(node.ImportantTrailingTrivia().Concat(convertedTrivia));
+        if (markAsMapped) withConvertedTrailingTrivia = withConvertedTrailingTrivia.WithAlreadyMappedEndLineAnnotation(otherToken.Value.Span.End);
+        return withConvertedTrailingTrivia;
     }
 
     public static IEnumerable<SyntaxTrivia> ImportantTrailingTrivia(this SyntaxToken node)
     {
-        return node.TrailingTrivia.Where(x => !x.IsWhitespaceOrEndOfLine());
+        return node.TrailingTrivia;
     }
 
     public static bool ParentHasSameTrailingTrivia(this SyntaxNode otherNode)
@@ -360,15 +389,12 @@ internal static class SyntaxNodeExtensions
         }
 
         if (t.IsKind(VBSyntaxKind.WhitespaceTrivia)) {
-            yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.WhitespaceTrivia, t.ToString());
+            yield return SyntaxFactory.ElasticWhitespace(t.ToString());
             yield break;
         }
 
         if (t.IsKind(VBSyntaxKind.EndOfLineTrivia)) {
-            // Mapping one to one here leads to newlines appearing where the natural line-end was in VB.
-            // e.g. ToString\r\n()
-            // Because C Sharp needs those brackets. Handling each possible case of this is far more effort than it's worth.
-            yield return SyntaxFactory.SyntaxTrivia(CSSyntaxKind.EndOfLineTrivia, t.ToString());
+            yield return SyntaxFactory.EndOfLine(t.ToString());
             yield break;
         }
 

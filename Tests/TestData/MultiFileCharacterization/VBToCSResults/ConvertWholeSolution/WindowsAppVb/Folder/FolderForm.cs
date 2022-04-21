@@ -7,13 +7,13 @@ using VbNetStandardLib.My.Resources;
 
 namespace WindowsAppVb
 {
+
     public partial class FolderForm
     {
         public FolderForm()
         {
             InitializeComponent();
         }
-
         private void FolderForm_Load(object sender, EventArgs e)
         {
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");

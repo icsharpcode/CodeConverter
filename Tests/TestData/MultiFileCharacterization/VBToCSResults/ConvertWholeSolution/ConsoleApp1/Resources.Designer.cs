@@ -8,6 +8,7 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
+
 using System.Diagnostics;
 using Microsoft.VisualBasic;
 
@@ -27,7 +28,9 @@ namespace ConsoleApp1.My.Resources
     [HideModuleName()]
     internal static class Resources
     {
+
         private static System.Resources.ResourceManager resourceMan;
+
         private static System.Globalization.CultureInfo resourceCulture;
 
         /// <summary>
@@ -43,7 +46,6 @@ namespace ConsoleApp1.My.Resources
                     var temp = new System.Resources.ResourceManager("ConsoleApp1.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
-
                 return resourceMan;
             }
         }
@@ -59,7 +61,6 @@ namespace ConsoleApp1.My.Resources
             {
                 return resourceCulture;
             }
-
             set
             {
                 resourceCulture = value;

@@ -10,9 +10,11 @@ public class NamespaceLevelTests : ConverterTestBase
     public async Task TestNamespaceAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Namespace Test
+
 End Namespace", @"
 namespace Test
 {
+
 }");
     }
 
@@ -48,7 +50,6 @@ End Class
 internal partial class A<T>
 {
 }
-
 internal partial class B : A<string>
 {
 }");
@@ -172,7 +173,6 @@ namespace Aaa
     internal partial class Z
     {
     }
-
     internal partial class Z
     {
     }
@@ -180,16 +180,14 @@ namespace Aaa
     internal abstract partial class Base
     {
         public abstract void UPPER();
-
         public abstract bool FOO { get; set; }
     }
-
     internal partial class NotBase : Base
     {
+
         public override void UPPER()
         {
         }
-
         public override bool FOO { get; set; }
     }
 }
@@ -295,6 +293,7 @@ End Interface", @"using System;
 
 internal partial interface ITest : IDisposable
 {
+
     void Test();
 }");
     }
@@ -331,6 +330,7 @@ End Class", @"using System;
 
 internal abstract partial class ClassA : IDisposable
 {
+
     protected abstract void Test();
     public abstract void Dispose();
 }");
@@ -350,6 +350,7 @@ End Class", @"using System;
 
 internal abstract partial class ClassA : EventArgs, IDisposable
 {
+
     protected abstract void Test();
     public abstract void Dispose();
 }");
@@ -368,6 +369,7 @@ End Structure", @"using System;
 
 internal partial struct MyType : IComparable<MyType>
 {
+
     private void Test()
     {
     }
@@ -490,8 +492,7 @@ CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataExcept
         MyBase.New
     End Sub
 End Class",
-            @"
-public partial class DataSet1 : System.Data.DataSet
+            @"public partial class DataSet1 : System.Data.DataSet
 {
     public DataSet1() : base()
     {
@@ -886,6 +887,7 @@ internal static partial class Module1
         object vObjectLong = ELong.M1;
         object vObjectULong = EULong.M1;
     }
+
 }");
     }
 
@@ -905,6 +907,7 @@ public partial interface Foo
 
 public partial class Bar<x> where x : Foo, new()
 {
+
 }");
     }
 
@@ -933,7 +936,6 @@ public abstract partial class A
 
     public virtual int F1(int x) => MyClassF1(x); // Comment ends up out of order, but attached to correct method
     public abstract int F2();
-
     public void TestMethod()
     {
         int w = MyClassF1(1);
@@ -976,9 +978,7 @@ public abstract partial class A
             MyClassP1 = value;
         }
     }
-
     public abstract int P2 { get; set; }
-
     public void TestMethod()
     {
         int w = MyClassP1;

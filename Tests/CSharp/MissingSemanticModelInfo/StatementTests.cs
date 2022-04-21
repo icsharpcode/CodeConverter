@@ -23,8 +23,10 @@ internal partial class MissingLoopType
     public void Test()
     {
         Asadf x = default;
+
         for (int i = 1, loopTo = x.SomeInteger; i <= loopTo; i++)
         {
+
         }
     }
 }

@@ -35,6 +35,7 @@ internal partial class TestClass
     {
         int b;
         b = 0;
+
         while (b == 0)
         {
             if (b == 2)
@@ -68,6 +69,7 @@ internal partial class TestClass
     {
         int b;
         b = 0;
+
         do
         {
             if (b == 2)
@@ -102,6 +104,7 @@ internal partial class TestClass
     {
         int b;
         b = 0;
+
         do
         {
             if (b == 2)
@@ -279,7 +282,6 @@ End Class", @"
 internal partial class TestClass
 {
     private int val;
-
     private void TestMethod(int[] values)
     {
         foreach (var currentVal in values)
@@ -330,7 +332,6 @@ internal partial class TestClass
                         break;
                 }
             }
-
             Console.WriteLine(keep1);
         }
     }
@@ -360,7 +361,6 @@ internal partial class A
                     break;
                 }
         }
-
         return 3;
     }
 }");
@@ -417,7 +417,6 @@ public partial class VisualBasicClass
                 break;
             }
         }
-
         Console.WriteLine(i_Total.ToString());
     }
 }");
@@ -480,6 +479,7 @@ public partial class VisualBasicClass779
                 }
 
                 SomeCase *= 3;
+
                 if (Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(The_Cost_Center, 0, false)))
                 {
                     SomeCase *= 5;

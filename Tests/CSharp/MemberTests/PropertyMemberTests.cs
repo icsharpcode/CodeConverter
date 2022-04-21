@@ -56,7 +56,6 @@ internal partial class TestClass
                 return default;
             return m_test3;
         }
-
         set
         {
             if (7 == int.Parse(""7""))
@@ -265,6 +264,7 @@ public partial class ParameterizedPropertiesAndEnumTest
     {
     }
 
+
     public void ReturnWhatever(MyEnum m)
     {
         var enumerableThing = Enumerable.Empty<string>();
@@ -274,12 +274,10 @@ public partial class ParameterizedPropertiesAndEnumTest
                 {
                     return;
                 }
-
             case MyEnum.First:
                 {
                     return;
                 }
-
             case (MyEnum)3:
                 {
                     set_MyProp(4, enumerableThing.ToArray()[(int)m]);
@@ -404,7 +402,6 @@ internal partial class TestClass
         {
             return _Items[index];
         }
-
         set
         {
             _Items[index] = value;
@@ -427,7 +424,6 @@ internal partial class TestClass
         {
             return m_test3;
         }
-
         set
         {
             m_test3 = value;
@@ -518,7 +514,6 @@ public partial interface IFoo
     int get_Prop(int x = 1, int y = 2);
     void set_Prop(int x = 1, int y = 2, int value = default);
 }
-
 public partial class SomeClass : IFoo
 {
     internal int get_Prop2(int x = 1, int y = 2)
@@ -549,6 +544,7 @@ public partial class SomeClass : IFoo
         set_Prop2(x: 10, value: 1);
         set_Prop2(y: -2, x: -1, value: 1);
         set_Prop2(x: -1, y: -2, value: 1);
+
         IFoo foo = this;
         foo.set_Prop(value: 1);
         foo.set_Prop(-1, -2, 1);
@@ -608,7 +604,6 @@ public partial interface IFoo
     int get_Prop(int x = 1, int y = 2, int z = 3);
     void set_Prop(int x = 1, int y = 2, int z = 3, int value = default);
 }
-
 public partial class SomeClass : IFoo
 {
     internal int get_Prop2(int x = 1, int y = 2, int z = 3)
@@ -639,6 +634,7 @@ public partial class SomeClass : IFoo
         set_Prop2(z: 30, value: 1);
         set_Prop2(10, value: 1);
         set_Prop2(value: 1);
+
         IFoo foo = this;
         foo.set_Prop(value: 1);
         foo.set_Prop(y: 20, value: 1);
@@ -669,14 +665,12 @@ End Class", @"
 internal partial class TestClass
 {
     private int[] _Items;
-
     public int[] Items
     {
         get
         {
             return _Items;
         }
-
         set
         {
             _Items = value;
@@ -725,7 +719,6 @@ public partial class Class1
             return FooRet;
         }
     }
-
     public string X
     {
         get
@@ -737,9 +730,7 @@ public partial class Class1
             return XRet;
         }
     }
-
     public string _y;
-
     public string Y
     {
         set

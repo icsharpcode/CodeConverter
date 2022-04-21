@@ -213,6 +213,7 @@ namespace WindowsAppVb
             Load += new EventHandler(FolderForm_Load);
             ResumeLayout(false);
             PerformLayout();
+
         }
 
         internal ToolStrip ToolStrip1;

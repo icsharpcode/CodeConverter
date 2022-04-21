@@ -120,7 +120,6 @@ namespace WindowsAppVb.My
             finally
             {
             }
-
             MyProject.Application.Run(Args);
         }
         /* TODO ERROR: Skipped EndIfDirectiveTrivia
@@ -203,7 +202,6 @@ namespace WindowsAppVb.My
                 return m_AppObjectProvider.GetInstance;
             }
         }
-
         private readonly static ThreadSafeObjectProvider<MyApplication> m_AppObjectProvider = new ThreadSafeObjectProvider<MyApplication>();
         /* TODO ERROR: Skipped EndIfDirectiveTrivia
         #End If
@@ -220,7 +218,6 @@ namespace WindowsAppVb.My
                 return m_UserObjectProvider.GetInstance;
             }
         }
-
         private readonly static ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User> m_UserObjectProvider = new ThreadSafeObjectProvider<Microsoft.VisualBasic.ApplicationServices.User>();
         /* TODO ERROR: Skipped ElifDirectiveTrivia
         #ElseIf _MYUSERTYPE = "Web" Then
@@ -272,7 +269,6 @@ namespace WindowsAppVb.My
                     {
                         m_FormBeingCreated = new Hashtable();
                     }
-
                     m_FormBeingCreated.Add(typeof(T), null);
                     try
                     {
@@ -315,19 +311,16 @@ namespace WindowsAppVb.My
             {
                 return base.Equals(o);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public override int GetHashCode()
             {
                 return base.GetHashCode();
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal new Type GetType()
             {
                 return typeof(MyForms);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             public override string ToString()
             {
@@ -357,27 +350,25 @@ namespace WindowsAppVb.My
         [MyGroupCollection("System.Web.Services.Protocols.SoapHttpClientProtocol", "Create__Instance__", "Dispose__Instance__", "")]
         internal sealed class MyWebServices
         {
+
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override bool Equals(object o)
             {
                 return base.Equals(o);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override int GetHashCode()
             {
                 return base.GetHashCode();
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             internal new Type GetType()
             {
                 return typeof(MyWebServices);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [DebuggerHidden()]
             public override string ToString()

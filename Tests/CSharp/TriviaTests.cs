@@ -33,6 +33,7 @@ public partial class TestClass506
 {
     public void Deposit(int Item, bool ColaOnly, bool MonteCarloLogActive, Func<bool> InDevEnv)
     {
+
         if (ColaOnly) // just log the Cola value
         {
             Console.WriteLine(1);
@@ -45,7 +46,6 @@ public partial class TestClass506
         {
             Console.WriteLine(3);
         }
-
         if (MonteCarloLogActive && InDevEnv()) // Special logging for dev debugging
         {
             Console.WriteLine(4);
@@ -144,6 +144,7 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
     public VisualBasicClass()
     {
         Load += Eventhandler_Load;
+
     }
 
     #endregion
@@ -299,6 +300,51 @@ internal partial class TestClass
         argument2 = default;
         argument3 = default;
     }
+}");
+    }
+
+    [Fact]
+    public async Task StatementNewlinesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
+
+Public Class X
+    <Display(Name:=""Reinsurance Year"")> _
+    Public SelectedReinsuranceYear As Int16
+
+    
+    <Display(Name:=""Record Type"")> _
+    Public SelectedRecordType As String
+
+    <Display(Name:=""Release Date"")> _
+    Public ReleaseDate As Nullable(Of Date)
+
+End Class
+
+Friend Class DisplayAttribute
+    Inherits Attribute
+    Property Name As String
+End Class
+", @"using System;
+
+public partial class X
+{
+    [Display(Name = ""Reinsurance Year"")]
+    public short SelectedReinsuranceYear;
+
+
+    [Display(Name = ""Record Type"")]
+    public string SelectedRecordType;
+
+    [Display(Name = ""Release Date"")]
+    public DateTime? ReleaseDate;
+
+}
+
+internal partial class DisplayAttribute : Attribute
+{
+    public string Name { get; set; }
 }");
     }
 }

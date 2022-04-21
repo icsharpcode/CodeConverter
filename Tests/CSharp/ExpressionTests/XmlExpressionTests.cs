@@ -114,9 +114,36 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var catalog = new XDocument(new XElement(""Catalog"", new XElement(""Book"", new XAttribute(""id"", ""bk101""), new XElement(""Author"", ""Garghentini, Davide""), new XElement(""Title"", ""XML Developer's Guide""), new XElement(""Price"", ""44.95""), new XElement(""Description"", ""\r\n          An in-depth look at creating applications\r\n          with "", new XElement(""technology"", ""XML""), "". For\r\n          "", new XElement(""audience"", ""beginners""), "" or\r\n          "", new XElement(""audience"", ""advanced""), "" developers.\r\n        "")), new XElement(""Book"", new XAttribute(""id"", ""bk331""), new XElement(""Author"", ""Spencer, Phil""), new XElement(""Title"", ""Developing Applications with Visual Basic .NET""), new XElement(""Price"", ""45.95""), new XElement(""Description"", ""\r\n          Get the expert insights, practical code samples,\r\n          and best practices you need\r\n          to advance your expertise with "", new XElement(""technology"", ""Visual\r\n          Basic .NET""), "".\r\n          Learn how to create faster, more reliable applications\r\n          based on professional,\r\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\r\n        ""))));
-        var htmlOutput = new XElement(""html"", new XElement(""body"", from book in catalog.Elements(""Catalog"").Elements(""Book"")
-                                                                   select new XElement(""div"", new XElement(""h1"", book.Elements(""Title"").Value), new XElement(""h3"", ""By "" + book.Elements(""Author"").Value), new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value), new XElement(""h2"", ""Description""), TransformDescription((string)book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr""))));
+        var catalog = new XDocument(
+new XElement(""Catalog"",
+new XElement(""Book"", new XAttribute(""id"", ""bk101""),
+new XElement(""Author"", ""Garghentini, Davide""),
+new XElement(""Title"", ""XML Developer's Guide""),
+new XElement(""Price"", ""44.95""),
+new XElement(""Description"", ""\r\n          An in-depth look at creating applications\r\n          with "", new XElement(""technology"", ""XML""), "". For\r\n          "", new XElement(""audience"", ""beginners""), "" or\r\n          "", new XElement(""audience"", ""advanced""), "" developers.\r\n        "")
+),
+new XElement(""Book"", new XAttribute(""id"", ""bk331""),
+new XElement(""Author"", ""Spencer, Phil""),
+new XElement(""Title"", ""Developing Applications with Visual Basic .NET""),
+new XElement(""Price"", ""45.95""),
+new XElement(""Description"", ""\r\n          Get the expert insights, practical code samples,\r\n          and best practices you need\r\n          to advance your expertise with "", new XElement(""technology"", ""Visual\r\n          Basic .NET""), "".\r\n          Learn how to create faster, more reliable applications\r\n          based on professional,\r\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\r\n        "")
+)
+)
+
+);
+        var htmlOutput = new XElement(""html"",
+
+                  new XElement(""body"", from book in catalog.Elements(""Catalog"").Elements(""Book"")
+                                       select new XElement(""div"",
+                 new XElement(""h1"", book.Elements(""Title"").Value),
+                 new XElement(""h3"", ""By "" + book.Elements(""Author"").Value),
+                 new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value),
+
+
+                                                  new XElement(""h2"", ""Description""), TransformDescription((string)book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr"")
+                 )
+                    )
+                );
     }
 
     public string TransformDescription(string s)
@@ -273,6 +300,7 @@ internal static class XmlImportsCodeToConvert
 
 internal static partial class Module1
 {
+
     public static void Main()
     {
         // Create element by using the default global XML namespace. 
@@ -284,6 +312,7 @@ internal static partial class Module1
         // Display element to see its final form. 
         Console.WriteLine(outer);
     }
+
 }");
     }
 }

@@ -82,7 +82,6 @@ internal partial class TestClass
     {
         return ""{\""title\"": \"""" + pName + ""\"", \""msg\"": \"""" + pValue + ""\""}"";
     }
-
     public static string GetDeltaPoint(int pDelta)
     {
         return ""{\""delta\"": \"""" + pDelta + ""\""}"";
@@ -125,22 +124,18 @@ public partial class Class1
         {
             throw new Exception();
         }
-
         if (s1 == ""something"")
         {
             throw new Exception();
         }
-
         if (""something"" == s1)
         {
             throw new Exception();
         }
-
         if (string.IsNullOrEmpty(s1))
         {
             // 
         }
-
         if (string.IsNullOrEmpty(s1))
         {
             // 
@@ -186,22 +181,18 @@ public partial class Class1
         {
             throw new Exception();
         }
-
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1, ""something"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
             throw new Exception();
         }
-
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(""something"", s1, CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
             throw new Exception();
         }
-
         if (string.IsNullOrEmpty(s1))
         {
             // 
         }
-
         if (string.IsNullOrEmpty(s1))
         {
             // 
@@ -447,11 +438,13 @@ End Class",
             @"
 public partial class VisualBasicClass
 {
+
     public void Foo()
     {
         string x = """";
         bool y = x == ""something"";
     }
+
 }");
     }
 

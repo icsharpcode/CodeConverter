@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using System.Windows.Forms;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -43,12 +44,18 @@ BC32042: Too few type arguments to 'List(Of T)'.");
     Inherited = false
 };
 obj = null;",
-            @"Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
-    .AllowMultiple = True,
-    .Inherited = False
-}
-obj = Nothing",
-            expectSurroundingMethodBlock: true);
+            @"Private Sub SurroundingSub()
+    Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
+.AllowMultiple = True,
+.Inherited = False
+    }
+    obj = Nothing
+End Sub
+
+1 source compilation errors:
+CS7036: There is no argument given that corresponds to the required formal parameter 'validOn' of 'AttributeUsageAttribute.AttributeUsageAttribute(AttributeTargets)'
+1 target compilation errors:
+BC30455: Argument not specified for parameter 'validOn' of 'Public Overloads Sub New(validOn As AttributeTargets)'.");
     }
 
     [Fact]
@@ -61,12 +68,13 @@ obj = Nothing",
     Value = ""World""
 };
 obj = null;",
-            @"Dim obj = New With {
-    .Name = ""Hello"",
-    .Value = ""World""
-}
-obj = Nothing",
-            expectSurroundingMethodBlock: true);
+            @"Private Sub SurroundingSub()
+    Dim obj = New With {
+.Name = ""Hello"",
+.Value = ""World""
+    }
+    obj = Nothing
+End Sub");
     }
 
     [Fact]

@@ -25,7 +25,6 @@ public partial class MyInt
     {
         return new MyInt();
     }
-
     public static implicit operator int(MyInt myInt)
     {
         return 1;
@@ -99,87 +98,70 @@ public partial class AcmeClass
     {
         return ac;
     }
-
     public static AcmeClass operator +(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator -(int i, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator !(AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator *(int i, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator /(int i, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator /(int i, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator %(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator <<(AcmeClass ac, int i)
     {
         return ac;
     }
-
     public static AcmeClass operator >>(AcmeClass ac, int i)
     {
         return ac;
     }
-
     public static AcmeClass operator ==(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator !=(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator <(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator >(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator <=(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator >=(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator &(string s, AcmeClass ac)
     {
         return ac;
     }
-
     public static AcmeClass operator |(string s, AcmeClass ac)
     {
         return ac;

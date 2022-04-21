@@ -19,8 +19,7 @@ World!"";
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello,
-World!""
-    End Sub
+World!"" End Sub
 End Class");
     }
 
@@ -116,6 +115,7 @@ End Class");
     public int Bar;
 
 }", @"Public Class DefaultLiteralExpression
+
     Public ReadOnly Property Foo As Boolean
         Get
             Return Bar = Nothing
@@ -123,6 +123,7 @@ End Class");
     End Property
 
     Public Bar As Integer
+
 End Class");
     }
 
@@ -140,6 +141,7 @@ End Class");
     public string Bar;
 
 }", @"Public Class Test
+
     Public ReadOnly Property Foo As Boolean
         Get
             Return Bar Is Nothing 'Crashes conversion to VB
@@ -147,6 +149,7 @@ End Class");
     End Property
 
     Public Bar As String
+
 End Class");
     }
 
@@ -172,11 +175,9 @@ End Class");
         DoAction(Sub() a = b)
         Dim c = Me.DoFunc(Function() CSharpImpl.__Assign(a, b))
     End Sub
-
     Public Sub DoAction(ByVal action As Action)
         action()
     End Sub
-
     Public Function DoFunc(ByVal func As Func(Of Integer)) As Integer
         Return func()
     End Function
@@ -373,7 +374,6 @@ CS0103: The name 'Console' does not exist in the current context");
             @"Friend Class TestClass
     Private prop As String
     Private prop2 As String
-
     Private ReadOnly Property [Property] As String
         Get
             Dim z = (Function() 3)()
@@ -383,7 +383,6 @@ CS0103: The name 'Console' does not exist in the current context");
                             End Function())
         End Get
     End Property
-
     Private Function CreateProperty() As String
         Return """"
     End Function
@@ -531,7 +530,8 @@ class TestClass
             LastName = ""Playstead"",
         };
     }
-}", @"Friend Class StudentName
+}", @"
+Friend Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -591,8 +591,8 @@ End Class
 
 Friend Class Converter
     Public Shared ReadOnly Settings As SomeSettings = New SomeSettings With {
-        .Converters = {}
-    }
+    .Converters = {}
+}
 End Class");
     }
 
@@ -636,7 +636,6 @@ End Class
 
 Friend Class TestClass
     Inherits BaseTestClass
-
     Private Sub TestMethod()
         member = 0
     End Sub
@@ -697,9 +696,8 @@ Imports System.Collections.Generic
 Namespace PreHOPL
     Friend Module Program
         Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
-            {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
-        }
-
+{""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
+}
         Private Sub Main(ByVal args As String())
             dict(""SAY"").Item2.DynamicInvoke(""Hello World!"")
         End Sub
@@ -730,11 +728,13 @@ End Namespace");
         test(3);
     }
 }", @"Friend Class TestClass
+
     Private Shared m_Event1 As Action(Of Integer) = Sub()
                                                     End Sub
 
     Private Sub TestMethod()
         Dim test = Function(ByVal a As Integer) a * 2
+
         test(3)
     End Sub
 End Class
@@ -788,8 +788,8 @@ Friend Class TestClass
                                                               If b > 0 Then Return a / b
                                                               Return 0
                                                           End Function
-
         Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
+
         test(3)
     End Sub
 End Class");
@@ -865,6 +865,7 @@ CS0103: The name 'Console' does not exist in the current context");
 }",
             @"Private Shared Sub SimpleQuery()
     Dim numbers = {7, 9, 5, 3, 6}
+
     Dim res = From n In numbers Where n > 5 Select n
 
     For Each n In res
@@ -899,14 +900,14 @@ End Sub");
     }",
             @"Public Shared Sub Linq40()
     Dim numbers = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
+
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {
-        .Remainder = __groupByKey1__,
-        .Numbers = g
-    }
+.Remainder = __groupByKey1__,
+.Numbers = g
+}
 
     For Each g In numberGroups
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"")
-
         For Each n In g.Numbers
             Console.WriteLine(n)
         Next
@@ -955,10 +956,12 @@ End Class
 Friend Class Test
     Public Sub Linq102()
         Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+
         Dim products As Product() = GetProductList()
+
         Dim q = From c In categories Join p In products On c Equals p.Category Select New With {
-            .Category = c, p.ProductName
-        }
+.Category = c, p.ProductName
+}
 
         For Each v In q
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
@@ -1006,15 +1009,16 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
     }
 }", @"Public Sub Linq103()
     Dim categories = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
+
     Dim products = GetProductList()
+
     Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {
-        .Category = c,
-        .Products = ps
-    }
+.Category = c,
+.Products = ps
+}
 
     For Each v In q
         Console.WriteLine(v.Category & "":"")
-
         For Each p In v.Products
             Console.WriteLine(""   "" & p.ProductName)
         Next
@@ -1045,7 +1049,6 @@ BC32023: Expression is of type '?', which is not a collection type.");
 }",
             @"Public Class TestClass
     Inherits ObjectModel.ObservableCollection(Of String)
-
     Public Sub New()
         AddHandler PropertyChanged, Sub(o, e)
                                         If Equals(e.PropertyName, ""AnyProperty"") Then
@@ -1084,7 +1087,6 @@ Public Class TestClass
                                                         Return ""second""
                                                     End If
                                                 End Function
-
     Public Sub New()
         Dim str = create(Me)
     End Sub
@@ -1245,7 +1247,6 @@ End Class", hasLineCommentConversionIssue: true);
         If object1 Is s2 Then DoSomething()
         If object1 Is object2 Then DoSomething()
     End Sub
-
     Public Sub DoSomething()
     End Sub
 End Class
@@ -1294,7 +1295,6 @@ Imports System.Collections.Concurrent
 Public Class TestClass
     Private pendingOrders As ConcurrentDictionary(Of Guid, TaskCompletionSource(Of Boolean))
     Private orderComplete As TaskCompletionSource(Of Boolean)
-
     Private Sub Sdk_OnOrderCompleted(ByVal sender As Object, ByVal e As OrderOutcome)
         Dim tcs As TaskCompletionSource(Of Boolean) = Nothing
         pendingOrders.TryRemove(e.OrderId, tcs)

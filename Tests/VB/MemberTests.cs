@@ -265,7 +265,6 @@ End Class
 
 Friend Class TestSubclass
     Inherits TestClass
-
     Public Overloads Sub TestMethod()
         TestMethod(3)
         System.Console.WriteLine(""Shadowed implementation"")
@@ -352,67 +351,51 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     Public Shared Operator +(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator &(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator -(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator Not(ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator *(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator /(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator Mod(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator <<(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator >>(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator =(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator <>(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator <(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator >(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator <=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator >=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator And(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-
     Public Shared Operator Or(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
@@ -434,7 +417,8 @@ public partial class MyInt
     {
         return 1;
     }
-}", @"Public Partial Class MyInt
+}", @"
+Public Partial Class MyInt
     Public Shared Narrowing Operator CType(ByVal i As Integer) As MyInt
         Return New MyInt()
     End Operator
@@ -542,15 +526,12 @@ End Module");
     }
 }", @"Friend Class TestClass
     Public Property Test As Integer
-
     Public ReadOnly Property Test2 As Integer
         Get
             Return 0
         End Get
     End Property
-
     Private m_test3 As Integer
-
     Public Property Test3 As Integer
         Get
             Return m_test3
@@ -582,7 +563,6 @@ public class ShouldNotChange {
 ",
             @"Public Class HasConflictingPropertyAndField
     Private testField As Integer
-
     Public Property Test As Integer
         Get
             Return testField
@@ -595,7 +575,6 @@ End Class
 
 Public Class ShouldNotChange
     Private test As Integer
-
     Public Property Test1 As Integer
         Get
             Return test
@@ -636,6 +615,7 @@ End Class");
     }
 }",
             @"Public Class HasConflictingMethodAndField
+
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         teStField = test
         Return test
@@ -679,6 +659,7 @@ End Class");
     }
 }",
             @"Public Class HasConflictingPropertyAndField
+
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         testField = test
         Return test
@@ -713,7 +694,6 @@ End Class");
 }",
             @"Public Class HasConflictingPropertyAndField
     Private testField As Integer
-
     Public Property Test As Integer
         Get
             Return testField
@@ -722,7 +702,6 @@ End Class");
             testField = value
         End Set
     End Property
-
     Public Function HasConflictingParam(ByVal test As Integer) As Integer
         Me.Test = test
         Return test
@@ -762,7 +741,6 @@ End Class
 
 Public Partial Class HasConflictingPropertyAndField
     Private testField As Integer
-
     Public Property Test As Integer
         Get
             Dim lTEST = 0
@@ -816,7 +794,6 @@ End Class");
             Return New String() {""Red"", ""Green""}
         End Get
     End Property
-
     Default Public ReadOnly Property Item(ByVal index As Integer) As String
         Get
             Return favColor(index)
@@ -959,7 +936,6 @@ End Class
 
 Public NotInheritable Class [MyClass]
     Inherits MyBaseClass
-
     Public Sub New(ByVal o As Object)
         MyBase.New(o)
     End Sub
@@ -1052,7 +1028,6 @@ Friend Class TestClass
             backingField?(sender, e)
         End RaiseEvent
     End Event
-
     Public Sub Reset()
         backingField = Nothing
     End Sub
@@ -1107,8 +1082,7 @@ BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protect
 second line"";
 }",
             @"Public Class TestClass
-    Private someMultiLineString As String = ""first line"" & Microsoft.VisualBasic.vbCrLf & ""second line""
-End Class", conversionOptions: VisualBasic11, hasLineCommentConversionIssue: true);
+    Private someMultiLineString As String = ""first line"" & Microsoft.VisualBasic.vbCrLf & ""second line"" End Class", conversionOptions: VisualBasic11, hasLineCommentConversionIssue: true);
     }
     [Fact]
     public async Task TestCustomEvent_TrivialExpressionAsync()
@@ -1209,7 +1183,6 @@ Friend Class TestClass
             AddHandler CType(ownerField, INotifyPropertyChanged).PropertyChanged, AddressOf OnOwnerChanged
         End Set
     End Property
-
     Private Sub OnOwnerChanged(ByVal sender As Object, ByVal args As PropertyChangedEventArgs)
     End Sub
 End Class
@@ -1410,7 +1383,6 @@ End Class
 
 Public Class TestClass
     Inherits BaseClass
-
     Public Overrides Sub TestMethod(Of T As Class)(ByVal parameter As T)
     End Sub
 End Class");
@@ -1477,11 +1449,9 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
 }",
             @"Public Class MailEmployee
     Public Property Email As String
-
     Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
         Return Equals(Email, other.Email)
     End Function
-
     Public Overrides Function Equals(ByVal obj As Object) As Boolean
         Return Equals(CType(obj, MailEmployee))
     End Function

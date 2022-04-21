@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Text;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -23,11 +24,9 @@ internal class CommentConvertingVisitorWrapper
     public async Task<SeparatedSyntaxList<TOut>> AcceptAsync<TIn, TOut>(SeparatedSyntaxList<TIn> vbNodes, SourceTriviaMapKind sourceTriviaMap) where TIn : VisualBasicSyntaxNode where TOut : CSharpSyntaxNode
     {
         var convertedNodes = await vbNodes.SelectAsync(n => ConvertHandledAsync<TOut>(n, sourceTriviaMap));
-        var convertedSeparators = vbNodes.GetSeparators().Select(s =>
-            CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
-                .WithConvertedTrailingTriviaFrom(s, TriviaKinds.FormattingOnly)
-                .WithSourceMappingFrom(s)
-        );
+        var convertedSeparators = vbNodes.GetSeparators().Select(s => CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken)
+            .WithConvertedTrailingTriviaFrom(s, false)
+            .WithSourceMappingFrom(s));
         return CS.SyntaxFactory.SeparatedList(convertedNodes, convertedSeparators);
     }
 
@@ -64,6 +63,12 @@ internal class CommentConvertingVisitorWrapper
                     .WithEndOfFileToken(csCus.EndOfFileToken
                         .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
                     );
+            case VBSyntax.XmlElementSyntax vbXes when converted is CSSyntax.ExpressionSyntax csXes:
+                var lastToken = csXes.GetLastToken();
+                return (T)(object)csXes
+                    .ReplaceToken(lastToken, lastToken.WithConvertedLeadingTriviaFrom(vbXes.EndTag.GetFirstToken()))
+                    .WithConvertedLeadingTriviaFrom(vbXes.GetFirstToken())
+                    .WithConvertedTrailingTriviaFrom(vbXes.GetLastToken());
         }
         return converted.WithVbSourceMappingFrom(vbNode);
     }

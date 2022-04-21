@@ -20,7 +20,8 @@ Public Class Issue635
             Select t.foo
             Where 1 = 2
 End Class",
-            @"using System.Collections.Generic;
+            @"
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class Issue635
@@ -50,7 +51,8 @@ Public Class Issue635
     Dim l As List(Of Integer)
     Dim listSortedDistinct = From x In l Order By x Distinct
 End Class",
-            @"using System.Collections.Generic;
+            @"
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class Issue635
@@ -110,9 +112,11 @@ End Sub",
                        group n by (n % 5) into g
                        let __groupByKey1__ = g.Key
                        select new { Remainder = __groupByKey1__, Numbers = g };
+
     foreach (var g in numberGroups)
     {
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
+
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
@@ -154,6 +158,7 @@ internal partial class Product
 
 internal partial class Test
 {
+
     public Product[] GetProductList()
     {
         return null;
@@ -166,6 +171,7 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
+
         foreach (var v in q)
             Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
@@ -221,9 +227,11 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category into ps
                 select new { Category = c, Products = ps };
+
         foreach (var v in q)
         {
             Console.WriteLine(v.Category + "":"");
+
             foreach (var p in v.Products)
                 Console.WriteLine(""   "" + p.ProductName);
         }
@@ -333,6 +341,7 @@ public partial class VisualBasicClass
 End Function", @"private static IEnumerable<string> FindPicFilePath()
 {
     var words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
+
     return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
 }");
     }
@@ -463,7 +472,6 @@ internal partial class Test
         var orders = new List<Order>();
         var customerList = from cust in customers
                            join ord in orders on new { key0 = cust.CustomerID, key1 = cust.CompanyName } equals new { key0 = ord.CustomerID, key1 = ord.Total }
-
                            select new { cust.CompanyName, ord.Total };
     }
 }");
@@ -513,7 +521,6 @@ internal partial class Test
         var orders = new List<Order>();
         var customerList = from cust in customers
                            join ord in orders on new { key0 = cust, key1 = cust.CompanyName } equals new { key0 = ord.Customer, key1 = ord.Total }
-
                            select new { cust.CompanyName, ord.Total };
     }
 }");
@@ -573,10 +580,12 @@ public partial class Class717
         var arr = new int[2];
         arr[0] = 0;
         arr[1] = 1;
+
         var r = from e in arr
                 let p = $""value: {e}""
                 let l = p.Substring(1)
                 select l;
+
         foreach (var m in r)
             Console.WriteLine(m);
     }
@@ -726,6 +735,7 @@ public partial class VisualBasicClass
     {
         var list1 = new List<int>() { 1, 2, 3 };
         var list2 = new List<int>() { 2, 4, 5 };
+
         var qs = from n in list1
                  from x in list2
                  where x == n

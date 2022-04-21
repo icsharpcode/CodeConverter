@@ -17,7 +17,8 @@ void Test()
     object o = 5;
     int i = (int) o;
 }
-", @"Private Sub Test()
+", @"
+Private Sub Test()
     Dim o As Object = 5
     Dim i As Integer = o
 End Sub

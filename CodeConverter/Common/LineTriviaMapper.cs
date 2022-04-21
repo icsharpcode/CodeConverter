@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Immutable;
+using System.Globalization;
 using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.Common;
@@ -12,24 +13,28 @@ internal class LineTriviaMapper
     private readonly TextLineCollection _sourceLines;
     private readonly IReadOnlyDictionary<int, TextLine> _targetLeadingTextLineFromSourceLine;
     private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
+    private readonly ImmutableHashSet<int> _startPositionsAlreadyMapped;
+    private readonly ImmutableHashSet<int> _trailingPositionsAlreadyMapped;
     private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new();
     private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new();
     private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new();
 
-    private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+    private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine,
+        Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine, ImmutableHashSet<int> startPositionsAlreadyMapped, ImmutableHashSet<int> trailingPositionsAlreadyMapped)
     {
         _source = source;
         _sourceLines = sourceLines;
         _target = target;
         _targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
         _targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
+        _startPositionsAlreadyMapped = startPositionsAlreadyMapped;
+        _trailingPositionsAlreadyMapped = trailingPositionsAlreadyMapped;
     }
 
     /// <summary>
     /// For each source line:
     /// * Add leading trivia to the start of the first target line containing a node converted from that source line
     /// * Add trailing trivia to the end of the last target line containing a node converted from that source line
-    /// Makes no attempt to convert whitespace/newline-only trivia
     /// Currently doesn't deal with any within-line trivia (i.e. /* block comments */)
     /// </summary>
     public static SyntaxNode MapSourceTriviaToTarget<TSource, TTarget>(TSource source, TTarget target)
@@ -45,8 +50,13 @@ internal class LineTriviaMapper
         var targetNodesBySourceEndLine = nodesBySourceLine
             .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Max(GetPosition)));
 
+        var sourcePositionsAlreadyMapped = target.GetAnnotatedTokens(AnnotationConstants.LeadingTriviaAlreadyMappedAnnotation)
+            .SelectMany(x => x.GetAnnotations(AnnotationConstants.LeadingTriviaAlreadyMappedAnnotation), (t, a) => int.Parse(a.Data, CultureInfo.InvariantCulture)).ToImmutableHashSet();
+        var trailingTriviaAlreadyMappedBySourceLine = target.GetAnnotatedTokens(AnnotationConstants.TrailingTriviaAlreadyMappedAnnotation)
+            .SelectMany(x => x.GetAnnotations(AnnotationConstants.TrailingTriviaAlreadyMappedAnnotation), (t, a) => int.Parse(a.Data, CultureInfo.InvariantCulture)).ToImmutableHashSet();
+
         var sourceLines = source.GetText().Lines;
-        var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+        var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine, sourcePositionsAlreadyMapped, trailingTriviaAlreadyMappedBySourceLine);
 
         return lineTriviaMapper.GetTargetWithSourceTrivia();
     }
@@ -112,21 +122,25 @@ internal class LineTriviaMapper
     {
         var sourceLine = _sourceLines[sourceLineIndex];
         var endOfSourceLine = sourceLine.FindLastTokenWithinLine(_source);
+        if (_trailingPositionsAlreadyMapped.Contains(endOfSourceLine.Span.End)) return;
 
-        if (endOfSourceLine.TrailingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-            _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
-        }
+        var triviaToUse = !endOfSourceLine.TrailingTrivia.Any() || endOfSourceLine.TrailingTrivia.OnlyOrDefault().IsEndOfLine() ? _trailingTriviaCarriedOver : _trailingTriviaCarriedOver.Concat(endOfSourceLine.TrailingTrivia).ToList();
 
-        if (_trailingTriviaCarriedOver.Any()) {
+        if (triviaToUse.Any()) {
             var targetLine = GetTargetLine(sourceLineIndex, false);
             if (targetLine != default) {
                 var originalToReplace = targetLine.GetTrailingForLine(_target);
                 if (originalToReplace != default) {
                     var targetTrivia = GetTargetTriviaCollection(originalToReplace);
-                    targetTrivia.Trailing.AddRange(_trailingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
+                    targetTrivia.Trailing.AddRange(triviaToUse.Select(t => t.ConvertTrivia().ToList()));
                     _trailingTriviaCarriedOver.Clear();
+                    return;
                 }
             }
+        }
+
+        if (endOfSourceLine.TrailingTrivia.Any(x => !x.IsWhitespaceOrEndOfLine())) {
+            _trailingTriviaCarriedOver.Add(new(endOfSourceLine.TrailingTrivia));
         }
     }
 
@@ -135,20 +149,25 @@ internal class LineTriviaMapper
         var sourceLine = _sourceLines[sourceLineIndex];
         var startOfSourceLine = sourceLine.FindFirstTokenWithinLine(_source);
 
-        if (startOfSourceLine.LeadingTrivia.Any(t => !t.IsWhitespaceOrEndOfLine())) {
-            _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
-        }
+        if (_startPositionsAlreadyMapped.Contains(startOfSourceLine.SpanStart)) return;
 
-        if (_leadingTriviaCarriedOver.Any()) {
+        var triviaToUse = !startOfSourceLine.LeadingTrivia.Any() ? _leadingTriviaCarriedOver : _leadingTriviaCarriedOver.Concat(startOfSourceLine.LeadingTrivia).ToList();
+
+        if (triviaToUse.Any()) {
             var targetLine = GetTargetLine(sourceLineIndex, true);
             if (targetLine != default) {
                 var originalToReplace = targetLine.GetLeadingForLine(_target);
                 if (originalToReplace != default) {
                     var targetTrivia = GetTargetTriviaCollection(originalToReplace);
-                    targetTrivia.Leading.AddRange(_leadingTriviaCarriedOver.Select(t => t.ConvertTrivia().ToList()));
+                    targetTrivia.Leading.AddRange(triviaToUse.Select(t => t.ConvertTrivia().ToList()));
                     _leadingTriviaCarriedOver.Clear();
+                    return;
                 }
             }
+        }
+
+        if (startOfSourceLine.LeadingTrivia.Any(x => !x.IsWhitespaceOrEndOfLine())) {
+            _leadingTriviaCarriedOver.Add(new(startOfSourceLine.LeadingTrivia));
         }
     }
 

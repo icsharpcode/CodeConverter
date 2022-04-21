@@ -63,13 +63,11 @@ internal partial class TestClass45
         {
             backingField += value;
         }
-
         remove
         {
             backingField -= value;
         }
     } // RaiseEvent moves outside this block
-
     void OnMyEvent(object sender, EventArgs e)
     {
         Console.WriteLine(""Event Raised"");
@@ -116,13 +114,11 @@ internal partial class ＴｅｓｔＣｌａｓｓ４５
         {
             ｂａｃｋｉｎｇＦｉｅｌｄ += value;
         }
-
         remove
         {
             ｂａｃｋｉｎｇＦｉｅｌｄ -= value;
         }
-    }　// ＲａｉｓｅＥｖｅｎｔ　ｍｏｖｅｓ　ｏｕｔｓｉｄｅ　ｔｈｉｓ　ｂｌｏｃｋ 'Workaround test code not noticing ’ symbol
-
+    } // ＲａｉｓｅＥｖｅｎｔ　ｍｏｖｅｓ　ｏｕｔｓｉｄｅ　ｔｈｉｓ　ｂｌｏｃｋ 'Workaround test code not noticing ’ symbol
     void OnＭｙＥｖｅｎｔ(object ｓｅｎｄｅｒ, EventArgs ｅ)
     {
         Console.WriteLine(""Ｅｖｅｎｔ　Ｒａｉｓｅｄ"");
@@ -218,7 +214,6 @@ public partial class Issue483
             var midTmp = numstr(aDouble - 1.0d);
             StringType.MidStmtStr(ref str_Txt, Strings.Len(str_Txt) - 6, midTmp.Length, midTmp);
         }
-
         return str_Txt;
     }
 }");

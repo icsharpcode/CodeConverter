@@ -25,6 +25,7 @@ using System.Runtime.CompilerServices;
 
 public partial class VBIsCaseInsensitive : System.Web.UI.Page
 {
+
     private void btnOK_Click(object sender, EventArgs e)
     {
     }

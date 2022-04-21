@@ -159,7 +159,6 @@ public partial class TestFunc
 {
     public Func<int, int> pubIdent = (row) => row;
     public Func<int, object> pubWrite = (row) => Console.WriteLine(row);
-
     private bool isFalse(int row) => false;
     private void write0() => Console.WriteLine(0);
 
@@ -250,27 +249,22 @@ internal partial class ContrivedFuncInferenceExample
         {
             return new Blah(p1);
         }
-
         public static implicit operator Func<List<string>, bool>(Blah p1)
         {
             return p1.Check;
         }
-
         public static Blah operator -(Blah p1, Blah p2)
         {
             return new Blah();
         }
-
         public static Blah operator +(Blah p1, Blah p2)
         {
             return new Blah();
         }
-
         public static bool operator <=(Blah p1, Blah p2)
         {
             return p1.Check(new List<string>());
         }
-
         public static bool operator >=(Blah p1, Blah p2)
         {
             return p2.Check(new List<string>());
@@ -489,7 +483,6 @@ End Class", @"
 internal partial class Program
 {
     private static int[][] My2darray;
-
     public static void Main(string[] args)
     {
         My2darray = new int[7][];
@@ -522,6 +515,7 @@ public partial class Class1
     private void test123(object sender, EventArgs e)
     {
         test = new List<int>[43];
+
         Tuple<int, int>[] test1;
         test1 = new Tuple<int, int>[43];
     }
@@ -628,6 +622,7 @@ internal static partial class Module1
     public static void Main()
     {
         var myArray = new SomeStruct[1];
+
         {
             ref var withBlock = ref myArray[0];
             withBlock.FieldA = 3;
@@ -706,7 +701,6 @@ public partial class VisualBasicClass
 public partial struct SomeStruct
 {
     public string[] ArrField;
-
     public string[] ArrProp { get; set; }
 }");
     }
@@ -1086,6 +1080,7 @@ internal partial class Test
     {
     the_beginning:
         ;
+
         int value = 1;
         const double myPIe = 2d * Math.PI;
         string text = ""This is my text!"";
@@ -1250,6 +1245,7 @@ internal partial class TestClass
     private void TestMethod(int a)
     {
         int b;
+
         if (a == 0)
         {
             b = 0;
@@ -1290,7 +1286,6 @@ internal partial class TestClass
             Console.WriteLine(2);
             return;
         }
-
         Console.WriteLine(3);
     }
 }");
@@ -1320,6 +1315,7 @@ internal partial class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
     {
+
         for (int c = startCol, loopTo = w.Length; c <= loopTo; c++)
         {
             if (string.IsNullOrEmpty(needle))
@@ -1334,7 +1330,6 @@ internal partial class TestClass
                 return c;
             }
         }
-
         return -1;
     }
 }");
@@ -1359,6 +1354,7 @@ internal partial class TestClass
     {
         if (nullObject is null)
             throw new ArgumentNullException(nameof(nullObject));
+
         lock (nullObject)
             Console.WriteLine(nullObject);
     }
@@ -1482,7 +1478,6 @@ internal partial class TestClass
                     Console.Write(""number is 0, 1, 2"");
                     break;
                 }
-
             case 5:
                 {
                     Console.Write(""section 5"");
@@ -1528,7 +1523,6 @@ public partial class TestClass
                 {
                     return ""this week"";
                 }
-
             case var case4 when case4 > 0:
                 {
                     return daysAgo / 7 + "" weeks ago"";
@@ -1574,12 +1568,10 @@ public partial class TestClass
                 {
                     return ""ab"";
                 }
-
             case var case2 when case2 == (Strings.UCase(""c"") ?? """"):
                 {
                     return ""c"";
                 }
-
             case ""d"":
                 {
                     return ""d"";
@@ -1635,13 +1627,11 @@ public partial class TestClass2
                     // we do not work on weekends
                     return false;
                 }
-
             case object _ when !IsSqlAlive():
                 {
                     // Database unavailable
                     return false;
                 }
-
             case object _ when Something is int:
                 {
                     // Do something with the Integer
@@ -1691,12 +1681,10 @@ public partial class TestClass2
                 {
                     break;
                 }
-
             case 4:
                 {
                     break;
                 }
-
             case var case1 when case1 > 4:
                 {
                     break;
@@ -1742,7 +1730,6 @@ internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
                 {
                     return true;
                 }
-
             case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 {
                     return false;
@@ -1921,7 +1908,6 @@ internal static partial class Main
                 {
                     return "" "";
                 }
-
             case EWhere.Bottom:
                 {
                     return ""_ "";
@@ -1929,6 +1915,7 @@ internal static partial class Main
         }
 
         return default;
+
     }
 }");
     }

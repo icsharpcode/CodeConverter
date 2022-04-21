@@ -119,6 +119,7 @@ namespace WindowsAppVb
             MouseClick += new MouseEventHandler(WinformsDesignerTest_MouseClick);
             ResumeLayout(false);
             PerformLayout();
+
         }
 
         public static bool TestSub([Optional, DefaultParameterValue(false)] ref bool IsDefault)
