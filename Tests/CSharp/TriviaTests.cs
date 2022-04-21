@@ -307,31 +307,44 @@ internal partial class TestClass
     public async Task StatementNewlinesAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"<Display(Name:=""Reinsurance Year"")> _
-Public SelectedReinsuranceYear As Int16
+            @"Imports System
 
-<Display(Name:=""Record Type"")> _
-Public SelectedRecordType As String
+Public Class X
+    <Display(Name:=""Reinsurance Year"")> _
+    Public SelectedReinsuranceYear As Int16
 
-<Display(Name:=""Release Date"")> _
-Public ReleaseDate As Nullable(Of Date)", @"
-internal partial class SurroundingClass
+    
+    <Display(Name:=""Record Type"")> _
+    Public SelectedRecordType As String
+
+    <Display(Name:=""Release Date"")> _
+    Public ReleaseDate As Nullable(Of Date)
+
+End Class
+
+Friend Class DisplayAttribute
+    Inherits Attribute
+    Property Name As String
+End Class
+", @"using System;
+
+public partial class X
 {
     [Display(Name = ""Reinsurance Year"")]
     public short SelectedReinsuranceYear;
+
 
     [Display(Name = ""Record Type"")]
     public string SelectedRecordType;
 
     [Display(Name = ""Release Date"")]
     public DateTime? ReleaseDate;
+
 }
-2 source compilation errors:
-BC30002: Type 'Display' is not defined.
-BC30661: Field or property 'Name' is not found.
-3 target compilation errors:
-CS0246: The type or namespace name 'DisplayAttribute' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'Display' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'Name' could not be found (are you missing a using directive or an assembly reference?)");
+
+internal partial class DisplayAttribute : Attribute
+{
+    public string Name { get; set; }
+}");
     }
 }
