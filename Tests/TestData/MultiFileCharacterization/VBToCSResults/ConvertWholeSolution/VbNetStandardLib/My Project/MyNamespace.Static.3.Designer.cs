@@ -32,12 +32,6 @@ namespace VbNetStandardLib.My
         }
 
 
-
-
-
-
-
-
         public static void set_Value(IEnumerable<XElement> source, string value)
         {
             foreach (XElement item in source)
@@ -56,12 +50,6 @@ namespace VbNetStandardLib.My
         }
 
 
-
-
-
-
-
-
         public static void set_AttributeValue(IEnumerable<XElement> source, XName name, string value)
         {
             foreach (XElement item in source)
@@ -75,9 +63,6 @@ namespace VbNetStandardLib.My
         {
             return Conversions.ToString(source.Attribute(name));
         }
-
-
-
 
 
         public static void set_AttributeValue(XElement source, XName name, string value)

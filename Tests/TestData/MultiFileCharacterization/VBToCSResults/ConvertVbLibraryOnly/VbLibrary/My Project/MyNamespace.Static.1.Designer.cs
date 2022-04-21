@@ -171,7 +171,6 @@ namespace VbLibrary.My
         internal static MyComputer Computer
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_ComputerObjectProvider.GetInstance;
@@ -189,7 +188,6 @@ namespace VbLibrary.My
         internal static MyApplication Application
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_AppObjectProvider.GetInstance;
@@ -206,7 +204,6 @@ namespace VbLibrary.My
         internal static Microsoft.VisualBasic.ApplicationServices.User User
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_UserObjectProvider.GetInstance;
@@ -309,7 +306,6 @@ namespace VbLibrary.My
         internal static MyWebServices WebServices
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_MyWebServicesObjectProvider.GetInstance;
@@ -441,7 +437,6 @@ namespace VbLibrary.My
                 #Else
                 */
                 [DebuggerHidden()]
-
                 get
                 {
                     if (m_ThreadStaticValue is null)

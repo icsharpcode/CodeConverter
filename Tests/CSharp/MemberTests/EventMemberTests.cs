@@ -557,7 +557,6 @@ internal partial class Form1 : BaseForm
 internal partial class Form1
 {
     private void MultiClickHandler(object sender, EventArgs e)
-
     {
     }
 }
@@ -619,7 +618,6 @@ using System.Runtime.CompilerServices;
 public partial class Form1
 {
     private void MultiClickHandler(object sender, EventArgs e)
-
     {
     }
 }

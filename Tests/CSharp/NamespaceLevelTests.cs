@@ -11,12 +11,9 @@ public class NamespaceLevelTests : ConverterTestBase
     {
         await TestConversionVisualBasicToCSharpAsync(@"Namespace Test
 
-
 End Namespace", @"
 namespace Test
 {
-
-
 }");
     }
 
@@ -37,8 +34,6 @@ namespace Test1.Test2.Test3
 End Namespace", @"
 namespace Test
 {
-
-
 }");
     }
 
@@ -310,7 +305,6 @@ internal partial interface ITest : IDisposable
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Friend Enum ExceptionResource
-
     Argument_ImplementIComparable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired
@@ -318,7 +312,6 @@ internal partial interface ITest : IDisposable
 End Enum", @"
 internal enum ExceptionResource
 {
-
     Argument_ImplementIComparable,
     ArgumentOutOfRange_NeedNonNegNum,
     ArgumentOutOfRange_NeedNonNegNumRequired,
@@ -513,7 +506,6 @@ End Class",
 
 {
     public DataSet1() : base()
-
     {
     }
 }

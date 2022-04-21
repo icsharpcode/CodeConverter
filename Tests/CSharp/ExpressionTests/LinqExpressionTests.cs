@@ -688,7 +688,6 @@ internal static partial class Ext
 
                where _accountEntry.Amount > 0m
                group _accountEntry by new
-
                {
                    _accountEntry.LookupAccountEntryTypeId,
                    _accountEntry.LookupAccountEntrySourceId,
@@ -703,7 +702,6 @@ internal static partial class Ext
                let _keys = Group.Key
                select new AccountEntry()
                {
-
                    LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
                    LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
                    SponsorId = _keys.SponsorId,

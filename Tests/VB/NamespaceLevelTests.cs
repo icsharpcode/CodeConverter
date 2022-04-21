@@ -14,7 +14,6 @@ public class NamespaceLevelTests : ConverterTestBase
 
 }", @"Namespace Test
 
-
 End Namespace");
     }
 
@@ -47,9 +46,7 @@ public class X
             @"Imports s = System.String
 
 Public Class X
-
     Private Function GetStr() As s
-
         Return s.Empty
     End Function
 End Class");
@@ -64,9 +61,7 @@ End Class");
     {
     }
 }", @"Namespace Test.class
-
     Friend Class TestClass(Of T)
-
     End Class
 End Namespace");
     }
@@ -82,9 +77,7 @@ End Namespace");
         static void Test2() {}
     }
 }", @"Namespace Test.class
-
     Friend Module TestClass
-
         Public Sub Test()
         End Sub
         Private Sub Test2()
@@ -111,17 +104,13 @@ namespace Test
 }
 ",
             @"Namespace Test.class
-
     Public MustInherit Class TestClass
-
     End Class
 End Namespace
 
 Namespace Test
-
     Public Class Test1
         Inherits [class].TestClass
-
     End Class
 End Namespace");
     }
@@ -135,9 +124,7 @@ End Namespace");
     {
     }
 }", @"Namespace Test.class
-
     Friend NotInheritable Class TestClass
-
     End Class
 End Namespace");
     }
@@ -151,7 +138,6 @@ End Namespace");
     void Test ();
 }", @"Friend Interface ITest
     Inherits IDisposable
-
     Sub Test()
 End Interface");
     }
@@ -166,7 +152,6 @@ End Interface");
     void Test2 ();
 }", @"Friend Interface ITest
     Inherits IDisposable
-
     Sub Test()
     Sub Test2()
 End Interface");
@@ -183,7 +168,6 @@ End Interface");
     ArgumentOutOfRange_NeedNonNegNumRequired,
     Arg_ArrayPlusOffTooSmall
 }", @"Friend Enum ExceptionResource
-
     Argument_ImplementIComparable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired
@@ -199,13 +183,12 @@ End Enum");
 {
     Argument_ImplementIComparable
 }", @"Public Enum ExceptionResource As Byte
-
     Argument_ImplementIComparable
 End Enum");
     }
 
     [Fact]
-    public async Task TestClassInheritanceListAsync()
+    public async Task TestClassInheritanceList1Async()
     {
         await TestConversionCSharpToVisualBasicAsync(
             @"abstract class ClassA : System.IDisposable
@@ -213,7 +196,6 @@ End Enum");
     protected abstract void Test();
 }", @"Friend MustInherit Class ClassA
     Implements IDisposable
-
     Protected MustOverride Sub Test()
 End Class
 
@@ -221,7 +203,11 @@ End Class
 CS0535: 'ClassA' does not implement interface member 'IDisposable.Dispose()'
 1 target compilation errors:
 BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposable'.");
+    }
 
+    [Fact]
+    public async Task TestClassInheritanceList2Async()
+    {
         await TestConversionCSharpToVisualBasicAsync(
             @"abstract class ClassA : System.EventArgs, System.IDisposable
 {
@@ -229,7 +215,6 @@ BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposabl
 }", @"Friend MustInherit Class ClassA
     Inherits EventArgs
     Implements IDisposable
-
     Protected MustOverride Sub Test()
 End Class
 
@@ -248,7 +233,6 @@ BC30149: Class 'ClassA' must implement 'Sub Dispose()' for interface 'IDisposabl
     void Test() {}
 }", @"Friend Structure MyType
     Implements IComparable(Of MyType)
-
     Private Sub Test()
     End Sub
 End Structure
@@ -291,7 +275,6 @@ class ThisUri
 Imports SO = System.Data.SqlClient.SqlCommandBuilder
 
 Friend Class ThisUri
-
     Private s As System.Data.SqlClient.SqlCommand
     Private so As System.Data.SqlClient.SqlCommandBuilder
 End Class");
@@ -336,8 +319,8 @@ namespace System {
     using Linq;
 }",
             @"Imports System.Linq
-Namespace System
 
+Namespace System
 End Namespace");
     }
 
@@ -360,16 +343,13 @@ public interface iDisplay
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-
     Public Property Name As String Implements iDisplay.Name
 
     Public Sub DisplayName() Implements iDisplay.DisplayName
-
     End Sub
 End Class
 
 Public Interface iDisplay
-
     Property Name As String
     Sub DisplayName()
 End Interface");
@@ -394,16 +374,13 @@ public interface iDisplay
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-
     Private Property Name As String Implements iDisplay.Name
 
     Private Sub DisplayName() Implements iDisplay.DisplayName
-
     End Sub
 End Class
 
 Public Interface iDisplay
-
     Property Name As String
     Sub DisplayName()
 End Interface

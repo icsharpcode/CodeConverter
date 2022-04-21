@@ -18,9 +18,7 @@ void Test()
     int i = (int) o;
 }
 ", @"
-
 Private Sub Test()
-
     Dim o As Object = 5
     Dim i As Integer = o
 End Sub
@@ -35,9 +33,7 @@ End Sub
 {
     object o = ""Test"";
     string s = (string) o;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = ""Test""
     Dim s = CStr(o)
 End Sub");
@@ -51,9 +47,7 @@ End Sub");
 {
     object o = new System.Collections.Generic.List<int>();
     System.Collections.Generic.List<int> l = (System.Collections.Generic.List<int>) o;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = New List(Of Integer)()
     Dim l = CType(o, List(Of Integer))
 End Sub");
@@ -67,9 +61,7 @@ End Sub");
 {
     object o = 5;
     System.Nullable<int> i = o as int?;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = 5
     Dim i As Integer? = o
 End Sub");
@@ -83,9 +75,7 @@ End Sub");
 {
     object o = new System.Collections.Generic.List<int>();
     System.Collections.Generic.List<int> l = o as System.Collections.Generic.List<int>;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = New List(Of Integer)()
     Dim l As List(Of Integer) = TryCast(o, List(Of Integer))
 End Sub");
@@ -98,8 +88,7 @@ End Sub");
     return this as T;
 }
 ",
-            @"
-Private Function Test(Of T As Class)() As T
+            @"Private Function Test(Of T As Class)() As T
     Return TryCast(Me, T)
 End Function
 ");
@@ -112,9 +101,7 @@ End Function
             @"void Test()
 {
     object o = 5L;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = 5L
 End Sub");
     }
@@ -126,9 +113,7 @@ End Sub");
             @"void Test()
 {
     object o = 5.0f;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = 5.0F
 End Sub");
     }
@@ -140,9 +125,7 @@ End Sub");
             @"void Test()
 {
     object o = 5.0m;
-}", @"
-Private Sub Test()
-
+}", @"Private Sub Test()
     Dim o As Object = 5.0D
 End Sub");
     }
@@ -154,8 +137,7 @@ End Sub");
             @"void Test() {
     char CR = (char)0xD;
 }",
-            @"
-Private Sub Test()
+            @"Private Sub Test()
     Dim CR = Microsoft.VisualBasic.ChrW(&HD)
 End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
@@ -166,8 +148,7 @@ End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);
     byte a = (byte)'A';
     decimal b = (byte)'B';
 }",
-            @"
-Private Sub Test()
+            @"Private Sub Test()
     Dim a As Byte = Microsoft.VisualBasic.AscW(""A""c)
     Dim b As Decimal = Microsoft.VisualBasic.AscW(""B""c)
 End Sub", conversionOptions: EmptyNamespaceOptionStrictOff);

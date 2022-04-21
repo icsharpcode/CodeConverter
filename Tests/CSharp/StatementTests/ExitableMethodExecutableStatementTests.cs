@@ -255,7 +255,6 @@ End Class", @"
 internal partial class TestClass
 {
     private void TestMethod(int[] values)
-
     {
         foreach (var val in values)
         {

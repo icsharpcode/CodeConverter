@@ -34,7 +34,6 @@ namespace VbNetStandardLib.My.Resources
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Folder2Res() : base()
-
         {
         }
 

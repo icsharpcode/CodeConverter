@@ -1493,7 +1493,6 @@ internal partial class TestClass
             case 5:
                 {
                     Console.Write(""section 5"");
-
                     break;
                 }
 
@@ -1539,7 +1538,6 @@ public partial class TestClass
             case var case4 when case4 > 0:
                 {
                     return daysAgo / 7 + "" weeks ago"";
-
                 }
 
             default:
@@ -1589,7 +1587,6 @@ public partial class TestClass
             case ""d"":
                 {
                     return ""d"";
-
                 }
 
             default:
@@ -1651,7 +1648,6 @@ public partial class TestClass2
                 {
                     // Do something with the Integer
                     return true;
-
                 }
 
             default:
@@ -1702,7 +1698,6 @@ public partial class TestClass2
                     break;
                 }
             case var case1 when case1 > 4:
-
                 {
                     break;
                 }
@@ -1735,8 +1730,7 @@ Private Function Test(astr_Temp As String) As Nullable(Of Boolean)
             Return Nothing
     End Select
 End Function
-End Class", @"
-using System.Globalization;
+End Class", @"using System.Globalization;
 
 internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
 {
@@ -1751,7 +1745,6 @@ internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
             case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 {
                     return false;
-
                 }
 
             default:
@@ -1786,13 +1779,11 @@ internal partial class Issue707SelectCaseAsyncClass
     private bool? Exists(char? sort)
     {
         switch (Strings.LCase(Conversions.ToString(sort) + """") ?? """")
-
         {
             case var @case when @case == """":
             case var case1 when case1 == """":
                 {
                     return false;
-
                 }
 
             default:
@@ -1973,7 +1964,6 @@ public partial class NonStringSelect
                 case var @case when @case == typeof(string):
                     {
                         return false;
-
                     }
 
                 default:
@@ -2023,14 +2013,12 @@ internal partial class TestClass
     {
         int zeroLambda(object y) => default;
 
-
         return default;
     }
 
     private int FuncReturningZero()
     {
         object nullLambda(object y) => default;
-
 
         return default;
     }

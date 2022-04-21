@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
-
 using System.Collections;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -186,7 +184,6 @@ namespace WindowsAppVb.My
         internal static MyComputer Computer
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_ComputerObjectProvider.GetInstance;
@@ -204,7 +201,6 @@ namespace WindowsAppVb.My
         internal static MyApplication Application
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_AppObjectProvider.GetInstance;
@@ -221,7 +217,6 @@ namespace WindowsAppVb.My
         internal static Microsoft.VisualBasic.ApplicationServices.User User
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_UserObjectProvider.GetInstance;
@@ -252,7 +247,6 @@ namespace WindowsAppVb.My
         internal static MyForms Forms
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_MyFormsObjectProvider.GetInstance;
@@ -354,7 +348,6 @@ namespace WindowsAppVb.My
         internal static MyWebServices WebServices
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_MyWebServicesObjectProvider.GetInstance;
@@ -486,7 +479,6 @@ namespace WindowsAppVb.My
                 #Else
                 */
                 [DebuggerHidden()]
-
                 get
                 {
                     if (m_ThreadStaticValue is null)

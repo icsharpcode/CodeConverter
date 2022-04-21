@@ -9,8 +9,6 @@
 // ------------------------------------------------------------------------------
 
 
-
-
 using System.Diagnostics;
 using System.Drawing;
 
@@ -36,7 +34,6 @@ namespace WindowsAppVb.My.Resources
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal Resource3() : base()
-
         {
         }
 

@@ -108,6 +108,8 @@ internal partial class TestClass
     [Fact]
     public async Task TestTypeInferredVarAsync()
     {
+        // VB doesn't infer the type of EnumVariable like you'd think, it just uses object
+        // VB compiler uses Conversions rather than any plainer casting
         await TestConversionVisualBasicToCSharpAsync(
             @"Class TestClass
     Public Enum TestEnum As Integer
@@ -127,11 +129,10 @@ internal partial class TestClass
         Test1
     }
 
-    private object EnumVariable = TestEnum.Test1;" /* VB doesn't infer the type like you'd think, it just uses object */ + @"
-
+    private object EnumVariable = TestEnum.Test1;
     public void AMethod()
     {
-        int t1 = Conversions.ToInteger(EnumVariable);" /* VB compiler uses Conversions rather than any plainer casting */ + @"
+        int t1 = Conversions.ToInteger(EnumVariable);
     }
 }");
     }
@@ -566,8 +567,6 @@ internal partial class ChildClass : IClass
     }
 
 
-
-
     public virtual void set_RenamedPropertyParam(int i, int value)
     {
     }
@@ -592,8 +591,6 @@ internal partial class ChildClass : IClass
     {
         return 1;
     }
-
-
 
 
     public virtual void set_RenamedWriteOnlyPropParam(int i, int value)
@@ -804,9 +801,6 @@ internal partial class ChildClass : IClass
     }
 
 
-
-
-
     public virtual void set_PropRenamed(int i, string value)
     {
         throw new NotImplementedException();
@@ -840,9 +834,6 @@ internal partial class ChildClass : IClass
     }
 
 
-
-
-
     internal virtual void set_PropNonPublic(int i, string value)
     {
         throw new NotImplementedException();
@@ -874,9 +865,6 @@ internal partial class ChildClass : IClass
     {
         throw new NotImplementedException();
     }
-
-
-
 
 
     internal virtual void set_PropToRenameNonPublic(int i, string value)
@@ -1230,13 +1218,9 @@ End Sub", @"public SurroundingClass()
     public async Task TestStaticConstructorAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"
-Shared Sub New()
-
-End Sub", @"
-static SurroundingClass()
+            @"Shared Sub New()
+End Sub", @"static SurroundingClass()
 {
-
 }");
     }
 
@@ -2876,8 +2860,6 @@ public partial class Foo : IFoo
     }
 
 
-
-
     private void set_ExplicitProp(string str, int value)
     {
     }
@@ -2932,8 +2914,6 @@ public partial class Foo : IFoo
     {
         return 5;
     }
-
-
 
 
     public virtual void set_PropParams(string str, int value)
@@ -3575,8 +3555,6 @@ public partial class Foo : IFoo, IBar
     }
 
 
-
-
     private void set_ExplicitProp(string str, int value)
     {
     }
@@ -3635,8 +3613,6 @@ public partial class Foo : IFoo
     {
         return 5;
     }
-
-
 
 
     private void set_ExplicitProp(string str = """", int value = default)
@@ -3743,7 +3719,6 @@ internal partial class StaticLocalConvertedToField
 
     private int _sPrevPosition1 = default;
     public StaticLocalConvertedToField(int x)
-
     {
         Console.WriteLine(_sPrevPosition1);
     }
@@ -3786,7 +3761,6 @@ internal partial class StaticLocalConvertedToField
     private int _OtherName_sPrevPosition1 = default;
     public int get_OtherName(int x)
 
-
     {
         _OtherName_sPrevPosition1 += 1;
         return _OtherName_sPrevPosition1;
@@ -3820,7 +3794,6 @@ internal partial class StaticLocalConvertedToField
 
     private int _OtherName_sPrevPosition1 = default;
     public int OtherName(int x)
-
     {
         return _OtherName_sPrevPosition1;
     }
@@ -3844,7 +3817,6 @@ internal partial class StaticLocalConvertedToField
 {
     private int _OtherName_sPrevPosition;
     public int OtherName()
-
     {
         _OtherName_sPrevPosition = 23;
         Console.WriteLine(_OtherName_sPrevPosition);

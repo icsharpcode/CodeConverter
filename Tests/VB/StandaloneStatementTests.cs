@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using System.Windows.Forms;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -25,8 +26,7 @@ num = 5",
     {
         await TestConversionCSharpToVisualBasicAsync(
             @"list.ForEach(i => Console.Write(""{0}\t"", i));",
-            @"
-list.ForEach(Sub(i) Console.Write(""{0}"" & vbTab, i))
+            @"list.ForEach(Sub(i) Console.Write(""{0}"" & vbTab, i))
 
 1 source compilation errors:
 CS0103: The name 'list' does not exist in the current context
@@ -44,12 +44,19 @@ BC32042: Too few type arguments to 'List(Of T)'.");
     Inherited = false
 };
 obj = null;",
-            @"Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
-    .AllowMultiple = True,
-    .Inherited = False
-}
-obj = Nothing",
-            expectSurroundingMethodBlock: true);
+            @"Private Sub SurroundingSub()
+    Dim obj As AttributeUsageAttribute = New AttributeUsageAttribute() With {
+
+.AllowMultiple = True,
+.Inherited = False
+    }
+    obj = Nothing
+End Sub
+
+1 source compilation errors:
+CS7036: There is no argument given that corresponds to the required formal parameter 'validOn' of 'AttributeUsageAttribute.AttributeUsageAttribute(AttributeTargets)'
+1 target compilation errors:
+BC30455: Argument not specified for parameter 'validOn' of 'Public Overloads Sub New(validOn As AttributeTargets)'.");
     }
 
     [Fact]
@@ -62,12 +69,13 @@ obj = Nothing",
     Value = ""World""
 };
 obj = null;",
-            @"Dim obj = New With {
-    .Name = ""Hello"",
-    .Value = ""World""
-}
-obj = Nothing",
-            expectSurroundingMethodBlock: true);
+            @"Private Sub SurroundingSub()
+    Dim obj = New With {
+.Name = ""Hello"",
+.Value = ""World""
+    }
+    obj = Nothing
+End Sub");
     }
 
     [Fact]
@@ -94,7 +102,6 @@ obj = Nothing",
 {
 }",
             @"Public Class Test
-
 End Class");
     }
 
@@ -114,7 +121,6 @@ End Class");
 {
 }",
             @"Namespace nam
-
 End Namespace");
     }
 
@@ -125,8 +131,7 @@ End Namespace");
             @"this.DataContext = from task in tasks
     where task.Priority == pri
     select task;",
-            @"
-Me.DataContext = From task In tasks Where task.Priority Is pri Select task
+            @"Me.DataContext = From task In tasks Where task.Priority Is pri Select task
 
 3 source compilation errors:
 CS1061: 'SurroundingClass' does not contain a definition for 'DataContext' and no accessible extension method 'DataContext' accepting a first argument of type 'SurroundingClass' could be found (are you missing a using directive or an assembly reference?)

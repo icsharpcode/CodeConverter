@@ -127,7 +127,6 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
     int value = 10;
     readonly int v = 15;
 }", @"Friend Class TestClass
-
     Const answer As Integer = 42
     Private value As Integer = 10
     Private ReadOnly v As Integer = 15
@@ -159,9 +158,7 @@ End Class");
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-
         argument = Nothing '1
         argument2 = Nothing '2
         argument3 = Nothing '3
@@ -186,9 +183,7 @@ CS1026: ) expected");
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-
     Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
-
         Return 0
     End Function
 End Class
@@ -214,9 +209,7 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-
     Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-
         argument = Nothing
         argument2 = Nothing
         argument3 = Nothing
@@ -236,7 +229,6 @@ CS1026: ) expected");
 {
     public abstract void TestMethod();
 }", @"Friend MustInherit Class TestClass
-
     Public MustOverride Sub TestMethod()
 End Class");
     }
@@ -264,21 +256,16 @@ class TestSubclass : TestClass
         System.Console.WriteLine(""Shadowed implementation"");
     }
 }", @"Friend Class TestClass
-
     Public Sub TestMethod()
-
     End Sub
 
     Public Sub TestMethod(ByVal i As Integer)
-
     End Sub
 End Class
 
 Friend Class TestSubclass
     Inherits TestClass
-
     Public Overloads Sub TestMethod()
-
         TestMethod(3)
         System.Console.WriteLine(""Shadowed implementation"")
     End Sub
@@ -361,73 +348,55 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         return ac;
     }
 }", @"Public Class AcmeClass
-
     Public Shared Operator +(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator &(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator -(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator Not(ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator *(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator /(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator Mod(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator <<(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator >>(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator =(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator <>(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator <(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator >(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator <=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator >=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator And(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
     Public Shared Operator Or(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
-
         Return ac
     End Operator
 End Class");
@@ -450,14 +419,11 @@ public partial class MyInt
     }
 }", @"
 Public Partial Class MyInt
-
     Public Shared Narrowing Operator CType(ByVal i As Integer) As MyInt
-
         Return New MyInt()
     End Operator
 
     Public Shared Widening Operator CType(ByVal myInt As MyInt) As Integer
-
         Return 1
     End Operator
 End Class"
@@ -479,9 +445,7 @@ End Class"
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-
     Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-
         argument = Nothing
         argument2 = Nothing
         argument3 = Nothing
@@ -514,15 +478,12 @@ static class TestClass
 Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
-
     <Extension()>
     Public Sub TestMethod(ByVal str As String)
-
     End Sub
 
     <Extension()>
     Public Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
-
     End Sub
 End Module", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
@@ -542,10 +503,8 @@ static class TestClass
 }", @"Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
-
     <Extension()>
     Public Sub TestMethod(ByVal str As String)
-
     End Sub
 End Module");
     }
@@ -566,7 +525,6 @@ End Module");
         set { this.m_test3 = value; }
     }
 }", @"Friend Class TestClass
-
     Public Property Test As Integer
     Public ReadOnly Property Test2 As Integer
         Get
@@ -785,7 +743,6 @@ Public Partial Class HasConflictingPropertyAndField
     Private testField As Integer
     Public Property Test As Integer
         Get
-
             Dim lTEST = 0
             Return testField + lTEST
         End Get
@@ -809,7 +766,6 @@ End Class");
         set => _sourcePathOrNull = string.IsNullOrWhiteSpace(value) ? null : value;
     }
 }", @"Public Class ConversionResult
-
     Private _sourcePathOrNull As String
 
     Public Property SourcePathOrNull As String
@@ -833,7 +789,6 @@ End Class");
     public string this[int index] => favColor[index];
 }
 ", @"Friend Class MyFavColor
-
     Private ReadOnly Property favColor As String()
         Get
             Return New String() {""Red"", ""Green""}
@@ -867,7 +822,6 @@ public class ConversionResult
 }", @"Imports System
 
 Public Class ConversionResult
-
     Private _num As Integer
 
     Public WriteOnly Property Num As String
@@ -893,7 +847,6 @@ End Class");
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     int value { get; set; }
 }", @"Friend Class TestClass
-
     <DatabaseGenerated(DatabaseGeneratedOption.None)>
     Private Property value As Integer
 End Class
@@ -918,7 +871,6 @@ internal class Resources
 }", @"
 <Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute()>
 Friend Class Resources
-
 End Class
 
 1 target compilation errors:
@@ -938,9 +890,7 @@ BC30002: Type 'Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
-
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-
     End Sub
 End Class
 
@@ -957,9 +907,7 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
         await TestConversionCSharpToVisualBasicAsync(
             @"static SurroundingClass()
 {
-}", @"
-Shared Sub New()
-
+}", @"Shared Sub New()
 End Sub");
     }
 
@@ -982,18 +930,14 @@ public sealed class MyClass
 	{
 	}
 }", @"Public Class MyBaseClass
-
     Public Sub New(ByVal o As Object)
-
     End Sub
 End Class
 
 Public NotInheritable Class [MyClass]
     Inherits MyBaseClass
-
     Public Sub New(ByVal o As Object)
         MyBase.New(o)
-
     End Sub
 End Class");
     }
@@ -1008,9 +952,7 @@ End Class");
     {
     }
 }", @"Friend Class TestClass
-
     Protected Overrides Sub Finalize()
-
     End Sub
 End Class");
     }
@@ -1022,8 +964,7 @@ End Class");
             @"[DllImport(""kernel32.dll"", SetLastError = true)]
 static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);",
 
-            @"
-<DllImport(""kernel32.dll"", SetLastError:=True)>
+            @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
 End Function
 
@@ -1044,7 +985,6 @@ BC30002: Type 'AccessMask' is not defined.");
 {
     public event EventHandler MyEvent;
 }", @"Friend Class TestClass
-
     Public Event MyEvent As EventHandler
 End Class
 
@@ -1299,25 +1239,19 @@ BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyCha
         }
     }
 }", @"Friend Class TestClass
-
     Private _Items As Integer()
 
     Default Public Property Item(ByVal index As Integer) As Integer
-
         Get
-
             Return _Items(index)
         End Get
         Set(ByVal value As Integer)
-
             _Items(index) = value
         End Set
     End Property
 
     Default Public ReadOnly Property Item(ByVal index As String) As Integer
-
         Get
-
             Return 0
         End Get
     End Property
@@ -1325,13 +1259,10 @@ BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyCha
     Private m_test3 As Integer
 
     Default Public Property Item(ByVal index As Double) As Integer
-
         Get
-
             Return m_test3
         End Get
         Set(ByVal value As Integer)
-
             m_test3 = value
         End Set
     End Property

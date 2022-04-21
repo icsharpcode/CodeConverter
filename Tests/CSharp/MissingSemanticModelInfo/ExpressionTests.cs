@@ -240,7 +240,6 @@ public partial class EnumAndValTest
             case ""1"":
                 {
                     tPos = (PositionEnum)1;
-
                     break;
                 }
 
@@ -265,7 +264,6 @@ public partial class EnumAndValTest
             case (PositionEnum)1:
                 {
                     tS = ""LEFTTOP"";
-
                     break;
                 }
 

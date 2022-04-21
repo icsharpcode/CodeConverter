@@ -171,7 +171,6 @@ namespace Prefix.VbLibrary.My
         internal static MyComputer Computer
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_ComputerObjectProvider.GetInstance;
@@ -189,7 +188,6 @@ namespace Prefix.VbLibrary.My
         internal static MyApplication Application
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_AppObjectProvider.GetInstance;
@@ -206,7 +204,6 @@ namespace Prefix.VbLibrary.My
         internal static Microsoft.VisualBasic.ApplicationServices.User User
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_UserObjectProvider.GetInstance;
@@ -309,7 +306,6 @@ namespace Prefix.VbLibrary.My
         internal static MyWebServices WebServices
         {
             [DebuggerHidden()]
-
             get
             {
                 return m_MyWebServicesObjectProvider.GetInstance;
@@ -429,7 +425,6 @@ namespace Prefix.VbLibrary.My
                 #If TARGET = "library" Then
                 */
                 [DebuggerHidden()]
-
                 get
                 {
                     var Value = m_Context.Value;

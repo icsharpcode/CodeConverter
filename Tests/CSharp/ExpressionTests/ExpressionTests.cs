@@ -1764,7 +1764,6 @@ public partial class EnumTest
             case UserInterface.Wisdom:
                 {
                     activity = 3;
-
                     break;
                 }
 
@@ -2016,7 +2015,6 @@ public partial class Test
                             break;
                         }
 
-
                         break;
                     }
 
@@ -2119,7 +2117,6 @@ End Class", @"
 public partial class Class1
 {
     ~Class1()
-
 
     {
     }
