@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.Immutable;
+using System.Globalization;
 using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.Common;
@@ -12,17 +13,22 @@ internal class LineTriviaMapper
     private readonly TextLineCollection _sourceLines;
     private readonly IReadOnlyDictionary<int, TextLine> _targetLeadingTextLineFromSourceLine;
     private readonly IReadOnlyDictionary<int, TextLine> _targetTrailingTextLineFromSourceLine;
+    private readonly ImmutableHashSet<int> _sourcePositionsAlreadyMapped;
+    private readonly ImmutableHashSet<int> _trailingPositionsAlreadyMapped;
     private readonly List<SyntaxTriviaList> _leadingTriviaCarriedOver = new();
     private readonly List<SyntaxTriviaList> _trailingTriviaCarriedOver = new();
     private readonly Dictionary<SyntaxToken, (List<IReadOnlyCollection<SyntaxTrivia>> Leading, List<IReadOnlyCollection<SyntaxTrivia>> Trailing)> _targetTokenToTrivia = new();
 
-    private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine, Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine)
+    private LineTriviaMapper(SyntaxNode source, TextLineCollection sourceLines, SyntaxNode target, Dictionary<int, TextLine> targetLeadingTextLineFromSourceLine,
+        Dictionary<int, TextLine> targetTrailingTextLineFromSourceLine, ImmutableHashSet<int> sourcePositionsAlreadyMapped, ImmutableHashSet<int> trailingPositionsAlreadyMapped)
     {
         _source = source;
         _sourceLines = sourceLines;
         _target = target;
         _targetLeadingTextLineFromSourceLine = targetLeadingTextLineFromSourceLine;
         _targetTrailingTextLineFromSourceLine = targetTrailingTextLineFromSourceLine;
+        _sourcePositionsAlreadyMapped = sourcePositionsAlreadyMapped;
+        _trailingPositionsAlreadyMapped = trailingPositionsAlreadyMapped;
     }
 
     /// <summary>
@@ -44,8 +50,13 @@ internal class LineTriviaMapper
         var targetNodesBySourceEndLine = nodesBySourceLine
             .ToDictionary(g => g.Key, g => targetLines.GetLineFromPosition(g.Max(GetPosition)));
 
+        var sourcePositionsAlreadyMapped = target.GetAnnotatedTokens(AnnotationConstants.LeadingTriviaAlreadyMappedAnnotation)
+            .SelectMany(x => x.GetAnnotations(AnnotationConstants.LeadingTriviaAlreadyMappedAnnotation), (t, a) => int.Parse(a.Data, CultureInfo.InvariantCulture)).ToImmutableHashSet();
+        var trailingTriviaAlreadyMappedBySourceLine = target.GetAnnotatedTokens(AnnotationConstants.TrailingTriviaAlreadyMappedAnnotation)
+            .SelectMany(x => x.GetAnnotations(AnnotationConstants.TrailingTriviaAlreadyMappedAnnotation), (t, a) => int.Parse(a.Data, CultureInfo.InvariantCulture)).ToImmutableHashSet();
+
         var sourceLines = source.GetText().Lines;
-        var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine);
+        var lineTriviaMapper = new LineTriviaMapper(source, sourceLines, target, targetNodesBySourceStartLine, targetNodesBySourceEndLine, sourcePositionsAlreadyMapped, trailingTriviaAlreadyMappedBySourceLine);
 
         return lineTriviaMapper.GetTargetWithSourceTrivia();
     }
@@ -112,7 +123,7 @@ internal class LineTriviaMapper
         var sourceLine = _sourceLines[sourceLineIndex];
         var endOfSourceLine = sourceLine.FindLastTokenWithinLine(_source);
 
-        if (endOfSourceLine.TrailingTrivia.Any()) {
+        if (endOfSourceLine.TrailingTrivia.Any() && !_trailingPositionsAlreadyMapped.Contains(endOfSourceLine.Span.End)) {
             _trailingTriviaCarriedOver.Add(endOfSourceLine.TrailingTrivia);
         }
 
@@ -134,7 +145,7 @@ internal class LineTriviaMapper
         var sourceLine = _sourceLines[sourceLineIndex];
         var startOfSourceLine = sourceLine.FindFirstTokenWithinLine(_source);
 
-        if (startOfSourceLine.LeadingTrivia.Any()) {
+        if (startOfSourceLine.LeadingTrivia.Any() && !_sourcePositionsAlreadyMapped.Contains(startOfSourceLine.SpanStart)) {
             _leadingTriviaCarriedOver.Add(startOfSourceLine.LeadingTrivia);
         }
 

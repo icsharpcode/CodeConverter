@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Text;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -62,10 +63,14 @@ internal class CommentConvertingVisitorWrapper
                 return (T)(object)csCus
                     .WithSourceStartLineAnnotation(vbNode.SyntaxTree.GetLineSpan(new TextSpan(0, 0)))
                     .WithEndOfFileToken(csCus.EndOfFileToken
-                        .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken).WithSourceMappingFrom(vbCus.EndOfFileToken)
+                        .WithConvertedLeadingTriviaFrom(vbCus.EndOfFileToken, true).WithSourceMappingFrom(vbCus.EndOfFileToken)
                     );
             case VBSyntax.XmlElementSyntax vbXes when converted is CSSyntax.ExpressionSyntax csXes:
-                return (T)(object)csXes.WithConvertedLeadingTriviaFrom(vbXes.StartTag.LessThanToken).WithConvertedTrailingTriviaFrom(vbXes.EndTag.GetLastToken());
+                var lastToken = csXes.GetLastToken();
+                return (T)(object)csXes
+                    .ReplaceToken(lastToken, lastToken.WithConvertedLeadingTriviaFrom(vbXes.EndTag.GetFirstToken(), true))
+                    .WithConvertedLeadingTriviaFrom(vbXes.GetFirstToken(), true)
+                    .WithConvertedTrailingTriviaFrom(vbXes.GetLastToken(), markAsMapped: true);
         }
         return converted.WithVbSourceMappingFrom(vbNode);
     }
