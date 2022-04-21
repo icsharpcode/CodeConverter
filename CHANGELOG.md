@@ -14,12 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Removed obsolete CodeWithOptions.FromLanguageVersion and CodeWithOptions.ToLanguageVersion [#878](https://github.com/icsharpcode/CodeConverter/issues/878)
 * Convert immediately executed lambdas without causing a compiler error [#869](https://github.com/icsharpcode/CodeConverter/issues/869)
 * Fix binary expressions for nullable types in VB->C# conversion [#840](https://github.com/icsharpcode/CodeConverter/issues/840)
-* Use string.IsNullOrEmpty when comparing string to string.Empty [#874] (https://github.com/icsharpcode/CodeConverter/issues/874)
-
+* Use string.IsNullOrEmpty when comparing string to string.Empty [#874](https://github.com/icsharpcode/CodeConverter/issues/874)
+* Make an effort to maintain line-spacing between statements [#879](https://github.com/icsharpcode/CodeConverter/issues/879)
 
 ### C# -> VB
 
 * Removed obsolete CodeWithOptions.FromLanguageVersion and CodeWithOptions.ToLanguageVersion [#878](https://github.com/icsharpcode/CodeConverter/issues/878)
+* Make an effort to maintain line-spacing between statements [#879](https://github.com/icsharpcode/CodeConverter/issues/879)
 
 ## [8.5.0] - 2022-04-10
 
