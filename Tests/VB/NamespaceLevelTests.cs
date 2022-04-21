@@ -13,6 +13,8 @@ public class NamespaceLevelTests : ConverterTestBase
 {
 
 }", @"Namespace Test
+
+
 End Namespace");
     }
 
@@ -181,6 +183,7 @@ End Interface");
     ArgumentOutOfRange_NeedNonNegNumRequired,
     Arg_ArrayPlusOffTooSmall
 }", @"Friend Enum ExceptionResource
+
     Argument_ImplementIComparable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired

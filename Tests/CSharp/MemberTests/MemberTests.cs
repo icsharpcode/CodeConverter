@@ -1233,8 +1233,10 @@ End Sub", @"public SurroundingClass()
             @"
 Shared Sub New()
 
-End Sub", @"static SurroundingClass()
+End Sub", @"
+static SurroundingClass()
 {
+
 }");
     }
 

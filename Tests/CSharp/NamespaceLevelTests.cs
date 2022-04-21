@@ -15,6 +15,8 @@ public class NamespaceLevelTests : ConverterTestBase
 End Namespace", @"
 namespace Test
 {
+
+
 }");
     }
 
@@ -35,6 +37,8 @@ namespace Test1.Test2.Test3
 End Namespace", @"
 namespace Test
 {
+
+
 }");
     }
 
@@ -314,6 +318,7 @@ internal partial interface ITest : IDisposable
 End Enum", @"
 internal enum ExceptionResource
 {
+
     Argument_ImplementIComparable,
     ArgumentOutOfRange_NeedNonNegNum,
     ArgumentOutOfRange_NeedNonNegNumRequired,

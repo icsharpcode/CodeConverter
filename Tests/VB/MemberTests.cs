@@ -957,7 +957,9 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
         await TestConversionCSharpToVisualBasicAsync(
             @"static SurroundingClass()
 {
-}", @"Shared Sub New()
+}", @"
+Shared Sub New()
+
 End Sub");
     }
 

@@ -94,6 +94,7 @@ obj = Nothing",
 {
 }",
             @"Public Class Test
+
 End Class");
     }
 
@@ -113,6 +114,7 @@ End Class");
 {
 }",
             @"Namespace nam
+
 End Namespace");
     }
 
