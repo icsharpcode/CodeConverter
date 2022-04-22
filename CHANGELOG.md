@@ -7,9 +7,142 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* VS2019 (16.10) is now the minimum supported version
 
 ### VB -> C#
 
+* Removed obsolete CodeWithOptions.FromLanguageVersion and CodeWithOptions.ToLanguageVersion [#878](https://github.com/icsharpcode/CodeConverter/issues/878)
+* Convert immediately executed lambdas without causing a compiler error [#869](https://github.com/icsharpcode/CodeConverter/issues/869)
+* Fix binary expressions for nullable types in VB->C# conversion [#840](https://github.com/icsharpcode/CodeConverter/issues/840)
+* Use string.IsNullOrEmpty when comparing string to string.Empty [#874](https://github.com/icsharpcode/CodeConverter/issues/874)
+* Make an effort to maintain line-spacing between statements [#879](https://github.com/icsharpcode/CodeConverter/issues/879)
+
+### C# -> VB
+
+* Removed obsolete CodeWithOptions.FromLanguageVersion and CodeWithOptions.ToLanguageVersion [#878](https://github.com/icsharpcode/CodeConverter/issues/878)
+* Make an effort to maintain line-spacing between statements [#879](https://github.com/icsharpcode/CodeConverter/issues/879)
+
+## [8.5.0] - 2022-04-10
+
+
+### Vsix
+
+* Last version supporting VS2017 and some earlier VS2019 versions (versions 15.7-16.9)
+
+### VB -> C#
+
+* Xml Namespace Imports now converted [#836](https://github.com/icsharpcode/CodeConverter/issues/836)
+* Use explicit cast when integral numeric types are casted to enum [#861](https://github.com/icsharpcode/CodeConverter/issues/861)
+* Correct inconsistent casing of event handlers [#854](https://github.com/icsharpcode/CodeConverter/issues/854)
+
+### C# -> VB
+
+
+## [8.4.7] - 2022-03-12
+
+* Command line no longer silently exits for dot net framework projects
+* Log messages now include timestamps
+
+## [8.4.6] - 2022-03-02
+
+
+### Vsix
+
+
+### VB -> C#
+
+* Fix method arguments when calling a parametrized property with named arguments. [#833](https://github.com/icsharpcode/CodeConverter/issues/833)
+* Fix access modifiers for explicit interface implementations. [#819](https://github.com/icsharpcode/CodeConverter/issues/819)
+* Fix code generation for explicit interface implementations. [#813](https://github.com/icsharpcode/CodeConverter/issues/813)
+* Add support for converting multiple selected files and folders. [#485](https://github.com/icsharpcode/CodeConverter/issues/485)
+* Replace VB-specific library methods with idiomatic framework alternatives [#814](https://github.com/icsharpcode/CodeConverter/pull/814)
+* Remove redundant break expressions in switch-case statements. [#432](https://github.com/icsharpcode/CodeConverter/issues/432)
+* Generate out parameter instead of ref for implementations of external methods. [#831](https://github.com/icsharpcode/CodeConverter/issues/831)
+* When passing a property ByRef, don't try to assign it back afterwards [#843](https://github.com/icsharpcode/CodeConverter/issues/843)
+
+### C# -> VB
+
+* Improve snippet detection [#825](https://github.com/icsharpcode/CodeConverter/issues/825)
+
+## [8.4.5] - 2022-01-26
+
+
+### Vsix
+
+* Only trigger build for converted project where possible [#816](https://github.com/icsharpcode/CodeConverter/issues/816)
+
+### VB -> C#
+
+* Convert Exit Try to a do while false loop with a break statement [#779](https://github.com/icsharpcode/CodeConverter/issues/779)
+* Fix missing parenthesis for null coalescing operator [#811](https://github.com/icsharpcode/CodeConverter/issues/811)
+* No longer throws NRE for VB Static variable without initializer. [See comment on #623](https://github.com/icsharpcode/CodeConverter/issues/623#issuecomment-1009917188)
+* Convert nested xml literals to new XElement [#253](https://github.com/icsharpcode/CodeConverter/issues/253)
+
+### C# -> VB
+
+
+## [8.4.4] - 2022-01-09
+
+
+### Vsix
+
+
+### VB -> C#
+
+* No longer throws NRE for embedded resources with no LastGenOutput [#804](https://github.com/icsharpcode/CodeConverter/issues/804)
+* Append CompareMethod.Text for Strings methods when needed [#655](https://github.com/icsharpcode/CodeConverter/issues/655)
+* Convert op_Implicit/op_Explicit calls to casts [#678](https://github.com/icsharpcode/CodeConverter/issues/678)
+* Use Conversions.ToString when concatenating a DateTime with a string [#806](https://github.com/icsharpcode/CodeConverter/issues/806)
+* Ensure named arguments are correctly named when followed by an omitted argument [#808](https://github.com/icsharpcode/CodeConverter/issues/808)
+* Convert static variables into fields [#623](https://github.com/icsharpcode/CodeConverter/issues/623)
+* Ensure query syntax join conditions are swapped to the necessary C# order [#752](https://github.com/icsharpcode/CodeConverter/issues/752)
+* Convert nested exit statements to if statements [#690](https://github.com/icsharpcode/CodeConverter/issues/690)
+
+### C# -> VB
+
+* More terse conversion in for loop with literal end value [#798](https://github.com/icsharpcode/CodeConverter/issues/798)
+
+## [8.4.3] - 2021-12-23
+
+
+### Vsix
+
+
+### VB -> C#
+
+* Convert extension methods on ByRef reference types to static invocations [#785](https://github.com/icsharpcode/CodeConverter/issues/785)
+* Wire up events for WithEvents fields in an ancestor class [#774](https://github.com/icsharpcode/CodeConverter/issues/774)
+* Only create delegating property for WithEvents fields if there is a *known* write usage or descendant class [Due to feedback on #615](https://github.com/icsharpcode/CodeConverter/issues/615#issuecomment-993151917)
+
+### C# -> VB
+
+
+## [8.4.2] - 2021-12-11
+
+
+### Vsix
+
+* Attempt to improve VS2017 compatibility
+
+### VB -> C#
+
+* Convert with blocks using structs to a local ref variable[#634](https://github.com/icsharpcode/CodeConverter/issues/634)
+* Ensure xml-doc at start of file is kept [#663](https://github.com/icsharpcode/CodeConverter/issues/663)
+
+### C# -> VB
+
+
+## [8.4.1] - 2021-10-02
+
+
+### Vsix
+
+
+### VB -> C#
+
+* Convert VB exclamation mark into C# indexer [#765](https://github.com/icsharpcode/CodeConverter/issues/765)
+* Deal with nullable bools in binary expressions [#712](https://github.com/icsharpcode/CodeConverter/issues/712)
+* No longer tries to qualify type parameters (e.g. in generic delegates) [#771](https://github.com/icsharpcode/CodeConverter/issues/771)
 
 ### C# -> VB
 

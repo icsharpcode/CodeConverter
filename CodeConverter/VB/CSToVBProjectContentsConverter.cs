@@ -1,17 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+﻿using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
-using System;
-using System.Threading;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace ICSharpCode.CodeConverter.VB
-{
+namespace ICSharpCode.CodeConverter.VB;
+
+
     /// <remarks>
     /// Can be stateful, need a new one for each project
     /// </remarks>
@@ -19,7 +12,6 @@ namespace ICSharpCode.CodeConverter.VB
     {
         private readonly VisualBasicCompilationOptions _vbCompilationOptions;
         private readonly VisualBasicParseOptions _vbParseOptions;
-        private Project _sourceCsProject;
         private Project _convertedVbProject;
         private VisualBasicCompilation _vbViewOfCsSymbols;
         private Project _vbReferenceProject;
@@ -44,7 +36,7 @@ namespace ICSharpCode.CodeConverter.VB
             _vbParseOptions = vbCompilationOptions.ParseOptions;
             RootNamespace = conversionOptions.RootNamespaceOverride;
         }
-        
+
         public OptionalOperations OptionalOperations { get; }
 
         public string RootNamespace { get; }
@@ -53,18 +45,17 @@ namespace ICSharpCode.CodeConverter.VB
         public string LanguageVersion { get { return _vbParseOptions.LanguageVersion.ToDisplayString(); } }
 
 
-        public async Task InitializeSourceAsync(Project project)
-        {
-            // TODO: Don't throw away solution-wide effects - write them to referencing files, and use in conversion of any other projects being converted at the same time.
-            project = await ClashingMemberRenamer.RenameClashingSymbolsAsync(project, _progress);
-            _sourceCsProject = project;
-            _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
-            _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
-            _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);
-            SourceProject = project;
-        }
+    public async Task InitializeSourceAsync(Project project)
+    {
+        // TODO: Don't throw away solution-wide effects - write them to referencing files, and use in conversion of any other projects being converted at the same time.
+        project = await ClashingMemberRenamer.RenameClashingSymbolsAsync(project, _progress);
+        _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
+        _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
+        _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);
+        SourceProject = project;
+    }
 
-        public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
+    public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
         {
             return await CSharpConverter.ConvertCompilationTreeAsync(document, _vbViewOfCsSymbols, _vbReferenceProject, OptionalOperations, _cancellationToken);
         }
@@ -75,9 +66,8 @@ namespace ICSharpCode.CodeConverter.VB
             return _convertedVbProject.WithDocuments(firstPassResults);
         }
 
-        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResults(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<ConversionResult> GetAdditionalConversionResultsAsync(IReadOnlyCollection<TextDocument> additionalDocumentsToConvert, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             yield break;
         }
     }
-}

@@ -8,7 +8,9 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
+
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace VbNetStandardLib.My.Resources
 {
@@ -22,10 +24,12 @@ namespace VbNetStandardLib.My.Resources
     /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [DebuggerNonUserCode()]
-    [System.Runtime.CompilerServices.CompilerGenerated()]
+    [CompilerGenerated()]
     public class RootResources
     {
+
         private static System.Resources.ResourceManager resourceMan;
+
         private static System.Globalization.CultureInfo resourceCulture;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
@@ -46,7 +50,6 @@ namespace VbNetStandardLib.My.Resources
                     var temp = new System.Resources.ResourceManager("VbNetStandardLib.RootResources", typeof(RootResources).Assembly);
                     resourceMan = temp;
                 }
-
                 return resourceMan;
             }
         }
@@ -62,7 +65,6 @@ namespace VbNetStandardLib.My.Resources
             {
                 return resourceCulture;
             }
-
             set
             {
                 resourceCulture = value;

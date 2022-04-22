@@ -20,31 +20,37 @@
     <PackageTags>Convert Converter Conversion C# CSharp CS VB VB.NET Visual Basic Code Free Roslyn Tool</PackageTags>
     <PackageReleaseNotes>See https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md </PackageReleaseNotes>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <EmbedUntrackedSources>$(ContinuousIntegrationBuild)</EmbedUntrackedSources>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisMode>Recommended</AnalysisMode>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Shared\DefaultReferences.cs" />
+    <Compile Remove="Common\DefaultReferences.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Shared\DefaultReferences.cs" />
+    <EmbeddedResource Include="Common\DefaultReferences.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="2.8.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="2.8.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.1.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="15.8.98" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="15.8.122" />
+    <PackageReference Include="Microsoft.VisualStudio.Composition" Version="16.9.20" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="16.10.56" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
     <PackageReference Include="System.IO.Abstractions" Version="13.2.33" />
     <PackageReference Include="System.Linq.Async" Version="4.0.0" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.6.0">
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="IsExternalInit" Version="1.0.2" PrivateAssets="all" />
   </ItemGroup>
   <!-- The InternalVisibleTo fails when building with signing -->
   <ItemGroup Condition="'$(SignAssembly)'=='True'">

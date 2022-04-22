@@ -2,15 +2,15 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp
+namespace ICSharpCode.CodeConverter.Tests.CSharp;
+
+public class TriviaTests : ConverterTestBase
 {
-    public class TriviaTests : ConverterTestBase
+    [Fact]
+    public async Task Issue506_IfStatementAsync()
     {
-        [Fact]
-        public async Task Issue506_IfStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Imports System
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
 
 Public Class TestClass506
     Public Sub Deposit(Item As Integer, ColaOnly As Boolean, MonteCarloLogActive As Boolean, InDevEnv As Func(Of Boolean))
@@ -33,6 +33,7 @@ public partial class TestClass506
 {
     public void Deposit(int Item, bool ColaOnly, bool MonteCarloLogActive, Func<bool> InDevEnv)
     {
+
         if (ColaOnly) // just log the Cola value
         {
             Console.WriteLine(1);
@@ -45,7 +46,6 @@ public partial class TestClass506
         {
             Console.WriteLine(3);
         }
-
         if (MonteCarloLogActive && InDevEnv()) // Special logging for dev debugging
         {
             Console.WriteLine(4);
@@ -53,13 +53,13 @@ public partial class TestClass506
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue15_NestedRegionsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"#Region ""Whole File""
+    [Fact]
+    public async Task Issue15_NestedRegionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"#Region ""Whole File""
 #Region ""Nested""
 Imports System
 
@@ -77,7 +77,7 @@ End Module
 #End Region
 #End Region
 ",
-@"#region Whole File
+            @"#region Whole File
 #region Nested
 using System;
 
@@ -95,21 +95,83 @@ internal static partial class Program
 }
 #endregion
 #endregion
-#endregion",
-hasLineCommentConversionIssue: true);//Auto-test code doesn't know to avoid adding comment on same line as region
-        }
+#endregion");
+    }
 
-        [Fact]
-        public async Task Issue15_IfTrueAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class AClass
+    [Fact]
+    public async Task RegionsWithEventsIssue772Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class VisualBasicClass
+    Inherits System.Windows.Forms.Form
+
+    #Region "" Members ""
+
+        Private _Member As String = String.Empty
+
+    #End Region
+
+    #Region "" Construction ""
+
+        Public Sub New()
+        
+        End Sub
+
+    #End Region
+
+    #Region "" Methods ""
+
+        Public Sub Eventhandler_Load(sender As Object, e As EventArgs) Handles Me.Load
+            'Do something
+        End Sub
+
+    #End Region
+
+End Class",
+            @"using System;
+
+public partial class VisualBasicClass : System.Windows.Forms.Form
+{
+
+    #region  Members 
+
+    private string _Member = string.Empty;
+
+    #endregion
+
+    #region  Construction 
+
+    public VisualBasicClass()
+    {
+        Load += Eventhandler_Load;
+
+    }
+
+    #endregion
+
+    #region  Methods 
+
+    public void Eventhandler_Load(object sender, EventArgs e)
+    {
+        // Do something
+    }
+
+    #endregion
+
+}");
+    }
+
+    [Fact]
+    public async Task Issue15_IfTrueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class AClass
     #If TRUE
     Private Sub AMethod()
     End Sub
     #End If
 End Class",
-@"
+            @"
 public partial class AClass
 {
     /* TODO ERROR: Skipped IfDirectiveTrivia
@@ -123,19 +185,19 @@ public partial class AClass
 */
 }
 ");
-        }
+    }
 
-        [Fact]
-        public async Task Issue15_IfFalseAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class AClass
+    [Fact]
+    public async Task Issue15_IfFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class AClass
     #If FALSE
     Private Sub AMethod()
     End Sub
     #End If
 End Class",
-@"
+            @"
 public partial class AClass
 {
     /* TODO ERROR: Skipped IfDirectiveTrivia
@@ -147,49 +209,49 @@ public partial class AClass
 #End If
 */
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue771_DoNotTrimLineCommentsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"
+    [Fact]
+    public async Task Issue771_DoNotTrimLineCommentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 '>> Thomas  16.03.2021
 '                       bei BearbeitungsTyp = ""SP__unten""
 Public Class AClass
 End Class",
-@"
+            @"
+
 // >> Thomas  16.03.2021
 // bei BearbeitungsTyp = ""SP__unten""
-
 public partial class AClass
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue771_DoNotTrimBlockCommentsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"
+    [Fact]
+    public async Task Issue771_DoNotTrimBlockCommentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
 ''' >> Thomas  16.03.2021
 '''                       bei BearbeitungsTyp = ""SP__unten""
 Public Class AClass
 End Class",
-@"
+            @"
+
 /// >> Thomas  16.03.2021
 ///                       bei BearbeitungsTyp = ""SP__unten""
-
 public partial class AClass
 {
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestMethodXmlDocAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass
+    [Fact]
+    public async Task TestMethodXmlDocAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     ''' <summary>Xml doc</summary>
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
@@ -209,13 +271,13 @@ internal partial class TestClass
         argument3 = default;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestGeneratedMethodXmlDocAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Class TestClass
+    [Fact]
+    public async Task TestGeneratedMethodXmlDocAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     '''<summary>
     '''  Returns the cached ResourceManager instance used by this class.
     '''</summary>
@@ -239,6 +301,50 @@ internal partial class TestClass
         argument3 = default;
     }
 }");
-        }
+    }
+
+    [Fact]
+    public async Task StatementNewlinesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
+
+Public Class X
+    <Display(Name:=""Reinsurance Year"")> _
+    Public SelectedReinsuranceYear As Int16
+
+    
+    <Display(Name:=""Record Type"")> _
+    Public SelectedRecordType As String
+
+    <Display(Name:=""Release Date"")> _
+    Public ReleaseDate As Nullable(Of Date)
+
+End Class
+
+Friend Class DisplayAttribute
+    Inherits Attribute
+    Property Name As String
+End Class
+", @"using System;
+
+public partial class X
+{
+    [Display(Name = ""Reinsurance Year"")]
+    public short SelectedReinsuranceYear;
+
+
+    [Display(Name = ""Record Type"")]
+    public string SelectedRecordType;
+
+    [Display(Name = ""Release Date"")]
+    public DateTime? ReleaseDate;
+
+}
+
+internal partial class DisplayAttribute : Attribute
+{
+    public string Name { get; set; }
+}");
     }
 }

@@ -7,16 +7,17 @@ using VbNetStandardLib.My.Resources;
 
 namespace WindowsAppVb
 {
+
     public partial class FolderForm
     {
         public FolderForm()
         {
             InitializeComponent();
         }
-
         private void FolderForm_Load(object sender, EventArgs e)
         {
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+            ToolStripButton7.Text = Directory.GetCurrentDirectory();
             ToolStripButton7.Image = My.Resources.Resource2.test;
             ToolStripButton8.Image = My.Resources.Resource2.test2;
             ToolStripButton9.Image = My.Resources.Resource2.test3;

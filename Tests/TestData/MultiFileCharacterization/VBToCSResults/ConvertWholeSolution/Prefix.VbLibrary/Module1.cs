@@ -4,6 +4,7 @@ using Microsoft.VisualBasic.CompilerServices;
 
 namespace Prefix.VbLibrary
 {
+
     static class Module1
     {
         private static Dictionary<int, int> dict = new Dictionary<int, int>();
@@ -13,11 +14,13 @@ namespace Prefix.VbLibrary
             var x = default(object);
             int argvalue = Conversions.ToInteger(x);
             dict.TryGetValue(1, out argvalue);
+            x = argvalue;
         }
 
         public static void Main()
         {
             Console.Write((int)AClass.NestedEnum.First);
         }
+
     }
 }

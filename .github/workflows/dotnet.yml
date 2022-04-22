@@ -8,13 +8,15 @@ on:
  
 jobs:
  build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     env:
-      BuildVersion: '8.4.0'
+      BuildVersion: '8.5.0'
       BuildPlatform: Any CPU
       BuildTarget: Release
+
     steps:
     - uses: actions/checkout@v2
+
     - name: Update project version
       uses: roryprimrose/set-vs-sdk-project-version@v1
       with:
@@ -22,24 +24,31 @@ jobs:
         version: ${{ env.BuildVersion }}.${{ github.run_number }}
         assemblyVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
         fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
+
     - name: Setup .NET for main build
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.x
+        dotnet-version: 6.0.x
+
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v1.1
       with:
-       vs-version: '[16.6,)'
-    - name: Publish all
-      run: dotnet publish CodeConverter.sln /p:Configuration=$env:BuildTarget /p:Platform=$env:BuildPlatform
-    - name: Build vsix using legacy msbuild
-      run: msbuild Vsix/Vsix.csproj -restore /p:Configuration=$env:BuildTarget
+       vs-version: '[17.0,)'
+
+    - name: Dotnet deterministic Build
+      run:  dotnet build DotNetBuildable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget /p:ContinuousIntegrationBuild=true
+
+    - name: Dotnet Publish
+      run: dotnet publish DotNetPublishable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget
+
+    - name: MSBuild Vsix
+      run: msbuild Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
+
     - name: Execute unit tests
       run: dotnet test $env:Tests1
       env:
         Tests1: Tests/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.Tests.dll
-    - name: Pack
-      run:  dotnet pack CodeConverter/CodeConverter.csproj -c $env:BuildTarget
+
     - name: Upload NuGet package
       uses: actions/upload-artifact@v2
       with:
@@ -50,17 +59,17 @@ jobs:
       with:
         name: ICSharpCode.CodeConverter.VsExtension.${{ env.BuildVersion }}.vsix
         path: Vsix/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.VsExtension.vsix
-    - name: Upload code conv tool
+    - name: Upload Tool
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.CodeConv.${{ env.BuildVersion }}.nupkg
         path: CommandLine/CodeConv/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.CodeConv.*.nupkg
-    - name: Upload website
+    - name: Upload Web
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
         path: Web/bin/${{ env.BuildTarget }}/publish/
-    - name: Upload Azure function
+    - name: Upload Function
       uses: actions/upload-artifact@v2
       with:
         name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip

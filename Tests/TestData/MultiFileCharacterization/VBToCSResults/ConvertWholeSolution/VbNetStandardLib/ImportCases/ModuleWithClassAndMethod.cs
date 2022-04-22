@@ -1,7 +1,7 @@
-// no type promotion
 
 namespace VbNetStandardLib
 {
+    // no type promotion
     public static class ModuleWithClassAndMethod
     {
         public static void ModuleMethod()

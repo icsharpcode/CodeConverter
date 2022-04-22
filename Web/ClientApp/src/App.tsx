@@ -2,6 +2,7 @@ import * as Api from "./Api"
 import React, { Component, useEffect, useState } from "react";
 import { Route } from "react-router";
 import Layout from "./components/Layout";
+import { Routes } from "react-router-dom";
 import { Home } from "./components/Home";
 import { About} from "./components/About";
 
@@ -18,8 +19,10 @@ const App = () => {
 
     return (
         <Layout>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/about" component={About} />
+            <Routes>
+                <Route path="/" element={<Home />}/>
+                <Route path="/about" element={<About />} />
+            </Routes>
             <hr />
             <footer>
                 <p>	&copy; 2015-{new Date().getFullYear()} - Code Converter {versionString && (<span>{versionString} </span>)}by <a href="https://github.com/icsharpcode/CodeConverter/">https://github.com/icsharpcode/CodeConverter/</a></p>

@@ -1,48 +1,35 @@
-﻿using System;
-using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
-using ICSharpCode.CodeConverter.Shared;
+﻿using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.VB;
 
-namespace ICSharpCode.CodeConverter
+namespace ICSharpCode.CodeConverter;
+
+public static class CodeConverter
 {
-    public static class CodeConverter
+    private const string VbLanguage = "Visual Basic";
+    private const string CsLanguage = "C#";
+
+    private record SupportedConversion(string From, string To, Func<CodeWithOptions, Task<ConversionResult>> ConvertAsync)
     {
-        public static async Task<ConversionResult> ConvertAsync(CodeWithOptions code)
-        {
-            if (!IsSupportedSource(code.FromLanguage, code.FromLanguageVersion))
-                return new ConversionResult(new NotSupportedException($"Source language {code.FromLanguage} {code.FromLanguageVersion} is not supported!"));
-            if (!IsSupportedTarget(code.ToLanguage, code.ToLanguageVersion))
-                return new ConversionResult(new NotSupportedException($"Target language {code.ToLanguage} {code.ToLanguageVersion} is not supported!"));
-            if (code.FromLanguage == code.ToLanguage && code.FromLanguageVersion != code.ToLanguageVersion)
-                return new ConversionResult(new NotSupportedException($"Converting from {code.FromLanguage} {code.FromLanguageVersion} to {code.ToLanguage} {code.ToLanguageVersion} is not supported!"));
+        public override string ToString() => $"{From}->{To}";
+    }
 
-            switch (code.FromLanguage) {
-                case "C#":
-                    switch (code.ToLanguage) {
-                        case "Visual Basic":
-                            return await ProjectConversion.ConvertTextAsync<CSToVBConversion>(code.Text, new TextConversionOptions(code.References));
-                    }
-                    break;
-                case "Visual Basic":
-                    switch (code.ToLanguage) {
-                        case "C#":
-                            return await ProjectConversion.ConvertTextAsync<VBToCSConversion>(code.Text, new TextConversionOptions(code.References));
-                    }
-                    break;
+    private static readonly SupportedConversion[] SupportedConversions = {
+        new(VbLanguage, CsLanguage, ConvertFromCodeWithOptionsAsync<VBToCSConversion>),
+        new(CsLanguage, VbLanguage, ConvertFromCodeWithOptionsAsync<CSToVBConversion>)
+    };
 
-            }
-            return new ConversionResult(new NotSupportedException($"Converting from {code.FromLanguage} {code.FromLanguageVersion} to {code.ToLanguage} {code.ToLanguageVersion} is not supported!"));
+    private static Task<ConversionResult> ConvertFromCodeWithOptionsAsync<TLanguageConversion>(CodeWithOptions code) where TLanguageConversion : ILanguageConversion, new() =>
+        ProjectConversion.ConvertTextAsync<TLanguageConversion>(code.Text, new TextConversionOptions(code.References));
+
+    public static async Task<ConversionResult> ConvertAsync(CodeWithOptions code)
+    {
+        if (SupportedConversions.SingleOrDefault(c => c.From == code.FromLanguage && c.To == code.ToLanguage) is {} supportedConversion) {
+            return await supportedConversion.ConvertAsync(code);
         }
 
-        private static bool IsSupportedTarget(string toLanguage, int toLanguageVersion)
-        {
-            return (toLanguage == "Visual Basic" && toLanguageVersion == 14) || (toLanguage == "C#" && toLanguageVersion == 6);
-        }
+        string supportedConversions = string.Join<SupportedConversion>(", ", SupportedConversions);
+        var exception = new NotSupportedException($"Conversion {code.FromLanguage} to {code.ToLanguage} is not supported, please specify one of the following: {supportedConversions}");
+        return new ConversionResult(exception);
 
-        private static bool IsSupportedSource(string fromLanguage, int fromLanguageVersion)
-        {
-            return (fromLanguage == "C#" && fromLanguageVersion == 6) || (fromLanguage == "Visual Basic" && fromLanguageVersion == 14);
-        }
     }
 }

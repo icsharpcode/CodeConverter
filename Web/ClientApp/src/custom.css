@@ -29,8 +29,7 @@ input[type="radio"] {
 }
 
 .horizontal-spaced {
-    padding-left: 10px;
-    padding-right: 10px;
+    margin-left: 50px;
 }
 
 /* Carousel */
@@ -62,34 +61,39 @@ input[type="radio"] {
     }
 }
 
-.spinner {
-    display: inline-block;
+.spinner-container {
+    position: relative;
 }
 
-    /* BEGIN https://loading.io/css/ */
-    .spinner:after {
-        content: " ";
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 3px solid #68217a;
-        border-color: #68217a transparent #68217a transparent;
-        animation: lds-dual-ring 1.2s linear infinite;
-    }
+/* Inspired by https://loading.io/css/ */
+.spinner:before {
+    position: absolute;
+    z-index: 100;
+    content: " ";
+    left: 50%;
+    top: 50%;
+    width: 28vmin;
+    height: 28vmin;
+    margin: -14vmin;
+    border-radius: 50%;
+    border: 8px solid #68217a;
+    border-color: #68217a transparent #68217a transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+    animation-delay: 0.2s;
+    opacity: 0;
+}
 
 @keyframes lds-dual-ring {
     0% {
+        opacity: 1;
         transform: rotate(0deg);
     }
-
     100% {
+        
+        opacity: 1;
         transform: rotate(360deg);
     }
 }
-/* END https://loading.io/css/ */
-
-
 
 .navbar {
     background-color: #333333;
@@ -97,4 +101,13 @@ input[type="radio"] {
 
 .navbar-brand:not(:hover) .title-highlight {
     color: #b28bbc;
+}
+
+@media (min-width: 576px) {
+    .navbar-expand-sm .navbar-collapse { display: inline-flex !important; }
+}
+
+.conversion-controls {
+    text-align: right;
+    margin: 10px 0px -10px 0px;
 }

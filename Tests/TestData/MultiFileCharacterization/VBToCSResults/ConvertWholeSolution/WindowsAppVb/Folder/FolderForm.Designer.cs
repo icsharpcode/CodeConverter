@@ -16,7 +16,7 @@ namespace WindowsAppVb
         {
             try
             {
-                if (disposing && components is object)
+                if (disposing && components is not null)
                 {
                     components.Dispose();
                 }
@@ -213,6 +213,7 @@ namespace WindowsAppVb
             Load += new EventHandler(FolderForm_Load);
             ResumeLayout(false);
             PerformLayout();
+
         }
 
         internal ToolStrip ToolStrip1;

@@ -1,7 +1,7 @@
 
 namespace Prefix.VbLibrary
 {
-    internal enum AnEnum
+    internal enum AnEnumType
     {
         AnEnumMember
     }

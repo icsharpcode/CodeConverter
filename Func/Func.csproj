@@ -1,29 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AzureFunctionsVersion>v3</AzureFunctionsVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <RootNamespace>ICSharpCode.CodeConverter.Func</RootNamespace>
     <AssemblyName>ICSharpCode.CodeConverter.Func</AssemblyName>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
     <UserSecretsId>1d2f0b91-7e29-4920-8a93-e52863d06c2e</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\CodeConverter\Shared\DefaultReferences.cs" Link="DefaultReferences.cs" />
-    <Compile Include="..\Web\Models\ConvertRequest.cs" Link="ConvertRequest.cs" />
-    <Compile Include="..\Web\Models\ConvertResponse.cs" Link="ConvertResponse.cs" />
+    <Compile Include="..\CodeConverter\Common\DefaultReferences.cs" Link="DefaultReferences.cs" />
     <Compile Include="..\Web\WebConverter.cs" Link="WebConverter.cs" />
     <None Include="local.settings.json" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.1.1" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.7.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="3.7.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.7.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.7.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.1.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.1.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />

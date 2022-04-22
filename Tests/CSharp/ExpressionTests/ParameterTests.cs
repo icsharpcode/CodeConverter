@@ -2,14 +2,14 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+public class ParameterTests : ConverterTestBase
 {
-    public class ParameterTests : ConverterTestBase
+    [Fact]
+    public async Task OptionalParameter_DoesNotThrowInvalidCastExceptionAsync()
     {
-        [Fact]
-        public async Task OptionalParameter_DoesNotThrowInvalidCastException()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+        await TestConversionVisualBasicToCSharpAsync(@"
 Public Class MyTestAttribute
     Inherits Attribute
 End Class
@@ -22,7 +22,7 @@ Public Class MyController
     End Function
 End Class
 ",
-@"using System;
+            @"using System;
 
 public partial class MyTestAttribute : Attribute
 {
@@ -35,6 +35,5 @@ public partial class MyController
         return null;
     }
 }");
-        }
     }
 }

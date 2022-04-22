@@ -1,19 +1,18 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using ICSharpCode.CodeConverter.CSharp;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
+
+public class PropertyMemberTests : ConverterTestBase
 {
-    public class PropertyMemberTests : ConverterTestBase
+
+
+    [Fact]
+    public async Task TestPropertyAsync()
     {
-
-
-        [Fact]
-        public async Task TestPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Property Test As Integer
 
     Public Property Test2 As Integer
@@ -57,7 +56,6 @@ internal partial class TestClass
                 return default;
             return m_test3;
         }
-
         set
         {
             if (7 == int.Parse(""7""))
@@ -68,13 +66,13 @@ internal partial class TestClass
 }
 1 source compilation errors:
 BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide both a 'Get' and a 'Set'.");
-        }
+    }
 
-        [Fact]
-        public async Task TestParameterizedPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestParameterizedPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
 
@@ -86,7 +84,7 @@ BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide bot
                 Return FirstName & "" "" & LastName
             End If
         End Get
-
+        ' Bug: Comment moves inside generated method
         Friend Set
             If isFirst Then FirstName = Value
         End Set
@@ -112,6 +110,7 @@ internal partial class TestClass
         {
             return FirstName + "" "" + LastName;
         }
+        // Bug: Comment moves inside generated method
     }
 
     internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
@@ -125,14 +124,14 @@ internal partial class TestClass
         set_FullName(false, true, ""hello"");
         return get_FullName(false, true);
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
-        }
+}");
+    }
 
-        [Fact]
-        public async Task TestParameterizedPropertyRequiringConversionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Class1
+    [Fact]
+    public async Task TestParameterizedPropertyRequiringConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Class1
     Public Property SomeProp(ByVal index As Integer) As Single
         Get
             Return 1.5
@@ -162,14 +161,14 @@ public partial class Class1
         decimal someDecimal = 123.0m;
         set_SomeProp(123, (float)someDecimal);
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
-        }
+}");
+    }
 
-        [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
-        public async Task TestOptionalParameterizedPropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
+    public async Task TestOptionalParameterizedPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
 
@@ -177,7 +176,7 @@ public partial class Class1
         Get
             Return FirstName & "" "" & LastName
         End Get
-
+'Bug: Comment moves inside generated get method
         Friend Set
             If isFirst Then FirstName = Value
         End Set
@@ -198,6 +197,7 @@ internal partial class TestClass
     public string get_FullName(bool isFirst = false)
     {
         return FirstName + "" "" + LastName;
+        // Bug: Comment moves inside generated get method
     }
 
     internal void set_FullName(bool isFirst = false, string value = default)
@@ -209,19 +209,18 @@ internal partial class TestClass
     public override string ToString()
     {
         set_FullName(true, ""hello2"");
-        set_FullName(false, ""hello3"");
-        set_FullName(false, ""hello4"");
-        return get_FullName(false);
+        set_FullName(value: ""hello3"");
+        set_FullName(value: ""hello4"");
+        return get_FullName();
     }
-}",
-hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
-        }
+}");
+    }
 
-        [Fact]
-        public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCasesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class ParameterizedPropertiesAndEnumTest
+    [Fact]
+    public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCasesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class ParameterizedPropertiesAndEnumTest
     Public Enum MyEnum
         First
     End Enum
@@ -265,6 +264,7 @@ public partial class ParameterizedPropertiesAndEnumTest
     {
     }
 
+
     public void ReturnWhatever(MyEnum m)
     {
         var enumerableThing = Enumerable.Empty<string>();
@@ -274,12 +274,10 @@ public partial class ParameterizedPropertiesAndEnumTest
                 {
                     return;
                 }
-
             case MyEnum.First:
                 {
                     return;
                 }
-
             case (MyEnum)3:
                 {
                     set_MyProp(4, enumerableThing.ToArray()[(int)m]);
@@ -287,14 +285,14 @@ public partial class ParameterizedPropertiesAndEnumTest
                 }
         }
     }
-}", hasLineCommentConversionIssue: true);//TODO: Improve comment mapping for parameterized property
-        }
+}");
+    }
 
-        [Fact]
-        public async Task PropertyWithMissingTypeDeclarationAsync()//TODO Check object is the inferred type
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class MissingPropertyType
+    [Fact]
+    public async Task PropertyWithMissingTypeDeclarationAsync()//TODO Check object is the inferred type
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MissingPropertyType
                 ReadOnly Property Max
                     Get
                         Dim mx As Double = 0
@@ -313,13 +311,13 @@ internal partial class MissingPropertyType
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestReadWriteOnlyInterfacePropertyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Interface Foo
+    [Fact]
+    public async Task TestReadWriteOnlyInterfacePropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
 End Interface", @"
@@ -328,12 +326,12 @@ public partial interface Foo
     string P1 { get; }
     string P2 { set; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task SynthesizedBackingFieldAccessAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task SynthesizedBackingFieldAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
@@ -344,12 +342,12 @@ internal partial class TestClass
 
     private int Second = First;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task PropertyInitializersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task PropertyInitializersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private ReadOnly Property First As New List(Of String)
     Private Property Second As Integer = 0
 End Class", @"using System.Collections.Generic;
@@ -359,13 +357,13 @@ internal partial class TestClass
     private List<string> First { get; set; } = new List<string>();
     private int Second { get; set; } = 0;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestIndexerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestIndexerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Private _Items As Integer()
 
     Default Public Property Item(ByVal index As Integer) As Integer
@@ -404,7 +402,6 @@ internal partial class TestClass
         {
             return _Items[index];
         }
-
         set
         {
             _Items[index] = value;
@@ -427,33 +424,32 @@ internal partial class TestClass
         {
             return m_test3;
         }
-
         set
         {
             m_test3 = value;
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestWriteOnlyPropertiesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Interface TestInterface
+    [Fact]
+    public async Task TestWriteOnlyPropertiesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Interface TestInterface
     WriteOnly Property Items As Integer()
 End Interface", @"
 internal partial interface TestInterface
 {
     int[] Items { set; }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestImplicitPrivateSetterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class SomeClass
+    [Fact]
+    public async Task TestImplicitPrivateSetterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class SomeClass
     Public ReadOnly Property SomeValue As Integer
 
     Public Sub SetValue(value1 As Integer, value2 As Integer)
@@ -469,13 +465,193 @@ public partial class SomeClass
         SomeValue = value1 + value2;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestSetWithNamedParameterPropertiesAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Class TestClass
+    [Fact]
+    public async Task TestParametrizedPropertyCalledWithNamedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Interface IFoo
+    Property Prop(Optional x As Integer = 1, Optional y as Integer = 2) As Integer
+End Interface
+Public Class SomeClass
+    Implements IFoo
+    Friend Property Prop2(Optional x As Integer = 1, Optional y as Integer = 2) As Integer Implements IFoo.Prop
+        Get
+        End Get
+        Set
+        End Set
+    End Property
+
+    Sub TestGet()
+        Dim foo As IFoo = Me
+        Dim a = Prop2() + Prop2(y := 20) + Prop2(x := 10) + Prop2(y := -2, x := -1) + Prop2(x := -1, y := -2)
+        Dim b = foo.Prop() + foo.Prop(y := 20) + foo.Prop(x := 10) + foo.Prop(y := -2, x := -1) + foo.Prop(x := -1, y := -2)
+    End Sub
+
+    Sub TestSet()
+        Prop2() = 1
+        Prop2(-1, -2) = 1
+        Prop2(-1) = 1
+        Prop2(y := 20) = 1
+        Prop2(x := 10) = 1
+        Prop2(y := -2, x := -1) = 1
+        Prop2(x := -1, y := -2) = 1
+
+        Dim foo As IFoo = Me
+        foo.Prop() = 1
+        foo.Prop(-1, -2) = 1
+        foo.Prop(-1) = 1
+        foo.Prop(y := 20) = 1
+        foo.Prop(x := 10) = 1
+        foo.Prop(y := -2, x := -1) = 1
+        foo.Prop(x := -1, y := -2) = 1
+    End Sub
+End Class", @"
+public partial interface IFoo
+{
+    int get_Prop(int x = 1, int y = 2);
+    void set_Prop(int x = 1, int y = 2, int value = default);
+}
+public partial class SomeClass : IFoo
+{
+    internal int get_Prop2(int x = 1, int y = 2)
+    {
+        return default;
+    }
+
+    internal void set_Prop2(int x = 1, int y = 2, int value = default)
+    {
+    }
+
+    int IFoo.get_Prop(int x, int y) => get_Prop2(x, y);
+    void IFoo.set_Prop(int x, int y, int value) => set_Prop2(x, y, value);
+
+    public void TestGet()
+    {
+        IFoo foo = this;
+        int a = get_Prop2() + get_Prop2(y: 20) + get_Prop2(x: 10) + get_Prop2(y: -2, x: -1) + get_Prop2(x: -1, y: -2);
+        int b = foo.get_Prop() + foo.get_Prop(y: 20) + foo.get_Prop(x: 10) + foo.get_Prop(y: -2, x: -1) + foo.get_Prop(x: -1, y: -2);
+    }
+
+    public void TestSet()
+    {
+        set_Prop2(value: 1);
+        set_Prop2(-1, -2, 1);
+        set_Prop2(-1, value: 1);
+        set_Prop2(y: 20, value: 1);
+        set_Prop2(x: 10, value: 1);
+        set_Prop2(y: -2, x: -1, value: 1);
+        set_Prop2(x: -1, y: -2, value: 1);
+
+        IFoo foo = this;
+        foo.set_Prop(value: 1);
+        foo.set_Prop(-1, -2, 1);
+        foo.set_Prop(-1, value: 1);
+        foo.set_Prop(y: 20, value: 1);
+        foo.set_Prop(x: 10, value: 1);
+        foo.set_Prop(y: -2, x: -1, value: 1);
+        foo.set_Prop(x: -1, y: -2, value: 1);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestParametrizedPropertyCalledWithOmittedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Interface IFoo
+    Property Prop(Optional x As Integer = 1, Optional y as Integer = 2, Optional z as Integer = 3) As Integer
+End Interface
+Public Class SomeClass
+    Implements IFoo
+    Friend Property Prop2(Optional x As Integer = 1, Optional y as Integer = 2, Optional z as Integer = 3) As Integer Implements IFoo.Prop
+        Get
+        End Get
+        Set
+        End Set
+    End Property
+
+    Sub TestGet()
+        Dim foo As IFoo = Me
+        Dim a = Prop2(,) + Prop2(, 20) + Prop2(10,) + Prop2(,20,) + Prop2(,,30) + Prop2(10,,) + Prop2(,,)
+        Dim b = foo.Prop(,) + foo.Prop(, 20) + foo.Prop(10,) + foo.Prop(,20,) + foo.Prop(,,30) + foo.Prop(10,,) + foo.Prop(,,)
+    End Sub
+
+    Sub TestSet()
+        Prop2(,) = 1
+        Prop2(, 20) = 1
+        Prop2(10, ) = 1
+        Prop2(,20,) = 1
+        Prop2(,,30) = 1
+        Prop2(10,,) = 1
+        Prop2(,,) = 1
+
+        Dim foo As IFoo = Me
+        foo.Prop(,) = 1
+        foo.Prop(, 20) = 1
+        foo.Prop(10, ) = 1
+        foo.Prop(,20,) = 1
+        foo.Prop(,,30) = 1
+        foo.Prop(10,,) = 1
+        foo.Prop(,,) = 1
+    End Sub
+End Class", @"
+public partial interface IFoo
+{
+    int get_Prop(int x = 1, int y = 2, int z = 3);
+    void set_Prop(int x = 1, int y = 2, int z = 3, int value = default);
+}
+public partial class SomeClass : IFoo
+{
+    internal int get_Prop2(int x = 1, int y = 2, int z = 3)
+    {
+        return default;
+    }
+
+    internal void set_Prop2(int x = 1, int y = 2, int z = 3, int value = default)
+    {
+    }
+
+    int IFoo.get_Prop(int x, int y, int z) => get_Prop2(x, y, z);
+    void IFoo.set_Prop(int x, int y, int z, int value) => set_Prop2(x, y, z, value);
+
+    public void TestGet()
+    {
+        IFoo foo = this;
+        int a = get_Prop2() + get_Prop2(y: 20) + get_Prop2(10) + get_Prop2(y: 20) + get_Prop2(z: 30) + get_Prop2(10) + get_Prop2();
+        int b = foo.get_Prop() + foo.get_Prop(y: 20) + foo.get_Prop(10) + foo.get_Prop(y: 20) + foo.get_Prop(z: 30) + foo.get_Prop(10) + foo.get_Prop();
+    }
+
+    public void TestSet()
+    {
+        set_Prop2(value: 1);
+        set_Prop2(y: 20, value: 1);
+        set_Prop2(10, value: 1);
+        set_Prop2(y: 20, value: 1);
+        set_Prop2(z: 30, value: 1);
+        set_Prop2(10, value: 1);
+        set_Prop2(value: 1);
+
+        IFoo foo = this;
+        foo.set_Prop(value: 1);
+        foo.set_Prop(y: 20, value: 1);
+        foo.set_Prop(10, value: 1);
+        foo.set_Prop(y: 20, value: 1);
+        foo.set_Prop(z: 30, value: 1);
+        foo.set_Prop(10, value: 1);
+        foo.set_Prop(value: 1);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestSetWithNamedParameterPropertiesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
     Private _Items As Integer()
     Property Items As Integer()
         Get
@@ -489,27 +665,25 @@ End Class", @"
 internal partial class TestClass
 {
     private int[] _Items;
-
     public int[] Items
     {
         get
         {
             return _Items;
         }
-
         set
         {
             _Items = value;
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestPropertyAssignmentReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class Class1
+    [Fact]
+    public async Task TestPropertyAssignmentReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Class1
     Public ReadOnly Property Foo() As String
         Get
             Foo = """"
@@ -545,7 +719,6 @@ public partial class Class1
             return FooRet;
         }
     }
-
     public string X
     {
         get
@@ -557,9 +730,7 @@ public partial class Class1
             return XRet;
         }
     }
-
     public string _y;
-
     public string Y
     {
         set
@@ -575,13 +746,13 @@ public partial class Class1
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TestGetIteratorDoesNotGainReturnAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-@"Public Class VisualBasicClass
+    [Fact]
+    public async Task TestGetIteratorDoesNotGainReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class VisualBasicClass
   Public Shared ReadOnly Iterator Property SomeObjects As IEnumerable(Of Object())
     Get
       Yield New Object(2) {}
@@ -601,6 +772,5 @@ public partial class VisualBasicClass
         }
     }
 }");
-        }
     }
 }

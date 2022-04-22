@@ -6,6 +6,7 @@ Imports VbNetStandardLib.My.Resources
 Public Class FolderForm
     Private Sub FolderForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US")
+        ToolStripButton7.Text = My.Computer.FileSystem.CurrentDirectory()
         ToolStripButton7.Image = My.Resources.Resource2.test
         ToolStripButton8.Image = My.Resources.Resource2.test2
         ToolStripButton9.Image = My.Resources.Resource2.test3

@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
-
-// See Compiler::LoadXmlSolutionExtension
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -9,7 +6,11 @@ using System.Linq;
 using System.Xml.Linq;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
+// See Compiler::LoadXmlSolutionExtension
 namespace WindowsAppVb.My
 {
     [Embedded()]
@@ -22,7 +23,6 @@ namespace WindowsAppVb.My
         private InternalXmlHelper()
         {
         }
-
         public static string get_Value(IEnumerable<XElement> source)
         {
             foreach (XElement item in source)
@@ -38,7 +38,6 @@ namespace WindowsAppVb.My
                 break;
             }
         }
-
         public static string get_AttributeValue(IEnumerable<XElement> source, XName name)
         {
             foreach (XElement item in source)
@@ -54,7 +53,6 @@ namespace WindowsAppVb.My
                 break;
             }
         }
-
         public static string get_AttributeValue(XElement source, XName name)
         {
             return Conversions.ToString(source.Attribute(name));
@@ -64,7 +62,6 @@ namespace WindowsAppVb.My
         {
             source.SetAttributeValue(name, value);
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateAttribute(XName name, object value)
         {
@@ -72,10 +69,8 @@ namespace WindowsAppVb.My
             {
                 return null;
             }
-
             return new XAttribute(name, value);
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XAttribute CreateNamespaceAttribute(XName name, XNamespace ns)
         {
@@ -83,37 +78,34 @@ namespace WindowsAppVb.My
             a.AddAnnotation(ns);
             return a;
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static object RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, object obj)
         {
-            if (obj is object)
+            if (obj is not null)
             {
                 XElement elem = obj as XElement;
-                if (elem is object)
+                if (elem is not null)
                 {
                     return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elem);
                 }
                 else
                 {
                     IEnumerable elems = obj as IEnumerable;
-                    if (elems is object)
+                    if (elems is not null)
                     {
                         return RemoveNamespaceAttributes(inScopePrefixes, inScopeNs, attributes, elems);
                     }
                 }
             }
-
             return obj;
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static IEnumerable RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, IEnumerable obj)
         {
-            if (obj is object)
+            if (obj is not null)
             {
                 IEnumerable<XElement> elems = obj as IEnumerable<XElement>;
-                if (elems is object)
+                if (elems is not null)
                 {
                     return elems.Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessXElement);
                 }
@@ -122,10 +114,8 @@ namespace WindowsAppVb.My
                     return obj.Cast<object>().Select(new RemoveNamespaceAttributesClosure(inScopePrefixes, inScopeNs, attributes).ProcessObject);
                 }
             }
-
             return obj;
         }
-
         [DebuggerNonUserCode()]
         [System.Runtime.CompilerServices.CompilerGenerated()]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -134,7 +124,6 @@ namespace WindowsAppVb.My
             private readonly string[] m_inScopePrefixes;
             private readonly XNamespace[] m_inScopeNs;
             private readonly List<XAttribute> m_attributes;
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal RemoveNamespaceAttributesClosure(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes)
             {
@@ -142,18 +131,16 @@ namespace WindowsAppVb.My
                 m_inScopeNs = inScopeNs;
                 m_attributes = attributes;
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal XElement ProcessXElement(XElement elem)
             {
                 return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
             }
-
             [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             internal object ProcessObject(object obj)
             {
                 XElement elem = obj as XElement;
-                if (elem is object)
+                if (elem is not null)
                 {
                     return RemoveNamespaceAttributes(m_inScopePrefixes, m_inScopeNs, m_attributes, elem);
                 }
@@ -163,25 +150,28 @@ namespace WindowsAppVb.My
                 }
             }
         }
-
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static XElement RemoveNamespaceAttributes(string[] inScopePrefixes, XNamespace[] inScopeNs, List<XAttribute> attributes, XElement e)
         {
-            if (e is object)
+            if (e is not null)
             {
                 var a = e.FirstAttribute;
-                while (a is object)
+
+                while (a is not null)
                 {
                     var nextA = a.NextAttribute;
+
                     if (a.IsNamespaceDeclaration)
                     {
                         var ns = a.Annotation<XNamespace>();
                         string prefix = a.Name.LocalName;
-                        if (ns is object)
+
+                        if (ns is not null)
                         {
-                            if (inScopePrefixes is object && inScopeNs is object)
+                            if (inScopePrefixes is not null && inScopeNs is not null)
                             {
                                 int lastIndex = inScopePrefixes.Length - 1;
+
                                 for (int i = 0, loopTo = lastIndex; i <= loopTo; i++)
                                 {
                                     string currentInScopePrefix = inScopePrefixes[i];
@@ -201,12 +191,12 @@ namespace WindowsAppVb.My
                                 }
                             }
 
-                            if (a is object)
+                            if (a is not null)
                             {
                                 // Prefix is not in scope 
                                 // Now check whether it's going to be in scope because it is in the attributes list 
 
-                                if (attributes is object)
+                                if (attributes is not null)
                                 {
                                     int lastIndex = attributes.Count - 1;
                                     for (int i = 0, loopTo1 = lastIndex; i <= loopTo1; i++)
@@ -214,7 +204,7 @@ namespace WindowsAppVb.My
                                         var currentA = attributes[i];
                                         string currentInScopePrefix = currentA.Name.LocalName;
                                         var currentInScopeNs = currentA.Annotation<XNamespace>();
-                                        if (currentInScopeNs is object)
+                                        if (currentInScopeNs is not null)
                                         {
                                             if (prefix.Equals(currentInScopePrefix))
                                             {
@@ -232,7 +222,7 @@ namespace WindowsAppVb.My
                                     }
                                 }
 
-                                if (a is object)
+                                if (a is not null)
                                 {
                                     // Prefix is definitely not in scope  
                                     a.Remove();
@@ -246,8 +236,8 @@ namespace WindowsAppVb.My
                     a = nextA;
                 }
             }
-
             return e;
         }
+
     }
 }

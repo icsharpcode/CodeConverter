@@ -1,10 +1,9 @@
-﻿namespace ICSharpCode.CodeConverter.CSharp
+﻿namespace ICSharpCode.CodeConverter.CSharp;
+
+internal interface ITypeContext
 {
-    internal interface ITypeContext
-    {
-        AdditionalInitializers Initializers { get; }
-        MethodsWithHandles MethodsWithHandles { get; }
-        HoistedNodeState HoistedState { get; }
-        bool Any();
-    }
+    AdditionalInitializers Initializers { get; }
+    HandledEventsAnalysis HandledEventsAnalysis { get; }
+    PerScopeState PerScopeState { get; }
+    bool Any();
 }

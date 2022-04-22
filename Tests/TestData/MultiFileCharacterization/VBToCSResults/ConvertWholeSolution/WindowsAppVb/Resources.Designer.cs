@@ -8,6 +8,7 @@
 // </auto-generated>
 // ------------------------------------------------------------------------------
 
+
 using System.Diagnostics;
 using System.Drawing;
 using Microsoft.VisualBasic;
@@ -22,13 +23,15 @@ namespace WindowsAppVb.My.Resources
     /// <summary>
     /// A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
-    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [System.CodeDom.Compiler.GeneratedCode("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [DebuggerNonUserCode()]
     [System.Runtime.CompilerServices.CompilerGenerated()]
     [HideModuleName()]
     internal static class Resources
     {
+
         private static System.Resources.ResourceManager resourceMan;
+
         private static System.Globalization.CultureInfo resourceCulture;
 
         /// <summary>
@@ -44,7 +47,6 @@ namespace WindowsAppVb.My.Resources
                     var temp = new System.Resources.ResourceManager("WindowsAppVb.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
-
                 return resourceMan;
             }
         }
@@ -60,7 +62,6 @@ namespace WindowsAppVb.My.Resources
             {
                 return resourceCulture;
             }
-
             set
             {
                 resourceCulture = value;

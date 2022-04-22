@@ -8,24 +8,20 @@ namespace WindowsAppVb
         public WinformsDesignerTest()
         {
             InitializeComponent();
-            _Button1.Name = "Button1";
-            _CheckBox1.Name = "CheckBox1";
-            _Button2.Name = "Button2";
-            _ColumnWithEvent.Name = "ColumnWithEvent";
         }
-
         private void Button1_Click(object sender, EventArgs e)
         {
+
         }
 
         private void CheckedChangedOrButtonClicked(object sender, EventArgs e)
         {
             string formConstructedText = "Form constructed";
-            if (My.MyProject.Forms.m_WinformsDesignerTest is object && (My.MyProject.Forms.WinformsDesignerTest.Text ?? "") != (formConstructedText ?? ""))
+            if (My.MyProject.Forms.m_WinformsDesignerTest is not null && (My.MyProject.Forms.WinformsDesignerTest.Text ?? "") != (formConstructedText ?? ""))
             {
                 My.MyProject.Forms.WinformsDesignerTest.Text = formConstructedText;
             }
-            else if (My.MyProject.Forms.m_WinformsDesignerTest is object && My.MyProject.Forms.m_WinformsDesignerTest is object)
+            else if (My.MyProject.Forms.m_WinformsDesignerTest is not null && My.MyProject.Forms.m_WinformsDesignerTest is not null)
             {
                 My.MyProject.Forms.WinformsDesignerTest = null;
             }
@@ -33,18 +29,22 @@ namespace WindowsAppVb
 
         private void WinformsDesignerTest_EnsureSelfEventsWork(object sender, EventArgs e)
         {
+
         }
 
         private void WinformsDesignerTest_MouseClick()
         {
+
         }
 
         private void ButtonMouseClickWithNoArgs()
         {
+
         }
 
         private void ButtonMouseClickWithNoArgs2()
         {
+
         }
 
         public void Init()

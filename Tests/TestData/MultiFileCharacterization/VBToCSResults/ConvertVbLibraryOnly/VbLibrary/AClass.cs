@@ -6,12 +6,6 @@ namespace VbLibrary
 {
     internal partial class AClass
     {
-        public AClass()
-        {
-            anIntWithNonStaticInitializerReferencingOtherPart = anArrayWithNonStaticInitializerReferencingOtherPart.Length;
-            anArrayWithNonStaticInitializerReferencingOtherPart = initialAnArrayWithNonStaticInitializerReferencingOtherPart();
-        }
-
         public enum NestedEnum
         {
             First
@@ -21,11 +15,18 @@ namespace VbLibrary
         private int anInt = 2;
         private int anIntWithNonStaticInitializerReferencingOtherPart;
 
+        public AClass()
+        {
+            anIntWithNonStaticInitializerReferencingOtherPart = anArrayWithNonStaticInitializerReferencingOtherPart.Length;
+            anArrayWithNonStaticInitializerReferencingOtherPart = initialAnArrayWithNonStaticInitializerReferencingOtherPart();
+        }
+
         private void UseOutParameterInClass()
         {
             var x = default(object);
             int argvalue = Conversions.ToInteger(x);
             dict.TryGetValue(1, out argvalue);
+            x = argvalue;
         }
 
         private void UseEnumFromOtherFileInSolution(AnEnumType m)
@@ -37,7 +38,6 @@ namespace VbLibrary
                     {
                         return;
                     }
-
                 case AnEnumType.AnEnumMember:
                     {
                         return;

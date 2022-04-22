@@ -3,7 +3,8 @@ namespace VbNetStandardLib
 {
     public class AnInterfaceImplementation : AnInterface
     {
-        string AnInterface.AnInterfaceProperty
+
+        public string APropertyWithDifferentName
         {
             get
             {
@@ -11,15 +12,12 @@ namespace VbNetStandardLib
             }
         }
 
-        public string APropertyWithDifferentName
-        {
-            get => ((AnInterface)this).AnInterfaceProperty;
-        }
+        string AnInterface.AnInterfaceProperty { get => APropertyWithDifferentName; }
 
-        void AnInterface.AnInterfaceMethod()
+        public void AMethodWithDifferentName()
         {
         }
 
-        public void AMethodWithDifferentName() => ((AnInterface)this).AnInterfaceMethod();
+        void AnInterface.AnInterfaceMethod() => AMethodWithDifferentName();
     }
 }

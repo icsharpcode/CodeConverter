@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Xunit;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+/// <summary>
+/// Member/Element access
+/// </summary>
+public class AccessExpressionTests : ConverterTestBase
 {
-    /// <summary>
-    /// Member/Element access
-    /// </summary>
-    public class AccessExpressionTests : ConverterTestBase
+    [Fact]
+    public async Task MyClassExprAsync()
     {
-        [Fact]
-        public async Task MyClassExprAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
     Sub TestMethod()
         MyClass.Val = 6
     End Sub
@@ -29,12 +29,40 @@ public partial class TestClass
 
     private static int Val;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DictionaryIndexingIssue362Async()
+    [Fact]
+    public async Task DictionaryIndexingIssue769Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Classinator769
+  Private _dictionary As New Dictionary(Of Integer, String)
+
+  Private Sub AccessDictionary()
+    If ( _dictionary(2) = ""StringyMcStringface"")
+      Console.WriteLine(""It is true"")
+   End If
+  End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class Classinator769
+{
+    private Dictionary<int, string> _dictionary = new Dictionary<int, string>();
+
+    private void AccessDictionary()
+    {
+        if (_dictionary[2] == ""StringyMcStringface"")
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System ' Removed by simplifier
+            Console.WriteLine(""It is true"");
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DictionaryIndexingIssue362Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System ' Removed by simplifier
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -56,12 +84,12 @@ internal static partial class Module1
         int x = Dict.Values.ElementAtOrDefault(0).Length;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MethodCallDictionaryAccessConditionalAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+    [Fact]
+    public async Task MethodCallDictionaryAccessConditionalAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Public Sub Test()
         Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
         Dim v = dict?.Item(""a"")
@@ -76,12 +104,12 @@ public partial class A
         string v = dict?[""a""];
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task IndexerWithParameterAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+    [Fact]
+    public async Task IndexerWithParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Public Class A
     Public Function ReadDataSet(myData As DataSet) As String
@@ -101,12 +129,12 @@ public partial class A
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MethodCallArrayIndexerBracketsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+    [Fact]
+    public async Task MethodCallArrayIndexerBracketsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class A
     Public Sub Test()
         Dim str1 = Me.GetStringFromNone(0)
         str1 = GetStringFromNone(0)
@@ -179,12 +207,12 @@ public partial class A
         return new string[][] { new string[] { ""1"" } };
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ElementAtOrDefaultIndexingAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+    [Fact]
+    public async Task ElementAtOrDefaultIndexingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -201,12 +229,12 @@ public partial class Class1
         string z = y.ElementAtOrDefault(0);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task DataTableIndexingAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+    [Fact]
+    public async Task DataTableIndexingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Class TestClass
     Private ReadOnly _myTable As DataTable
@@ -226,12 +254,12 @@ internal partial class TestClass
         var dataRow = _myTable.AsEnumerable().ElementAtOrDefault(0);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ElementAtOrDefaultInvocationIsNotDuplicatedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+    [Fact]
+    public async Task ElementAtOrDefaultInvocationIsNotDuplicatedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
@@ -248,12 +276,12 @@ public partial class Class1
         string z = y.ElementAtOrDefault(0);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task EmptyArgumentListsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task EmptyArgumentListsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim str = (New ThreadStaticAttribute).ToString
     End Sub
@@ -266,12 +294,12 @@ internal partial class TestClass
         string str = new ThreadStaticAttribute().ToString();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UsesSquareBracketsForIndexerButParenthesesForMethodInvocationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task UsesSquareBracketsForIndexerButParenthesesForMethodInvocationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Function TestMethod() As String()
         Dim s = ""1,2""
         Return s.Split(s(1))
@@ -285,12 +313,12 @@ internal partial class TestClass
         return s.Split(s[1]);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ConditionalExpressionWithOmittedArgsListAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ConditionalExpressionWithOmittedArgsListAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result = str?.GetType
     End Sub
@@ -302,12 +330,12 @@ internal partial class TestClass
         var result = str?.GetType();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MemberAccessAndInvocationExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task MemberAccessAndInvocationExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer
         length = str.Length
@@ -326,12 +354,12 @@ internal partial class TestClass
         Console.ReadKey();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task OmittedParamsArrayAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Module AppBuilderUseExtensions
+    [Fact]
+    public async Task OmittedParamsArrayAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module AppBuilderUseExtensions
     <System.Runtime.CompilerServices.Extension>
     Function Use(Of T)(ByVal app As String, ParamArray args As Object()) As Object
         Return Nothing
@@ -358,12 +386,12 @@ internal partial class TestClass
         str.Use<object>();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ThisMemberAccessExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ThisMemberAccessExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private member As Integer
 
     Private Sub TestMethod()
@@ -379,12 +407,12 @@ internal partial class TestClass
         member = 0;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task BaseMemberAccessExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class BaseTestClass
+    [Fact]
+    public async Task BaseMemberAccessExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class BaseTestClass
     Public member As Integer
 End Class
 
@@ -402,17 +430,18 @@ internal partial class BaseTestClass
 
 internal partial class TestClass : BaseTestClass
 {
+
     private void TestMethod()
     {
         member = 0;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UnqualifiedBaseMemberAccessExpressionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class BaseController
+    [Fact]
+    public async Task UnqualifiedBaseMemberAccessExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class BaseController
     Protected Request As HttpRequest
 End Class
 
@@ -430,6 +459,7 @@ public partial class BaseController
 
 public partial class ActualController : BaseController
 {
+
     public void Do()
     {
         Request.StatusCode = 200;
@@ -440,12 +470,12 @@ BC30183: Keyword is not valid as an identifier.
 BC30002: Type 'HttpRequest' is not defined.
 1 target compilation errors:
 CS0246: The type or namespace name 'HttpRequest' could not be found (are you missing a using directive or an assembly reference?)");
-        }
+    }
 
-        [Fact]
-        public async Task PartiallyQualifiedNameAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections ' Removed by simplifier
+    [Fact]
+    public async Task PartiallyQualifiedNameAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections ' Removed by simplifier
 Class TestClass
     Public Sub TestMethod(dir As String)
         IO.Path.Combine(dir, ""file.txt"")
@@ -461,12 +491,12 @@ internal partial class TestClass
         var c = new System.Collections.ObjectModel.ObservableCollection<string>();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task TypePromotedModuleIsQualifiedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+    [Fact]
+    public async Task TypePromotedModuleIsQualifiedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
     Public Module TestModule
         Public Sub ModuleFunction()
         End Sub
@@ -495,12 +525,12 @@ internal partial class TestClass
         TestNamespace.TestModule.ModuleFunction();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task MemberAccessCasingAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task MemberAccessCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Bar()
 
     End Sub
@@ -514,6 +544,7 @@ public partial class Class1
 {
     public void Bar()
     {
+
     }
 
     public void Foo()
@@ -522,12 +553,12 @@ public partial class Class1
         Bar();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task XmlMemberAccessAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task XmlMemberAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Sub LoadValues(ByVal strPlainKey As String)
         Dim xmlFile As XDocument = XDocument.Parse(strPlainKey)
         Dim objActivationInfo As XElement = xmlFile.<ActivationKey>.First
@@ -543,13 +574,13 @@ public partial class Class1
         var objActivationInfo = xmlFile.Elements(""ActivationKey"").First();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExclamationPointOperatorAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Class Issue479
+    [Fact]
+    public async Task ExclamationPointOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Issue479
   Default Public ReadOnly Property index(ByVal s As String) As Integer
     Get
       Return 32768 + AscW(s)
@@ -565,7 +596,7 @@ Public Class TestIssue479
       ""Dictionary access returns "" & hD!X)
   End Sub
 End Class",
-                @"using System;
+            @"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue479
@@ -587,29 +618,53 @@ public partial class TestIssue479
         Console.WriteLine(""Traditional access returns "" + hD[""X""] + Constants.vbCrLf + ""Default property access returns "" + hD[""X""] + Constants.vbCrLf + ""Dictionary access returns "" + hD[""X""]);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AliasedImportsWithTypePromotionIssue401Async()
-        {
-            for (int i = 0; i < 3; i++) {
-                try {
-                    await FlakeyAliasedImportsWithTypePromotionIssue401Async();
-                    return;
-                } catch (Exception) {
-                    // I believe there are two valid simplifications and the simplifier is non-deterministic
-                    // Just retry a few times and see if we get the one we expect before failing
-                    // At the same time as this loop I added "aliasedAgain" in the hope that it'd discourage the simplifier from fully qualifying Strings
-                }
+    [Fact]
+    public async Task ExclamationPointOperator765Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Data
+
+Public Class Issue765
+    Public Sub GetByName(dataReader As IDataReader)
+        Dim foo As Object
+        foo = dataReader!foo
+    End Sub
+End Class",
+            @"using System.Data;
+
+public partial class Issue765
+{
+    public void GetByName(IDataReader dataReader)
+    {
+        object foo;
+        foo = dataReader[""foo""];
+    }
+}");
+    }
+
+    [Fact]
+    public async Task AliasedImportsWithTypePromotionIssue401Async()
+    {
+        for (int i = 0; i < 3; i++) {
+            try {
+                await FlakeyAliasedImportsWithTypePromotionIssue401Async();
+                return;
+            } catch (Exception) {
+                // I believe there are two valid simplifications and the simplifier is non-deterministic
+                // Just retry a few times and see if we get the one we expect before failing
+                // At the same time as this loop I added "aliasedAgain" in the hope that it'd discourage the simplifier from fully qualifying Strings
             }
-
-            await FlakeyAliasedImportsWithTypePromotionIssue401Async();
         }
 
-        private async Task FlakeyAliasedImportsWithTypePromotionIssue401Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Imports System.IO
+        await FlakeyAliasedImportsWithTypePromotionIssue401Async();
+    }
+
+    private async Task FlakeyAliasedImportsWithTypePromotionIssue401Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.IO
 Imports SIO = System.IO
 Imports Microsoft.VisualBasic
 Imports VB = Microsoft.VisualBasic
@@ -629,7 +684,7 @@ Public Class Test
     Shared Sub OnError(s As Object, e As ErrorEventArgs)
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 using System.IO;
 using SIO = System.IO;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
@@ -654,15 +709,15 @@ public partial class Test
     }
 }
 1 target compilation errors:
-CS8082: Sub-expression cannot be used in an argument to nameof.", //I believe this compiler exception was a bug, which was later fixed, hence we shouldn't try to make it go away since it causes issues like https://github.com/icsharpcode/CodeConverter/issues/613
-                hasLineCommentConversionIssue: true);
-        }
+CS8082: Sub-expression cannot be used in an argument to nameof." //I believe this compiler exception was a bug, which was later fixed, hence we shouldn't try to make it go away since it causes issues like https://github.com/icsharpcode/CodeConverter/issues/613
+        );
+    }
 
-        [Fact]
-        public async Task TestGenericMethodGroupGainsBracketsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Enum TheType
+    [Fact]
+    public async Task TestGenericMethodGroupGainsBracketsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Enum TheType
     Tree
 End Enum
 
@@ -679,7 +734,7 @@ Public Class MoreParsing
                          Function(enumValue) enumValue.ToString())
     End Function
 End Class",
-                @"using System;
+            @"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -700,12 +755,12 @@ public partial class MoreParsing
         return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(enumValue => (int)(object)enumValue, enumValue => enumValue.ToString());
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task UsesSquareBracketsForItemIndexerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+    [Fact]
+    public async Task UsesSquareBracketsForItemIndexerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Class TestClass
     Function GetItem(dr As DataRow) As Object
@@ -720,6 +775,5 @@ internal partial class TestClass
         return dr[""col1""];
     }
 }");
-        }
     }
 }

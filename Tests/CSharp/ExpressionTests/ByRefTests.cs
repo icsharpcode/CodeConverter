@@ -1,20 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
-{
-    public class ByRefTests : ConverterTestBase
-    {
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 
-        [Fact]
-        public async Task OptionalRefDateConstsWithOmittedArgListAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
+public class ByRefTests : ConverterTestBase
+{
+
+    [Fact]
+    public async Task OptionalRefDateConstsWithOmittedArgListAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
     Const x As Date = #1990-1-1#
 
     Private Sub Y(Optional ByRef opt As Date = x)
@@ -41,12 +37,12 @@ public partial class Issue213
         Y(opt: ref argopt);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task NullInlineRefArgumentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    [Fact]
+    public async Task NullInlineRefArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
   Public Sub UseStuff()
     Stuff(Nothing)
   End Sub
@@ -66,12 +62,12 @@ public partial class VisualBasicClass
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefArgumentRValueAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task RefArgumentRValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Property C1 As Class1
     Private _c2 As Class1
     Private _o1 As Object
@@ -92,7 +88,6 @@ End Class", @"
 public partial class Class1
 {
     private Class1 C1 { get; set; }
-
     private Class1 _c2;
     private object _o1;
 
@@ -108,8 +103,10 @@ public partial class Class1
         C1 = (Class1)argclass12;
         object argclass13 = _c2;
         Bar(ref argclass13);
+        _c2 = (Class1)argclass13;
         object argclass14 = _c2;
         Bar(ref argclass14);
+        _c2 = (Class1)argclass14;
         Bar(ref _o1);
         Bar(ref _o1);
     }
@@ -118,12 +115,12 @@ public partial class Class1
     {
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefArgumentRValue2Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task RefArgumentRValue2Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim x = True
         Bar(x = True)
@@ -228,11 +225,10 @@ public partial class Class1
     public int Bar2(ref Class1 c1)
     {
         var argc1 = this;
-        if (c1 is object && Strings.Len(Bar3(ref argc1)) != 0)
+        if (c1 is not null && Strings.Len(Bar3(ref argc1)) != 0)
         {
             return 1;
         }
-
         return 0;
     }
 
@@ -240,13 +236,14 @@ public partial class Class1
     {
         return """";
     }
-}");
-        }
 
-        [Fact]
-        public async Task RefArgumentUsingAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
+}");
+    }
+
+    [Fact]
+    public async Task RefArgumentUsingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
 
 Public Class Class1
     Sub Foo()
@@ -269,17 +266,17 @@ public partial class Class1
             Bar(ref argx);
         }
     }
-
     public void Bar(ref SqlConnection x)
     {
+
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task RefOptionalArgumentAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class OptionalRefIssue91
+    [Fact]
+    public async Task RefOptionalArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class OptionalRefIssue91
     Public Shared Function TestSub(Optional ByRef IsDefault As Boolean = False) As Boolean
     End Function
 
@@ -302,13 +299,13 @@ public partial class OptionalRefIssue91
         return TestSub(IsDefault: ref argIsDefault) && TestSub(ref argIsDefault1);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExplicitInterfaceImplementationOptionalRefParametersAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(
-                @"Public Interface IFoo
+    [Fact]
+    public async Task ExplicitInterfaceImplementationOptionalRefParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
   Function ExplicitFunc(Optional ByRef str2 As String = """") As Integer
 End Interface
 
@@ -327,17 +324,20 @@ public partial interface IFoo
 
 public partial class Foo : IFoo
 {
-    int IFoo.ExplicitFunc(ref string str)
+
+    private int ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str)
     {
         return 5;
     }
-}");
-        }
 
-        [Fact]
-        public async Task RefArgumentPropertyInitializerAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    int IFoo.ExplicitFunc(ref string str) => ExplicitFunc(ref str);
+}");
+    }
+
+    [Fact]
+    public async Task RefArgumentPropertyInitializerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private _p1 As Class1 = Foo(New Class1)
     Public Shared Function Foo(ByRef c1 As Class1) As Class1
         Return c1
@@ -352,18 +352,78 @@ public partial class Class1
     }
 
     private Class1 _p1 = Foo__p1();
-
     public static Class1 Foo(ref Class1 c1)
     {
         return c1;
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task AssignsBackToPropertyAsync()
+    [Fact]
+    public async Task ReadOnlyPropertyRef_Issue843Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+
+    Public Class TestClass
+        Public ReadOnly Property Foo As String
+
+        Public Sub New()
+            Foo = ""abc""
+        End Sub
+    End Class
+
+    Sub Main()
+        Test02()
+    End Sub
+
+    Private Sub Test02()
+        Dim t As New TestClass
+        Test02Sub(t.Foo)
+    End Sub
+
+    Private Sub Test02Sub(ByRef value As String)
+        Console.WriteLine(value)
+    End Sub
+
+End Module", @"using System;
+
+internal static partial class Module1
+{
+
+    public partial class TestClass
+    {
+        public string Foo { get; private set; }
+
+        public TestClass()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+            Foo = ""abc"";
+        }
+    }
+
+    public static void Main()
+    {
+        Test02();
+    }
+
+    private static void Test02()
+    {
+        var t = new TestClass();
+        string argvalue = t.Foo;
+        Test02Sub(ref argvalue);
+    }
+
+    private static void Test02Sub(ref string value)
+    {
+        Console.WriteLine(value);
+    }
+
+}");
+    }
+
+    [Fact]
+    public async Task AssignsBackToPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 
 Public Class MyTestClass
 
@@ -403,6 +463,7 @@ using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.Visua
 
 public partial class MyTestClass
 {
+
     private int Prop { get; set; }
     private int Prop2 { get; set; }
 
@@ -419,20 +480,22 @@ public partial class MyTestClass
 
     public void UsesRef(bool someBool, int someInt)
     {
+
         TakesRefVoid(ref someInt); // Convert directly
         int argvrbTst = 1;
         TakesRefVoid(ref argvrbTst); // Requires variable before
         int argvrbTst1 = Prop2;
         TakesRefVoid(ref argvrbTst1);
         Prop2 = argvrbTst1; // Requires variable before, and to assign back after
+
         bool a = TakesRef(ref someInt); // Convert directly
         int argvrbTst2 = 2;
         bool b = TakesRef(ref argvrbTst2); // Requires variable before
         int argvrbTst3 = Prop;
         bool c = TakesRef(ref argvrbTst3);
         Prop = argvrbTst3; // Requires variable before, and to assign back after
-        bool localTakesRef() { int argvrbTst = 3 * Conversions.ToInteger(a); var ret = TakesRef(ref argvrbTst); return ret; }
 
+        bool localTakesRef() { int argvrbTst = 3 * Conversions.ToInteger(a); var ret = TakesRef(ref argvrbTst); return ret; }
         bool localTakesRef1() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
 
         if (16 > someInt || TakesRef(ref someInt)) // Convert directly
@@ -447,16 +510,15 @@ public partial class MyTestClass
         {
             someInt -= 2;
         }
-
         Console.WriteLine(someInt);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Issue567Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
+    [Fact]
+    public async Task Issue567Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
     Dim arr() As String
     Dim arr2(,) As String
 
@@ -490,13 +552,14 @@ public partial class Issue567
         DoSomething(ref arr2[2, 2]);
         Debug.Assert(arr2[2, 2] == ""test"");
     }
-}");
-        }
 
-        [Fact]
-        public async Task Issue567ExtendedAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
+}");
+    }
+
+    [Fact]
+    public async Task Issue567ExtendedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue567
     Sub DoSomething(ByRef str As String)
         lst = New List(Of String)({4.ToString(), 5.ToString(), 6.ToString()})
         lst2 = New List(Of Object)({4.ToString(), 5.ToString(), 6.ToString()})
@@ -541,6 +604,7 @@ public partial class Issue567
         tmp1[1] = argstr1;
         Debug.Assert(Conversions.ToBoolean(Operators.ConditionalCompareObjectEqual(Other.lst2[1], 5.ToString(), false)));
     }
+
 }
 
 internal static partial class Other
@@ -548,6 +612,161 @@ internal static partial class Other
     public static List<string> lst = new List<string>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
     public static List<object> lst2 = new List<object>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
 }");
-        }
     }
+
+    [Fact]
+    public async Task Issue856Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue856
+    Sub Main()
+        Dim decimalTarget As Decimal
+        Double.TryParse(""123"", decimalTarget)
+        
+        Dim longTarget As Long
+        Integer.TryParse(""123"", longTarget)
+        
+        Dim intTarget As Integer
+        Long.TryParse(""123"", intTarget)
+    End Sub
+
+End Class", @"
+public partial class Issue856
+{
+    public void Main()
+    {
+        var decimalTarget = default(decimal);
+        double argresult = (double)decimalTarget;
+        double.TryParse(""123"", out argresult);
+        decimalTarget = (decimal)argresult;
+
+        var longTarget = default(long);
+        int argresult1 = (int)longTarget;
+        int.TryParse(""123"", out argresult1);
+        longTarget = argresult1;
+
+        var intTarget = default(int);
+        long argresult2 = intTarget;
+        long.TryParse(""123"", out argresult2);
+        intTarget = (int)argresult2;
+    }
+
+}");
+    }
+
+    [Fact]
+    public async Task OutParameterIsEnforcedByCSharpCompileErrorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' Statement removed so comment removed too
+
+Public Class OutParameterIsEnforcedByCSharpCompileError
+    Shared Sub LogAndReset(<Out> ByRef arg As Integer)
+        System.Console.WriteLine(arg)
+    End Sub
+End Class", @"using System;
+
+public partial class OutParameterIsEnforcedByCSharpCompileError
+{
+    public static void LogAndReset(out int arg)
+    {
+        Console.WriteLine(arg);
+    }
+}
+2 target compilation errors:
+CS0269: Use of unassigned out parameter 'arg'
+CS0177: The out parameter 'arg' must be assigned to before control leaves the current method");
+        // These compile errors are the correct conversion - VB doesn't enforce out parameters not being used for input, or being assigned before output
+    }
+
+    [Fact]
+    public async Task BinaryExpressionOutParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.InteropServices ' BUG: Comment lost because overwritten
+
+Public Class BinaryExpressionOutParameter
+    Shared Sub Main()
+        Dim wide As Object = 7
+        Zero(wide)
+        Dim narrow As Short = 3
+        Zero(narrow)
+        Zero(7 + 3)
+    End Sub
+
+    Shared Sub Zero(<Out> ByRef arg As Integer)
+        arg = 0
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class BinaryExpressionOutParameter
+{
+    public static void Main()
+    {
+        object wide = 7;
+        int argarg = Conversions.ToInteger(wide);
+        Zero(out argarg);
+        wide = argarg;
+        short narrow = 3;
+        int argarg1 = narrow;
+        Zero(out argarg1);
+        narrow = (short)argarg1;
+        int argarg2 = 7 + 3;
+        Zero(out argarg2);
+    }
+
+    public static void Zero(out int arg)
+    {
+        arg = 0;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task BinaryExpressionRefParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class BinaryExpressionRefParameter
+    Shared Sub Main()
+        Dim wide As Object = 7
+        LogAndReset(wide)
+        Dim wideArray() As Object = {3,4,4}
+        LogAndReset(wideArray(1))
+        Dim narrow As Short = 3
+        LogAndReset(narrow)
+        LogAndReset(7 + 3)
+    End Sub
+
+    Shared Sub LogAndReset(ByRef arg As Integer)
+        System.Console.WriteLine(arg)
+        arg = 0
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class BinaryExpressionRefParameter
+{
+    public static void Main()
+    {
+        object wide = 7;
+        int argarg = Conversions.ToInteger(wide);
+        LogAndReset(ref argarg);
+        wide = argarg;
+        var wideArray = new object[] { 3, 4, 4 };
+        var tmp = wideArray;
+        int argarg1 = Conversions.ToInteger(tmp[1]);
+        LogAndReset(ref argarg1);
+        tmp[1] = argarg1;
+        short narrow = 3;
+        int argarg2 = narrow;
+        LogAndReset(ref argarg2);
+        narrow = (short)argarg2;
+        int argarg3 = 7 + 3;
+        LogAndReset(ref argarg3);
+    }
+
+    public static void LogAndReset(ref int arg)
+    {
+        Console.WriteLine(arg);
+        arg = 0;
+    }
+}");
+    }
+
 }

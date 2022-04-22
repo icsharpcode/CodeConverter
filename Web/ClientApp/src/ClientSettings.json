@@ -9,6 +9,10 @@
             "baseUri": ""
         },
         {
+            "key": "LocalWeb",
+            "baseUri": "https://localhost:7183"
+        },
+        {
             "key": "LocalFunc",
             "baseUri": "http://localhost:7071"
         },

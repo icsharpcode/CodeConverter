@@ -5,6 +5,7 @@ using VbNetStandardLib;
 
 namespace VbLibrary
 {
+
     static class Module1
     {
         private static Dictionary<int, int> dict = new Dictionary<int, int>();
@@ -14,17 +15,21 @@ namespace VbLibrary
             var x = default(object);
             int argvalue = Conversions.ToInteger(x);
             dict.TryGetValue(1, out argvalue);
+            x = argvalue;
         }
 
         public static void Main()
         {
             Console.Write((int)AClass.NestedEnum.First);
+
             AnInterface interfaceInstance = new AnInterfaceImplementation();
             var classInstance = new AnInterfaceImplementation();
             Console.WriteLine(interfaceInstance.AnInterfaceProperty);
             Console.WriteLine(classInstance.APropertyWithDifferentName);
+
             interfaceInstance.AnInterfaceMethod();
             classInstance.AMethodWithDifferentName();
         }
+
     }
 }

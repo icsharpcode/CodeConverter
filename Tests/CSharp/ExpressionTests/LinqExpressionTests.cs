@@ -2,14 +2,14 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests
+namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
+
+public class LinqExpressionTests : ConverterTestBase
 {
-    public class LinqExpressionTests : ConverterTestBase
+    [Fact]
+    public async Task Issue736_LinqEarlySelectAsync()
     {
-        [Fact]
-        public async Task Issue736_LinqEarlySelectAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+        await TestConversionVisualBasicToCSharpAsync(@"
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -20,11 +20,16 @@ Public Class Issue635
             Select t.foo
             Where 1 = 2
 End Class",
-@"using System.Collections.Generic;
+            @"
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class Issue635
 {
+    private object foo;
+    private List<Issue635> l;
+    private object listSelectWhere;
+
     public Issue635()
     {
         listSelectWhere = from t in
@@ -33,16 +38,12 @@ public partial class Issue635
                           where 1 == 2
                           select t;
     }
-
-    private object foo;
-    private List<Issue635> l;
-    private object listSelectWhere;
-}", hasLineCommentConversionIssue: true /*Fields re-ordered*/);
-        }
-        [Fact]
-        public async Task Issue635_LinqDistinctOrderByAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"
+}");
+    }
+    [Fact]
+    public async Task Issue635_LinqDistinctOrderByAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -50,34 +51,35 @@ Public Class Issue635
     Dim l As List(Of Integer)
     Dim listSortedDistinct = From x In l Order By x Distinct
 End Class",
-@"using System.Collections.Generic;
+            @"
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class Issue635
 {
+    private List<int> l;
+    private object listSortedDistinct;
+
     public Issue635()
     {
         listSortedDistinct = (from x in l
                               orderby x
                               select x).Distinct();
     }
-
-    private List<int> l;
-    private object listSortedDistinct;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Linq1Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub SimpleQuery()
+    [Fact]
+    public async Task Linq1Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub SimpleQuery()
     Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
     For Each n In res
         Console.WriteLine(n)
     Next
 End Sub",
-                @"private static void SimpleQuery()
+            @"private static void SimpleQuery()
 {
     var numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
@@ -86,12 +88,12 @@ End Sub",
     foreach (var n in res)
         Console.WriteLine(n);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Linq2Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Shared Sub Linq40()
+    [Fact]
+    public async Task Linq2Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {Key .Remainder = __groupByKey1__, Key .Numbers = g}
     
@@ -103,26 +105,28 @@ End Sub",
         Next
     Next
 End Sub",
-                @"public static void Linq40()
+            @"public static void Linq40()
 {
     var numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
                        group n by (n % 5) into g
                        let __groupByKey1__ = g.Key
                        select new { Remainder = __groupByKey1__, Numbers = g };
+
     foreach (var g in numberGroups)
     {
         Console.WriteLine($""Numbers with a remainder of {g.Remainder} when divided by 5:"");
+
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
 }");
-        }
+    }
 
-        [Fact()]
-        public async Task Linq3Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class Product
+    [Fact]
+    public async Task Linq3Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -143,7 +147,7 @@ Class Test
         Next
     End Sub
 End Class",
-                @"using System;
+            @"using System;
 using System.Linq;
 
 internal partial class Product
@@ -154,6 +158,7 @@ internal partial class Product
 
 internal partial class Test
 {
+
     public Product[] GetProductList()
     {
         return null;
@@ -166,16 +171,17 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
+
         foreach (var v in q)
             Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Linq4Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class Product
+    [Fact]
+    public async Task Linq4Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -221,20 +227,22 @@ internal partial class Test
         var q = from c in categories
                 join p in products on c equals p.Category into ps
                 select new { Category = c, Products = ps };
+
         foreach (var v in q)
         {
             Console.WriteLine(v.Category + "":"");
+
             foreach (var p in v.Products)
                 Console.WriteLine(""   "" + p.ProductName);
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Linq5Async()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
+    [Fact]
+    public async Task Linq5Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
     For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
         Return FileInfo.FullName
     Next
@@ -247,12 +255,12 @@ End Function", @"private static string FindPicFilePath(List<FileInfo> AList, str
         return FileInfo.FullName;
     return string.Empty;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LinqAsEnumerableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+    [Fact]
+    public async Task LinqAsEnumerableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
 
 Public Class AsEnumerableTest
     Public Sub FillImgColor()
@@ -276,12 +284,12 @@ public partial class AsEnumerableTest
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LinqMultipleFromsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub LinqSub()
+    [Fact]
+    public async Task LinqMultipleFromsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub LinqSub()
     Dim _result = From _claimProgramSummary In New List(Of List(Of List(Of List(Of String))))()
                   From _claimComponentSummary In _claimProgramSummary.First()
                   From _lineItemCalculation In _claimComponentSummary.Last()
@@ -293,12 +301,12 @@ End Sub", @"private static void LinqSub()
                   from _lineItemCalculation in _claimComponentSummary.Last()
                   select _lineItemCalculation;
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LinqNoFromsAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    [Fact]
+    public async Task LinqNoFromsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
     Public Shared Sub X(objs As List(Of Object))
         Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
         Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
@@ -316,12 +324,12 @@ public partial class VisualBasicClass
                              select o).Count();
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LinqPartitionDistinctAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
+    [Fact]
+    public async Task LinqPartitionDistinctAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
     Dim words = {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""}
 
     Return From word In words
@@ -333,14 +341,15 @@ public partial class VisualBasicClass
 End Function", @"private static IEnumerable<string> FindPicFilePath()
 {
     var words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
+
     return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
 }");
-        }
+    }
 
-        [Fact(Skip = "Issue #29 - Aggregate not supported")]
-        public async Task LinqAggregateSumAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
+    [Fact(Skip = "Issue #29 - Aggregate not supported")]
+    public async Task LinqAggregateSumAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
     Dim expenses() As Double = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0}
     Dim totalExpense = Aggregate expense In expenses Into Sum()
 End Sub", @"private static void ASub()
@@ -348,12 +357,12 @@ End Sub", @"private static void ASub()
     double[] expenses = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0};
     var totalExpense = expenses.Sum();
 }");
-        }
+    }
 
-        [Fact(Skip = "Issue #29 - Group join not supported")]
-        public async Task LinqGroupJoinAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
+    [Fact(Skip = "Issue #29 - Group join not supported")]
+    public async Task LinqGroupJoinAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
     Dim customerList = From cust In customers
                        Group Join ord In orders On
                        cust.CustomerID Equals ord.CustomerID
@@ -368,12 +377,159 @@ End Sub", @"private static void ASub()
                        let OrderTotal = Sum(ord.Total) //TODO Figure out exact C# syntax for this query
                        select new { cust.CompanyName, cust.CustomerID, CustomerOrders, OrderTotal };
 }");
-        }
+    }
 
-        [Fact()]
-        public async Task LinqGroupByTwoThingsAnonymouslyAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task LinqJoinReorderExpressionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+    Public CustomerID As String
+    Public CompanyName As String
+End Class
+
+Class Order
+    Public CustomerID As String
+    Public Total As String
+End Class
+
+Class Test
+Private Shared Sub ASub()
+    Dim customers = New List(Of Customer)
+    Dim orders = New List(Of Order)
+    Dim customerList = From cust In customers
+                       Join ord In orders On ord.CustomerID Equals cust.CustomerID
+                       Select cust.CompanyName, ord.Total
+End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class Customer
+{
+    public string CustomerID;
+    public string CompanyName;
+}
+
+internal partial class Order
+{
+    public string CustomerID;
+    public string Total;
+}
+
+internal partial class Test
+{
+    private static void ASub()
+    {
+        var customers = new List<Customer>();
+        var orders = new List<Order>();
+        var customerList = from cust in customers
+                           join ord in orders on cust.CustomerID equals ord.CustomerID
+                           select new { cust.CompanyName, ord.Total };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task LinqMultipleJoinConditionsReorderExpressionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+    Public CustomerID As String
+    Public CompanyName As String
+End Class
+
+Class Order
+    Public CustomerID As String
+    Public Total As String
+End Class
+
+Class Test
+Private Shared Sub ASub()
+    Dim customers = New List(Of Customer)
+    Dim orders = New List(Of Order)
+    Dim customerList = From cust In customers
+                       Join ord In orders On ord.CustomerID Equals cust.CustomerID And cust.CompanyName Equals ord.Total
+                       Select cust.CompanyName, ord.Total
+End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class Customer
+{
+    public string CustomerID;
+    public string CompanyName;
+}
+
+internal partial class Order
+{
+    public string CustomerID;
+    public string Total;
+}
+
+internal partial class Test
+{
+    private static void ASub()
+    {
+        var customers = new List<Customer>();
+        var orders = new List<Order>();
+        var customerList = from cust in customers
+                           join ord in orders on new { key0 = cust.CustomerID, key1 = cust.CompanyName } equals new { key0 = ord.CustomerID, key1 = ord.Total }
+                           select new { cust.CompanyName, ord.Total };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task LinqMultipleIdentifierOnlyJoinConditionsReorderExpressionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+    Public CustomerID As String
+    Public CompanyName As String
+End Class
+
+Class Order
+    Public Customer As Customer
+    Public Total As String
+End Class
+
+Class Test
+Private Shared Sub ASub()
+    Dim customers = New List(Of Customer)
+    Dim orders = New List(Of Order)
+    Dim customerList = From cust In customers
+                       Join ord In orders On ord.Customer Equals cust And cust.CompanyName Equals ord.Total
+                       Select cust.CompanyName, ord.Total
+End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class Customer
+{
+    public string CustomerID;
+    public string CompanyName;
+}
+
+internal partial class Order
+{
+    public Customer Customer;
+    public string Total;
+}
+
+internal partial class Test
+{
+    private static void ASub()
+    {
+        var customers = new List<Customer>();
+        var orders = new List<Order>();
+        var customerList = from cust in customers
+                           join ord in orders on new { key0 = cust, key1 = cust.CompanyName } equals new { key0 = ord.Customer, key1 = ord.Total }
+                           select new { cust.CompanyName, ord.Total };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task LinqGroupByTwoThingsAnonymouslyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Sub Foo()
         Dim xs As New List(Of String)
         Dim y = From x In xs Group By x.Length, x.Count() Into Group
@@ -390,13 +546,13 @@ public partial class Class1
                 group x by new { x.Length, Count = x.Count() };
     }
 }");
-            // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
-        }
+        // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
+    }
 
-        [Fact()]
-        public async Task LinqSelectVariableDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System
+    [Fact]
+    public async Task LinqSelectVariableDeclarationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
 Imports System.Linq
 
 Public Class Class717
@@ -424,20 +580,22 @@ public partial class Class717
         var arr = new int[2];
         arr[0] = 0;
         arr[1] = 1;
+
         var r = from e in arr
                 let p = $""value: {e}""
                 let l = p.Substring(1)
                 select l;
+
         foreach (var m in r)
             Console.WriteLine(m);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LinqGroupByAnonymousAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
+    [Fact]
+    public async Task LinqGroupByAnonymousAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object
@@ -548,6 +706,41 @@ internal static partial class Ext
                };
     }
 }");
-        }
+    }
+
+
+    [Fact]
+    public async Task LinqCommasToFromAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class VisualBasicClass
+    Sub Main
+	    Dim list1 As New List(Of Integer)() From {1,2,3}
+	    Dim list2 As New List(Of Integer) From {2, 4,5}
+	
+	    Dim qs = From n In list1, x In list2
+			     Where x = n 
+			     Select New With {x, n}
+    End Sub
+End Class
+",
+            @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class VisualBasicClass
+{
+    public void Main()
+    {
+        var list1 = new List<int>() { 1, 2, 3 };
+        var list2 = new List<int>() { 2, 4, 5 };
+
+        var qs = from n in list1
+                 from x in list2
+                 where x == n
+                 select new { x, n };
+    }
+}");
     }
 }

@@ -2,47 +2,18 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests
-{
-    public class LoopStatementTests : ConverterTestBase
-    {
-        [Fact]
-        public async Task WhileStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
+namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
 
-        While b = 0
-            If b = 2 Then Continue While
-            If b = 3 Then Exit While
-            b = 1
-        End While
-    End Sub
-End Class", @"
-internal partial class TestClass
+/// <summary>
+/// For generic loop related tests. Also see ExitableMethodExecutableStatementTests for tests of Exit Do, Exit For, etc.
+/// </summary>
+public class LoopStatementTests : ConverterTestBase
 {
-    private void TestMethod()
-    {
-        int b;
-        b = 0;
-        while (b == 0)
-        {
-            if (b == 2)
-                continue;
-            if (b == 3)
-                break;
-            b = 1;
-        }
-    }
-}");
-        }
 
-        [Fact]
-        public async Task UntilStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task UntilStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(rand As Random)
         Dim charIndex As Integer
         ' allow only digits and letters
@@ -63,302 +34,12 @@ internal partial class TestClass
         while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
     }
 }");
-        }
-
-        [Fact]
-        public async Task SimpleDoStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
-
-        Do
-            If b = 2 Then Continue Do
-            If b = 3 Then Exit Do
-            b = 1
-        Loop
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        int b;
-        b = 0;
-        do
-        {
-            if (b == 2)
-                continue;
-            if (b == 3)
-                break;
-            b = 1;
-        }
-        while (true);
     }
-}");
-        }
 
-        [Fact]
-        public async Task DoWhileStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
-
-        Do
-            If b = 2 Then Continue Do
-            If b = 3 Then Exit Do
-            b = 1
-        Loop While b = 0
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private void TestMethod()
+    [Fact]
+    public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
     {
-        int b;
-        b = 0;
-        do
-        {
-            if (b == 2)
-                continue;
-            if (b == 3)
-                break;
-            b = 1;
-        }
-        while (b == 0);
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithExplicitTypeAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each v As Integer In values
-            If v = 2 Then Continue For
-            If v = 3 Then Exit For
-        Next
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private void TestMethod(int[] values)
-    {
-        foreach (int v in values)
-        {
-            if (v == 2)
-                continue;
-            if (v == 3)
-                break;
-        }
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithVarAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each v In values
-            If v = 2 Then Continue For
-            If v = 3 Then Exit For
-        Next
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private void TestMethod(int[] values)
-    {
-        foreach (var v in values)
-        {
-            if (v == 2)
-                continue;
-            if (v == 3)
-                break;
-        }
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithUsedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        Dim val As Integer
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-
-        Console.WriteLine(val)
-    End Sub
-End Class", @"using System;
-
-internal partial class TestClass
-{
-    private void TestMethod(int[] values)
-    {
-        var val = default(int);
-        foreach (var currentVal in values)
-        {
-            val = currentVal;
-            if (val == 2)
-                continue;
-            if (val == 3)
-                break;
-        }
-
-        Console.WriteLine(val);
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithFieldVarUsedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Dim val As Integer
-
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-
-        Console.WriteLine(val)
-    End Sub
-End Class", @"using System;
-
-internal partial class TestClass
-{
-    private int val;
-
-    private void TestMethod(int[] values)
-    {
-        foreach (var currentVal in values)
-        {
-            val = currentVal;
-            if (val == 2)
-                continue;
-            if (val == 3)
-                break;
-        }
-
-        Console.WriteLine(val);
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        Dim val As Integer
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private void TestMethod(int[] values)
-    {
-        foreach (var val in values)
-        {
-            if (val == 2)
-                continue;
-            if (val == 3)
-                break;
-        }
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithFieldVarUnusedOuterDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Dim val As Integer
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private int val;
-
-    private void TestMethod(int[] values)
-    {
-        foreach (var currentVal in values)
-        {
-            val = currentVal;
-            if (val == 2)
-                continue;
-            if (val == 3)
-                break;
-        }
-    }
-}");
-        }
-
-        [Fact]
-        public async Task ForEachStatementWithUnusedNestedDeclarationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        Dim inline1, inline2, keep1, keep2 As Integer
-        For Each inline1 In values
-            For Each keep1 In values
-                For Each inline2 In values
-                    If inline2 = 2 Then Continue For
-                    If inline2 = 3 Then Exit For
-                Next
-            Next
-            Console.WriteLine(keep1)
-        Next
-    End Sub
-End Class", @"using System;
-
-internal partial class TestClass
-{
-    private void TestMethod(int[] values)
-    {
-        int keep1 = default, keep2;
-        foreach (var inline1 in values)
-        {
-            foreach (var currentKeep1 in values)
-            {
-                keep1 = currentKeep1;
-                foreach (var inline2 in values)
-                {
-                    if (inline2 == 2)
-                        continue;
-                    if (inline2 == 3)
-                        break;
-                }
-            }
-
-            Console.WriteLine(keep1);
-        }
-    }
-}");
-        }
-
-        [Fact]
-        public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         For idx = 0 To 10
         Next
@@ -380,12 +61,12 @@ internal partial class Program
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task Int16ForLoopAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"    Sub DummyMethod()
+    [Fact]
+    public async Task Int16ForLoopAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"    Sub DummyMethod()
         Dim someArray = New Integer() { 1, 2, 3}
         For index As Int16 = 0 To someArray.Length - 1
             Console.WriteLine(index)
@@ -396,12 +77,12 @@ internal partial class Program
     for (short index = 0, loopTo = (short)(someArray.Length - 1); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ExternallyDeclaredLoopVariableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Sub Main()
+    [Fact]
+    public async Task ExternallyDeclaredLoopVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Sub Main()
     Dim foo As Single = 3.5
     Dim index As Integer
     For index = Int(foo) To Int(foo * 3)
@@ -415,12 +96,12 @@ End Sub", @"public void Main()
     for (index = (int)Math.Round(Conversion.Int(foo)); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForNonNegativeStepAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+    [Fact]
+    public async Task ForNonNegativeStepAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -0
         Debug.WriteLine(i)
@@ -436,12 +117,12 @@ internal partial class Issue453
             Debug.WriteLine(i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForNegativeStepAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+    [Fact]
+    public async Task ForNegativeStepAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -5
         Debug.WriteLine(i)
@@ -457,12 +138,12 @@ internal partial class Issue453
             Debug.WriteLine(i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForVariableStepAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+    [Fact]
+    public async Task ForVariableStepAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer, [step] As Integer)
       For i As Integer = startIndex To endIndex Step [step]
         Debug.WriteLine(i)
@@ -478,12 +159,12 @@ internal partial class Issue453
             Debug.WriteLine(i);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForEnumAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Enum MyEnum
+    [Fact]
+    public async Task ForEnumAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Enum MyEnum
     Zero
     One
 End Enum
@@ -515,9 +196,9 @@ internal partial class ForEnumAsync
 {
     public void PrintLoop(MyEnum startIndex, MyEnum endIndex, MyEnum step)
     {
-        for (MyEnum i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
+        for (MyEnum i = startIndex, loopTo = endIndex; (int)step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
             Debug.WriteLine(i);
-        for (MyEnum i2 = startIndex, loopTo1 = endIndex; step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
+        for (MyEnum i2 = startIndex, loopTo1 = endIndex; (int)step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
             Debug.WriteLine(i2);
         for (MyEnum i3 = startIndex, loopTo2 = endIndex; i3 <= loopTo2; i3 += 3)
             Debug.WriteLine(i3);
@@ -525,12 +206,12 @@ internal partial class ForEnumAsync
             Debug.WriteLine(i4);
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForeachWithObjectCollectionAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+    [Fact]
+    public async Task ForeachWithObjectCollectionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         Dim zs As Object = { 1, 2, 3 }
         For Each z in zs
@@ -549,13 +230,13 @@ internal partial class Program
             Console.WriteLine(z);
     }
 }");
-        }
+    }
 
 
-        [Fact]
-        public async Task ForWithSingleStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForWithSingleStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod(end As Integer)
         Dim b, s As Integer()
         For i = 0 To [end]
@@ -574,12 +255,12 @@ internal partial class TestClass
 }
 1 source compilation errors:
 BC30183: Keyword is not valid as an identifier.");
-        }
+    }
 
-        [Fact]
-        public async Task ForNextMutatingFieldAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+    [Fact]
+    public async Task ForNextMutatingFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
     Private Index As Integer
 
     Sub Foo()
@@ -596,15 +277,16 @@ public partial class Class1
     {
         for (Index = 0; Index <= 10; Index++)
         {
+
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForRequiringExtraVariableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForRequiringExtraVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod()
         Dim stringValue AS string = ""42""
         For i As Integer = 1 To 10 - stringValue.Length
@@ -626,12 +308,12 @@ internal partial class TestClass
         }
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task ForWithBlockAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    [Fact]
+    public async Task ForWithBlockAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
     Private Sub TestMethod([end] As Integer)
         Dim b, s As Integer()
         For i = 0 To [end] - 1
@@ -648,12 +330,12 @@ internal partial class TestClass
             b[i] = s[i];
     }
 }");
-        }
+    }
 
-        [Fact]
-        public async Task LabeledAndForStatementAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class GotoTest1
+    [Fact]
+    public async Task LabeledAndForStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0
@@ -698,18 +380,23 @@ internal partial class GotoTest1
         int y = 4;
         int count = 0;
         var array = new string[x, y];
+
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {
+
             for (int j = 0, loopTo1 = y - 1; j <= loopTo1; j++)
                 array[i, j] = System.Threading.Interlocked.Increment(ref count).ToString();
         }
 
         Console.Write(""Enter the number to search for: "");
         string myNumber = Console.ReadLine();
+
         for (int i = 0, loopTo2 = x - 1; i <= loopTo2; i++)
         {
+
             for (int j = 0, loopTo3 = y - 1; j <= loopTo3; j++)
             {
+
                 if (array[i, j].Equals(myNumber))
                 {
                     goto Found;
@@ -721,14 +408,15 @@ internal partial class GotoTest1
         goto Finish;
     Found:
         ;
+
         Console.WriteLine(""The number {0} is found."", myNumber);
     Finish:
         ;
+
         Console.WriteLine(""End of search."");
         Console.WriteLine(""Press any key to exit."");
         Console.ReadKey();
     }
 }");
-        }
     }
 }

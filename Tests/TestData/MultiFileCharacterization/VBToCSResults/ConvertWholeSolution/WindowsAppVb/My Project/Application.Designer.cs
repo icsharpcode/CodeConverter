@@ -20,6 +20,7 @@ namespace WindowsAppVb.My
     // 
     internal partial class MyApplication
     {
+
         [DebuggerStepThrough()]
         public MyApplication() : base(Microsoft.VisualBasic.ApplicationServices.AuthenticationMode.Windows)
         {
