@@ -118,6 +118,48 @@ public partial class Class1
     }
 
     [Fact]
+    public async Task NestedRefArgumentRValueIssue876Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue876
+    Property SomeProperty As Integer
+    Property SomeProperty2 As Integer
+    Property SomeProperty3 As Integer
+
+    Public Function InlineAssignHelper(Of T)(ByRef lhs As T, ByVal rhs As T) As T
+        lhs = rhs
+        Return lhs
+    End Function
+
+    Public Sub Main()
+        Dim result = InlineAssignHelper(SomeProperty, InlineAssignHelper(SomeProperty2, InlineAssignHelper(SomeProperty3, 1)))
+    End Sub
+End Class", @"
+public partial class Issue876
+{
+    public int SomeProperty { get; set; }
+    public int SomeProperty2 { get; set; }
+    public int SomeProperty3 { get; set; }
+
+    public T InlineAssignHelper<T>(ref T lhs, T rhs)
+    {
+        lhs = rhs;
+        return lhs;
+    }
+
+    public void Main()
+    {
+        int localInlineAssignHelper() { int arglhs = SomeProperty3; var ret = InlineAssignHelper(ref arglhs, 1); SomeProperty3 = arglhs; return ret; }
+
+        int localInlineAssignHelper1() { int arglhs = SomeProperty2; var ret = InlineAssignHelper(ref arglhs, localInlineAssignHelper()); SomeProperty2 = arglhs; return ret; }
+
+        int arglhs = SomeProperty;
+        int result = InlineAssignHelper(ref arglhs, localInlineAssignHelper1());
+        SomeProperty = arglhs;
+    }
+}");
+    }
+
+    [Fact]
     public async Task RefArgumentRValue2Async()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1

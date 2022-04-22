@@ -74,9 +74,9 @@ internal class PerScopeState
         var newNames = localFunctions.ToDictionary(f => f.Id, f =>
             NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.Prefix)
         );
-        statements = ReplaceNames(statements, newNames);
         var functions = localFunctions.Select(f => f.AsLocalFunction(newNames[f.Id]));
-        return SyntaxFactory.List(functions.Concat(statements));
+        statements = ReplaceNames(functions.Concat(statements), newNames);
+        return SyntaxFactory.List(statements);
     }
 
     public async Task<SyntaxList<StatementSyntax>> CreateLocalsAsync(VBasic.VisualBasicSyntaxNode vbNode, IEnumerable<StatementSyntax> csNodes, HashSet<string> generatedNames, SemanticModel semanticModel)
