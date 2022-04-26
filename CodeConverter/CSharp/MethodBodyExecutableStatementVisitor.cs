@@ -102,22 +102,24 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     var variable = decl.Declaration.Variables.Single();
                     var initializeValue = variable.Initializer?.Value;
                     string methodName;
-                    VBSyntax.MethodBaseSyntax blockStatement;
+                    SyntaxTokenList methodModifiers;
+
                     if (_methodNode is VBSyntax.MethodBlockSyntax methodBlock) {
-                        blockStatement = methodBlock.BlockStatement;
-                        var methodStatement = blockStatement as VBSyntax.MethodStatementSyntax;
+                        var methodStatement = methodBlock.BlockStatement as VBSyntax.MethodStatementSyntax;
+                        methodModifiers = methodStatement.Modifiers;
                         methodName = methodStatement.Identifier.Text;
                     } else if (_methodNode is VBSyntax.ConstructorBlockSyntax constructorBlock) {
-                        blockStatement = constructorBlock.BlockStatement;
+                        methodModifiers = constructorBlock.BlockStatement.Modifiers;
                         methodName = null;
                     } else if (_methodNode is VBSyntax.AccessorBlockSyntax accessorBlock) {
-                        blockStatement = accessorBlock.BlockStatement;
-                        var propertyBlock = _methodNode.Parent as VBSyntax.PropertyBlockSyntax;
+                        var propertyBlock = accessorBlock.Parent as VBSyntax.PropertyBlockSyntax;
                         methodName = propertyBlock.PropertyStatement.Identifier.Text;
+                        methodModifiers = propertyBlock.PropertyStatement.Modifiers;
                     } else {
                         throw new NotImplementedException(_methodNode.GetType() + " not implemented!");
                     }
-                    var isVbShared = blockStatement.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
+
+                    var isVbShared = methodModifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
                     _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
                 }
             } else {
