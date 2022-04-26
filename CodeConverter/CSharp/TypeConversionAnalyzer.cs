@@ -264,7 +264,7 @@ internal class TypeConversionAnalyzer
         bool isConvertFractionalToInt =
             !csConversion.IsImplicit &&
             (vbType.IsFractionalNumericType() || vbType.IsNullable(out var underlyingType) && underlyingType.IsFractionalNumericType()) &&
-            vbConvertedType.IsIntegralType();
+            (vbConvertedType.IsIntegralType() || vbConvertedType.IsEnumType());
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
             if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
@@ -281,14 +281,14 @@ internal class TypeConversionAnalyzer
                 typeConversionKind = vbConvertedType.IsEnumType() && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
                 return true;
             }
-        } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
-            typeConversionKind = TypeConversionKind.NonDestructiveCast;
-            return true;
         } else if (vbConversion.IsNarrowing && vbConversion.IsNullableValueType && isConvertFractionalToInt) {
             typeConversionKind = TypeConversionKind.NullableFractionalNumberRoundThenCast;
             return true;
-        } else if (vbConversion.IsNumeric && csConversion.IsNumeric && isConvertFractionalToInt) {
+        } else if (vbConversion.IsNumeric && (csConversion.IsNumeric || vbConversion.IsKind(VbConversionKind.InvolvesEnumTypeConversions)) && isConvertFractionalToInt) {
             typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
+            return true;
+        } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
+            typeConversionKind = TypeConversionKind.NonDestructiveCast;
             return true;
         } else if (vbConversion.IsNumeric && csConversion.IsNumeric) {
             // For widening, implicit, a cast is really only needed to help resolve the overload for the operator/method used.
@@ -369,8 +369,12 @@ internal class TypeConversionAnalyzer
             return csNode;
         }
 
-        if (GetToStringConversionOrNull(csNode, currentType, targetType) is { } csNodeToString) return csNodeToString;
-
+        if (GetToStringConversionOrNull(csNode, currentType, targetType) is { } csNodeToString) {
+            return csNodeToString;
+        }
+        if (currentType.IsNullable()) {
+            csNode = csNode.NullableGetValueExpression();
+        }
         if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(targetType.GetFullMetadataName(), out var methodId)) {
             return CreateCast(csNode, targetType);
         }
