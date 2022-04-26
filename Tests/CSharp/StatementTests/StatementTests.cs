@@ -1766,7 +1766,7 @@ internal partial class Issue707SelectCaseAsyncClass
 {
     private bool? Exists(char? sort)
     {
-        switch (Strings.LCase(Conversions.ToString(sort) + """") ?? """")
+        switch (Strings.LCase(Conversions.ToString(sort.Value) + """") ?? """")
         {
             case var @case when @case == """":
             case var case1 when case1 == """":
