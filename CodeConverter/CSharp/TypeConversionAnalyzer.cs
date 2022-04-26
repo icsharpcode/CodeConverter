@@ -23,6 +23,7 @@ internal class TypeConversionAnalyzer
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly SyntaxGenerator _csSyntaxGenerator;
     private readonly ExpressionEvaluator _expressionEvaluator;
+    private readonly VisualBasicNullableExpressionsConverter _vbNullableExpressionsConverter;
 
     private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = {
         VBasic.SyntaxKind.IntegerDivideExpression,
@@ -34,13 +35,15 @@ internal class TypeConversionAnalyzer
     };
 
     public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
-        HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, ExpressionEvaluator expressionEvaluator)
+        HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, ExpressionEvaluator expressionEvaluator, 
+        VisualBasicNullableExpressionsConverter vbNullableExpressionsConverter)
     {
         _semanticModel = semanticModel;
         _csCompilation = csCompilation;
         _extraUsingDirectives = extraUsingDirectives;
         _csSyntaxGenerator = csSyntaxGenerator;
         _expressionEvaluator = expressionEvaluator;
+        _vbNullableExpressionsConverter = vbNullableExpressionsConverter;
     }
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
@@ -80,12 +83,18 @@ internal class TypeConversionAnalyzer
                 csNode = AddRoundInvocation(csNode);
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.NullableFractionalNumberRoundThenCast:
-                csNode = AddRoundInvocation(csNode.NullableGetValueExpression());
+                csNode = vbConvertedType.IsNullable() 
+                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, GetRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
+                    : AddRoundInvocation(csNode.NullableGetValueExpression());
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.EnumConversionThenCast:
-                var underlyingType = ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType;
-                csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, underlyingType);
-                return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, underlyingType, vbConvertedType);
+                vbConvertedType.IsNullable(out var convertedNullableType);
+                var underlyingEnumType = ((INamedTypeSymbol)(convertedNullableType ?? vbConvertedType)).EnumUnderlyingType;
+                csNode = vbType.IsNullable() && convertedNullableType != null
+                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, GetConversionsMemberAccess(underlyingEnumType), GetTypeSyntax(vbConvertedType))
+                    : AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, underlyingEnumType);
+
+                return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.EnumCastThenConversion:
                 var enumUnderlyingType = ((INamedTypeSymbol) vbType).EnumUnderlyingType;
                 csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, enumUnderlyingType);
@@ -112,9 +121,11 @@ internal class TypeConversionAnalyzer
         }
     }
 
+    private TypeSyntax GetTypeSyntax(ITypeSymbol type) => (TypeSyntax)_csSyntaxGenerator.TypeExpression(type);
+
     private ExpressionSyntax CreateCast(ExpressionSyntax csNode, ITypeSymbol vbConvertedType)
     {
-        var typeName = (TypeSyntax) _csSyntaxGenerator.TypeExpression(vbConvertedType);
+        var typeName = GetTypeSyntax(vbConvertedType);
         if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
             return csNode;
         }
@@ -264,7 +275,7 @@ internal class TypeConversionAnalyzer
         bool isConvertFractionalToInt =
             !csConversion.IsImplicit &&
             (vbType.IsFractionalNumericType() || vbType.IsNullable(out var underlyingType) && underlyingType.IsFractionalNumericType()) &&
-            (vbConvertedType.IsIntegralType() || vbConvertedType.IsEnumType());
+            (vbConvertedType.IsIntegralOrEnumType() || vbConvertedType.IsNullable(out var underlyingConvertedType) && underlyingConvertedType.IsIntegralOrEnumType());
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
             if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
@@ -278,11 +289,12 @@ internal class TypeConversionAnalyzer
                 return true;
             }
             if (isConvertToString || vbConversion.IsNarrowing) {
-                typeConversionKind = vbConvertedType.IsEnumType() && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
+                var isConversionToEnum = vbConvertedType.IsEnumType() || vbConvertedType.IsNullable(out var underlyingEnumType) && underlyingEnumType.IsEnumType();
+                typeConversionKind = isConversionToEnum && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
                 return true;
             }
         } else if (vbConversion.IsNarrowing && vbConversion.IsNullableValueType && isConvertFractionalToInt) {
-            typeConversionKind = TypeConversionKind.NullableFractionalNumberRoundThenCast;
+            typeConversionKind = vbType.IsNullable() ? TypeConversionKind.NullableFractionalNumberRoundThenCast : TypeConversionKind.FractionalNumberRoundThenCast;
             return true;
         } else if (vbConversion.IsNumeric && (csConversion.IsNumeric || vbConversion.IsKind(VbConversionKind.InvolvesEnumTypeConversions)) && isConvertFractionalToInt) {
             typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
@@ -350,16 +362,37 @@ internal class TypeConversionAnalyzer
         return TypeConversionKind.Unknown;
     }
 
-    private ExpressionSyntax AddRoundInvocation(ExpressionSyntax csNode)
+    private MemberAccessExpressionSyntax GetRoundMemberAccess()
     {
         _extraUsingDirectives.Add("System");
-        var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+        return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
             SyntaxFactory.IdentifierName("Math"),  SyntaxFactory.IdentifierName("Round"));
+    }
+
+    private MemberAccessExpressionSyntax GetConversionsMemberAccess(ITypeSymbol type)
+    {
+        if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var methodId)) {
+            throw new ArgumentException($"Unable to find conversion method for type {type}", nameof(type));
+        }
+
+        return GetConversionsMemberAccess(methodId.Name);
+    }
+
+    private MemberAccessExpressionSyntax GetConversionsMemberAccess(string methodId)
+    {
+        _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+        return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId));
+    }
+
+    private ExpressionSyntax AddRoundInvocation(ExpressionSyntax csNode)
+    {
+        var memberAccess = GetRoundMemberAccess();
         var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
         return SyntaxFactory.InvocationExpression(memberAccess, arguments);
     }
 
-    public ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
+    private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
     {
         var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
         if (csNode is InvocationExpressionSyntax invoke &&
@@ -372,17 +405,25 @@ internal class TypeConversionAnalyzer
         if (GetToStringConversionOrNull(csNode, currentType, targetType) is { } csNodeToString) {
             return csNodeToString;
         }
-        if (currentType.IsNullable()) {
+
+        currentType.IsNullable(out var nullableCurrentType);
+        targetType.IsNullable(out var nullableTargetType);
+        if (nullableCurrentType != null && nullableTargetType == null) {
             csNode = csNode.NullableGetValueExpression();
         }
-        if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(targetType.GetFullMetadataName(), out var methodId)) {
+
+        var typeNameForConversionMethod = nullableTargetType ?? targetType;
+        if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(typeNameForConversionMethod.GetFullMetadataName(), out var methodId)) {
             return CreateCast(csNode, targetType);
         }
 
         // Need to use Conversions rather than Convert to match what VB does, eg. Conversions.ToInteger(True) -> -1
-        _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-        var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-            SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId.Name));
+        var memberAccess = GetConversionsMemberAccess(methodId.Name);
+
+        if (nullableCurrentType != null && nullableTargetType != null) {
+            return _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, memberAccess, GetTypeSyntax(targetType));
+        }
+
         var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
         return SyntaxFactory.InvocationExpression(memberAccess, arguments);
     }

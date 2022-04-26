@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
+#nullable enable
 
 internal class VisualBasicNullableExpressionsConverter
 {
@@ -16,7 +17,18 @@ internal class VisualBasicNullableExpressionsConverter
 
     private int _argCounter;
 
-    public ExpressionSyntax WithLogicForNullableTypes(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
+    public ExpressionSyntax InvokeConversionWhenNotNull(ExpressionSyntax expression, MemberAccessExpressionSyntax conversionMethod, TypeSyntax? castType = null)
+    {
+        var pattern = PatternObject(expression, out var argName);
+        var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(argName)));
+        ExpressionSyntax invocation = SyntaxFactory.InvocationExpression(conversionMethod, arguments);
+        if (castType != null) {
+            invocation = ValidSyntaxFactory.CastExpression(castType, invocation);
+        }
+        return pattern.Conditional(invocation, ValidSyntaxFactory.NullExpression).AddParens();
+    }
+
+    public ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
         if (!IsSupported(vbNode.Kind()) || 
             !lhsTypeInfo.ConvertedType.IsNullable() ||
