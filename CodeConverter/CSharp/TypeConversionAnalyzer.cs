@@ -80,12 +80,10 @@ internal class TypeConversionAnalyzer
     {
         switch (conversionKind) {
             case TypeConversionKind.FractionalNumberRoundThenCast:
-                csNode = AddRoundInvocation(csNode);
-                return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
-            case TypeConversionKind.NullableFractionalNumberRoundThenCast:
-                csNode = vbConvertedType.IsNullable() 
-                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, GetRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
-                    : AddRoundInvocation(csNode.NullableGetValueExpression());
+                csNode = vbType.IsNullable() && vbConvertedType.IsNullable() 
+                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, GetMathRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
+                    : AddRoundInvocation(vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode);
+
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.EnumConversionThenCast:
                 vbConvertedType.IsNullable(out var convertedNullableType);
@@ -269,13 +267,15 @@ internal class TypeConversionAnalyzer
         out TypeConversionKind typeConversionKind)
     {
         var csConversion = _csCompilation.ClassifyConversion(csType, csConvertedType);
+        vbType.IsNullable(out var underlyingType);
+        vbConvertedType.IsNullable(out var underlyingConvertedType);
+        var nullableVbType = underlyingType ?? vbType;
+        var nullableVbConvertedType = underlyingConvertedType ?? vbConvertedType;
 
         bool isConvertToString =
             (vbConversion.IsString || vbConversion.IsReference && vbConversion.IsNarrowing) && vbConvertedType.SpecialType == SpecialType.System_String;
         bool isConvertFractionalToInt =
-            !csConversion.IsImplicit &&
-            (vbType.IsFractionalNumericType() || vbType.IsNullable(out var underlyingType) && underlyingType.IsFractionalNumericType()) &&
-            (vbConvertedType.IsIntegralOrEnumType() || vbConvertedType.IsNullable(out var underlyingConvertedType) && underlyingConvertedType.IsIntegralOrEnumType());
+            !csConversion.IsImplicit && nullableVbType.IsFractionalNumericType() && nullableVbConvertedType.IsIntegralOrEnumType();
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
             if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
@@ -289,14 +289,15 @@ internal class TypeConversionAnalyzer
                 return true;
             }
             if (isConvertToString || vbConversion.IsNarrowing) {
-                var isConversionToEnum = vbConvertedType.IsEnumType() || vbConvertedType.IsNullable(out var underlyingEnumType) && underlyingEnumType.IsEnumType();
-                typeConversionKind = isConversionToEnum && !csConversion.Exists ? TypeConversionKind.EnumConversionThenCast : TypeConversionKind.Conversion;
+                typeConversionKind = nullableVbConvertedType.IsEnumType() && !csConversion.Exists
+                    ? TypeConversionKind.EnumConversionThenCast
+                    : TypeConversionKind.Conversion;
                 return true;
             }
         } else if (vbConversion.IsNarrowing && vbConversion.IsNullableValueType && isConvertFractionalToInt) {
-            typeConversionKind = vbType.IsNullable() ? TypeConversionKind.NullableFractionalNumberRoundThenCast : TypeConversionKind.FractionalNumberRoundThenCast;
+            typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
             return true;
-        } else if (vbConversion.IsNumeric && (csConversion.IsNumeric || vbConversion.IsKind(VbConversionKind.InvolvesEnumTypeConversions)) && isConvertFractionalToInt) {
+        } else if (vbConversion.IsNumeric && (csConversion.IsNumeric || nullableVbConvertedType.IsEnumType()) && isConvertFractionalToInt) {
             typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
             return true;
         } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
@@ -362,7 +363,7 @@ internal class TypeConversionAnalyzer
         return TypeConversionKind.Unknown;
     }
 
-    private MemberAccessExpressionSyntax GetRoundMemberAccess()
+    private MemberAccessExpressionSyntax GetMathRoundMemberAccess()
     {
         _extraUsingDirectives.Add("System");
         return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -387,7 +388,7 @@ internal class TypeConversionAnalyzer
 
     private ExpressionSyntax AddRoundInvocation(ExpressionSyntax csNode)
     {
-        var memberAccess = GetRoundMemberAccess();
+        var memberAccess = GetMathRoundMemberAccess();
         var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));
         return SyntaxFactory.InvocationExpression(memberAccess, arguments);
     }
@@ -461,8 +462,7 @@ internal class TypeConversionAnalyzer
         NullableBool,
         StringToCharArray,
         DelegateConstructor,
-        FractionalNumberRoundThenCast,
-        NullableFractionalNumberRoundThenCast
+        FractionalNumberRoundThenCast
     }
 
     public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,

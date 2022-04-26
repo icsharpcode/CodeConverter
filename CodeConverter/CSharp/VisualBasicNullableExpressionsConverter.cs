@@ -17,14 +17,13 @@ internal class VisualBasicNullableExpressionsConverter
 
     private int _argCounter;
 
-    public ExpressionSyntax InvokeConversionWhenNotNull(ExpressionSyntax expression, MemberAccessExpressionSyntax conversionMethod, TypeSyntax? castType = null)
+    public ExpressionSyntax InvokeConversionWhenNotNull(ExpressionSyntax expression, MemberAccessExpressionSyntax conversionMethod, TypeSyntax castType)
     {
         var pattern = PatternObject(expression, out var argName);
         var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(argName)));
         ExpressionSyntax invocation = SyntaxFactory.InvocationExpression(conversionMethod, arguments);
-        if (castType != null) {
-            invocation = ValidSyntaxFactory.CastExpression(castType, invocation);
-        }
+        invocation = ValidSyntaxFactory.CastExpression(castType, invocation);
+
         return pattern.Conditional(invocation, ValidSyntaxFactory.NullExpression).AddParens();
     }
 
