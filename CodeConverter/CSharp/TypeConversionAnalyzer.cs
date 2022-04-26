@@ -80,7 +80,7 @@ internal class TypeConversionAnalyzer
                 csNode = AddRoundInvocation(csNode);
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.NullableFractionalNumberRoundThenCast:
-                csNode = AddRoundInvocation(csNode.Value());
+                csNode = AddRoundInvocation(csNode.NullableGetValueExpression());
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
             case TypeConversionKind.EnumConversionThenCast:
                 var underlyingType = ((INamedTypeSymbol) vbConvertedType).EnumUnderlyingType;

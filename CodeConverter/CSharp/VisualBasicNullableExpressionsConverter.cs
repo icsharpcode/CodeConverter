@@ -167,20 +167,16 @@ internal class VisualBasicNullableExpressionsConverter
 
 internal static class NullableTypesLogicExtensions
 {
-    private static ExpressionSyntax HasValue(ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("HasValue"));
-    private static ExpressionSyntax HasNoValue(ExpressionSyntax node) => HasValue(node).Negate();
-    public static ExpressionSyntax Value(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("Value"));
-
     public static ExpressionSyntax GetValueOrDefault(this ExpressionSyntax node) => SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("GetValueOrDefault")));
     public static ExpressionSyntax Negate(this ExpressionSyntax node) => SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, node.AddParens());
 
     public static ExpressionSyntax And(this ExpressionSyntax a, ExpressionSyntax b) => SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, a.AddParens(), b.AddParens()).AddParens();
-    public static ExpressionSyntax AndHasValue(this ExpressionSyntax a, ExpressionSyntax b) => And(a, HasValue(b));
-    public static ExpressionSyntax AndHasNoValue(this ExpressionSyntax a, ExpressionSyntax b) => And(a, HasNoValue(b));
-    public static ExpressionSyntax AndIsFalse(this ExpressionSyntax a, ExpressionSyntax b) => And(a, Value(b).Negate());
+    public static ExpressionSyntax AndHasValue(this ExpressionSyntax a, ExpressionSyntax b) => And(a, b.NullableHasValueExpression());
+    public static ExpressionSyntax AndHasNoValue(this ExpressionSyntax a, ExpressionSyntax b) => And(a, b.NullableHasValueExpression().Negate());
+    public static ExpressionSyntax AndIsFalse(this ExpressionSyntax a, ExpressionSyntax b) => And(a, b.NullableGetValueExpression().Negate());
 
     public static ExpressionSyntax Or(this ExpressionSyntax a, ExpressionSyntax b) => SyntaxFactory.BinaryExpression(SyntaxKind.LogicalOrExpression, a.AddParens(), b.AddParens()).AddParens();
-    public static ExpressionSyntax OrIsTrue(this ExpressionSyntax a, ExpressionSyntax b) => Or(a, Value(b));
+    public static ExpressionSyntax OrIsTrue(this ExpressionSyntax a, ExpressionSyntax b) => Or(a, b.NullableGetValueExpression());
 
     public static ExpressionSyntax Conditional(this ExpressionSyntax condition, ExpressionSyntax whenTrue, ExpressionSyntax whenFalse) => SyntaxFactory.ConditionalExpression(condition.AddParens(), whenTrue.AddParens(), whenFalse.AddParens()).AddParens();
     public static ExpressionSyntax Bin(this ExpressionSyntax a, ExpressionSyntax b, SyntaxKind op) => SyntaxFactory.BinaryExpression(op, a.AddParens(), b.AddParens()).AddParens();
