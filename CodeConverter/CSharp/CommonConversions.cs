@@ -636,8 +636,12 @@ internal class CommonConversions
 
     public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
     {
-        return (SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName())
-            ?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
+        return IsOutAttribute(SemanticModel.GetTypeInfo(a).ConvertedType);
+    }
+
+    public bool IsOutAttribute(ITypeSymbol type)
+    {
+        return type?.GetFullMetadataName()?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 
     public ISymbol GetCsOriginalSymbolOrNull(ISymbol symbol)
