@@ -777,6 +777,342 @@ internal partial class Class1
     }
 
     [Fact]
+    public async Task TestNullableBoolConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Class1
+    Private Function Test1(a as Boolean?) As Boolean
+        Return a
+    End Function
+    Private Function Test2(a as Boolean?) As Boolean?
+        Return a
+    End Function
+    Private Function Test3(a as Boolean) As Boolean?
+        Return a
+    End Function
+
+    Private Function Test4(a as Integer?) As Boolean
+        Return a
+    End Function
+    Private Function Test5(a as Integer?) As Boolean?
+        Return a
+    End Function
+    Private Function Test6(a as Integer) As Boolean?
+        Return a
+    End Function
+
+    Private Function Test4(a as Boolean?) As Integer
+        Return a
+    End Function
+    Private Function Test5(a as Boolean?) As Integer?
+        Return a
+    End Function
+    Private Function Test6(a as Boolean) As Integer?
+        Return a
+    End Function
+
+    Private Function Test7(a as Boolean?) As String
+        Return a
+    End Function
+    Private Function Test8(a as Boolean?) As String
+        Return a
+    End Function
+
+    Private Function Test9(a as String) As Boolean?
+        Return a
+    End Function
+    Private Function Test10(a as String) As Boolean
+        Return a
+    End Function
+End Class",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class Class1
+{
+    private bool Test1(bool? a)
+    {
+        return (bool)a;
+    }
+    private bool? Test2(bool? a)
+    {
+        return a;
+    }
+    private bool? Test3(bool a)
+    {
+        return a;
+    }
+
+    private bool Test4(int? a)
+    {
+        return Conversions.ToBoolean(a.Value);
+    }
+    private bool? Test5(int? a)
+    {
+        return a is { } arg1 ? (bool?)Conversions.ToBoolean(arg1) : null;
+    }
+    private bool? Test6(int a)
+    {
+        return Conversions.ToBoolean(a);
+    }
+
+    private int Test4(bool? a)
+    {
+        return Conversions.ToInteger(a.Value);
+    }
+    private int? Test5(bool? a)
+    {
+        return a is { } arg2 ? (int?)Conversions.ToInteger(arg2) : null;
+    }
+    private int? Test6(bool a)
+    {
+        return Conversions.ToInteger(a);
+    }
+
+    private string Test7(bool? a)
+    {
+        return Conversions.ToString(a.Value);
+    }
+    private string Test8(bool? a)
+    {
+        return Conversions.ToString(a.Value);
+    }
+
+    private bool? Test9(string a)
+    {
+        return Conversions.ToBoolean(a);
+    }
+    private bool Test10(string a)
+    {
+        return Conversions.ToBoolean(a);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestNullableEnumConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Enum TestEnum
+    None = 1
+End Enum
+Class Class1
+    Private Function Test1(a as Integer) As TestEnum?
+        Return a
+    End Function
+    Private Function Test2(a as Integer?) As TestEnum?
+        Return a
+    End Function
+    Private Function Test3(a as Integer?) As TestEnum
+        Return a
+    End Function
+
+    Private Function Test4(a as TestEnum) As Integer?
+        Return a
+    End Function
+    Private Function Test5(a as TestEnum?) As Integer?
+        Return a
+    End Function
+    Private Function Test6(a as TestEnum?) As TestEnum?
+        Return a
+    End Function
+    Private Function Test7(a as TestEnum?) As Integer
+        Return a
+    End Function
+
+    Private Function Test8(a as TestEnum?) As String
+        Return a
+    End Function
+    Private Function Test9(a as TestEnum?) As String
+        Return a
+    End Function
+    
+    Private Function Test10(a as String) As TestEnum?
+        Return a
+    End Function
+    Private Function Test11(a as String) As TestEnum
+        Return a
+    End Function
+End Class",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum TestEnum
+{
+    None = 1
+}
+
+internal partial class Class1
+{
+    private TestEnum? Test1(int a)
+    {
+        return (TestEnum?)a;
+    }
+    private TestEnum? Test2(int? a)
+    {
+        return (TestEnum?)a;
+    }
+    private TestEnum Test3(int? a)
+    {
+        return (TestEnum)a;
+    }
+
+    private int? Test4(TestEnum a)
+    {
+        return Conversions.ToInteger(a);
+    }
+    private int? Test5(TestEnum? a)
+    {
+        return (int?)a;
+    }
+    private TestEnum? Test6(TestEnum? a)
+    {
+        return a;
+    }
+    private int Test7(TestEnum? a)
+    {
+        return (int)a;
+    }
+
+    private string Test8(TestEnum? a)
+    {
+        return Conversions.ToString(a.Value);
+    }
+    private string Test9(TestEnum? a)
+    {
+        return Conversions.ToString(a.Value);
+    }
+
+    private TestEnum? Test10(string a)
+    {
+        return (TestEnum?)Conversions.ToInteger(a);
+    }
+    private TestEnum Test11(string a)
+    {
+        return (TestEnum)Conversions.ToInteger(a);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestNumbersNullableConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Class Class1
+    Private Function Test1(a as Integer) As Integer?
+        Return a
+    End Function
+    Private Function Test2(a as Integer?) As Integer?
+        Return a
+    End Function
+    Private Function Test3(a as Integer?) As Integer
+        Return a
+    End Function
+    Private Function Test4(a as Single) As Integer?
+        Return a
+    End Function
+    Private Function Test5(a as Single?) As Integer?
+        Return a
+    End Function
+
+    Private Function Test6(a as Single) As Single?
+        Return a
+    End Function
+    Private Function Test7(a as Single?) As Single?
+        Return a
+    End Function
+    Private Function Test8(a as Single?) As Single
+        Return a
+    End Function
+    Private Function Test9(a as Integer) As Single?
+        Return a
+    End Function
+    Private Function Test10(a as Integer?) As Single?
+        Return a
+    End Function
+
+   Private Function Test11(a as Integer?) As String
+        Return a
+    End Function
+    Private Function Test12(a as Integer?) As String
+        Return a
+    End Function
+
+    Private Function Test13(a as String) As Integer?
+        Return a
+    End Function
+    Private Function Test14(a as String) As Integer
+        Return a
+    End Function
+End Class",
+            @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class Class1
+{
+    private int? Test1(int a)
+    {
+        return a;
+    }
+    private int? Test2(int? a)
+    {
+        return a;
+    }
+    private int Test3(int? a)
+    {
+        return (int)a;
+    }
+    private int? Test4(float a)
+    {
+        return (int?)Math.Round(a);
+    }
+    private int? Test5(float? a)
+    {
+        return a is { } arg1 ? (int?)Math.Round(arg1) : null;
+    }
+
+    private float? Test6(float a)
+    {
+        return a;
+    }
+    private float? Test7(float? a)
+    {
+        return a;
+    }
+    private float Test8(float? a)
+    {
+        return (float)a;
+    }
+    private float? Test9(int a)
+    {
+        return a;
+    }
+    private float? Test10(int? a)
+    {
+        return a;
+    }
+
+    private string Test11(int? a)
+    {
+        return Conversions.ToString(a.Value);
+    }
+    private string Test12(int? a)
+    {
+        return Conversions.ToString(a.Value);
+    }
+
+    private int? Test13(string a)
+    {
+        return Conversions.ToInteger(a);
+    }
+    private int Test14(string a)
+    {
+        return Conversions.ToInteger(a);
+    }
+}");
+    }
+
+    [Fact]
     public async Task CastConstantNumberToLongAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
