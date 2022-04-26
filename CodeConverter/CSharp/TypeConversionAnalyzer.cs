@@ -337,7 +337,7 @@ internal class TypeConversionAnalyzer
             return TypeConversionKind.NonDestructiveCast;
         }
 
-        if (vbConversion.IsNarrowing && vbConversion.IsString && vbConversion.ToString().Contains("InvolvesEnumTypeConversions")) {
+        if (vbConversion.IsNarrowing && vbConversion.IsString && vbConversion.IsKind(VbConversionKind.InvolvesEnumTypeConversions)) {
             return TypeConversionKind.EnumConversionThenCast;
         }
         if (vbConversion.IsNarrowing) {
