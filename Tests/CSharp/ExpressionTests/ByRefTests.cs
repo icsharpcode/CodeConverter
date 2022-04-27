@@ -344,6 +344,43 @@ public partial class OptionalRefIssue91
     }
 
     [Fact]
+    public async Task OutOptionalArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class OptionalOutIssue882
+    Private Sub TestSub(<Out> ByRef a As Integer, <Out> Optional ByRef b As Integer = Nothing)
+        a = 42
+        b = 23
+    End Sub
+
+    Public Sub CallingFunc()
+        Dim a As Integer
+        Dim b As Integer
+        TestSub(a:=a, b:=b)
+        TestSub(a:=a)
+    End Sub
+End Class", @"using System.Runtime.InteropServices;
+
+public partial class OptionalOutIssue882
+{
+    private void TestSub(out int a, [Optional, DefaultParameterValue(default(int))] out int b)
+    {
+        a = 42;
+        b = 23;
+    }
+
+    public void CallingFunc()
+    {
+        int a;
+        int b;
+        TestSub(a: out a, b: out b);
+        int argb = 0;
+        TestSub(a: out a, b: out argb);
+    }
+}");
+    }
+
+    [Fact]
     public async Task ExplicitInterfaceImplementationOptionalRefParametersAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(

@@ -1234,8 +1234,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var baseParameters = vbSymbol?.ContainingSymbol.OriginalDefinition.GetBaseSymbol().GetParameters();
         var baseParameter = baseParameters?[vbSymbol.Ordinal];
 
-        var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(baseParameter ?? vbSymbol) as IParameterSymbol;
-        if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
+        var csRefKind = CommonConversions.GetCsRefKind(baseParameter ?? vbSymbol, node);
+        if (csRefKind == RefKind.Out) {
             modifiers = SyntaxFactory.TokenList(modifiers
                 .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
                 .Concat(SyntaxFactory.Token(SyntaxKind.OutKeyword).Yield())
@@ -1618,17 +1618,23 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, int i, int vbPositionalArgs, ImmutableHashSet<string> namedArgNames, bool requiresCompareMethod)
     {
-        if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) return null;
-        if (p.RefKind != RefKind.None) return CreateOptionalRefArg(p);
+        if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) {
+            return null;
+        }
+
+        var csRefKind = CommonConversions.GetCsRefKind(p);
+        if (csRefKind != RefKind.None) {
+            return CreateOptionalRefArg(p, csRefKind);
+        }
         if (requiresCompareMethod && p.Type.Name == "CompareMethod") return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
         return null;
     }
 
-    private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p)
+    private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p, RefKind refKind)
     {
         string prefix = $"arg{p.Name}";
         var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
-        return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, p.RefKind, local.IdentifierName);
+        return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, refKind, local.IdentifierName);
     }
 
     private RefConversion NeedsVariableForArgument(VBasic.Syntax.ArgumentSyntax node, RefKind refKind)

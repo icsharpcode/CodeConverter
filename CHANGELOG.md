@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix conversion of shared property containing static variable [#881](https://github.com/icsharpcode/CodeConverter/issues/881)
 * Use string.IsNullOrEmpty when comparing string to string.Empty [#874](https://github.com/icsharpcode/CodeConverter/issues/874)
 * Make an effort to maintain line-spacing between statements [#879](https://github.com/icsharpcode/CodeConverter/issues/879)
+* Fix wrong modifier for optional out parameter [#882](https://github.com/icsharpcode/CodeConverter/issues/882)
 * Correctly convert nested calls passing properties as ref arguments [#876](https://github.com/icsharpcode/CodeConverter/issues/876)
 
 ### C# -> VB

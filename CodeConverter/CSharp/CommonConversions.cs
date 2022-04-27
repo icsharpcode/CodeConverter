@@ -21,7 +21,6 @@ namespace ICSharpCode.CodeConverter.CSharp;
 internal class CommonConversions
 {
     private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
-    private static readonly Type OutAttributeType = typeof(OutAttribute);
     public Document Document { get; }
     public SemanticModel SemanticModel { get; }
     public SyntaxGenerator CsSyntaxGenerator { get; }
@@ -634,11 +633,7 @@ internal class CommonConversions
             ?.Equals(ExtensionAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 
-    public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
-    {
-        return (SemanticModel.GetTypeInfo(a).ConvertedType?.GetFullMetadataName())
-            ?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
-    }
+    public bool IsOutAttribute(VBSyntax.AttributeSyntax a) => SemanticModel.GetTypeInfo(a).ConvertedType.IsOutAttribute();
 
     public ISymbol GetCsOriginalSymbolOrNull(ISymbol symbol)
     {
@@ -713,5 +708,18 @@ internal class CommonConversions
         var spans = await Classifier.GetClassifiedSpansAsync(Document, span);
 
         return spans.Last().ClassificationType;
+    }
+
+    public RefKind GetCsRefKind(IParameterSymbol vbParameter, Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax optionalParameterSyntax = null)
+    {
+        if (this.GetCsOriginalSymbolOrNull(vbParameter) is IParameterSymbol csParam) {
+            return csParam.RefKind;
+        }
+
+        if (optionalParameterSyntax?.AttributeLists.Any(this.HasOutAttribute) == true) {
+            return RefKind.Out;
+        }
+
+        return vbParameter?.RefKind ?? RefKind.None;
     }
 }

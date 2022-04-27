@@ -1,10 +1,13 @@
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.Util;
 
 internal static class ITypeSymbolExtensions
 {
+
+    private static readonly Type OutAttributeType = typeof(OutAttribute);
 
     public static bool IsDelegateReferencableByName(this ITypeSymbol t)
     {
@@ -66,5 +69,10 @@ internal static class ITypeSymbolExtensions
         return allMethods
             .Where(m => m.IsConstructor() && !m.IsImplicitlyDeclared)
             .SplitOn(c => c.IsStatic);
+    }
+
+    public static bool IsOutAttribute(this ITypeSymbol type)
+    {
+        return type?.GetFullMetadataName()?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 }
