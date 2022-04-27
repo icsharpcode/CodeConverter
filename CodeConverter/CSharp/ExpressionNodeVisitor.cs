@@ -1621,10 +1621,10 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) {
             return null;
         }
-        if (p.RefKind != RefKind.None) {
-            var hasOutAttribute = p.GetAttributes().Any(attr => attr.AttributeClass.IsOutAttribute());
-            var refKind = hasOutAttribute ? RefKind.Out : RefKind.Ref;
-            return CreateOptionalRefArg(p, refKind);
+
+        var csRefKind = CommonConversions.GetCsRefKind(p);
+        if (csRefKind != RefKind.None) {
+            return CreateOptionalRefArg(p, csRefKind);
         }
         if (requiresCompareMethod && p.Type.Name == "CompareMethod") return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
         return null;
