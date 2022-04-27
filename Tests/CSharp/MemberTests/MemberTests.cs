@@ -3754,6 +3754,12 @@ internal static partial class StaticLocalConvertedToField
         Static sPrevPosition As Integer = 5 ' Comment also moves with declaration
         Console.WriteLine(sPrevPosition)
     End Sub
+    Shared ReadOnly Property StaticTestProperty() As Integer
+        Get
+            Static sPrevPosition As Integer = 5 ' Comment also moves with declaration
+            Return sPrevPosition + 1
+        End Get
+    End Property
 End Class", @"using System;
 
 internal partial class StaticLocalConvertedToField
@@ -3767,6 +3773,14 @@ internal partial class StaticLocalConvertedToField
     public void OtherName(int x)
     {
         Console.WriteLine(_OtherName_sPrevPosition1);
+    }
+    private static int _StaticTestProperty_sPrevPosition = 5; // Comment also moves with declaration
+    public static int StaticTestProperty
+    {
+        get
+        {
+            return _StaticTestProperty_sPrevPosition + 1;
+        }
     }
 }");
     }
