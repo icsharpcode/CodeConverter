@@ -1234,8 +1234,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var baseParameters = vbSymbol?.ContainingSymbol.OriginalDefinition.GetBaseSymbol().GetParameters();
         var baseParameter = baseParameters?[vbSymbol.Ordinal];
 
-        var csParamSymbol = CommonConversions.GetCsOriginalSymbolOrNull(baseParameter ?? vbSymbol) as IParameterSymbol;
-        if (csParamSymbol?.RefKind == RefKind.Out || node.AttributeLists.Any(CommonConversions.HasOutAttribute)) {
+        var csRefKind = CommonConversions.GetCsRefKind(baseParameter ?? vbSymbol, node);
+        if (csRefKind == RefKind.Out) {
             modifiers = SyntaxFactory.TokenList(modifiers
                 .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
                 .Concat(SyntaxFactory.Token(SyntaxKind.OutKeyword).Yield())

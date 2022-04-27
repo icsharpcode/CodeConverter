@@ -709,4 +709,17 @@ internal class CommonConversions
 
         return spans.Last().ClassificationType;
     }
+
+    public RefKind GetCsRefKind(IParameterSymbol vbParameter, Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterSyntax optionalParameterSyntax = null)
+    {
+        if (this.GetCsOriginalSymbolOrNull(vbParameter) is IParameterSymbol csParam) {
+            return csParam.RefKind;
+        }
+
+        if (optionalParameterSyntax?.AttributeLists.Any(this.HasOutAttribute) == true) {
+            return RefKind.Out;
+        }
+
+        return vbParameter?.RefKind ?? RefKind.None;
+    }
 }
