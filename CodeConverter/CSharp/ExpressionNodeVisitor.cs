@@ -1622,7 +1622,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             return null;
         }
         if (p.RefKind != RefKind.None) {
-            var hasOutAttribute = p.GetAttributes().Any(attr => CommonConversions.IsOutAttribute(attr.AttributeClass));
+            var hasOutAttribute = p.GetAttributes().Any(attr => attr.AttributeClass.IsOutAttribute());
             var refKind = hasOutAttribute ? RefKind.Out : RefKind.Ref;
             return CreateOptionalRefArg(p, refKind);
         }

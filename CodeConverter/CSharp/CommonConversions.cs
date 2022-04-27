@@ -21,7 +21,6 @@ namespace ICSharpCode.CodeConverter.CSharp;
 internal class CommonConversions
 {
     private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
-    private static readonly Type OutAttributeType = typeof(OutAttribute);
     public Document Document { get; }
     public SemanticModel SemanticModel { get; }
     public SyntaxGenerator CsSyntaxGenerator { get; }
@@ -634,15 +633,7 @@ internal class CommonConversions
             ?.Equals(ExtensionAttributeType.FullName, StringComparison.Ordinal) == true;
     }
 
-    public bool IsOutAttribute(VBSyntax.AttributeSyntax a)
-    {
-        return IsOutAttribute(SemanticModel.GetTypeInfo(a).ConvertedType);
-    }
-
-    public bool IsOutAttribute(ITypeSymbol type)
-    {
-        return type?.GetFullMetadataName()?.Equals(OutAttributeType.FullName, StringComparison.Ordinal) == true;
-    }
+    public bool IsOutAttribute(VBSyntax.AttributeSyntax a) => SemanticModel.GetTypeInfo(a).ConvertedType.IsOutAttribute();
 
     public ISymbol GetCsOriginalSymbolOrNull(ISymbol symbol)
     {
