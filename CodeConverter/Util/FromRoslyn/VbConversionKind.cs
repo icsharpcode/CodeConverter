@@ -1,5 +1,9 @@
 ﻿namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
+#pragma warning disable CA1069 // Enums values should not be duplicated
 
+/// <summary>
+/// Converted from https://github.com/dotnet/roslyn/blob/85f155be47147a702305c8f49c64eaf51a53d734/src/Compilers/VisualBasic/Portable/Semantics/Conversions.vb#L282
+/// </summary>
 [Flags]
 internal enum VbConversionKind
 {
