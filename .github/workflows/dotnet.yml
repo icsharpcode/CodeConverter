@@ -10,7 +10,7 @@ jobs:
  build:
     runs-on: windows-2022
     env:
-      BuildVersion: '8.5.0'
+      BuildVersion: '9.0.0'
       BuildPlatform: Any CPU
       BuildTarget: Release
 
