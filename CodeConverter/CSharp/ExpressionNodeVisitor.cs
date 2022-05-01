@@ -282,15 +282,10 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
     {
-        var nodeForType = node;
-        var convertMethodForKeyword = GetConvertMethodForKeywordOrNull(nodeForType);
-        if (_semanticModel.GetTypeInfo(nodeForType).Type is INamedTypeSymbol typeSymbol && typeSymbol.IsEnumType() &&
-            _semanticModel.GetTypeInfo(node.Expression).Type is {} expressionType && !expressionType.IsIntegralType() && !expressionType.IsEnumType()) {
-            convertMethodForKeyword = GetConvertMethodForKeywordOrNull(typeSymbol.EnumUnderlyingType);
-        } else if (convertMethodForKeyword != null) {
-            nodeForType = null;
-        }
-        return await ConvertCastExpressionAsync(node, convertMethodForKeyword, nodeForType?.Type);
+        var csharpArg = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        var typeInfo = _semanticModel.GetTypeInfo(node);
+        var forceTargetType = typeInfo.ConvertedType;
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csharpArg, forceTargetType: forceTargetType, defaultToCast: true).AddParens();
     }
 
     public override async Task<CSharpSyntaxNode> VisitDirectCastExpression(VBasic.Syntax.DirectCastExpressionSyntax node)
@@ -857,7 +852,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
         var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-        var exp = _visualBasicNullableTypesConverter.WithLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
         return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
     }
 
@@ -1506,7 +1501,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var simplifiedOrNull = await WithRemovedRedundantConversionOrNullAsync(node, node.Expression);
         if (simplifiedOrNull != null) return simplifiedOrNull;
         var expressionSyntax = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        if (!(_semanticModel.GetOperation(node) is IConversionOperation co) || !co.Conversion.IsIdentity) {
+        if (_semanticModel.GetOperation(node) is not IConversionOperation { Conversion.IsIdentity: true }) {
             if (convertMethodOrNull != null) {
                 expressionSyntax = Invoke(convertMethodOrNull, expressionSyntax);
             }

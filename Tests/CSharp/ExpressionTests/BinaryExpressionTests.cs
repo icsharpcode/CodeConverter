@@ -196,37 +196,8 @@ internal partial class TestClass
     }
 }");
     }
-        [Fact]
-        public async Task CastNullableToNonNullableAsync()
-        {
-            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712
-    Private Function TestMethod() As Boolean
-        Dim x As Boolean? = Nothing
-        Return x
-    End Function
 
-    Private Function TestMethod2() As Integer
-        Dim x As Integer? = Nothing
-        Return x
-    End Function
-End Class", @"
-internal partial class TestClass712
-{
-    private bool TestMethod()
-    {
-        bool? x = default;
-        return (bool)x;
-    }
-
-    private int TestMethod2()
-    {
-        int? x = default;
-        return (int)x;
-    }
-}");
-        }
-
-        [Fact]
+    [Fact]
         public async Task NotOperatorOnNullableBooleanAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass712

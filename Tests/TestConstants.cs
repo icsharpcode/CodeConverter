@@ -14,7 +14,7 @@ public static class TestConstants
     ///  Set to false
     ///  Commit
     /// </summary>
-    public static bool RecharacterizeByWritingExpectedOverActual { get; } = false;
+    public static bool RecharacterizeByWritingExpectedOverActual => false;
 
     public static string GetTestDataDirectory()
     {

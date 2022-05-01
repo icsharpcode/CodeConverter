@@ -2,6 +2,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ICSharpCode.CodeConverter.Util.FromRoslyn;
 
@@ -43,8 +44,8 @@ internal static class ITypeSymbolExtensions
         => symbol?.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
 
     public static bool IsNullable(
-        this ITypeSymbol? symbol,
-        out ITypeSymbol? underlyingType)
+         this ITypeSymbol? symbol,
+         [NotNullWhen(true)] out ITypeSymbol? underlyingType)
     {
         if (symbol != null && IsNullable(symbol)) {
             underlyingType = ((INamedTypeSymbol)symbol).TypeArguments[0];
@@ -257,6 +258,7 @@ internal static class ITypeSymbolExtensions
     }
 
     public static bool IsIntegralType(this ITypeSymbol? type) => type.IsNumericType() && !type.IsFractionalNumericType();
+    public static bool IsIntegralOrEnumType(this ITypeSymbol? type) => type.IsIntegralType() || type.IsEnumType();
 
     public static bool IsFractionalNumericType(this ITypeSymbol? type)
     {
@@ -527,8 +529,12 @@ internal static class ITypeSymbolExtensions
         return allTypeArgs1.AreMoreSpecificThan(allTypeArgs2);
     }
 
-    public static bool IsEnumType(this ITypeSymbol type)
+    public static bool IsEnumType(this ITypeSymbol? type)
     {
+        if (type == null) {
+            return false;
+        }
+
         return type.IsValueType && type.TypeKind == TypeKind.Enum;
     }
 

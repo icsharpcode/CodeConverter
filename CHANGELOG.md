@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Make an effort to maintain line-spacing between statements [#879](https://github.com/icsharpcode/CodeConverter/issues/879)
 * Fix wrong modifier for optional out parameter [#882](https://github.com/icsharpcode/CodeConverter/issues/882)
 * Correctly convert nested calls passing properties as ref arguments [#876](https://github.com/icsharpcode/CodeConverter/issues/876)
+* Improve conversion between nullable and not-nullable integrals/fractional/enum types [#865](https://github.com/icsharpcode/CodeConverter/issues/865)
 
 ### C# -> VB
 
