@@ -1,6 +1,6 @@
 # Code Converter [![Build CodeConverter](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml/badge.svg?branch=master&event=push)](https://github.com/icsharpcode/CodeConverter/actions/workflows/dotnet.yml) [![Install](https://vsmarketplacebadge.jeremyrajan.com/api/badge.svg?itemName=SharpDevelopTeam.CodeConverter&install)](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
 
-Convert code from VB.NET to C# and vice versa using Roslyn - all free and open source:
+Convert code from VB.NET to C# (and vice versa) using Roslyn - all free and open source:
 * [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
 * [Online snippet converter](https://codeconverter.icsharpcode.net/)
 * Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global` (Requires VS2019+ installed)
@@ -29,7 +29,13 @@ Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/i
 
 Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! See [Contributing.md](https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md) for more info.
 
-Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. But we're very happy to support developers who want to contribute to either conversion direction. Visual Basic will have support for some project types on initial versions of .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/).
+Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. This seems to be because the use cases for two directions tend to differ considerably.
+
+### Use cases
+
+Visual Basic .NET is slowly dying. It has support for *some* project types on .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/). Hence the main use case for:
+* VB->C#: moving whole projects
+* C#->VB: help incorporate snippets from stack overflow into existing VB codebase, or to help learning one language from the other
 
 ## Other ways to use the converter
 * Latest CI build (potentially less stable):
