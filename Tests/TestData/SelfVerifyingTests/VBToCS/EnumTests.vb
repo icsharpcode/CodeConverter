@@ -17,19 +17,49 @@ Public Class EnumTests
     End Class
 
     <Fact>
-    Sub TestEnumCast()
+    Sub TestEnumCType()
         Dim eEnum = RankEnum.Second
         Dim sEnum = "2" 'Has to be an integer within the string, CType doesn't parse enums
         Dim iEnum = 2
-        Dim enumToString As String = CType(eEnum, String)
-        Dim enumToInt As Integer = CType(eEnum, Integer)
-        Dim stringToEnum As RankEnum = CType(sEnum, RankEnum)
-        Dim intToEnum As RankEnum = CType(iEnum, RankEnum)
+        Dim boxedString = CType(sEnum, Object)
+        Dim boxedInt = CType(iEnum, Object)
+
+        Dim enumToString = CType(eEnum, String)
+        Dim enumToInt = CType(eEnum, Integer)
+        Dim stringToEnum = CType(sEnum, RankEnum)
+        Dim intToEnum = CType(iEnum, RankEnum)
+        Dim boxedStringToEnum = CType(boxedString, RankEnum)
+        Dim boxedIntToEnum = CType(boxedInt, RankEnum)
 
         Assert.Equal(sEnum, enumToString)
         Assert.Equal(iEnum, enumToInt)
         Assert.Equal(eEnum, stringToEnum)
         Assert.Equal(eEnum, intToEnum)
+        Assert.Equal(eEnum, boxedStringToEnum)
+        Assert.Equal(eEnum, boxedIntToEnum)
+    End Sub
+
+    <Fact>
+    Sub TestEnumConversions()
+        Dim eEnum = RankEnum.Second
+        Dim sEnum = "2" 'Has to be an integer within the string, CType doesn't parse enums
+        Dim iEnum = 2
+        Dim boxedString = CType(sEnum, Object)
+        Dim boxedInt = CType(iEnum, Object)
+
+        Dim enumToString As String = eEnum
+        Dim enumToInt As Integer = iEnum
+        Dim stringToEnum As RankEnum = sEnum
+        Dim intToEnum As RankEnum = iEnum
+        Dim boxedStringToEnum As RankEnum = boxedString
+        Dim boxedIntToEnum As RankEnum = boxedInt
+
+        Assert.Equal(sEnum, enumToString)
+        Assert.Equal(iEnum, enumToInt)
+        Assert.Equal(eEnum, stringToEnum)
+        Assert.Equal(eEnum, intToEnum)
+        Assert.Equal(eEnum, boxedStringToEnum)
+        Assert.Equal(eEnum, boxedIntToEnum)
     End Sub
 
     <Fact>
