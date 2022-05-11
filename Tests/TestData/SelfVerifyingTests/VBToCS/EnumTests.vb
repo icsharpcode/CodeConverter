@@ -76,4 +76,25 @@ Public Class EnumTests
         Assert.Equal(withSecondRemoved, i)
         Assert.Equal(withSecondRemoved, RankEnum.First)
     End Sub
+
+    <Fact>
+    Sub TestEnumFractionalConversions()
+        Dim firstEnum As RankEnum = 1.4D
+        Dim secondEnum As RankEnum = 1.5D
+
+        Assert.Equal(RankEnum.First, firstEnum)
+        Assert.Equal(RankEnum.Second, secondEnum)
+
+        firstEnum = 1.4F
+        secondEnum = 1.5F
+
+        Assert.Equal(RankEnum.First, firstEnum)
+        Assert.Equal(RankEnum.Second, secondEnum)
+
+        firstEnum = 1.4R
+        secondEnum = 1.5R
+
+        Assert.Equal(RankEnum.First, firstEnum)
+        Assert.Equal(RankEnum.Second, secondEnum)
+    End Sub
 End Class
