@@ -519,6 +519,99 @@ internal partial class Class1
     }
 
     [Fact]
+    public async Task CastingToEnumRightSideShouldBeForcedToBeIntegralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Class C
+    Public Enum OrderStatus
+        Pending = 0
+        Fullfilled = 1
+    End Enum
+ 
+    Sub Test1()
+        Dim val As Object = ""1""
+        Dim os1 = CType(val, OrderStatus)
+        Dim os2 As OrderStatus = val
+
+        Dim null1 = CType(val, OrderStatus?)
+        Dim null2 As OrderStatus? = val
+    End Sub
+    Sub Test2()
+        Dim val As String = ""1""
+        Dim os1 = CType(val, OrderStatus)
+        Dim os2 As OrderStatus = val
+
+        Dim null1 = CType(val, OrderStatus?)
+        Dim null2 As OrderStatus? = val
+    End Sub
+    Sub Test3()
+        Dim val As Object = 1
+        Dim os1 = CType(val, OrderStatus)
+        Dim os2 As OrderStatus = val
+
+        Dim null1 = CType(val, OrderStatus?)
+        Dim null2 As OrderStatus? = val
+    End Sub
+    Sub Test4()
+        Dim val = CType(1.5D, Object)
+        Dim os1 = CType(val, OrderStatus)
+        Dim os2 As OrderStatus = val
+
+        Dim null1 = CType(val, OrderStatus?)
+        Dim null2 As OrderStatus? = val
+    End Sub
+End Class",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public enum OrderStatus
+    {
+        Pending = 0,
+        Fullfilled = 1
+    }
+
+    public void Test1()
+    {
+        object val = ""1"";
+        OrderStatus os1 = (OrderStatus)Conversions.ToInteger(val);
+        OrderStatus os2 = (OrderStatus)Conversions.ToInteger(val);
+
+        OrderStatus? null1 = (OrderStatus?)val;
+        OrderStatus? null2 = (OrderStatus?)val;
+    }
+    public void Test2()
+    {
+        string val = ""1"";
+        OrderStatus os1 = (OrderStatus)Conversions.ToInteger(val);
+        OrderStatus os2 = (OrderStatus)Conversions.ToInteger(val);
+
+        OrderStatus? null1 = (OrderStatus?)Conversions.ToInteger(val);
+        OrderStatus? null2 = (OrderStatus?)Conversions.ToInteger(val);
+    }
+    public void Test3()
+    {
+        object val = 1;
+        OrderStatus os1 = (OrderStatus)Conversions.ToInteger(val);
+        OrderStatus os2 = (OrderStatus)Conversions.ToInteger(val);
+
+        OrderStatus? null1 = (OrderStatus?)val;
+        OrderStatus? null2 = (OrderStatus?)val;
+    }
+    public void Test4()
+    {
+        object val = 1.5m;
+        OrderStatus os1 = (OrderStatus)Conversions.ToInteger(val);
+        OrderStatus os2 = (OrderStatus)Conversions.ToInteger(val);
+
+        OrderStatus? null1 = (OrderStatus?)val;
+        OrderStatus? null2 = (OrderStatus?)val;
+    }
+}");
+    }
+
+    [Fact]
     public async Task CTypeObjectToIntegerAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(

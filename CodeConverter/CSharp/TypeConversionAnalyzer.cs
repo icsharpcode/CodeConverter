@@ -161,6 +161,12 @@ internal class TypeConversionAnalyzer
             return TypeConversionKind.Conversion;
         }
 
+        vbType.IsNullable(out var underlyingType);
+        var nullableVbType = underlyingType ?? vbType;
+        if (vbConvertedType.IsEnumType() && !(nullableVbType.IsIntegralOrEnumType() || nullableVbType.IsFractionalNumericType())) {
+            return TypeConversionKind.EnumConversionThenCast;
+        }
+
         var vbCompilation = (VBasic.VisualBasicCompilation) _semanticModel.Compilation;
         var vbConversion = vbCompilation.ClassifyConversion(vbType, vbConvertedType);
         var csType = GetCSType(vbType, vbNode);
