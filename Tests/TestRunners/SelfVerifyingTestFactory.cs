@@ -34,9 +34,10 @@ internal class SelfVerifyingTestFactory
         where TLanguageConversion : ILanguageConversion, new()
     {
         // Lazy to avoid confusing test runner on error, but also avoid calculating multiple times
-        var conversionResultAsync = new AsyncLazy<ConversionResult>(() =>
-            ProjectConversion.ConvertTextAsync<TLanguageConversion>(sourceFileText, new TextConversionOptions(DefaultReferences.NetStandard2))
-        );
+        var conversionResultAsync = new AsyncLazy<ConversionResult>(() => {
+            var xUnitReferences = DefaultReferences.With(typeof(FactAttribute).Assembly, typeof(Assert).Assembly);
+            return ProjectConversion.ConvertTextAsync<TLanguageConversion>(sourceFileText, new TextConversionOptions(xUnitReferences));
+        });
 
         var runnableTestsInTarget = new AsyncLazy<Dictionary<string, NamedTest>>(async () => GetConvertedNamedFacts<TTargetCompiler>(runnableTestsInSource,
             await conversionResultAsync.GetValueAsync()));

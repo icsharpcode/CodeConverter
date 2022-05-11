@@ -37,9 +37,9 @@ public static class DefaultReferences
     private static readonly Dictionary<string, (string Location, string[] ReferenceNames)> _assemblyInfoCache = new();
 
     public static IReadOnlyCollection<PortableExecutableReference> NetStandard2 { get; } =
-        With(Enumerable.Empty<Assembly>()).ToArray();
+        With(Array.Empty<Assembly>()).ToArray();
 
-    public static IReadOnlyCollection<PortableExecutableReference> With(IEnumerable<Assembly> assemblies) =>
+    public static IReadOnlyCollection<PortableExecutableReference> With(params Assembly[] assemblies) =>
         GetRefs(GetPathsForAllReferences(DefaultAssemblies.Concat(assemblies))).ToArray();
 
     private static IEnumerable<PortableExecutableReference> GetRefs(IEnumerable<string> assemblyLocations) =>
