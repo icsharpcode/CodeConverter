@@ -36,7 +36,7 @@ internal class XmlImportContext
 
         var xAttributeList = SyntaxFactory.FieldDeclaration(
             SyntaxFactory.List<AttributeListSyntax>(),
-            SyntaxFactory.TokenList(SyntaxFactory.Token(CSSyntaxKind.PrivateKeyword), SyntaxFactory.Token(CSSyntaxKind.StaticKeyword)),
+            SyntaxFactory.TokenList(SyntaxFactory.Token(CSSyntaxKind.PrivateKeyword), SyntaxFactory.Token(CSSyntaxKind.StaticKeyword), SyntaxFactory.Token(CSSyntaxKind.ReadOnlyKeyword)),
             CommonConversions.CreateVariableDeclarationAndAssignment(
                 "namespaceAttributes", SyntaxFactory.InitializerExpression(
                     CSSyntaxKind.ArrayInitializerExpression,
@@ -50,10 +50,11 @@ internal class XmlImportContext
                 SyntaxFactory.ArrayType(SyntaxFactory.IdentifierName("XAttribute"), SyntaxFactory.SingletonList(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression()))))));
 
 
-        var boilerplate = SyntaxFactory.ParseStatement(@"
-                TContainer Apply<TContainer>(TContainer x) where TContainer : XContainer
+        var boilerplate = new[] {
+            SyntaxFactory.ParseStatement(@"
+                XElement Apply(XElement x)
                 {
-                    foreach (var d in x.Descendants()) {
+                    foreach (var d in x.DescendantsAndSelf()) {
                         foreach (var n in namespaceAttributes) {
                             var a = d.Attribute(n.Name);
                             if (a != null && a.Value == n.Value) {
@@ -63,19 +64,26 @@ internal class XmlImportContext
                     }
                     x.Add(namespaceAttributes);
                     return x;
-                }") as LocalFunctionStatementSyntax;
+                }") as LocalFunctionStatementSyntax,
+            SyntaxFactory.ParseStatement(@"
+                XDocument Apply(XDocument x)
+                {
+                    Apply(x.Root);
+                    return x;
+                }") as LocalFunctionStatementSyntax,
+        };
 
-        var applyMethod = SyntaxFactory.MethodDeclaration(
+        var applyMethods = from functionStatement in boilerplate select SyntaxFactory.MethodDeclaration(
             SyntaxFactory.List<AttributeListSyntax>(),
             SyntaxFactory.TokenList(SyntaxFactory.Token(CSSyntaxKind.InternalKeyword), SyntaxFactory.Token(CSSyntaxKind.StaticKeyword)),
-            boilerplate.ReturnType,
+            functionStatement.ReturnType,
             null,
-            boilerplate.Identifier,
-            boilerplate.TypeParameterList,
-            boilerplate.ParameterList,
-            boilerplate.ConstraintClauses,
-            boilerplate.Body,
-            boilerplate.ExpressionBody);
+            functionStatement.Identifier,
+            functionStatement.TypeParameterList,
+            functionStatement.ParameterList,
+            functionStatement.ConstraintClauses,
+            functionStatement.Body,
+            functionStatement.ExpressionBody);
 
         return SyntaxFactory.ClassDeclaration(
             SyntaxFactory.List<AttributeListSyntax>(),
@@ -83,7 +91,7 @@ internal class XmlImportContext
             HelperClassUniqueIdentifierName.Identifier,
             null, null,
             SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(),
-            SyntaxFactory.List(_xNamespaceFields.Concat<MemberDeclarationSyntax>(xAttributeList).Concat(applyMethod))
+            SyntaxFactory.List(_xNamespaceFields.Concat<MemberDeclarationSyntax>(xAttributeList).Concat(applyMethods))
         );
             
     }

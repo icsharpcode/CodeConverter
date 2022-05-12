@@ -275,14 +275,14 @@ internal static class XmlImportsCodeToConvert
     // Place Imports statements at the top of your program.  
     internal static readonly XNamespace Default = ""http://DefaultNamespace"";
     internal static readonly XNamespace ns = ""http://NewNamespace"";
-    private static XAttribute[] namespaceAttributes = {
+    private static readonly XAttribute[] namespaceAttributes = {
         new XAttribute(""xmlns"", Default.NamespaceName),
         new XAttribute(XNamespace.Xmlns + ""ns"", ns.NamespaceName)
     };
 
-    internal static TContainer Apply<TContainer>(TContainer x) where TContainer : XContainer
+    internal static XElement Apply(XElement x)
     {
-        foreach (var d in x.Descendants())
+        foreach (var d in x.DescendantsAndSelf())
         {
             foreach (var n in namespaceAttributes)
             {
@@ -294,6 +294,12 @@ internal static class XmlImportsCodeToConvert
             }
         }
         x.Add(namespaceAttributes);
+        return x;
+    }
+
+    internal static XDocument Apply(XDocument x)
+    {
+        Apply(x.Root);
         return x;
     }
 }
