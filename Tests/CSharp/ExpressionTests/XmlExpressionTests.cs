@@ -178,8 +178,6 @@ internal partial class TestClass
 }");
     }
 
-
-
     [Fact]
     public async Task AssignmentStatementWithXmlElementAndEmbeddedExpressionAsync()
     {
@@ -199,8 +197,6 @@ internal partial class TestClass
     }
 }");
     }
-
-
 
     [Fact]
     public async Task SelfClosingXmlTagAsync()
@@ -260,7 +256,7 @@ Module Module1
     Dim inner = <innerElement/>
 
     ' Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
-    Dim outer = <ns:outer><ns:innerElement></ns:innerElement><siblingElement></siblingElement><%= inner %></ns:outer>
+    Dim outer = <ns:outer><ns:innerElement attr=""value""></ns:innerElement><siblingElement></siblingElement><%= inner %></ns:outer>
 
     ' Display element to see its final form. 
     Console.WriteLine(outer)
@@ -313,12 +309,31 @@ internal static partial class Module1
         var inner = XmlImports.Apply(new XElement(XmlImports.Default + ""innerElement""));
 
         // Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
-        var outer = XmlImports.Apply(new XElement(XmlImports.ns + ""outer"", new XElement(XmlImports.ns + ""innerElement""), new XElement(XmlImports.Default + ""siblingElement""), inner));
+        var outer = XmlImports.Apply(new XElement(XmlImports.ns + ""outer"", new XElement(XmlImports.ns + ""innerElement"", new XAttribute(""attr"", ""value"")), new XElement(XmlImports.Default + ""siblingElement""), inner));
 
         // Display element to see its final form. 
         Console.WriteLine(outer);
     }
 
 }");
+    }
+
+    [Fact]
+    public async Task XmlBuiltinNamespaceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()       
+        Dim xElement = <Name xml:lang=""de"">Beispiel</Name>
+    End Sub
+End Class", @"using System.Xml.Linq;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        var xElement = new XElement(""Name"", new XAttribute(XNamespace.Xml + ""lang"", ""de""), ""Beispiel"");
+    }
+}");
+
     }
 }

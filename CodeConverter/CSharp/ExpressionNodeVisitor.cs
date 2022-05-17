@@ -139,7 +139,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     public override async Task<CSharpSyntaxNode> VisitXmlAttribute(VBasic.Syntax.XmlAttributeSyntax node)
     {
         var arguments = SyntaxFactory.SeparatedList(
-            SyntaxFactory.Argument(CommonConversions.Literal(node.Name.ToString())).Yield()
+            SyntaxFactory.Argument(await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield()
                 .Concat(SyntaxFactory.Argument(await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield())
         );
         return SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XAttribute")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
@@ -199,18 +199,32 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
     {
         if (node.Prefix != null) {
-            return SyntaxFactory.BinaryExpression(
-                SyntaxKind.AddExpression,
-                SyntaxFactory.MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    XmlImportContext.HelperClassShortIdentifierName,
-                    SyntaxFactory.IdentifierName(node.Prefix.Name.ValueText)
-                ),
-                SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
-            );
+            switch (node.Prefix.Name.ValueText) {
+                case "xml":
+                case "xmlns":
+                    return SyntaxFactory.BinaryExpression(
+                        SyntaxKind.AddExpression,
+                        SyntaxFactory.MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            SyntaxFactory.IdentifierName("XNamespace"),
+                            SyntaxFactory.IdentifierName(node.Prefix.Name.ValueText.ToPascalCase())
+                        ),
+                        SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
+                    );
+                default:
+                    return SyntaxFactory.BinaryExpression(
+                    SyntaxKind.AddExpression,
+                    SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        XmlImportContext.HelperClassShortIdentifierName,
+                        SyntaxFactory.IdentifierName(node.Prefix.Name.ValueText)
+                    ),
+                    SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text))
+                );
+            }
         }
-
-        if (_xmlImportContext.HasDefaultImport) {
+        
+        if (_xmlImportContext.HasDefaultImport && node.Parent is not VBSyntax.XmlAttributeSyntax) {
             return SyntaxFactory.BinaryExpression(
                 SyntaxKind.AddExpression,
                 SyntaxFactory.MemberAccessExpression(
