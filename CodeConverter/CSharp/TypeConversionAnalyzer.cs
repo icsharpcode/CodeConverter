@@ -392,6 +392,15 @@ internal class TypeConversionAnalyzer
             SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId));
     }
 
+    private MemberAccessExpressionSyntax GetConversionsMemberAccessGeneric(ITypeSymbol typeParameter)
+    {
+        _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
+        return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxFactory.IdentifierName("Conversions"), 
+            SyntaxFactory.GenericName(SyntaxFactory.Identifier("ToGenericParameter"), 
+                SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList<TypeSyntax>(SyntaxFactory.IdentifierName(typeParameter.Name)))));
+    }
+
     private ExpressionSyntax AddRoundInvocation(ExpressionSyntax csNode)
     {
         var memberAccess = GetMathRoundMemberAccess();
@@ -418,14 +427,17 @@ internal class TypeConversionAnalyzer
         if (nullableCurrentType != null && nullableTargetType == null) {
             csNode = csNode.NullableGetValueExpression();
         }
-
         var typeNameForConversionMethod = nullableTargetType ?? targetType;
-        if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(typeNameForConversionMethod.GetFullMetadataName(), out var methodId)) {
-            return CreateCast(csNode, targetType);
-        }
 
-        // Need to use Conversions rather than Convert to match what VB does, eg. Conversions.ToInteger(True) -> -1
-        var memberAccess = GetConversionsMemberAccess(methodId.Name);
+        MemberAccessExpressionSyntax memberAccess;
+        if (typeNameForConversionMethod.TypeKind == TypeKind.TypeParameter) {
+            memberAccess = GetConversionsMemberAccessGeneric(typeNameForConversionMethod);
+        } else if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(typeNameForConversionMethod.GetFullMetadataName(), out var methodId)) {
+            return CreateCast(csNode, targetType);
+        } else {
+            // Need to use Conversions rather than Convert to match what VB does, eg. Conversions.ToInteger(True) -> -1
+            memberAccess = GetConversionsMemberAccess(methodId.Name);
+        }
 
         if (nullableCurrentType != null && nullableTargetType != null) {
             return _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, memberAccess, GetTypeSyntax(targetType));

@@ -1427,4 +1427,27 @@ public partial class CopiedFromTheSelfVerifyingBooleanTests
     }
 }");
     }
+
+    [Fact]
+    public async Task TestGenericCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestGenericCast
+    Private Shared Function GenericFunctionWithCast(Of T)() As T
+        Const result = 1
+        Dim resultObj As Object = result
+        Return CType(resultObj, T)
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestGenericCast
+{
+    private static T GenericFunctionWithCast<T>()
+    {
+        const int result = 1;
+        object resultObj = result;
+        return Conversions.ToGenericParameter<T>(resultObj);
+    }
+}");
+    }
 }
