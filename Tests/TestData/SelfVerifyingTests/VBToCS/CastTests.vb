@@ -2334,4 +2334,16 @@ Public Class CastTests
         Dim vStringIntDivString = vString \ vString
         Assert.Equal(vStringIntDivString.GetType(), GetType(Long))
     End Sub
+
+    <Fact>
+    Sub TestGenericCast()
+        Assert.Equal(1I, GenericFunctionWithCast(Of Integer)())
+        Assert.Equal(1S, GenericFunctionWithCast(Of Short)())
+    End Sub
+
+    Private Shared Function GenericFunctionWithCast(Of T)() As T
+        Const result = 1
+        Dim resultObj As Object = result
+        Return CType(resultObj, T)
+    End Function
 End Class
