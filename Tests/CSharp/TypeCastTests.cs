@@ -1433,20 +1433,38 @@ public partial class CopiedFromTheSelfVerifyingBooleanTests
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Class TestGenericCast
-    Private Shared Function GenericFunctionWithCast(Of T)() As T
+    Private Shared Function GenericFunctionWithCTypeCast(Of T)() As T
         Const result = 1
         Dim resultObj As Object = result
         Return CType(resultObj, T)
+    End Function
+    Private Shared Function GenericFunctionWithCast(Of T)() As T
+        Const result = 1
+        Dim resultObj As Object = result
+        Return resultObj
+    End Function
+    Private Shared Function GenericFunctionWithCastThatExistsInCsharp(Of T As {TestGenericCast})() As T
+        Return New TestGenericCast
     End Function
 End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestGenericCast
 {
+    private static T GenericFunctionWithCTypeCast<T>()
+    {
+        const int result = 1;
+        object resultObj = result;
+        return Conversions.ToGenericParameter<T>(resultObj);
+    }
     private static T GenericFunctionWithCast<T>()
     {
         const int result = 1;
         object resultObj = result;
         return Conversions.ToGenericParameter<T>(resultObj);
+    }
+    private static T GenericFunctionWithCastThatExistsInCsharp<T>() where T : TestGenericCast
+    {
+        return (T)new TestGenericCast();
     }
 }");
     }
