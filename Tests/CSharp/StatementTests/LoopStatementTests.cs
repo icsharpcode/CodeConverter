@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -416,6 +417,102 @@ internal partial class GotoTest1
         Console.WriteLine(""End of search."");
         Console.WriteLine(""Press any key to exit."");
         Console.ReadKey();
+    }
+}");
+    }
+    
+    [Fact]
+    public async Task ForWithVariableDeclarationIssue897Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        For i = 1 To 2
+            Dim b As Boolean
+            Console.WriteLine(b)
+            b = True
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        var b = default(bool);
+        for (int i = 1; i <= 2; i++)
+        {
+            Console.WriteLine(b);
+            b = true;
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NestedLoopsWithVariableDeclarationIssue897Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim i=1
+        Do
+            Dim b As Integer
+            b  +=1
+            Console.WriteLine(""b={0}"", b)
+            For j = 1 To 3
+                Dim c As Integer
+                c  +=1
+                Console.WriteLine(""c1={0}"", c)
+            Next
+            For j = 1 To 3
+                Dim c As Integer
+                c +=1
+                Console.WriteLine(""c2={0}"", c)
+            Next
+            Dim k=1
+            Do while k <= 3
+                Dim c As Integer
+                c +=1
+                Console.WriteLine(""c3={0}"", c)
+                k+=1
+            Loop
+        i += 1
+        Loop Until i > 3
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        int i = 1;
+        var b = default(int);
+        var c1 = default(int);
+        var c2 = default(int);
+        var c3 = default(int);
+        do
+        {
+            b += 1;
+            Console.WriteLine(""b={0}"", b);
+            for (int j = 1; j <= 3; j++)
+            {
+                c1 += 1;
+                Console.WriteLine(""c1={0}"", c1);
+            }
+            for (int j = 1; j <= 3; j++)
+            {
+                c2 += 1;
+                Console.WriteLine(""c2={0}"", c2);
+            }
+            int k = 1;
+            while (k <= 3)
+            {
+                c3 += 1;
+                Console.WriteLine(""c3={0}"", c3);
+                k += 1;
+            }
+            i += 1;
+        }
+        while (i <= 3);
     }
 }");
     }

@@ -123,7 +123,22 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
                 }
             } else {
-                declarations.AddRange(localDeclarationStatementSyntaxs);
+                foreach (var decl in localDeclarationStatementSyntaxs) {
+                    if (_perScopeState.IsInsideLoop() &&
+                        decl.Declaration.Variables.All(
+                            x => x.Initializer?.Value is DefaultExpressionSyntax
+                        )) {
+                        foreach (var variable in decl.Declaration.Variables) {
+                            _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
+                                variable.Identifier.Text, 
+                                variable.Initializer?.Value, 
+                                decl.Declaration.Type,
+                                _perScopeState.IsInsideNestedLoop()));
+                        }
+                    } else {
+                        declarations.Add(decl);
+                    }
+                }
             }
             var localFunctions = methods.Cast<LocalFunctionStatementSyntax>();
             declarations.AddRange(localFunctions);

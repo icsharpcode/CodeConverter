@@ -40,14 +40,40 @@ internal class PerScopeState
         return additionalLocal;
     }
 
-    public void HoistToTopLevel<T>(T additionalField) where T : IHoistedNode
+    public T HoistToParent<T>(T additionalLocal) where T : IHoistedNode
+    {
+        _hoistedNodesPerScope.ElementAt(1).Add(additionalLocal);
+        return additionalLocal;
+    }
+
+    private readonly VBasic.SyntaxKind[] loopKinds = {
+        VBasic.SyntaxKind.DoKeyword, 
+        VBasic.SyntaxKind.ForKeyword,
+        VBasic.SyntaxKind.WhileKeyword
+    };
+    public bool IsInsideLoop()
+    {
+        return _hoistedNodesPerScope.Skip(1).Any(x => loopKinds.Contains(x.ExitableKind));
+    }
+    public bool IsInsideNestedLoop()
+    {
+        return _hoistedNodesPerScope.Skip(1).Count(x => loopKinds.Contains(x.ExitableKind)) > 1;
+    }
+
+    public T HoistToTopLevel<T>(T additionalField) where T : IHoistedNode
     {
         _hoistedNodesPerScope.Last().Add(additionalField);
+        return additionalField;
     }
 
     public IReadOnlyCollection<AdditionalDeclaration> GetDeclarations()
     {
         return _hoistedNodesPerScope.Peek().OfType<AdditionalDeclaration>().ToArray();
+    }
+
+    public IReadOnlyCollection<HoistedDefaultInitializedLoopVariable> GetDefaultInitializedLoopVariables()
+    {
+        return _hoistedNodesPerScope.Peek().OfType<HoistedDefaultInitializedLoopVariable>().ToArray();
     }
 
     private StatementSyntax[] GetPostStatements()
@@ -83,12 +109,30 @@ internal class PerScopeState
     {
         var preDeclarations = new List<StatementSyntax>();
         var postAssignments = new List<StatementSyntax>();
+        var newNames = new Dictionary<string, string>();
+
+        foreach (var variable in GetDefaultInitializedLoopVariables()) {
+            if (IsInsideLoop()) {
+                newNames.Add(variable.OriginalVariableName, variable.Id);
+                HoistToParent(variable);
+            } else {
+                string name;
+                if (variable.Nested) {
+                    newNames.Add(variable.Id, NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, variable.OriginalVariableName));
+                    name = newNames[variable.Id];
+                } else {
+                    name = variable.OriginalVariableName;
+                }
+                var decl = 
+                    CommonConversions.CreateVariableDeclarationAndAssignment(name,
+                    variable.Initializer, variable.Type);
+                preDeclarations.Add(CS.SyntaxFactory.LocalDeclarationStatement(decl));
+            }
+        }
 
         var additionalDeclarationInfo = GetDeclarations();
-        var newNames = additionalDeclarationInfo.ToDictionary(l => l.Id, l =>
-            NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, l.Prefix)
-        );
         foreach (var additionalLocal in additionalDeclarationInfo) {
+            newNames.Add(additionalLocal.Id, NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, additionalLocal.Prefix)); 
             var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Id],
                 additionalLocal.Initializer, additionalLocal.Type);
             preDeclarations.Add(CS.SyntaxFactory.LocalDeclarationStatement(decl));
