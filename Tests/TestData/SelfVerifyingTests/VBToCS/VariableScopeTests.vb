@@ -1,6 +1,5 @@
 ﻿Imports System
 Imports System.Linq
-Imports System.Xml.Linq
 Imports Xunit
 
 Public Class VariableScopeTests

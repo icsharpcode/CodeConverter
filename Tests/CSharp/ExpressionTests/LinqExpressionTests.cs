@@ -7,6 +7,40 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 public class LinqExpressionTests : ConverterTestBase
 {
     [Fact]
+    public async Task Issue895_LinqWhereAfterGroupAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Issue895
+    Private Shared Sub LinqWithGroup()
+        Dim numbers = New List(Of Integer) From {1, 2, 3, 4, 4}
+        Dim duplicates = From x In numbers
+                         Group By x Into Group
+                         Where Group.Count > 1
+        System.Console.WriteLine(duplicates.Count)
+    End Sub
+End Class",
+            @"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public partial class Issue895
+{
+    private static void LinqWithGroup()
+    {
+        var numbers = new List<int>() { 1, 2, 3, 4, 4 };
+        var duplicates = from x in numbers
+                         group x by x into Group
+                         where Group.Count() > 1
+                         select Group;
+        Console.WriteLine(duplicates.Count());
+    }
+}");
+    }
+
+    [Fact]
     public async Task Issue736_LinqEarlySelectAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
@@ -40,6 +74,7 @@ public partial class Issue635
     }
 }");
     }
+
     [Fact]
     public async Task Issue635_LinqDistinctOrderByAsync()
     {

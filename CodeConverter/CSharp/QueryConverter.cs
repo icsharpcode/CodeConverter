@@ -189,7 +189,10 @@ internal class QueryConverter
                     var keyExpression = await gcs.Keys.Single().Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(_triviaConvertingVisitor);
                     selectOrGroup = SyntaxFactory.GroupClause(item, keyExpression);
                 }
-                queryContinuation = nestedClause != null ? CreateGroupByContinuation(gcs, continuationClauses, nestedClause.SelectOrGroup) : null;
+                if (nestedClause != null) {
+                    continuationClauses = continuationClauses.AddRange(nestedClause.Clauses);
+                    queryContinuation = CreateGroupByContinuation(gcs, continuationClauses, nestedClause.SelectOrGroup);
+                }
                 break;
             case VBSyntax.SelectClauseSyntax scs:
                 selectOrGroup = await ConvertSelectClauseSyntaxAsync(scs);
@@ -205,6 +208,9 @@ internal class QueryConverter
     {
         var queryBody = convertedClauses.Any() ? SyntaxFactory.QueryBody(convertedClauses, selectOrGroupClauseSyntax, null) : SyntaxFactory.QueryBody(selectOrGroupClauseSyntax);
         SyntaxToken groupName = GetGroupIdentifier(gcs);
+        if (queryBody.SelectOrGroup.HasAnnotation(DefaultSelectAnnotation)) {
+            queryBody = queryBody.WithSelectOrGroup(CreateDefaultSelectClause(groupName));
+        }
         return SyntaxFactory.QueryContinuation(groupName, queryBody);
     }
 
