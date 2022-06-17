@@ -432,7 +432,11 @@ internal class TypeConversionAnalyzer
         MemberAccessExpressionSyntax memberAccess;
         if (typeNameForConversionMethod.TypeKind == TypeKind.TypeParameter) {
             memberAccess = GetConversionsMemberAccessGeneric(typeNameForConversionMethod);
-        } else if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(typeNameForConversionMethod.GetFullMetadataName(), out var methodId)) {
+        }
+        else if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(typeNameForConversionMethod.GetFullMetadataName(), out var methodId) ||
+                 nullableTargetType != null && currentType.SpecialType == SpecialType.System_Object) {
+            // We don't have matching Conversions method
+            // or there is a cast from Object to Nullable that doesn't require Conversions
             return CreateCast(csNode, targetType);
         } else {
             // Need to use Conversions rather than Convert to match what VB does, eg. Conversions.ToInteger(True) -> -1
