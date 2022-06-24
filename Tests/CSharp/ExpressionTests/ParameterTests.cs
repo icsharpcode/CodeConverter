@@ -36,4 +36,68 @@ public partial class MyController
     }
 }");
     }
+
+    [Fact]
+    public async Task OptionalLastParameter_UsesCorrectMethodOverloadAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class TestClass
+     Public Sub M(a As String)
+    End Sub
+    Public Sub M(a As String, Optional b as String = ""smth"")
+    End Sub
+    
+    Public Sub Test()
+        M(""x"",)
+    End Sub
+End Class
+",
+            @"
+public partial class TestClass
+{
+    public void M(string a)
+    {
+    }
+    public void M(string a, string b = ""smth"")
+    {
+    }
+
+    public void Test()
+    {
+        M(""x"", ""smth"");
+    }
+}");
+    }
+
+    [Fact]
+    public async Task OptionalFirstParameter_UsesCorrectMethodOverloadAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class TestClass
+    Public Sub M(b As String)
+    End Sub
+    Public Sub M(Optional a As String = ""ss"", Optional b as String = ""smth"")
+    End Sub
+    
+    Public Sub Test()
+        M(,""x"")
+    End Sub
+End Class
+",
+            @"
+public partial class TestClass
+{
+    public void M(string b)
+    {
+    }
+    public void M(string a = ""ss"", string b = ""smth"")
+    {
+    }
+
+    public void Test()
+    {
+        M(""ss"", ""x"");
+    }
+}");
+    }
 }

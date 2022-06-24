@@ -1574,7 +1574,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<IEnumerable<ArgumentSyntax>> ConvertArgumentsAsync(VBasic.Syntax.ArgumentListSyntax node)
     {
         ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
-        bool forceNamedParameters = false;
         var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => await ConvertArg(a, i)))
             .Where(a => a != null);
         argumentSyntaxs = argumentSyntaxs.Concat(GetAdditionalRequiredArgs(invocationSymbol, node.Arguments));
@@ -1584,23 +1583,23 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax a, int i)
         {
             if (a.IsOmitted) {
-                if (invocationSymbol != null) {
-                    forceNamedParameters = true;
-                    return null; //Prefer to skip omitted and use named parameters when the symbol is available
+                var parameterSymbol = invocationSymbol?.GetParameters().ElementAt(i);
+                var csRefKind = CommonConversions.GetCsRefKind(parameterSymbol);
+                if (csRefKind != RefKind.None) {
+                    return CreateOptionalRefArg(parameterSymbol, csRefKind);
                 }
 
-                var defaultLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+                ExpressionSyntax defaultLiteral;
+                if (parameterSymbol?.HasExplicitDefaultValue == true) {
+                    defaultLiteral = CommonConversions.Literal(parameterSymbol.ExplicitDefaultValue);
+                } else {
+                    defaultLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+                }
+
                 return SyntaxFactory.Argument(defaultLiteral);
             }
 
-            var argumentSyntax = await a.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
-
-            if (forceNamedParameters && !a.IsNamed) {
-                var elementAtOrDefault = invocationSymbol.GetParameters().ElementAt(i).Name;
-                return argumentSyntax.WithNameColon(SyntaxFactory.NameColon(elementAtOrDefault));
-            }
-
-            return argumentSyntax;
+            return await a.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
         }
     }
 

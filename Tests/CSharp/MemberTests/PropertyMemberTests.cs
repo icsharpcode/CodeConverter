@@ -621,28 +621,28 @@ public partial class SomeClass : IFoo
     public void TestGet()
     {
         IFoo foo = this;
-        int a = get_Prop2() + get_Prop2(y: 20) + get_Prop2(10) + get_Prop2(y: 20) + get_Prop2(z: 30) + get_Prop2(10) + get_Prop2();
-        int b = foo.get_Prop() + foo.get_Prop(y: 20) + foo.get_Prop(10) + foo.get_Prop(y: 20) + foo.get_Prop(z: 30) + foo.get_Prop(10) + foo.get_Prop();
+        int a = get_Prop2(1, 2) + get_Prop2(1, 20) + get_Prop2(10, 2) + get_Prop2(1, 20, 3) + get_Prop2(1, 2, 30) + get_Prop2(10, 2, 3) + get_Prop2(1, 2, 3);
+        int b = foo.get_Prop(1, 2) + foo.get_Prop(1, 20) + foo.get_Prop(10, 2) + foo.get_Prop(1, 20, 3) + foo.get_Prop(1, 2, 30) + foo.get_Prop(10, 2, 3) + foo.get_Prop(1, 2, 3);
     }
 
     public void TestSet()
     {
-        set_Prop2(value: 1);
-        set_Prop2(y: 20, value: 1);
-        set_Prop2(10, value: 1);
-        set_Prop2(y: 20, value: 1);
-        set_Prop2(z: 30, value: 1);
-        set_Prop2(10, value: 1);
-        set_Prop2(value: 1);
+        set_Prop2(1, 2, value: 1);
+        set_Prop2(1, 20, value: 1);
+        set_Prop2(10, 2, value: 1);
+        set_Prop2(1, 20, 3, 1);
+        set_Prop2(1, 2, 30, 1);
+        set_Prop2(10, 2, 3, 1);
+        set_Prop2(1, 2, 3, 1);
 
         IFoo foo = this;
-        foo.set_Prop(value: 1);
-        foo.set_Prop(y: 20, value: 1);
-        foo.set_Prop(10, value: 1);
-        foo.set_Prop(y: 20, value: 1);
-        foo.set_Prop(z: 30, value: 1);
-        foo.set_Prop(10, value: 1);
-        foo.set_Prop(value: 1);
+        foo.set_Prop(1, 2, value: 1);
+        foo.set_Prop(1, 20, value: 1);
+        foo.set_Prop(10, 2, value: 1);
+        foo.set_Prop(1, 20, 3, 1);
+        foo.set_Prop(1, 2, 30, 1);
+        foo.set_Prop(10, 2, 3, 1);
+        foo.set_Prop(1, 2, 3, 1);
     }
 }");
     }

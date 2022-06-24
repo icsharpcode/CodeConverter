@@ -964,9 +964,9 @@ public static partial class MyExtensions
     public static void CallNewColumn()
     {
         NewColumn(typeof(MyExtensions));
-        NewColumn(null, code: ""otherCode"");
+        NewColumn(null, null, ""otherCode"");
         NewColumn(null, ""fred"");
-        NewColumn(null, argInt: 2);
+        NewColumn(null, null, argInt: 2);
     }
 }");
     }
@@ -989,7 +989,7 @@ public partial class Issue445MissingParameter
 {
     public void First(string a, string b, int c)
     {
-        mySuperFunction(7, optionalSomething: new object());
+        mySuperFunction(7, null, new object());
     }
 
 
