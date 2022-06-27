@@ -964,9 +964,9 @@ public static partial class MyExtensions
     public static void CallNewColumn()
     {
         NewColumn(typeof(MyExtensions));
-        NewColumn(null, null, ""otherCode"", argInt: 1);
+        NewColumn(null, code: ""otherCode"");
         NewColumn(null, ""fred"");
-        NewColumn(null, null, argInt: 2, code: ""code"");
+        NewColumn(null, argInt: 2);
     }
 }");
     }
@@ -979,7 +979,6 @@ public static partial class MyExtensions
         Call mySuperFunction(7, , New Object())
     End Sub
 
-
     Private Sub mySuperFunction(intSomething As Integer, Optional p As Object = Nothing, Optional optionalSomething As Object = Nothing)
         Throw New NotImplementedException()
     End Sub
@@ -989,9 +988,8 @@ public partial class Issue445MissingParameter
 {
     public void First(string a, string b, int c)
     {
-        mySuperFunction(7, null, new object());
+        mySuperFunction(7, optionalSomething: new object());
     }
-
 
     private void mySuperFunction(int intSomething, object p = null, object optionalSomething = null)
     {

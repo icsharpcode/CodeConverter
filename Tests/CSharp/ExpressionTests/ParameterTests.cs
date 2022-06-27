@@ -42,6 +42,8 @@ public partial class MyController
     {
         await TestConversionVisualBasicToCSharpAsync(@"
 Public Class TestClass
+    Public Sub M(a As String)
+    End Sub
     Public Sub M(a As String, Optional b as String = ""smth"")
     End Sub
     
@@ -53,6 +55,9 @@ End Class
             @"
 public partial class TestClass
 {
+    public void M(string a)
+    {
+    }
     public void M(string a, string b = ""smth"")
     {
     }
@@ -69,6 +74,8 @@ public partial class TestClass
     {
         await TestConversionVisualBasicToCSharpAsync(@"
 Public Class TestClass
+    Public Sub M(a As String)
+    End Sub
     Public Sub M(Optional a As String = ""ss"", Optional b as String = ""smth"")
     End Sub
     
@@ -80,6 +87,9 @@ End Class
             @"
 public partial class TestClass
 {
+    public void M(string a)
+    {
+    }
     public void M(string a = ""ss"", string b = ""smth"")
     {
     }
@@ -92,12 +102,15 @@ public partial class TestClass
     }
 
     [Fact]
-    public async Task OmittedArgumentAfterNamedArgumentAsync()
+    public async Task OmittedArgumentAfterNamedArgument_WhenMethodHasCollidingOverload_ShouldExpandAllOptionalArgsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
 Public Class TestClass
-    Public Sub M(Optional a As String = ""1"", Optional b as string = ""2"", optional c as string = ""3"")
+    Public Sub M(a As String, b as string)
     End Sub
+    Public Sub M(Optional a As String = ""1"", Optional b as string = ""2"", Optional c as string = ""3"")
+    End Sub
+
     Public Sub Test()
         M(a:=""4"", )
     End Sub
@@ -106,9 +119,13 @@ End Class
             @"
 public partial class TestClass
 {
+    public void M(string a, string b)
+    {
+    }
     public void M(string a = ""1"", string b = ""2"", string c = ""3"")
     {
     }
+
     public void Test()
     {
         M(a: ""4"", ""2"", c: ""3"");

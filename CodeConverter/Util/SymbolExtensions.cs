@@ -256,6 +256,19 @@ internal static class SymbolExtensions
         return (symbol as IMethodSymbol)?.MethodKind == MethodKind.Ordinary;
     }
 
+    public static bool HasOverloads(this ISymbol invocationSymbol)
+    {
+        if (invocationSymbol?.ContainingType is null) {
+            return false;
+        }
+
+        return invocationSymbol.ContainingType
+            .GetMembers()
+            .Where(it => string.Equals(it.Name, invocationSymbol.Name, StringComparison.OrdinalIgnoreCase))
+            .Take(2)
+            .Count() > 1;
+    }
+
     public static bool IsNormalAnonymousType(this ISymbol symbol)
     {
         return symbol.IsAnonymousType() && !symbol.IsDelegateType();

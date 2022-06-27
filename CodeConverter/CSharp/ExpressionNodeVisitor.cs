@@ -1572,14 +1572,12 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<IEnumerable<ArgumentSyntax>> ConvertArgumentsAsync(VBasic.Syntax.ArgumentListSyntax node)
     {
         ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
-        var hasOmittedArgs = node.Arguments.Any(t => t.IsOmitted);
-#pragma warning disable RS1024 // Compare symbols correctly
-        HashSet<IParameterSymbol> processedParameters = new HashSet<IParameterSymbol>(SymbolEquivalenceComparer.Instance);
-#pragma warning restore RS1024 // Compare symbols correctly
-        var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
-        argumentSyntaxs = argumentSyntaxs.Concat(GetAdditionalRequiredArgs(processedParameters, invocationSymbol, hasOmittedArgs));
+        var forceNamedParameters = false;
+        var invocationHasOverloads = invocationSymbol.HasOverloads();
 
-        return argumentSyntaxs;
+        var processedParameters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
+        return argumentSyntaxs.Concat(GetAdditionalRequiredArgs(node.Arguments, processedParameters, invocationSymbol, invocationHasOverloads));
 
         async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax arg, int argIndex)
         {
@@ -1587,14 +1585,24 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             var parameterSymbol = invocationSymbol?.GetParameters().GetArgument(argName, argIndex);
 
             if (parameterSymbol != null) {
-                processedParameters.Add(parameterSymbol);
+                processedParameters.Add(parameterSymbol.Name);
             }
 
             if (arg.IsOmitted) {
+                if (invocationSymbol != null && !invocationHasOverloads) {
+                    forceNamedParameters = true;
+                    return null; //Prefer to skip omitted and use named parameters when the symbol has only one overload
+                }
+
                 return ConvertOmittedArgument(parameterSymbol);
             }
 
-            return await arg.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
+            var argSyntax = await arg.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
+            if (forceNamedParameters && !arg.IsNamed && parameterSymbol != null) {
+                return argSyntax.WithNameColon(SyntaxFactory.NameColon(parameterSymbol.Name));
+            }
+
+            return argSyntax;
         }
 
         ArgumentSyntax ConvertOmittedArgument(IParameterSymbol parameter)
@@ -1611,26 +1619,37 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     }
 
     private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(
-        ISet<IParameterSymbol> processedParameters,
+        IEnumerable<VBSyntax.ArgumentSyntax> arguments,
+        ISymbol invocationSymbol)
+    {
+        var invocationHasOverloads = invocationSymbol.HasOverloads();
+        return GetAdditionalRequiredArgs(arguments, processedParametersNames: null, invocationSymbol, invocationHasOverloads);
+    }
+
+    private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(
+        IEnumerable<VBSyntax.ArgumentSyntax> arguments,
+        ICollection<string> processedParametersNames,
         ISymbol invocationSymbol,
-        bool invocationHasOmittedArgs = false)
+        bool invocationHasOverloads)
     {
         if (invocationSymbol is null) {
             yield break;
         }
 
-        var missingArgs = invocationSymbol.GetParameters().Where(t => !processedParameters.Contains(t));
+        var invocationHasOmittedArgs = arguments.Any(t => t.IsOmitted);
+        var expandOptionalArgs = invocationHasOmittedArgs && invocationHasOverloads;
+        var missingArgs = invocationSymbol.GetParameters().Where(t => processedParametersNames is null || !processedParametersNames.Contains(t.Name));
         var requiresCompareMethod = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive && RequiresStringCompareMethodToBeAppended(invocationSymbol);
 
         foreach (var parameterSymbol in missingArgs) {
-            var extraArg = CreateExtraArgOrNull(parameterSymbol, requiresCompareMethod, invocationHasOmittedArgs);
+            var extraArg = CreateExtraArgOrNull(parameterSymbol, requiresCompareMethod, expandOptionalArgs);
             if (extraArg != null) {
                 yield return extraArg;
             }
         }
     }
 
-    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, bool requiresCompareMethod, bool invocationHasOmittedArgs)
+    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, bool requiresCompareMethod, bool expandOptionalArgs)
     {
         var csRefKind = CommonConversions.GetCsRefKind(p);
         if (csRefKind != RefKind.None) {
@@ -1641,7 +1660,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
         }
 
-        if (invocationHasOmittedArgs && p.HasExplicitDefaultValue) {
+        if (expandOptionalArgs && p.HasExplicitDefaultValue) {
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, CommonConversions.Literal(p.ExplicitDefaultValue));
         }
 
@@ -1774,11 +1793,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     private ArgumentListSyntax CreateArgList(ISymbol invocationSymbol)
     {
-#pragma warning disable RS1024 // Compare symbols correctly
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
-            GetAdditionalRequiredArgs(new HashSet<IParameterSymbol>(SymbolEquivalenceComparer.Instance), invocationSymbol))
+            GetAdditionalRequiredArgs(Array.Empty<VBSyntax.ArgumentSyntax>(), invocationSymbol))
         );
-#pragma warning restore RS1024 // Compare symbols correctly
     }
 
     private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol)
