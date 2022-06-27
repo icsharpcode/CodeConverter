@@ -1613,7 +1613,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(
         ISet<IParameterSymbol> processedParameters,
         ISymbol invocationSymbol,
-        bool hadOmittedArgs = false)
+        bool invocationHasOmittedArgs = false)
     {
         if (invocationSymbol is null) {
             yield break;
@@ -1623,14 +1623,14 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var requiresCompareMethod = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive && RequiresStringCompareMethodToBeAppended(invocationSymbol);
 
         foreach (var parameterSymbol in missingArgs) {
-            var extraArg = CreateExtraArgOrNull(parameterSymbol, requiresCompareMethod, hadOmittedArgs);
+            var extraArg = CreateExtraArgOrNull(parameterSymbol, requiresCompareMethod, invocationHasOmittedArgs);
             if (extraArg != null) {
                 yield return extraArg;
             }
         }
     }
 
-    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, bool requiresCompareMethod, bool hadOmittedArgs)
+    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, bool requiresCompareMethod, bool invocationHasOmittedArgs)
     {
         var csRefKind = CommonConversions.GetCsRefKind(p);
         if (csRefKind != RefKind.None) {
@@ -1641,7 +1641,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
         }
 
-        if (hadOmittedArgs && p.HasExplicitDefaultValue) {
+        if (invocationHasOmittedArgs && p.HasExplicitDefaultValue) {
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, CommonConversions.Literal(p.ExplicitDefaultValue));
         }
 
