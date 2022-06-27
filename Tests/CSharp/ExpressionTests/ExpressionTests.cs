@@ -979,7 +979,6 @@ public static partial class MyExtensions
         Call mySuperFunction(7, , New Object())
     End Sub
 
-
     Private Sub mySuperFunction(intSomething As Integer, Optional p As Object = Nothing, Optional optionalSomething As Object = Nothing)
         Throw New NotImplementedException()
     End Sub
@@ -991,7 +990,6 @@ public partial class Issue445MissingParameter
     {
         mySuperFunction(7, optionalSomething: new object());
     }
-
 
     private void mySuperFunction(int intSomething, object p = null, object optionalSomething = null)
     {

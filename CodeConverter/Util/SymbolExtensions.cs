@@ -11,17 +11,21 @@ internal static class SymbolExtensions
     {
         if (symbol == null)
             throw new ArgumentNullException(nameof(symbol));
-        var method = symbol as IMethodSymbol;
-        if (method != null)
+        if (symbol is IMethodSymbol method)
             return method.Parameters;
-        var property = symbol as IPropertySymbol;
-        if (property != null)
+        if (symbol is IPropertySymbol property)
             return property.Parameters;
-        var ev = symbol as IEventSymbol;
-        if (ev != null)
+        if (symbol is IEventSymbol ev)
             return ev.Type.GetDelegateInvokeMethod().Parameters;
         return ImmutableArray<IParameterSymbol>.Empty;
     }
+
+    public static IParameterSymbol GetArgument(this ImmutableArray<IParameterSymbol> args, string name, int ordinal) => 
+        name is not null ? GetArgument(args, name) : GetArgument(args, ordinal);
+
+    public static IParameterSymbol GetArgument(this ImmutableArray<IParameterSymbol> args, string name) => args.FirstOrDefault(argSymbol => argSymbol.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    public static IParameterSymbol GetArgument(this ImmutableArray<IParameterSymbol> args, int ordinal) => ordinal < args.Length ? args[ordinal] : null;
 
     public static bool IsConstructor(this ISymbol symbol)
     {
@@ -250,6 +254,19 @@ internal static class SymbolExtensions
     public static bool IsOrdinaryMethod(this ISymbol symbol)
     {
         return (symbol as IMethodSymbol)?.MethodKind == MethodKind.Ordinary;
+    }
+
+    public static bool HasOverloads(this ISymbol invocationSymbol)
+    {
+        if (invocationSymbol?.ContainingType is null) {
+            return false;
+        }
+
+        return invocationSymbol.ContainingType
+            .GetMembers()
+            .Where(it => string.Equals(it.Name, invocationSymbol.Name, StringComparison.OrdinalIgnoreCase))
+            .Take(2)
+            .Count() > 1;
     }
 
     public static bool IsNormalAnonymousType(this ISymbol symbol)
