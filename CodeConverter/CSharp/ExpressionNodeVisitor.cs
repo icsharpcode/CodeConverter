@@ -1574,32 +1574,31 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<IEnumerable<ArgumentSyntax>> ConvertArgumentsAsync(VBasic.Syntax.ArgumentListSyntax node)
     {
         ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
-        var argumentSyntaxs = (await node.Arguments.SelectAsync(async (a, i) => await ConvertArg(a, i)))
-            .Where(a => a != null);
+        var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
         argumentSyntaxs = argumentSyntaxs.Concat(GetAdditionalRequiredArgs(invocationSymbol, node.Arguments));
 
         return argumentSyntaxs;
 
-        async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax a, int i)
+        async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax a, int argIndex)
         {
             if (a.IsOmitted) {
-                var parameterSymbol = invocationSymbol?.GetParameters().ElementAt(i);
-                var csRefKind = CommonConversions.GetCsRefKind(parameterSymbol);
-                if (csRefKind != RefKind.None) {
-                    return CreateOptionalRefArg(parameterSymbol, csRefKind);
-                }
-
-                ExpressionSyntax defaultLiteral;
-                if (parameterSymbol?.HasExplicitDefaultValue == true) {
-                    defaultLiteral = CommonConversions.Literal(parameterSymbol.ExplicitDefaultValue);
-                } else {
-                    defaultLiteral = SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
-                }
-
-                return SyntaxFactory.Argument(defaultLiteral);
+                return ConvertOmittedArgument(argIndex);
             }
 
             return await a.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
+        }
+
+        ArgumentSyntax ConvertOmittedArgument(int argIndex)
+        {
+            var parameterSymbol = invocationSymbol?.GetParameters().ElementAt(argIndex);
+            if (parameterSymbol != null) {
+                var csRefKind = CommonConversions.GetCsRefKind(parameterSymbol);
+                return csRefKind != RefKind.None
+                    ? CreateOptionalRefArg(parameterSymbol, csRefKind)
+                    : SyntaxFactory.Argument(CommonConversions.Literal(parameterSymbol.ExplicitDefaultValue));
+            }
+
+            return SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
         }
     }
 
@@ -1621,7 +1620,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var requiredInCs = invocationSymbol.GetParameters()
             .Select((p, i) => CreateExtraArgOrNull(p, i, vbPositionalArgs, namedArgNames, requiresCompareMethod));
         return requiredInCs.Where(x => x != null);
-
     }
 
     private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, int i, int vbPositionalArgs, ImmutableHashSet<string> namedArgNames, bool requiresCompareMethod)
@@ -1634,7 +1632,11 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         if (csRefKind != RefKind.None) {
             return CreateOptionalRefArg(p, csRefKind);
         }
-        if (requiresCompareMethod && p.Type.Name == "CompareMethod") return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
+
+        if (requiresCompareMethod && p.Type.Name == "CompareMethod") {
+            return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
+        }
+
         return null;
     }
 
@@ -1719,8 +1721,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
             (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
             (VBSyntax.MidExpressionSyntax _) => _semanticModel.Compilation.GetTypeByMetadataName("Microsoft.VisualBasic.CompilerServices.StringType")?.GetMembers("MidStmtStr").FirstOrDefault(),
-            _ => { throw new NotSupportedException(); }
-        );
+            _ => throw new NotSupportedException());
         return symbol;
     }
 
