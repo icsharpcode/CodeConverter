@@ -1,8 +1,6 @@
 ﻿using System.Collections.Immutable;
-using System.Collections.ObjectModel;
 using System.Data;
 using System.Globalization;
-using System.Linq;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -1574,67 +1572,77 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<IEnumerable<ArgumentSyntax>> ConvertArgumentsAsync(VBasic.Syntax.ArgumentListSyntax node)
     {
         ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
+        var hasOmittedArgs = node.Arguments.Any(t => t.IsOmitted);
+#pragma warning disable RS1024 // Compare symbols correctly
+        HashSet<IParameterSymbol> processedParameters = new HashSet<IParameterSymbol>(SymbolEquivalenceComparer.Instance);
+#pragma warning restore RS1024 // Compare symbols correctly
         var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
-        argumentSyntaxs = argumentSyntaxs.Concat(GetAdditionalRequiredArgs(invocationSymbol, node.Arguments));
+        argumentSyntaxs = argumentSyntaxs.Concat(GetAdditionalRequiredArgs(processedParameters, invocationSymbol, hasOmittedArgs));
 
         return argumentSyntaxs;
 
-        async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax a, int argIndex)
+        async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax arg, int argIndex)
         {
-            if (a.IsOmitted) {
-                return ConvertOmittedArgument(argIndex);
+            var argName = arg is VBSyntax.SimpleArgumentSyntax { IsNamed: true } namedArg ? namedArg.NameColonEquals.Name.Identifier.Text : null;
+            var parameterSymbol = invocationSymbol?.GetParameters().GetArgument(argName, argIndex);
+
+            if (parameterSymbol != null) {
+                processedParameters.Add(parameterSymbol);
             }
 
-            return await a.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
+            if (arg.IsOmitted) {
+                return ConvertOmittedArgument(parameterSymbol);
+            }
+
+            return await arg.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
         }
 
-        ArgumentSyntax ConvertOmittedArgument(int argIndex)
+        ArgumentSyntax ConvertOmittedArgument(IParameterSymbol parameter)
         {
-            var parameterSymbol = invocationSymbol?.GetParameters().ElementAt(argIndex);
-            if (parameterSymbol != null) {
-                var csRefKind = CommonConversions.GetCsRefKind(parameterSymbol);
-                return csRefKind != RefKind.None
-                    ? CreateOptionalRefArg(parameterSymbol, csRefKind)
-                    : SyntaxFactory.Argument(CommonConversions.Literal(parameterSymbol.ExplicitDefaultValue));
+            if (parameter == null) {
+                return SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
             }
 
-            return SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
+            var csRefKind = CommonConversions.GetCsRefKind(parameter);
+            return csRefKind != RefKind.None
+                ? CreateOptionalRefArg(parameter, csRefKind)
+                : SyntaxFactory.Argument(CommonConversions.Literal(parameter.ExplicitDefaultValue));
         }
     }
 
-    private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(ISymbol invocationSymbol, IReadOnlyCollection<VBasic.Syntax.ArgumentSyntax> existingArgs)
+    private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(
+        ISet<IParameterSymbol> processedParameters,
+        ISymbol invocationSymbol,
+        bool hadOmittedArgs = false)
     {
-        int vbPositionalArgs = existingArgs.TakeWhile(a => !a.IsNamed).Count();
-        var namedArgNames = existingArgs
-            .OfType<VBasic.Syntax.SimpleArgumentSyntax>()
-            .Where(a => a.IsNamed)
-            .Select(a => a.NameColonEquals.Name.Identifier.Text)
-            .ToImmutableHashSet(StringComparer.OrdinalIgnoreCase);
+        if (invocationSymbol is null) {
+            yield break;
+        }
 
+        var missingArgs = invocationSymbol.GetParameters().Where(t => !processedParameters.Contains(t));
         var requiresCompareMethod = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive && RequiresStringCompareMethodToBeAppended(invocationSymbol);
 
-        if (invocationSymbol == null) {
-            return Enumerable.Empty<ArgumentSyntax>();
+        foreach (var parameterSymbol in missingArgs) {
+            var extraArg = CreateExtraArgOrNull(parameterSymbol, requiresCompareMethod, hadOmittedArgs);
+            if (extraArg != null) {
+                yield return extraArg;
+            }
         }
-
-        var requiredInCs = invocationSymbol.GetParameters()
-            .Select((p, i) => CreateExtraArgOrNull(p, i, vbPositionalArgs, namedArgNames, requiresCompareMethod));
-        return requiredInCs.Where(x => x != null);
     }
 
-    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, int i, int vbPositionalArgs, ImmutableHashSet<string> namedArgNames, bool requiresCompareMethod)
+    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, bool requiresCompareMethod, bool hadOmittedArgs)
     {
-        if (i < vbPositionalArgs || namedArgNames.Contains(p.Name) || !p.HasExplicitDefaultValue) {
-            return null;
-        }
-
         var csRefKind = CommonConversions.GetCsRefKind(p);
         if (csRefKind != RefKind.None) {
             return CreateOptionalRefArg(p, csRefKind);
         }
 
-        if (requiresCompareMethod && p.Type.Name == "CompareMethod") {
+        if (requiresCompareMethod && p.Type.GetFullMetadataName() == "Microsoft.VisualBasic.CompareMethod") {
             return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
+        }
+
+        if (hadOmittedArgs && p.HasExplicitDefaultValue) {
+            return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, CommonConversions.Literal(p.ExplicitDefaultValue));
         }
 
         return null;
@@ -1766,9 +1774,11 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     private ArgumentListSyntax CreateArgList(ISymbol invocationSymbol)
     {
+#pragma warning disable RS1024 // Compare symbols correctly
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
-            GetAdditionalRequiredArgs(invocationSymbol, Array.Empty<VBSyntax.ArgumentSyntax>()))
+            GetAdditionalRequiredArgs(new HashSet<IParameterSymbol>(SymbolEquivalenceComparer.Instance), invocationSymbol))
         );
+#pragma warning restore RS1024 // Compare symbols correctly
     }
 
     private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol)
