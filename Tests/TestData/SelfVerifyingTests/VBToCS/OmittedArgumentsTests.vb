@@ -8,7 +8,7 @@ Public Class TestCase1
     Public Sub SubA(type As Object , Optional code As String = "code", Optional argInt as Integer = 1)
         Throw New InvalidOperationException("This overload shouldn't be called")
     End Sub
-    public Sub Run()
+    Public Sub Run()
         SubA(Nothing, , argInt:= 1)
     End Sub
 End Class
@@ -19,7 +19,7 @@ Public Class TestCase2
     End Sub
     Public Sub SubA(type As Object , Optional code As String = "code", Optional argInt2 as Integer = 1)
     End Sub
-    public Sub Run()
+    Public Sub Run()
         SubA(Nothing, , argInt2:= 1)
     End Sub
 End Class
@@ -31,7 +31,7 @@ Public Class TestCase3
     Public Function SubA(arg1 As String) As String
         Throw New InvalidOperationException("This overload shouldn't be called")
     End Function
-    public Sub Run()
+    Public Sub Run()
         Assert.Equal("test arg2", SubA("test",))
         Assert.Equal("arg1 test", SubA(,"test"))
     End Sub
@@ -47,7 +47,7 @@ Public Class TestCase4
     Public Function SubA(arg2 As String, Optional arg1 As Integer = 3) As String
         Return arg1.ToString() & " " & arg2
     End Function
-    public Sub Run()
+    Public Sub Run()
         Assert.Equal("arg1 test", SubA(,"test"))
         Assert.Equal("arg1 test", SubA(, arg2:="test"))
 
@@ -73,7 +73,7 @@ Public Class TestCase5
     Public Function SubA(arg1 As String) As String
         Return arg1
     End Function
-    public Sub Run()
+    Public Sub Run()
         Assert.Equal("arg1changed test", SubA(, "test"))
         Assert.Equal("testchanged arg2", SubA("test", ))
         Assert.Equal("test", SubA(arg1:="test"))
@@ -87,6 +87,47 @@ Public Class TestCase5
         Assert.Equal("test", SubA(arg))
         Assert.Equal("testchanged arg2", SubA(arg,))
         Assert.Equal("arg1changed testchanged", SubA(,arg))
+    End Sub
+End Class
+
+Public Class TestCase6
+    Public Function M() As String
+        Return ""
+    End Function
+    Public Function M(a As String, b as string) As String
+        Return $"{a} {b}"
+    End Function
+    Public Function M(Optional a As String = "1", Optional b as string = "2", optional c as string = "3") As String
+        Return $"{a} {b} {c}"
+    End Function
+    Public Sub Run()
+        Assert.Equal("11 2 3", M(a:="11", ))
+        Assert.Equal("11 22", M(a:="11", "22"))
+        Assert.Equal("11 22 3", M(a:="11", "22", ))
+        Assert.Equal("1 2 3", M(,))
+        Assert.Equal("1 22 3", M(,b:="22"))
+        Assert.Equal("1 22 3", M(,b:="22",))
+        Assert.Equal("1 2 33", M(,c:="33"))
+        Assert.Equal("1 2 33", M(,,c:="33"))
+        Assert.Equal("1 2 33", M(,,c:="33"))
+        Assert.Equal("11 22", M(a:="11",b:="22"))
+        Assert.Equal("11 22 3", M(a:="11",b:="22",))
+    End Sub
+End Class
+
+Public Class TestCase7
+    Public Function M() As String
+        Return ""
+    End Function
+    Public Function M(Optional a As String = "3", optional b as string = "4") As String
+        Return $"{a} {b}"
+    End Function
+    Public Function M(Optional a As String = "1", Optional b as string = "2", optional c as string = "3") As String
+        Return $"{a} {b} {c}"
+    End Function
+    Public Sub Run()
+        Assert.Equal("11 2 3", M(a:="11",,))
+        Assert.Equal("11 2 3", M("11",,))
     End Sub
 End Class
 
@@ -120,6 +161,12 @@ Public Class OmittedArgumentsTests
     Public Sub Test5()
         Dim test5 As New TestCase5()
         test5.Run()
+    End Sub
+
+    <Fact>
+    Public Sub Test6()
+        Dim test6 As New TestCase6()
+        test6.Run()
     End Sub
 
 End Class

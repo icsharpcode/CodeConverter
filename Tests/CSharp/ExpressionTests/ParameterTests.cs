@@ -38,12 +38,10 @@ public partial class MyController
     }
 
     [Fact]
-    public async Task OptionalLastParameter_UsesCorrectMethodOverloadAsync()
+    public async Task OptionalLastParameter_ExpandsOptionalOmittedArgAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
 Public Class TestClass
-     Public Sub M(a As String)
-    End Sub
     Public Sub M(a As String, Optional b as String = ""smth"")
     End Sub
     
@@ -55,9 +53,6 @@ End Class
             @"
 public partial class TestClass
 {
-    public void M(string a)
-    {
-    }
     public void M(string a, string b = ""smth"")
     {
     }
@@ -70,12 +65,10 @@ public partial class TestClass
     }
 
     [Fact]
-    public async Task OptionalFirstParameter_UsesCorrectMethodOverloadAsync()
+    public async Task OptionalFirstParameter_ExpandsOptionalOmittedArgAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
 Public Class TestClass
-    Public Sub M(b As String)
-    End Sub
     Public Sub M(Optional a As String = ""ss"", Optional b as String = ""smth"")
     End Sub
     
@@ -87,9 +80,6 @@ End Class
             @"
 public partial class TestClass
 {
-    public void M(string b)
-    {
-    }
     public void M(string a = ""ss"", string b = ""smth"")
     {
     }
@@ -97,6 +87,31 @@ public partial class TestClass
     public void Test()
     {
         M(""ss"", ""x"");
+    }
+}");
+    }
+
+    [Fact]
+    public async Task OmittedArgumentAfterNamedArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class TestClass
+    Public Sub M(Optional a As String = ""1"", Optional b as string = ""2"", optional c as string = ""3"")
+    End Sub
+    Public Sub Test()
+        M(a:=""4"", )
+    End Sub
+End Class
+",
+            @"
+public partial class TestClass
+{
+    public void M(string a = ""1"", string b = ""2"", string c = ""3"")
+    {
+    }
+    public void Test()
+    {
+        M(a: ""4"", ""2"", c: ""3"");
     }
 }");
     }

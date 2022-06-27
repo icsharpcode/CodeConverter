@@ -964,9 +964,9 @@ public static partial class MyExtensions
     public static void CallNewColumn()
     {
         NewColumn(typeof(MyExtensions));
-        NewColumn(null, null, ""otherCode"");
+        NewColumn(null, null, ""otherCode"", argInt: 1);
         NewColumn(null, ""fred"");
-        NewColumn(null, null, argInt: 2);
+        NewColumn(null, null, argInt: 2, code: ""code"");
     }
 }");
     }
