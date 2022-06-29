@@ -420,6 +420,56 @@ internal partial class GotoTest1
     }
 }");
     }
+
+    [Fact]
+    public async Task LoopWithVariableDeclarationInitializedWithDefault_ShouldNotBePulledOutOfTheLoopAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        For i = 1 To 2
+            Dim a As Boolean? = Nothing
+            Console.WriteLine(a)
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            bool? a = default;
+            Console.WriteLine(a);
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task LoopWithVariableDeclarationInitializedWithAsNewClause_ShouldNotBePulledOutOfTheLoopAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        For i = 1 To 2
+            Dim a As New Integer()
+            Console.WriteLine(a)
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            int a = new int();
+            Console.WriteLine(a);
+        }
+    }
+}");
+    }
     
     [Fact]
     public async Task ForWithVariableDeclarationIssue897Async()
