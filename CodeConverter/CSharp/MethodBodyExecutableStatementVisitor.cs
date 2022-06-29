@@ -124,10 +124,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 }
             } else {
                 foreach (var decl in localDeclarationStatementSyntaxs) {
-                    if (_perScopeState.IsInsideLoop() &&
-                        decl.Declaration.Variables.All(
-                            x => x.Initializer?.Value is DefaultExpressionSyntax
-                        )) {
+                    if (_perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax) {
                         foreach (var variable in decl.Declaration.Variables) {
                             _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
                                 variable.Identifier.Text, 
