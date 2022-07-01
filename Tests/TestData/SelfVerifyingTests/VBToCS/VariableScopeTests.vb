@@ -53,4 +53,27 @@ Public Class VariableScopeTests
             String.Join(", ", results))
     End Sub
 
+    <Fact>
+    Sub TestMultipleVariablesDefinedInOneDeclarationStatement()
+        For i = 1 To 2
+            Dim a = True, b As Boolean, c As Integer? = Nothing, d = 4, e As New Integer(), f As Integer?
+            a = Not a
+            b = Not b
+            c = If(Not c.HasValue, 0, c + 1)
+            d += 1
+            e += 1
+            f = If(Not f.HasValue, 0, f + 1)
+
+            If i = 2 Then
+                Assert.Equal(False, a)
+                Assert.Equal(False, b)
+                Assert.Equal(0, c)
+                Assert.Equal(5, d)
+                Assert.Equal(1, e)
+                Assert.Equal(1, f)
+            End If
+        Next
+    End Sub
+
+
 End Class
