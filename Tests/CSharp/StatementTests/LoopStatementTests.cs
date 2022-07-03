@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -329,6 +330,74 @@ internal partial class TestClass
         int[] b = default, s = default;
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ReleaseBlockerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+Private Shared Sub ProblemsWithPullingVariablesOut()
+      ' example 1
+      For Each a In New List(Of String)
+          Dim b As Long
+          If a = """" Then
+              b = 1
+          End If
+          DoSomeImportantStuff()
+      Next
+
+      ' example 2
+      Dim c As String
+      Do While True
+          Dim d As Long
+          If c = """" Then
+              d = 1
+          End If
+
+         DoSomeImportantStuff()
+         Exit Do
+     Loop
+ End Sub
+ Private Shared Sub DoSomeImportantStuff()
+     Debug.Print(""very important"")
+ End Sub
+End Class", @"using System.Collections.Generic;
+using System.Diagnostics;
+
+public partial class VisualBasicClass
+{
+    private static void ProblemsWithPullingVariablesOut()
+    {
+        // example 1
+        long b;
+        foreach (var a in new List<string>())
+        {
+            if (string.IsNullOrEmpty(a))
+            {
+                b = 1L;
+            }
+            DoSomeImportantStuff();
+        }
+
+        // example 2
+        var c = default(string);
+        long d;
+        while (true)
+        {
+            if (string.IsNullOrEmpty(c))
+            {
+                d = 1L;
+            }
+
+            DoSomeImportantStuff();
+            break;
+        }
+    }
+    private static void DoSomeImportantStuff()
+    {
+        Debug.Print(""very important"");
     }
 }");
     }

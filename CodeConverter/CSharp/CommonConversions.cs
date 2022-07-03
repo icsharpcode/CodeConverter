@@ -541,7 +541,7 @@ internal class CommonConversions
     {
         var variableDeclaratorSyntax = SyntaxFactory.VariableDeclarator(
             SyntaxFactory.Identifier(variableName), null,
-            SyntaxFactory.EqualsValueClause(initValue));
+            initValue is not null ? SyntaxFactory.EqualsValueClause(initValue) : null);
         return variableDeclaratorSyntax;
     }
 

@@ -13,7 +13,6 @@ internal class HoistedDefaultInitializedLoopVariable : IHoistedNode
 
     public HoistedDefaultInitializedLoopVariable(string originalVariableName, ExpressionSyntax initializer, TypeSyntax type, bool nested)
     {
-        Debug.Assert(initializer is DefaultExpressionSyntax);
         OriginalVariableName = originalVariableName;
         Id = $"ph{Guid.NewGuid():N}";
         Initializer = initializer;
