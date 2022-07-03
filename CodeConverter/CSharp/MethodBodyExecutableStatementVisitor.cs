@@ -127,8 +127,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     if (_perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax) {
                         foreach (var variable in decl.Declaration.Variables) {
                             _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
-                                variable.Identifier.Text, 
-                                variable.Initializer?.Value, 
+                                variable.Identifier.Text,
+                                // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
+                                variable.Initializer?.Value,
                                 decl.Declaration.Type,
                                 _perScopeState.IsInsideNestedLoop()));
                         }
