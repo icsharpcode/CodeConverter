@@ -10,6 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Fixed regression where loop with uninitiazed variable disappears from output [#913](https://github.com/icsharpcode/CodeConverter/issues/913)
+
+### C# -> VB
+
+
+## [9.0.2] - 2022-07-03
+
+
+### Vsix
+
+
+### VB -> C#
+
 
 ### C# -> VB
 
