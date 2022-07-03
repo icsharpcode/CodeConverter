@@ -335,7 +335,7 @@ internal partial class TestClass
     }
 
     [Fact]
-    public async Task ReleaseBlockerAsync()
+    public async Task NullInitValueForHoistedVariableIssue913Async()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
 Private Shared Sub ProblemsWithPullingVariablesOut()
