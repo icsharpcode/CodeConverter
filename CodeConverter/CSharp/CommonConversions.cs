@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -50,7 +51,9 @@ internal class CommonConversions
         WinformsConversions = new WinformsConversions(typeContext);
     }
 
-    public async Task<(IReadOnlyCollection<(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
+    public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VBSyntax.ModifiedIdentifierSyntax> VbVariables);
+
+    public async Task<(IReadOnlyCollection<VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
         VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
     {
         var vbInitValue = GetInitializerToConvert(declarator);
@@ -68,7 +71,7 @@ internal class CommonConversions
             requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
         }
 
-        var csVars = new Dictionary<string, (CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
+        var csVars = new Dictionary<string, VariablesDeclaration>();
         var csMethods = new List<CSharpSyntaxNode>();
 
         foreach (var name in declarator.Names) {
@@ -81,15 +84,16 @@ internal class CommonConversions
             string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
             if (csVars.TryGetValue(k, out var decl)) {
-                csVars[k] = (decl.Decl.AddVariables(v), decl.Type);
+                decl.VbVariables.Add(name);
+                csVars[k] = decl with { Decl = decl.Decl.AddVariables(v) };
                 continue;
             }
 
-            if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
+            if (initializerOrMethodDecl is null or ExpressionSyntax) {
                 var variableDeclaration = CreateVariableDeclaration(preferExplicitType,
                     requireExplicitTypeForAll, vbInitializerType, declaredSymbolType, equalsValueClauseSyntax,
                     initSymbol, v);
-                csVars[k] = (variableDeclaration, declaredSymbolType);
+                csVars[k] = new (variableDeclaration, declaredSymbolType, new List<ModifiedIdentifierSyntax>{ name });
             } else {
                 csMethods.Add(initializerOrMethodDecl);
             }

@@ -123,19 +123,30 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
                 }
             } else {
-                foreach (var decl in localDeclarationStatementSyntaxs) {
-                    if (_perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax) {
-                        foreach (var variable in decl.Declaration.Variables) {
-                            _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
-                                variable.Identifier.Text,
-                                // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
-                                variable.Initializer?.Value,
-                                decl.Declaration.Type,
-                                _perScopeState.IsInsideNestedLoop()));
+                var shouldPullVariablesBeforeLoop = _perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax;
+                if (shouldPullVariablesBeforeLoop) {
+                    foreach (var variablesDecl in variables) {
+                        var newVariableDecl = variablesDecl.Decl;
+                        foreach (var (csVariable, vbVariable) in variablesDecl.Decl.Variables.Zip(variablesDecl.VbVariables, Tuple.Create)) {
+                            var symbol = _semanticModel.GetDeclaredSymbol(vbVariable);
+                            var assignedBeforeRead = _semanticModel.IsDefinitelyAssignedBeforeRead(symbol, vbVariable);
+                            if (!assignedBeforeRead) {
+                                _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
+                                    csVariable.Identifier.Text,
+                                    // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
+                                    csVariable.Initializer?.Value,
+                                    variablesDecl.Decl.Type,
+                                    _perScopeState.IsInsideNestedLoop()));
+                                newVariableDecl = newVariableDecl.WithVariables(newVariableDecl.Variables.Remove(csVariable));
+                            }
                         }
-                    } else {
-                        declarations.Add(decl);
+
+                        if (newVariableDecl.Variables.Any()) {
+                            declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, newVariableDecl));
+                        }
                     }
+                } else {
+                    declarations.AddRange(localDeclarationStatementSyntaxs);
                 }
             }
             var localFunctions = methods.Cast<LocalFunctionStatementSyntax>();
@@ -622,7 +633,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SyntaxFactory.List(preLoopStatements.Concat(new[] { forStatementSyntax }));
     }
 
-    private async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(VBSyntax.VariableDeclaratorSyntax v, bool preferExplicitType = false)
+    private async Task<(IReadOnlyCollection<CommonConversions.VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(VBSyntax.VariableDeclaratorSyntax v, bool preferExplicitType = false)
     {
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
     }
