@@ -1,12 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -93,7 +91,7 @@ internal class CommonConversions
                 var variableDeclaration = CreateVariableDeclaration(preferExplicitType,
                     requireExplicitTypeForAll, vbInitializerType, declaredSymbolType, equalsValueClauseSyntax,
                     initSymbol, v);
-                csVars[k] = new (variableDeclaration, declaredSymbolType, new List<ModifiedIdentifierSyntax>{ name });
+                csVars[k] = new (variableDeclaration, declaredSymbolType, new List<VBSyntax.ModifiedIdentifierSyntax>{ name });
             } else {
                 csMethods.Add(initializerOrMethodDecl);
             }
