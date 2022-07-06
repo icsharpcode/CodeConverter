@@ -214,7 +214,7 @@ public class ProjectConversion
     {
         if (firstPassResult.Wip != null) {
             LogStart(firstPassResult.SourcePath, "simplification", progress);
-            var (convertedNode, errors) = await SingleSecondPassHandledAsync(firstPassResult.Wip);
+            var (convertedNode, errors) = await SingleSecondPassHandledAsync(firstPassResult.Wip, progress);
             var result = firstPassResult.With(convertedNode, firstPassResult.Errors.Concat(errors).Union(GetErrorsFromAnnotations(convertedNode)).ToArray());
             LogEnd(firstPassResult, "simplification", progress);
             return result;
@@ -223,7 +223,7 @@ public class ProjectConversion
         return firstPassResult.With(default(SyntaxNode));
     }
 
-    private async Task<(SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandledAsync(Document convertedDocument)
+    private async Task<(SyntaxNode convertedDoc, string[] errors)> SingleSecondPassHandledAsync(Document convertedDocument, IProgress<string> progress)
     {
         SyntaxNode selectedNode = null;
         string[] errors = Array.Empty<string>();
@@ -242,7 +242,11 @@ public class ProjectConversion
                 var convertedDoc = document.WithSyntaxRoot(selectedNode);
                 selectedNode = await convertedDoc.GetSyntaxRootAsync(_cancellationToken);
             }
-        } catch (Exception e) {
+        } 
+        catch (OperationCanceledException) {
+            progress.Report($"Skipped simplifying {convertedDocument.Name}, since it took longer than the setting in Tools->Options->CodeConverter allowed.");
+        } 
+        catch (Exception e) {
             errors = new[] { e.ToString() };
         }
 
