@@ -49,7 +49,8 @@ internal class CommonConversions
         WinformsConversions = new WinformsConversions(typeContext);
     }
 
-    public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VBSyntax.ModifiedIdentifierSyntax> VbVariables);
+    public record VariablePair(CSSyntax.VariableDeclaratorSyntax CsVar, VBSyntax.ModifiedIdentifierSyntax VbVar);
+    public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VariablePair> Variables);
 
     public async Task<(IReadOnlyCollection<VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
         VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
@@ -82,7 +83,7 @@ internal class CommonConversions
             string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
             if (csVars.TryGetValue(k, out var decl)) {
-                decl.VbVariables.Add(name);
+                decl.Variables.Add(new (CsVar: v, VbVar: name) );
                 csVars[k] = decl with { Decl = decl.Decl.AddVariables(v) };
                 continue;
             }
@@ -91,7 +92,8 @@ internal class CommonConversions
                 var variableDeclaration = CreateVariableDeclaration(preferExplicitType,
                     requireExplicitTypeForAll, vbInitializerType, declaredSymbolType, equalsValueClauseSyntax,
                     initSymbol, v);
-                csVars[k] = new (variableDeclaration, declaredSymbolType, new List<VBSyntax.ModifiedIdentifierSyntax>{ name });
+                var variablePairs = new List<VariablePair> { new (CsVar: v, VbVar: name) };
+                csVars[k] = new (variableDeclaration, declaredSymbolType, variablePairs);
             } else {
                 csMethods.Add(initializerOrMethodDecl);
             }

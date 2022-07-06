@@ -125,35 +125,42 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             } else {
                 var shouldPullVariablesBeforeLoop = _perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax;
                 if (shouldPullVariablesBeforeLoop) {
-                    foreach (var variablesDecl in variables) {
-                        var newVariableDecl = variablesDecl.Decl;
-                        foreach (var (csVariable, vbVariable) in variablesDecl.Decl.Variables.Zip(variablesDecl.VbVariables, Tuple.Create)) {
-                            var symbol = _semanticModel.GetDeclaredSymbol(vbVariable);
-                            var assignedBeforeRead = _semanticModel.IsDefinitelyAssignedBeforeRead(symbol, vbVariable);
-                            if (!assignedBeforeRead) {
-                                _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
-                                    csVariable.Identifier.Text,
-                                    // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
-                                    csVariable.Initializer?.Value,
-                                    variablesDecl.Decl.Type,
-                                    _perScopeState.IsInsideNestedLoop()));
-                                newVariableDecl = newVariableDecl.WithVariables(newVariableDecl.Variables.Remove(csVariable));
-                            }
-                        }
-
-                        if (newVariableDecl.Variables.Any()) {
-                            declarations.Add(SyntaxFactory.LocalDeclarationStatement(modifiers, newVariableDecl));
-                        }
-                    }
-                } else {
-                    declarations.AddRange(localDeclarationStatementSyntaxs);
+                    localDeclarationStatementSyntaxs = HoistVariablesBeforeLoopWhenNeeded(variables)
+                        .Select(variableDecl => SyntaxFactory.LocalDeclarationStatement(modifiers, variableDecl));
                 }
+
+                declarations.AddRange(localDeclarationStatementSyntaxs);
             }
             var localFunctions = methods.Cast<LocalFunctionStatementSyntax>();
             declarations.AddRange(localFunctions);
         }
 
         return SyntaxFactory.List(declarations);
+    }
+
+    private IEnumerable<VariableDeclarationSyntax> HoistVariablesBeforeLoopWhenNeeded(IEnumerable<CommonConversions.VariablesDeclaration> variablesDeclarations)
+    {
+        foreach (var variablesDecl in variablesDeclarations) {
+            var variablesToRemove = new List<CSSyntax.VariableDeclaratorSyntax>();
+            foreach (var (csVariable, vbVariable) in variablesDecl.Variables) {
+                var symbol = _semanticModel.GetDeclaredSymbol(vbVariable);
+                var assignedBeforeRead = _semanticModel.IsDefinitelyAssignedBeforeRead(symbol, vbVariable);
+                if (!assignedBeforeRead) {
+                    _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
+                        csVariable.Identifier.Text,
+                        // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
+                        csVariable.Initializer?.Value,
+                        variablesDecl.Decl.Type,
+                        _perScopeState.IsInsideNestedLoop()));
+                    variablesToRemove.Add(csVariable);
+                }
+            }
+
+            var variablesToDeclareLocally = variablesDecl.Variables.Select(t => t.CsVar).Except(variablesToRemove).ToArray();
+            if(variablesToDeclareLocally.Any()) {
+                yield return variablesDecl.Decl.WithVariables(SyntaxFactory.SeparatedList(variablesToDeclareLocally));
+            }
+        }
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node)
