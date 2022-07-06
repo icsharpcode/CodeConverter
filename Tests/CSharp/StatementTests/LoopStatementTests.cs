@@ -592,7 +592,8 @@ internal partial class TestClass
             g()
         Next
     End Sub
-End Class", @"
+End Class", @"using System;
+
 internal partial class TestClass
 {
     private void TestMethod()
