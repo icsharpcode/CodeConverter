@@ -345,6 +345,29 @@ Private Shared Sub ProblemsWithPullingVariablesOut()
           If a = """" Then
               b = 1
           End If
+          DoSomeImportantStuff(b)
+      Next
+
+      ' example 2
+      Dim c As String
+      Do While True
+          Dim d As Long
+          If c = """" Then
+              d = 1
+          End If
+
+         DoSomeImportantStuff(d)
+         Exit Do
+     Loop
+ End Sub
+
+Private Shared Sub ProblemsWithPullingVariablesOut_AlwaysWriteBeforeRead()
+      ' example 1
+      For Each a In New List(Of String)
+          Dim b As Long
+          If a = """" Then
+              b = 1
+          End If
           DoSomeImportantStuff()
       Next
 
@@ -363,6 +386,9 @@ Private Shared Sub ProblemsWithPullingVariablesOut()
  Private Shared Sub DoSomeImportantStuff()
      Debug.Print(""very important"")
  End Sub
+ Private Shared Sub DoSomeImportantStuff(b as Long)
+     Debug.Print(""very important"")
+ End Sub
 End Class", @"using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -371,9 +397,37 @@ public partial class VisualBasicClass
     private static void ProblemsWithPullingVariablesOut()
     {
         // example 1
-        long b;
+        var b = default(long);
         foreach (var a in new List<string>())
         {
+            if (string.IsNullOrEmpty(a))
+            {
+                b = 1L;
+            }
+            DoSomeImportantStuff(b);
+        }
+
+        // example 2
+        var c = default(string);
+        var d = default(long);
+        while (true)
+        {
+            if (string.IsNullOrEmpty(c))
+            {
+                d = 1L;
+            }
+
+            DoSomeImportantStuff(d);
+            break;
+        }
+    }
+
+    private static void ProblemsWithPullingVariablesOut_AlwaysWriteBeforeRead()
+    {
+        // example 1
+        foreach (var a in new List<string>())
+        {
+            long b;
             if (string.IsNullOrEmpty(a))
             {
                 b = 1L;
@@ -383,9 +437,9 @@ public partial class VisualBasicClass
 
         // example 2
         var c = default(string);
-        long d;
         while (true)
         {
+            long d;
             if (string.IsNullOrEmpty(c))
             {
                 d = 1L;
@@ -396,6 +450,10 @@ public partial class VisualBasicClass
         }
     }
     private static void DoSomeImportantStuff()
+    {
+        Debug.Print(""very important"");
+    }
+    private static void DoSomeImportantStuff(long b)
     {
         Debug.Print(""very important"");
     }
@@ -510,6 +568,55 @@ internal partial class TestClass
         {
             bool? a = default;
             Console.WriteLine(a);
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task LoopWithMultipleVariableDeclarationsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        For i = 1 To 2
+            Dim a, b as Integer, c, d as Integer, e, f as Long, g = Sub() System.Console.WriteLine(1)
+            a = 1
+            b += 1
+            
+            c += 1
+            d = 1
+
+            e += 1
+            f = 1
+
+            g()
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        int b = default;
+        int c = default;
+        long e = default;
+        for (int i = 1; i <= 2; i++)
+        {
+            int a;
+            int d;
+            long f;
+            void g() => Console.WriteLine(1);
+            a = 1;
+            b += 1;
+
+            c += 1;
+            d = 1;
+
+            e += 1L;
+            f = 1L;
+
+            g();
         }
     }
 }");

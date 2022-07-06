@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
@@ -50,7 +49,10 @@ internal class CommonConversions
         WinformsConversions = new WinformsConversions(typeContext);
     }
 
-    public async Task<(IReadOnlyCollection<(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
+    public record VariablePair(CSSyntax.VariableDeclaratorSyntax CsVar, VBSyntax.ModifiedIdentifierSyntax VbVar);
+    public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VariablePair> Variables);
+
+    public async Task<(IReadOnlyCollection<VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
         VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
     {
         var vbInitValue = GetInitializerToConvert(declarator);
@@ -68,7 +70,7 @@ internal class CommonConversions
             requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
         }
 
-        var csVars = new Dictionary<string, (CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type)>();
+        var csVars = new Dictionary<string, VariablesDeclaration>();
         var csMethods = new List<CSharpSyntaxNode>();
 
         foreach (var name in declarator.Names) {
@@ -81,15 +83,17 @@ internal class CommonConversions
             string k = declaredSymbolType?.GetFullMetadataName() ?? name.ToString();//Use likely unique key if the type symbol isn't available
 
             if (csVars.TryGetValue(k, out var decl)) {
-                csVars[k] = (decl.Decl.AddVariables(v), decl.Type);
+                decl.Variables.Add(new (CsVar: v, VbVar: name) );
+                csVars[k] = decl with { Decl = decl.Decl.AddVariables(v) };
                 continue;
             }
 
-            if (initializerOrMethodDecl == null || initializerOrMethodDecl is ExpressionSyntax) {
+            if (initializerOrMethodDecl is null or ExpressionSyntax) {
                 var variableDeclaration = CreateVariableDeclaration(preferExplicitType,
                     requireExplicitTypeForAll, vbInitializerType, declaredSymbolType, equalsValueClauseSyntax,
                     initSymbol, v);
-                csVars[k] = (variableDeclaration, declaredSymbolType);
+                var variablePairs = new List<VariablePair> { new (CsVar: v, VbVar: name) };
+                csVars[k] = new (variableDeclaration, declaredSymbolType, variablePairs);
             } else {
                 csMethods.Add(initializerOrMethodDecl);
             }

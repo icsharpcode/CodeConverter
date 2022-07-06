@@ -123,26 +123,44 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
                 }
             } else {
-                foreach (var decl in localDeclarationStatementSyntaxs) {
-                    if (_perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax) {
-                        foreach (var variable in decl.Declaration.Variables) {
-                            _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
-                                variable.Identifier.Text,
-                                // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
-                                variable.Initializer?.Value,
-                                decl.Declaration.Type,
-                                _perScopeState.IsInsideNestedLoop()));
-                        }
-                    } else {
-                        declarations.Add(decl);
-                    }
+                var shouldPullVariablesBeforeLoop = _perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax;
+                if (shouldPullVariablesBeforeLoop) {
+                    localDeclarationStatementSyntaxs = HoistVariablesBeforeLoopWhenNeeded(variables)
+                        .Select(variableDecl => SyntaxFactory.LocalDeclarationStatement(modifiers, variableDecl));
                 }
+
+                declarations.AddRange(localDeclarationStatementSyntaxs);
             }
             var localFunctions = methods.Cast<LocalFunctionStatementSyntax>();
             declarations.AddRange(localFunctions);
         }
 
         return SyntaxFactory.List(declarations);
+    }
+
+    private IEnumerable<VariableDeclarationSyntax> HoistVariablesBeforeLoopWhenNeeded(IEnumerable<CommonConversions.VariablesDeclaration> variablesDeclarations)
+    {
+        foreach (var variablesDecl in variablesDeclarations) {
+            var variablesToRemove = new List<CSSyntax.VariableDeclaratorSyntax>();
+            foreach (var (csVariable, vbVariable) in variablesDecl.Variables) {
+                var symbol = _semanticModel.GetDeclaredSymbol(vbVariable);
+                var assignedBeforeRead = _semanticModel.IsDefinitelyAssignedBeforeRead(symbol, vbVariable);
+                if (!assignedBeforeRead) {
+                    _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
+                        csVariable.Identifier.Text,
+                        // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
+                        csVariable.Initializer?.Value,
+                        variablesDecl.Decl.Type,
+                        _perScopeState.IsInsideNestedLoop()));
+                    variablesToRemove.Add(csVariable);
+                }
+            }
+
+            var variablesToDeclareLocally = variablesDecl.Variables.Select(t => t.CsVar).Except(variablesToRemove).ToArray();
+            if(variablesToDeclareLocally.Any()) {
+                yield return variablesDecl.Decl.WithVariables(SyntaxFactory.SeparatedList(variablesToDeclareLocally));
+            }
+        }
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitAddRemoveHandlerStatement(VBSyntax.AddRemoveHandlerStatementSyntax node)
@@ -622,7 +640,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SyntaxFactory.List(preLoopStatements.Concat(new[] { forStatementSyntax }));
     }
 
-    private async Task<(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(VBSyntax.VariableDeclaratorSyntax v, bool preferExplicitType = false)
+    private async Task<(IReadOnlyCollection<CommonConversions.VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(VBSyntax.VariableDeclaratorSyntax v, bool preferExplicitType = false)
     {
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
     }

@@ -511,14 +511,14 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return declarations;
     }
 
-    private IEnumerable<MemberDeclarationSyntax> CreateMemberDeclarations(IReadOnlyCollection<(VariableDeclarationSyntax Decl, ITypeSymbol Type)> splitDeclarationVariables,
+    private IEnumerable<MemberDeclarationSyntax> CreateMemberDeclarations(IReadOnlyCollection<CommonConversions.VariablesDeclaration> splitDeclarationVariables,
         bool isWithEvents, SyntaxTokenList convertedModifiers, List<AttributeListSyntax> attributes)
     {
 
-        foreach (var (decl, type) in splitDeclarationVariables)
+        foreach (var variablesDecl in splitDeclarationVariables)
         {
             var thisFieldModifiers = convertedModifiers;
-            if (type?.SpecialType == SpecialType.System_DateTime) {
+            if (variablesDecl.Type?.SpecialType == SpecialType.System_DateTime) {
                 var index = thisFieldModifiers.IndexOf(CSSyntaxKind.ConstKeyword);
                 if (index >= 0) {
                     thisFieldModifiers = thisFieldModifiers.Replace(thisFieldModifiers[index], SyntaxFactory.Token(CSSyntaxKind.StaticKeyword));
@@ -526,17 +526,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             }
 
             if (isWithEvents) {
-                var fieldDecls = CreateWithEventsMembers(thisFieldModifiers, attributes, decl);
+                var fieldDecls = CreateWithEventsMembers(thisFieldModifiers, attributes, variablesDecl.Decl);
                 foreach (var f in fieldDecls) yield return f;
             } else {
                 foreach (var method in CreateExtraMethodMembers()) yield return method;
 
                 if (AdditionalLocals.GetDeclarations().Any()) {
-                    foreach (var additionalDecl in CreateAdditionalLocalMembers(thisFieldModifiers, attributes, decl)) {
+                    foreach (var additionalDecl in CreateAdditionalLocalMembers(thisFieldModifiers, attributes, variablesDecl.Decl)) {
                         yield return additionalDecl;
                     }
                 } else {
-                    yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), thisFieldModifiers, decl);
+                    yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), thisFieldModifiers, variablesDecl.Decl);
                 }
 
             }
