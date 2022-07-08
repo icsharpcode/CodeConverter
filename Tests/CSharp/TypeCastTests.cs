@@ -1313,11 +1313,11 @@ internal partial class CastTest
     }
     private decimal? Test2(object input)
     {
-        return (decimal?)input;
+        return (decimal?)(double?)input;
     }
     private decimal? Test2(int input)
     {
-        return input;
+        return (decimal?)(double?)input;
     }
 }");
     }
@@ -1499,6 +1499,48 @@ internal partial class TestGenericCast
     private static T GenericFunctionWithCastThatExistsInCsharp<T>() where T : TestGenericCast
     {
         return (T)new TestGenericCast();
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestCTypeStringToEnumAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Enum TestEnum
+    A
+    B
+End Enum
+
+Public Class VisualBasicClass
+    Public Sub Test(s as String)
+        Dim x =  CType(s, TestEnum) = TestEnum.A
+        Dim y = TestCast(CType(s, TestEnum))
+    End Sub
+
+    Public Function TestCast(s as System.Enum) As String
+        Return s.ToString()
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public enum TestEnum
+{
+    A,
+    B
+}
+
+public partial class VisualBasicClass
+{
+    public void Test(string s)
+    {
+        bool x = (TestEnum)Conversions.ToInteger(s) == TestEnum.A;
+        string y = TestCast((TestEnum)Conversions.ToInteger(s));
+    }
+
+    public string TestCast(Enum s)
+    {
+        return s.ToString();
     }
 }");
     }

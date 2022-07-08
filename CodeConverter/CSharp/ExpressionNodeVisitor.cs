@@ -295,7 +295,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
     {
         var csharpArg = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        var typeInfo = _semanticModel.GetTypeInfo(node);
+        var typeInfo = _semanticModel.GetTypeInfo(node.Type);
         var forceTargetType = typeInfo.ConvertedType;
         return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csharpArg, forceTargetType: forceTargetType, defaultToCast: true).AddParens();
     }
