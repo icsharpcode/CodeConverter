@@ -182,6 +182,15 @@ internal class LineTriviaMapper
     {
         if (!_targetTokenToTrivia.TryGetValue(toReplace, out var targetTrivia)) {
             targetTrivia = (new List<IReadOnlyCollection<SyntaxTrivia>>(), new List<IReadOnlyCollection<SyntaxTrivia>>());
+            var errorTrivia = toReplace.TrailingTrivia.Where(t => t.HasAnnotations(AnnotationConstants.ConversionErrorAnnotationKind)).ToArray();
+            if (errorTrivia.Any()) {
+                targetTrivia.Trailing.Add(errorTrivia);
+            }
+            errorTrivia = toReplace.LeadingTrivia.Where(t => t.HasAnnotations(AnnotationConstants.ConversionErrorAnnotationKind)).ToArray();
+            if (errorTrivia.Any()) {
+                targetTrivia.Leading.Add(errorTrivia);
+            }
+
             _targetTokenToTrivia[toReplace] = targetTrivia;
         }
 

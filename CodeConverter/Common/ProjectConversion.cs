@@ -282,7 +282,7 @@ public class ProjectConversion
 
     private static string[] GetErrorsFromAnnotations(SyntaxNode convertedNode)
     {
-        var errorAnnotations = convertedNode.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind).ToList();
+        var errorAnnotations = convertedNode.DescendantNodesAndSelf().SelectMany(t => t.GetAnnotations(AnnotationConstants.ConversionErrorAnnotationKind)).ToList();
         string[] errors = errorAnnotations.Select(a => a.Data).ToArray();
         return errors;
     }

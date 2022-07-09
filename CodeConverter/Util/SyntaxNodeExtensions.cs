@@ -517,10 +517,14 @@ internal static class SyntaxNodeExtensions
         VisualBasicSyntaxNode sourceNode,
         Exception exception) where T : CSharpSyntaxNode
     {
-        var errorDirective = SyntaxFactory.ParseTrailingTrivia($"#error Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}");
+        var messageContent = $" Cannot convert {sourceNode.GetType().Name} - see comment for details{Environment.NewLine}";
+        var message = SyntaxFactory.Token(SyntaxTriviaList.Create(SyntaxFactory.PreprocessingMessage(messageContent)), CSSyntaxKind.EndOfDirectiveToken, SyntaxTriviaList.Empty);
+        var errorDirective = SyntaxFactory.ErrorDirectiveTrivia(true).WithEndOfDirectiveToken(message);
         var errorDescription = sourceNode.DescribeConversionError(exception);
         var commentedText = "/* " + errorDescription + " */";
-        var trailingTrivia = SyntaxFactory.TriviaList(errorDirective.Concat(SyntaxFactory.Comment(commentedText)));
+        var trailingTrivia = SyntaxFactory.TriviaList(
+            SyntaxFactory.Trivia(errorDirective).WithConversionErrorAnnotation(),
+            SyntaxFactory.Comment(commentedText).WithConversionErrorAnnotation());
 
         return dummyDestNode
             .WithTrailingTrivia(trailingTrivia)
@@ -533,9 +537,13 @@ internal static class SyntaxNodeExtensions
         var errorDescription = problematicSourceNode.DescribeConversionError(exception);
         var commentedText = "''' " + errorDescription.Replace("\r\n", "\r\n''' ");
         return dummyDestNode
-            .WithTrailingTrivia(VBSyntaxFactory.CommentTrivia(commentedText))
-            .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
-                exception.ToString()));
+            .WithTrailingTrivia(VBSyntaxFactory.CommentTrivia(commentedText).WithConversionErrorAnnotation())
+            .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
+    }
+
+    private static SyntaxTrivia WithConversionErrorAnnotation(this SyntaxTrivia trivia)
+    {
+        return trivia.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind));
     }
 
     public static bool ContainsDeclaredVisibility(this SyntaxTokenList modifiers, bool isVariableOrConst = false, bool isConstructor = false)

@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Fix casting Object to nullable types [#904](https://github.com/icsharpcode/CodeConverter/issues/904)
 * Fix converting Omitted/Optional parameters which could result in wrong method overload being called. [#906](https://github.com/icsharpcode/CodeConverter/issues/906)
 * Fix variable declaration being incorrectly pulled before the loop when it's initialized explicitly with default value. [#911](https://github.com/icsharpcode/CodeConverter/issues/911)
+* Fix mapping for error trivia added by converter. [#917](https://github.com/icsharpcode/CodeConverter/issues/917)
 
 ### C# -> VB
 
