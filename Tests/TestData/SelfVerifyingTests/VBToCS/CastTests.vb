@@ -2341,9 +2341,32 @@ Public Class CastTests
         Assert.Equal(1S, GenericFunctionWithCast(Of Short)())
     End Sub
 
+    <Fact>
+    Sub TestCTypeThenImplicitCast()
+        Dim castedToDoubleThenDecimal = Sub() CTypeToDouble(Decimal.MaxValue)
+        Assert.Throws(Of InvalidCastException)(castedToDoubleThenDecimal)
+        Assert.Equal(3.14D, CTypeToDouble(3.14R))
+
+        Dim enumString = EnumTypeToString(CType("1", TestEnum))
+        Assert.Equal("Second", enumString)
+    End Sub
+
+    Private Function CTypeToDouble(input As Object) As Decimal?
+        Return CType(input, Double?)
+    End Function
+
+    Private Function EnumTypeToString(s As System.Enum) As String
+        Return s.ToString()
+    End Function
+
     Private Shared Function GenericFunctionWithCast(Of T)() As T
         Const result = 1
         Dim resultObj As Object = result
         Return CType(resultObj, T)
     End Function
+
+    Enum TestEnum
+        First
+        Second
+    End Enum
 End Class
