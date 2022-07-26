@@ -9,20 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
-
-* Fixed regression where loop with uninitiazed variable disappears from output [#913](https://github.com/icsharpcode/CodeConverter/issues/913)
+* Fix Strings.ChrW conversion [#924](https://github.com/icsharpcode/CodeConverter/issues/924)
+* Fix mapping for error trivia added by converter. [#917](https://github.com/icsharpcode/CodeConverter/issues/917)
+* Fix CType expressions for conversions from String to Enums [#918](https://github.com/icsharpcode/CodeConverter/issues/918)
 
 ### C# -> VB
 
 
 ## [9.0.2] - 2022-07-03
 
-
 ### Vsix
 
 
 ### VB -> C#
-
+* Fixed regression where loop with uninitiazed variable disappears from output [#913](https://github.com/icsharpcode/CodeConverter/issues/913)
 
 ### C# -> VB
 
@@ -37,11 +37,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Fix converting non-integral types to enums [#888](https://github.com/icsharpcode/CodeConverter/issues/888)
 * Fix types conversion for generic functions [#893](https://github.com/icsharpcode/CodeConverter/issues/893)
-* Fix CType expressions for conversions from String to Enums [#918](https://github.com/icsharpcode/CodeConverter/issues/918)
 * Fix casting Object to nullable types [#904](https://github.com/icsharpcode/CodeConverter/issues/904)
 * Fix converting Omitted/Optional parameters which could result in wrong method overload being called. [#906](https://github.com/icsharpcode/CodeConverter/issues/906)
 * Fix variable declaration being incorrectly pulled before the loop when it's initialized explicitly with default value. [#911](https://github.com/icsharpcode/CodeConverter/issues/911)
-* Fix mapping for error trivia added by converter. [#917](https://github.com/icsharpcode/CodeConverter/issues/917)
 
 ### C# -> VB
 

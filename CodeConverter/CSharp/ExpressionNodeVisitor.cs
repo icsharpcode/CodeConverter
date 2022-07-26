@@ -1829,7 +1829,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     /// https://github.com/icsharpcode/CodeConverter/issues/745
     /// </summary>
     private static bool IsCultureInvariant(ISymbol symbol, Optional<object> constValue) =>
-        symbol.Name == "ChrW" || symbol.Name == "Chr" && constValue.HasValue && Convert.ToUInt64(constValue.Value, CultureInfo.InvariantCulture) <= 127;
+       (symbol.Name == "ChrW" || symbol.Name == "Chr") && constValue.HasValue && Convert.ToUInt64(constValue.Value, CultureInfo.InvariantCulture) <= 127;
 
     private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
     {

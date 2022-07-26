@@ -257,6 +257,27 @@ internal partial class TestConstCharacterConversions
     }
 
     [Fact]
+    public async Task TestNonConstCharacterConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Class TestConversions
+    Sub Test(b as Byte)
+        Dim x = Chr(b)
+        Dim y = ChrW(b)
+   End Sub
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestConversions
+{
+    public void Test(byte b)
+    {
+        char x = Strings.Chr(b);
+        char y = Strings.ChrW(b);
+    }
+}");
+    }
+
+    [Fact]
     public async Task UsingBoolInToExpressionAsync()
     {
         // Beware, this will never enter the loop, it's buggy input due to the "i <", but it compiles and runs, so the output should too (and do the same thing)
