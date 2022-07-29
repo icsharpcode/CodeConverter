@@ -5,12 +5,14 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
- 
+
+env:
+  BuildVersion: '9.0.2'
+  
 jobs:
  build:
     runs-on: windows-2022
     env:
-      BuildVersion: '9.0.2'
       BuildPlatform: Any CPU
       BuildTarget: Release
 
@@ -79,8 +81,6 @@ jobs:
      concurrency: ci-${{ github.ref }}
      needs: [build] # The second job must depend on the first one to complete before running and uses ubuntu-latest instead of windows.
      runs-on: ubuntu-latest
-     env:
-       BuildVersion: '9.0.2'
      steps:
        - name: Checkout 🛎️
          uses: actions/checkout@v3
