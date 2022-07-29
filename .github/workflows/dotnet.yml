@@ -78,6 +78,7 @@ jobs:
         path: Func/bin/${{ env.BuildTarget }}/publish/
         
  deploy:
+     if: ${{ github.ref == 'refs/heads/master' }}
      concurrency: ci-${{ github.ref }}
      needs: [build] # The second job must depend on the first one to complete before running and uses ubuntu-latest instead of windows.
      runs-on: ubuntu-latest
@@ -94,5 +95,6 @@ jobs:
        - name: Deploy 🚀
          uses: JamesIves/github-pages-deploy-action@v4
          with:
-           folder: 'site/wwwroot' # The deployment folder should match the name of the artifact. Even though our project builds into the 'build' folder the artifact name of 'site' must be placed here.
+           branch: 'autoupdated/gh-pages'
+           folder: 'site/wwwroot'
           
