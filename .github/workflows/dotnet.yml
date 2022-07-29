@@ -49,6 +49,13 @@ jobs:
       env:
         Tests1: Tests/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.Tests.dll
 
+    - name: Deploy to github pages
+      uses: JamesIves/github-pages-deploy-action@4.4.0
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: autoupdated/gh-pages
+        FOLDER: Web/bin/${{ env.BuildTarget }}/publish/wwwroot
+
     - name: Upload NuGet package
       uses: actions/upload-artifact@v2
       with:
