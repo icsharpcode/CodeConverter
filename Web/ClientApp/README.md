@@ -6,7 +6,7 @@
 * You can change the default api source in [index.html](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ClientApp/public/index.html#L3)
 
 #### Examples
-* In live: https://codeconverter.icsharpcode.net?apisource=HostedFunc
+* In live: https://icsharpcode.github.io/CodeConverter?apisource=HostedFunc
 * Local debugging:
   * Host the static site by running `npm start` in the Web/ClientApp folder
   * Start the Func project in Visual Studio
