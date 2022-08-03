@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis;
@@ -10,7 +11,7 @@ public record ConvertResponse(bool conversionOk, string convertedCode, string er
 
 public static class WebConverter
 {
-    public static async Task<ConvertResponse> ConvertAsync(ConvertRequest todo)
+    public static async Task<ConvertResponse> ConvertAsync(ConvertRequest todo, CancellationToken ct = default)
     {
         var languages = todo.requestedConversion.Split('2');
 
@@ -27,7 +28,7 @@ public static class WebConverter
             .SetFromLanguage(fromLanguage)
             .SetToLanguage(toLanguage);
 
-        var result = await CodeConverter.ConvertAsync(codeWithOptions);
+        var result = await CodeConverter.ConvertAsync(codeWithOptions, ct);
 
         return new ConvertResponse(result.Success, result.ConvertedCode, result.GetExceptionsAsString());
     }
