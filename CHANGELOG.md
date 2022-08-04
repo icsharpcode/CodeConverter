@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 
 ### VB -> C#
+
+
+### C# -> VB
+
+
+## [9.0.3] - 2022-08-04
+
+
+### Vsix
+
+
+### VB -> C#
 * Fix Strings.ChrW conversion [#924](https://github.com/icsharpcode/CodeConverter/issues/924)
 * Fix mapping for error trivia added by converter. [#917](https://github.com/icsharpcode/CodeConverter/issues/917)
 * Fix CType expressions for conversions from String to Enums [#918](https://github.com/icsharpcode/CodeConverter/issues/918)
