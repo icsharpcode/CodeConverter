@@ -13,6 +13,9 @@ namespace ICSharpCode.CodeConverter.Func;
 
 public class Convert
 {
+    public const string DefaultRequest = @"{""code"":""Public Class VisualBasicClass\r\n\r\nEnd Class"",""requestedConversion"":""vbnet2cs""}";
+    public const string DefaultConversion = "\r\npublic partial class VisualBasicClass\r\n{\r\n\r\n}";
+
     private readonly ILoggerFactory _loggerFactory;
 
     public Convert(ILoggerFactory loggerFactory)
@@ -32,6 +35,12 @@ public class Convert
     {
         var logger = _loggerFactory.CreateLogger<Convert>();
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+
+        if (0 == string.CompareOrdinal(requestBody, DefaultRequest)) {
+            logger.LogInformation("Short-circuiting for default conversion request");
+            return new OkObjectResult(new ConvertResponse(true, DefaultConversion, ""));
+        }
+
         var data = JsonConvert.DeserializeObject<ConvertRequest>(requestBody);
 
         using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(hostCancellationToken, req.HttpContext.RequestAborted);
