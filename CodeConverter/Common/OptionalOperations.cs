@@ -48,4 +48,19 @@ public class OptionalOperations
             return node.NormalizeWhitespace();
         }
     }
+
+    public async Task<Document> SimplifyStatementsAsync<T>(Document doc, string unresolvedNamespaceDiagnosticId) where T : SyntaxNode
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_wholeTaskCancellationToken);
+        var token = cts.Token;
+        cts.CancelAfter(_abandonTasksIfNoActivityFor);
+        try {
+            // This sometimes gets stuck in an infinite loop within the CodeAnalysis library - https://github.com/icsharpcode/CodeConverter/issues/877#issuecomment-1221519204
+            return await doc.SimplifyStatementsAsync<T>(unresolvedNamespaceDiagnosticId, token);
+        } catch (OperationCanceledException) {
+            _progress.Report(new ConversionProgress($"Timeout expired - abandoning simplification for {doc.FilePath}. If within Visual Studio you can adjust the timeout in Tools -> Options -> Code Converter.", 1));
+            return doc;
+        }
+        
+    }
 }
