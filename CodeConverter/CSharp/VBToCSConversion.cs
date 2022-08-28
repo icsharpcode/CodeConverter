@@ -202,7 +202,7 @@ End Class";
 
     public async Task<Document> SingleSecondPassAsync(Document doc)
     {
-        var simplifiedDocument = await doc.SimplifyStatementsAsync<UsingDirectiveSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+        var simplifiedDocument = await _vbToCsProjectContentsConverter.OptionalOperations.SimplifyStatementsAsync<UsingDirectiveSyntax>(doc, UnresolvedNamespaceDiagnosticId);
 
         // Can't add a reference to Microsoft.VisualBasic if there's no project file, so hint to install the package
         if (_vbToCsProjectContentsConverter.SourceProject.AssemblyName == FabricatedAssemblyName) {

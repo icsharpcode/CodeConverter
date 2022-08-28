@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
+using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -28,7 +29,7 @@ public class CSToVBConversion : ILanguageConversion
     }
     public async Task<Document> SingleSecondPassAsync(Document doc)
     {
-        return await doc.SimplifyStatementsAsync<ImportsStatementSyntax>(UnresolvedNamespaceDiagnosticId, _cancellationToken);
+        return await _csToVbProjectContentsConverter.OptionalOperations.SimplifyStatementsAsync<ImportsStatementSyntax>(doc, UnresolvedNamespaceDiagnosticId);
     }
 
     public SyntaxNode GetSurroundedNode(IEnumerable<SyntaxNode> descendantNodes,
