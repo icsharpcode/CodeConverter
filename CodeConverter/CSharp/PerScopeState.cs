@@ -194,10 +194,8 @@ internal class PerScopeState
         var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind != VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind && x.IsBreakableInCs).ToArray();
         var assignmentExpression = CommonConversions.Literal(true);
         foreach (var scope in scopesToExit) {
-            var exitScopeVar = new AdditionalDeclaration("exit" + VBasic.SyntaxFactory.Token(vbBlockKeywordKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
-            var ifTrueBreak = new PostIfTrueBlock(exitScopeVar.IdentifierName, SyntaxFactory.BreakStatement());
-            scope.HoistedNodes.Add(exitScopeVar);
-            scope.HoistedNodes.Add(ifTrueBreak);
+            string prefix = "exit";
+            var exitScopeVar = HoistConditionalBreakOrContinue(scope, prefix, vbBlockKeywordKind, SyntaxFactory.BreakStatement());
             assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, exitScopeVar.IdentifierName, assignmentExpression);
         }
         if (scopesToExit.Any()) yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
@@ -212,12 +210,11 @@ internal class PerScopeState
         var assignmentExpression = CommonConversions.Literal(true);
         int i = 0;
         foreach (var scope in scopesToExit) {
-            var continueScopeVar = new AdditionalDeclaration("continue" + VBasic.SyntaxFactory.Token(vbBlockKeywordKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
-            StatementSyntax stmt = i++ == scopesToExit.Length - 1 ? SyntaxFactory.ContinueStatement() : SyntaxFactory.BreakStatement();
-            var ifTrue = new PostIfTrueBlock(continueScopeVar.IdentifierName, stmt);
-            scope.HoistedNodes.Add(continueScopeVar);
-            scope.HoistedNodes.Add(ifTrue);
-            assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, continueScopeVar.IdentifierName, assignmentExpression);
+            bool isContinue = i++ == scopesToExit.Length - 1;
+            string prefix = isContinue ? "continue" : "break";
+            StatementSyntax stmt = isContinue ? SyntaxFactory.ContinueStatement() : SyntaxFactory.BreakStatement();
+            var scopeVar = HoistConditionalBreakOrContinue(scope, prefix, vbBlockKeywordKind, stmt);
+            assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, scopeVar.IdentifierName, assignmentExpression);
         }
 
         if (scopesToExit.Any()) {
@@ -226,5 +223,20 @@ internal class PerScopeState
         } else {
             yield return SyntaxFactory.ContinueStatement();
         }
+    }
+
+    private static AdditionalDeclaration HoistConditionalBreakOrContinue(ScopeState scope, string prefix, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind vbBlockKeywordKind, StatementSyntax stmt)
+    {
+        prefix += VBasic.SyntaxFactory.Token(vbBlockKeywordKind);
+        var scopeVar = scope.HoistedNodes.OfType<AdditionalDeclaration>().FirstOrDefault(n => n.Prefix == prefix);
+        if (scopeVar is null) {
+            scopeVar = new AdditionalDeclaration(prefix, CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
+            var ifTrue = new PostIfTrueBlock(scopeVar.IdentifierName, stmt);
+            scope.HoistedNodes.Add(scopeVar);
+            scope.HoistedNodes.Add(ifTrue);
+            return scopeVar;
+        }
+
+        return scopeVar;
     }
 }

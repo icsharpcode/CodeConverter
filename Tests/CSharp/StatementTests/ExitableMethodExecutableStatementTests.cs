@@ -439,6 +439,8 @@ Public Class VisualBasicClass
             Select Case CurVal
                 Case 6
                     Exit For
+                Case 7
+                    Exit For
             End Select
             Console.WriteLine()
         Next
@@ -467,6 +469,11 @@ public partial class VisualBasicClass
                         exitFor = true;
                         break;
                     }
+                case 7:
+                    {
+                        exitFor = true;
+                        break;
+                    }
             }
 
             if (exitFor)
@@ -490,10 +497,22 @@ Public Class VisualBasicClass
             Dim objectUnit = appRole
             While objectUnit IsNot Nothing
                 If appRole < 10 Then
-                    If appRole < 5 Then
+                    If appRole < 3 Then
                         Return True
+                    Else If appRole < 4 Then
+                        Continue While ' Continue While
+                    Else If appRole < 5 Then
+                        Exit For ' Exit For
+                    Else If appRole < 6 Then
+                        Continue For ' Continue For
+                    Else If appRole < 7 Then
+                        Exit For ' Exit For
+                    Else If appRole < 8 Then
+                        Exit While ' Exit While
+                    Else If appRole < 9 Then
+                        Continue While ' Continue While
                     Else
-                        Continue For
+                        Continue For ' Continue For
                     End If
                 End IF
                 objectUnit = objectUnit.ToString
@@ -511,19 +530,47 @@ public partial class VisualBasicClass
         {
             var objectUnit = appRole;
             bool continueFor = false;
+            bool exitFor = false;
             while (objectUnit is not null)
             {
                 if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 10, false)))
                 {
-                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 5, false)))
+                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 3, false)))
                     {
                         return true;
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 4, false)))
+                    {
+                        continue; // Continue While
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 5, false)))
+                    {
+                        exitFor = true;
+                        break; // Exit For
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 6, false)))
+                    {
+                        continueFor = true;
+                        break; // Continue For
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 7, false)))
+                    {
+                        exitFor = true;
+                        break; // Exit For
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 8, false)))
+                    {
+                        break; // Exit While
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 9, false)))
+                    {
+                        continue; // Continue While
                     }
                     else
                     {
                         continueFor = true;
                         break;
-                    }
+                    } // Continue For
                 }
                 objectUnit = objectUnit.ToString();
             }
@@ -531,6 +578,11 @@ public partial class VisualBasicClass
             if (continueFor)
             {
                 continue;
+            }
+
+            if (exitFor)
+            {
+                break;
             }
         }
 
@@ -611,6 +663,14 @@ Public Class VisualBasicClass
                         Continue For
                 End Select
             End While
+            While CurVal < 4
+                Select Case CurVal
+                    Case 7
+                        Continue For
+                    Case 8
+                        Exit For
+                End Select
+            End While
             Console.WriteLine()
         Next
         System.Console.WriteLine(i_Total.ToString())
@@ -630,20 +690,55 @@ public partial class VisualBasicClass
         foreach (int CurVal in LstTmp)
         {
             i_Total += CurVal;
-            bool continueFor1 = false;
+            bool continueFor = false;
             while (CurVal < 3)
             {
-                bool continueFor = false;
+                bool breakFor = false;
                 switch (CurVal)
                 {
                     case 6:
                         {
-                            continueFor1 = continueFor = true;
+                            continueFor = breakFor = true;
                             break;
                         }
                 }
 
-                if (continueFor)
+                if (breakFor)
+                {
+                    break;
+                }
+            }
+
+            if (continueFor)
+            {
+                continue;
+            }
+            bool continueFor1 = false;
+            bool exitFor1 = false;
+            while (CurVal < 4)
+            {
+                bool breakFor1 = false;
+                bool exitFor = false;
+                switch (CurVal)
+                {
+                    case 7:
+                        {
+                            continueFor1 = breakFor1 = true;
+                            break;
+                        }
+                    case 8:
+                        {
+                            exitFor1 = exitFor = true;
+                            break;
+                        }
+                }
+
+                if (breakFor1)
+                {
+                    break;
+                }
+
+                if (exitFor)
                 {
                     break;
                 }
@@ -652,6 +747,11 @@ public partial class VisualBasicClass
             if (continueFor1)
             {
                 continue;
+            }
+
+            if (exitFor1)
+            {
+                break;
             }
             Console.WriteLine();
         }
