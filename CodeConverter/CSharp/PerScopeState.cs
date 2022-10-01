@@ -80,7 +80,7 @@ internal class PerScopeState
     {
         var scopeState = _hoistedNodesPerScope.Peek();
         return scopeState.OfType<AdditionalAssignment>().Select(AdditionalAssignment.CreateAssignment)
-            .Concat(scopeState.OfType<IfTrueBreak>().Select(arg => arg.CreateIfTrueBreakStatement()))
+            .Concat(scopeState.OfType<PostIfTrueBlock>().Select(arg => arg.CreateIfTrueBreakStatement()))
             .ToArray();
     }
 
@@ -195,12 +195,36 @@ internal class PerScopeState
         var assignmentExpression = CommonConversions.Literal(true);
         foreach (var scope in scopesToExit) {
             var exitScopeVar = new AdditionalDeclaration("exit" + VBasic.SyntaxFactory.Token(vbBlockKeywordKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
-            var ifTrueBreak = new IfTrueBreak(exitScopeVar.IdentifierName);
+            var ifTrueBreak = new PostIfTrueBlock(exitScopeVar.IdentifierName, SyntaxFactory.BreakStatement());
             scope.HoistedNodes.Add(exitScopeVar);
             scope.HoistedNodes.Add(ifTrueBreak);
             assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, exitScopeVar.IdentifierName, assignmentExpression);
         }
         if (scopesToExit.Any()) yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
         yield return SyntaxFactory.BreakStatement();
+    }
+
+    public IEnumerable<StatementSyntax> ConvertContinue(VBasic.SyntaxKind vbBlockKeywordKind)
+    {
+        var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind is not VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind && x.IsBreakableInCs).ToArray();
+        // Select is breakable, but not continuable, so only need to break out of it on the way to something else, not if it's last.
+        scopesToExit = scopesToExit.Reverse().SkipWhile(x => x.ExitableKind is VBasic.SyntaxKind.SelectKeyword).Reverse().ToArray();
+        var assignmentExpression = CommonConversions.Literal(true);
+        int i = 0;
+        foreach (var scope in scopesToExit) {
+            var continueScopeVar = new AdditionalDeclaration("continue" + VBasic.SyntaxFactory.Token(vbBlockKeywordKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
+            StatementSyntax stmt = i++ == scopesToExit.Length - 1 ? SyntaxFactory.ContinueStatement() : SyntaxFactory.BreakStatement();
+            var ifTrue = new PostIfTrueBlock(continueScopeVar.IdentifierName, stmt);
+            scope.HoistedNodes.Add(continueScopeVar);
+            scope.HoistedNodes.Add(ifTrue);
+            assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, continueScopeVar.IdentifierName, assignmentExpression);
+        }
+
+        if (scopesToExit.Any()) {
+            yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
+            yield return SyntaxFactory.BreakStatement();
+        } else {
+            yield return SyntaxFactory.ContinueStatement();
+        }
     }
 }
