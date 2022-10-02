@@ -423,6 +423,344 @@ public partial class VisualBasicClass
     }
 
     [Fact]
+    public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_WithoutRunningInterveningCodeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+
+Public Class VisualBasicClass
+    Public Sub Test
+        Dim LstTmp As New List(Of Integer)
+        LstTmp.Add(5)
+        LstTmp.Add(6)
+        LstTmp.Add(7)
+        Dim i_Total As Integer
+        For Each CurVal As Integer In LstTmp
+            i_Total += CurVal
+            Select Case CurVal
+                Case 6
+                    Exit For
+                Case 7
+                    Exit For
+            End Select
+            Console.WriteLine()
+        Next
+    system.Console.WriteLine(i_Total.ToString())
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class VisualBasicClass
+{
+    public void Test()
+    {
+        var LstTmp = new List<int>();
+        LstTmp.Add(5);
+        LstTmp.Add(6);
+        LstTmp.Add(7);
+        var i_Total = default(int);
+        foreach (int CurVal in LstTmp)
+        {
+            i_Total += CurVal;
+            bool exitFor = false;
+            switch (CurVal)
+            {
+                case 6:
+                    {
+                        exitFor = true;
+                        break;
+                    }
+                case 7:
+                    {
+                        exitFor = true;
+                        break;
+                    }
+            }
+
+            if (exitFor)
+            {
+                break;
+            }
+            Console.WriteLine();
+        }
+        Console.WriteLine(i_Total.ToString());
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlockIssue946Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class VisualBasicClass
+    Public Function Test(applicationRoles)
+        For Each appRole In applicationRoles
+            Dim objectUnit = appRole
+            While objectUnit IsNot Nothing
+                If appRole < 10 Then
+                    If appRole < 3 Then
+                        Return True
+                    Else If appRole < 4 Then
+                        Continue While ' Continue While
+                    Else If appRole < 5 Then
+                        Exit For ' Exit For
+                    Else If appRole < 6 Then
+                        Continue For ' Continue For
+                    Else If appRole < 7 Then
+                        Exit For ' Exit For
+                    Else If appRole < 8 Then
+                        Exit While ' Exit While
+                    Else If appRole < 9 Then
+                        Continue While ' Continue While
+                    Else
+                        Continue For ' Continue For
+                    End If
+                End IF
+                objectUnit = objectUnit.ToString
+            End While
+        Next
+    End Function
+End Class", @"using System.Collections;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class VisualBasicClass
+{
+    public object Test(object applicationRoles)
+    {
+        foreach (var appRole in (IEnumerable)applicationRoles)
+        {
+            var objectUnit = appRole;
+            bool continueFor = false;
+            bool exitFor = false;
+            while (objectUnit is not null)
+            {
+                if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 10, false)))
+                {
+                    if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 3, false)))
+                    {
+                        return true;
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 4, false)))
+                    {
+                        continue; // Continue While
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 5, false)))
+                    {
+                        exitFor = true;
+                        break; // Exit For
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 6, false)))
+                    {
+                        continueFor = true;
+                        break; // Continue For
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 7, false)))
+                    {
+                        exitFor = true;
+                        break; // Exit For
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 8, false)))
+                    {
+                        break; // Exit While
+                    }
+                    else if (Conversions.ToBoolean(Operators.ConditionalCompareObjectLess(appRole, 9, false)))
+                    {
+                        continue; // Continue While
+                    }
+                    else
+                    {
+                        continueFor = true;
+                        break;
+                    } // Continue For
+                }
+                objectUnit = objectUnit.ToString();
+            }
+
+            if (continueFor)
+            {
+                continue;
+            }
+
+            if (exitFor)
+            {
+                break;
+            }
+        }
+
+        return default;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task BreakableThenContinuable_CreatesIfStatementsToExitContainingBlock_WithoutRunningInterveningCodeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+
+Public Class VisualBasicClass
+    Public Sub Test
+        Dim LstTmp As New List(Of Integer)
+        LstTmp.Add(5)
+        LstTmp.Add(6)
+        LstTmp.Add(7)
+        Dim i_Total As Integer
+        For Each CurVal As Integer In LstTmp
+            i_Total += CurVal
+            Select Case CurVal
+                Case 6
+                    Continue For
+            End Select
+            Console.WriteLine()
+        Next
+    system.Console.WriteLine(i_Total.ToString())
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class VisualBasicClass
+{
+    public void Test()
+    {
+        var LstTmp = new List<int>();
+        LstTmp.Add(5);
+        LstTmp.Add(6);
+        LstTmp.Add(7);
+        var i_Total = default(int);
+        foreach (int CurVal in LstTmp)
+        {
+            i_Total += CurVal;
+            switch (CurVal)
+            {
+                case 6:
+                    {
+                        continue;
+                    }
+            }
+            Console.WriteLine();
+        }
+        Console.WriteLine(i_Total.ToString());
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MultipleContinuable_CreatesIfStatementsToExitContainingBlock_WithoutRunningInterveningCodeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Imports System.Collections.Generic
+
+Public Class VisualBasicClass
+    Public Sub Test
+        Dim LstTmp As New List(Of Integer)
+        LstTmp.Add(5)
+        LstTmp.Add(6)
+        LstTmp.Add(7)
+        Dim i_Total As Integer
+        For Each CurVal As Integer In LstTmp
+            i_Total += CurVal
+            While CurVal < 3
+                Select Case CurVal
+                    Case 6
+                        Continue For
+                End Select
+            End While
+            While CurVal < 4
+                Select Case CurVal
+                    Case 7
+                        Continue For
+                    Case 8
+                        Exit For
+                End Select
+            End While
+            Console.WriteLine()
+        Next
+        System.Console.WriteLine(i_Total.ToString())
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class VisualBasicClass
+{
+    public void Test()
+    {
+        var LstTmp = new List<int>();
+        LstTmp.Add(5);
+        LstTmp.Add(6);
+        LstTmp.Add(7);
+        var i_Total = default(int);
+        foreach (int CurVal in LstTmp)
+        {
+            i_Total += CurVal;
+            bool continueFor = false;
+            while (CurVal < 3)
+            {
+                bool breakFor = false;
+                switch (CurVal)
+                {
+                    case 6:
+                        {
+                            continueFor = breakFor = true;
+                            break;
+                        }
+                }
+
+                if (breakFor)
+                {
+                    break;
+                }
+            }
+
+            if (continueFor)
+            {
+                continue;
+            }
+            bool continueFor1 = false;
+            bool exitFor1 = false;
+            while (CurVal < 4)
+            {
+                bool breakFor1 = false;
+                bool exitFor = false;
+                switch (CurVal)
+                {
+                    case 7:
+                        {
+                            continueFor1 = breakFor1 = true;
+                            break;
+                        }
+                    case 8:
+                        {
+                            exitFor1 = exitFor = true;
+                            break;
+                        }
+                }
+
+                if (breakFor1)
+                {
+                    break;
+                }
+
+                if (exitFor)
+                {
+                    break;
+                }
+            }
+
+            if (continueFor1)
+            {
+                continue;
+            }
+
+            if (exitFor1)
+            {
+                break;
+            }
+            Console.WriteLine();
+        }
+        Console.WriteLine(i_Total.ToString());
+    }
+}");
+    }
+
+    [Fact]
     public async Task ExitTry_CreatesBreakableLoop_Issue779Async()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System

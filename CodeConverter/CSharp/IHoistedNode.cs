@@ -9,8 +9,8 @@ namespace ICSharpCode.CodeConverter.CSharp;
 internal interface IHoistedNode
 {
 }
-    
-internal record IfTrueBreak(ExpressionSyntax Condition) : IHoistedNode
+
+internal record PostIfTrueBlock(ExpressionSyntax Condition, StatementSyntax Statement) : IHoistedNode
 {
-    public StatementSyntax CreateIfTrueBreakStatement() => SyntaxFactory.IfStatement(Condition, SyntaxFactory.Block(SyntaxFactory.BreakStatement()));
+    public StatementSyntax CreateIfTrueBreakStatement() => SyntaxFactory.IfStatement(Condition, SyntaxFactory.Block(Statement));
 }

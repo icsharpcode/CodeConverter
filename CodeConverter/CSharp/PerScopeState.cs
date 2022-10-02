@@ -80,7 +80,7 @@ internal class PerScopeState
     {
         var scopeState = _hoistedNodesPerScope.Peek();
         return scopeState.OfType<AdditionalAssignment>().Select(AdditionalAssignment.CreateAssignment)
-            .Concat(scopeState.OfType<IfTrueBreak>().Select(arg => arg.CreateIfTrueBreakStatement()))
+            .Concat(scopeState.OfType<PostIfTrueBlock>().Select(arg => arg.CreateIfTrueBreakStatement()))
             .ToArray();
     }
 
@@ -194,13 +194,49 @@ internal class PerScopeState
         var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind != VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind && x.IsBreakableInCs).ToArray();
         var assignmentExpression = CommonConversions.Literal(true);
         foreach (var scope in scopesToExit) {
-            var exitScopeVar = new AdditionalDeclaration("exit" + VBasic.SyntaxFactory.Token(vbBlockKeywordKind), CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
-            var ifTrueBreak = new IfTrueBreak(exitScopeVar.IdentifierName);
-            scope.HoistedNodes.Add(exitScopeVar);
-            scope.HoistedNodes.Add(ifTrueBreak);
+            string prefix = "exit";
+            var exitScopeVar = HoistConditionalBreakOrContinue(scope, prefix, vbBlockKeywordKind, SyntaxFactory.BreakStatement());
             assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, exitScopeVar.IdentifierName, assignmentExpression);
         }
         if (scopesToExit.Any()) yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
         yield return SyntaxFactory.BreakStatement();
+    }
+
+    public IEnumerable<StatementSyntax> ConvertContinue(VBasic.SyntaxKind vbBlockKeywordKind)
+    {
+        var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind is not VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind && x.IsBreakableInCs).ToArray();
+        // Select is breakable, but not continuable, so only need to break out of it on the way to something else, not if it's last.
+        scopesToExit = scopesToExit.Reverse().SkipWhile(x => x.ExitableKind is VBasic.SyntaxKind.SelectKeyword).Reverse().ToArray();
+        var assignmentExpression = CommonConversions.Literal(true);
+        int i = 0;
+        foreach (var scope in scopesToExit) {
+            bool isContinue = i++ == scopesToExit.Length - 1;
+            string prefix = isContinue ? "continue" : "break";
+            StatementSyntax stmt = isContinue ? SyntaxFactory.ContinueStatement() : SyntaxFactory.BreakStatement();
+            var scopeVar = HoistConditionalBreakOrContinue(scope, prefix, vbBlockKeywordKind, stmt);
+            assignmentExpression = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, scopeVar.IdentifierName, assignmentExpression);
+        }
+
+        if (scopesToExit.Any()) {
+            yield return SyntaxFactory.ExpressionStatement(assignmentExpression);
+            yield return SyntaxFactory.BreakStatement();
+        } else {
+            yield return SyntaxFactory.ContinueStatement();
+        }
+    }
+
+    private static AdditionalDeclaration HoistConditionalBreakOrContinue(ScopeState scope, string prefix, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind vbBlockKeywordKind, StatementSyntax stmt)
+    {
+        prefix += VBasic.SyntaxFactory.Token(vbBlockKeywordKind);
+        var scopeVar = scope.HoistedNodes.OfType<AdditionalDeclaration>().FirstOrDefault(n => n.Prefix == prefix);
+        if (scopeVar is null) {
+            scopeVar = new AdditionalDeclaration(prefix, CommonConversions.Literal(false), SyntaxFactory.ParseTypeName("bool"));
+            var ifTrue = new PostIfTrueBlock(scopeVar.IdentifierName, stmt);
+            scope.HoistedNodes.Add(scopeVar);
+            scope.HoistedNodes.Add(ifTrue);
+            return scopeVar;
+        }
+
+        return scopeVar;
     }
 }

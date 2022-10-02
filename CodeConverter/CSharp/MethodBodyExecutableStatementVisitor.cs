@@ -449,7 +449,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
     {
-        return SingleStatement(SyntaxFactory.ContinueStatement());
+        var vbBlockKeywordKind = VBasic.VisualBasicExtensions.Kind(node.BlockKeyword);
+        return SyntaxFactory.List(_perScopeState.ConvertContinue(vbBlockKeywordKind));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitYieldStatement(VBSyntax.YieldStatementSyntax node)
