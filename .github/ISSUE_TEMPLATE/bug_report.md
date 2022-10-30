@@ -23,7 +23,7 @@ If there's no error message, try the [Visual Studio Activity log](https://docs.m
 > %AppData%\Microsoft\VisualStudio\<version>\ActivityLog.xml.
 
 ### Details
-* Product in use: e.g. [icsharpcode.github.io/CodeConverte](https://icsharpcode.github.io/CodeConverter/) / VS extension / both
+* Product in use: e.g. [icsharpcode.github.io/CodeConverter](https://icsharpcode.github.io/CodeConverter/) / VS extension / both
 * Version in use: e.g. 5.6.3 or a commit hash (if it's a 3rd party tool using this library, try one of the above)
 * Did you see it working in a previous version, which?
 * Any other relevant information to the issue, or your interest in contributing a fix.
