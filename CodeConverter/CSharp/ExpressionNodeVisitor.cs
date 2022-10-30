@@ -34,6 +34,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private readonly LambdaConverter _lambdaConverter;
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
+    private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope = new();
+    private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
@@ -453,6 +455,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             if (IsSubPartOfConditionalAccess(node)) {
                 return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
                     : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+            } else if (node.IsParentKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NamedFieldInitializer)) {
+                return SyntaxFactory.IdentifierName(_tempNameForAnonymousScope[node.Name.Identifier.Text].Peek().TempName);
             }
             left = _withBlockLhs.Peek();
         }
@@ -596,8 +600,18 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitAnonymousObjectCreationExpression(VBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
     {
-        var initializers = await node.Initializer.Initializers.AcceptSeparatedListAsync<VBSyntax.FieldInitializerSyntax, AnonymousObjectMemberDeclaratorSyntax>(TriviaConvertingExpressionVisitor);
-        return SyntaxFactory.AnonymousObjectCreationExpression(initializers);
+        var vbInitializers = node.Initializer.Initializers;
+        try {
+            var initializers = await vbInitializers.AcceptSeparatedListAsync<VBSyntax.FieldInitializerSyntax, AnonymousObjectMemberDeclaratorSyntax>(TriviaConvertingExpressionVisitor);
+            return SyntaxFactory.AnonymousObjectCreationExpression(initializers);
+        } finally {
+            var kvpsToPop = _tempNameForAnonymousScope.Where(t => t.Value.Peek().Scope == node).ToArray();
+            foreach (var kvp in kvpsToPop) {
+                if (kvp.Value.Count == 1) _tempNameForAnonymousScope.Remove(kvp.Key);
+                else kvp.Value.Pop();
+            }
+        }
+        
     }
 
     public override async Task<CSharpSyntaxNode> VisitInferredFieldInitializer(VBasic.Syntax.InferredFieldInitializerSyntax node)
@@ -694,16 +708,46 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var csExpressionSyntax = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         csExpressionSyntax =
             CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpressionSyntax);
-        if (node.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax) {
-            return SyntaxFactory.AnonymousObjectMemberDeclarator(
+        if (node.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax {Initializer: {Initializers: var initializers}} anonymousObjectCreationExpression) {
+            string nameIdentifierText = node.Name.Identifier.Text;
+            var isAnonymouslyReused = initializers.OfType<VBasic.Syntax.NamedFieldInitializerSyntax>()
+                .Select(i => i.Expression).OfType<VBasic.Syntax.MemberAccessExpressionSyntax>()
+                .Any(maes => maes.Expression is null && maes.Name.Identifier.Text.Equals(nameIdentifierText, StringComparison.OrdinalIgnoreCase));
+            if (isAnonymouslyReused) {
+                string tempNameForAnonymousSelfReference = NameGenerator.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node.Name, "temp" + ((Microsoft.CodeAnalysis.VisualBasic.Syntax.SimpleNameSyntax) node.Name).Identifier.Text.UppercaseFirstLetter());
+                csExpressionSyntax = DeclareVariableInline(csExpressionSyntax, tempNameForAnonymousSelfReference);
+                if (!_tempNameForAnonymousScope.TryGetValue(nameIdentifierText, out var stack)) {
+                    stack = _tempNameForAnonymousScope[nameIdentifierText] = new Stack<(SyntaxNode Scope, string TempName)>();
+                }
+                stack.Push((anonymousObjectCreationExpression, tempNameForAnonymousSelfReference));
+            }
+
+            var anonymousObjectMemberDeclaratorSyntax = SyntaxFactory.AnonymousObjectMemberDeclarator(
                 SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Name.Identifier))),
                 csExpressionSyntax);
+            return anonymousObjectMemberDeclaratorSyntax;
         }
 
         return SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
             await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
             csExpressionSyntax
         );
+    }
+
+    private static ExpressionSyntax DeclareVariableInline(ExpressionSyntax csExpressionSyntax, string temporaryName)
+    {
+        var temporaryNameId = SyntaxFactory.Identifier(temporaryName);
+        var temporaryNameExpression = SyntaxFactory.IdentifierName(temporaryNameId);
+        csExpressionSyntax = SyntaxFactory.ConditionalExpression(
+            SyntaxFactory.IsPatternExpression(
+                csExpressionSyntax,
+                SyntaxFactory.VarPattern(
+                    SyntaxFactory.SingleVariableDesignation(temporaryNameId))),
+            temporaryNameExpression,
+            SyntaxFactory.LiteralExpression(
+                SyntaxKind.DefaultLiteralExpression,
+                SyntaxFactory.Token(SyntaxKind.DefaultKeyword)));
+        return csExpressionSyntax;
     }
 
     public override async Task<CSharpSyntaxNode> VisitVariableNameEquals(VBSyntax.VariableNameEqualsSyntax node) =>
@@ -1086,11 +1130,10 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         const string retVariableName = "ret";
         var localFuncName = $"local{invocationSymbol.Name}";
-        var generatedNames = new HashSet<string>();//TODO: Populate from local scope
 
         var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
 
-        var statements = await _typeContext.PerScopeState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, generatedNames, _semanticModel);
+        var statements = await _typeContext.PerScopeState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, _generatedNames, _semanticModel);
 
         var block = SyntaxFactory.Block(
             statements.Concat(SyntaxFactory.ReturnStatement(SyntaxFactory.IdentifierName(retVariableName)).Yield())

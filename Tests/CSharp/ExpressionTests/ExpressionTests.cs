@@ -1152,6 +1152,53 @@ internal partial class Issue480
     }
 
     [Fact]
+    public async Task Issue949_AnonymousWithBlockMemberSelfAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Dim anonymousType1 = New With {
+    Key .A = 1,
+    Key .B = .A
+}
+Dim anonymousType2 = New With {
+    Key .A = 2,
+    Key .B = .A
+}", @"{
+    var anonymousType1 = new
+    {
+        A = 1 is var tempA ? tempA : default,
+        B = tempA
+    };
+    var anonymousType2 = new
+    {
+        A = 2 is var tempA1 ? tempA1 : default,
+        B = tempA1
+    };
+}");
+    }
+
+    [Fact]
+    public async Task Issue949_AnonymousWithNestedBlockMemberSelfAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Dim anonymousType = New With {
+Key .A = 1, 'Comment gets duplicated
+Key .B = New With {
+        Key .A = 2,
+        Key .B = .A
+    }
+}", @"{
+    var anonymousType = new
+    {
+        A = 1, // Comment gets duplicated
+               // Comment gets duplicated
+        B = new
+        {
+            A = 2 is var tempA ? tempA : default,
+            B = tempA
+        }
+    };
+}");
+    }
+
+    [Fact]
     public async Task ObjectInitializerExpression2Async()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

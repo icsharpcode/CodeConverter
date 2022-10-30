@@ -150,7 +150,7 @@ public partial class Issue876
     {
         int localInlineAssignHelper() { int arglhs = SomeProperty3; var ret = InlineAssignHelper(ref arglhs, 1); SomeProperty3 = arglhs; return ret; }
 
-        int localInlineAssignHelper1() { int arglhs = SomeProperty2; var ret = InlineAssignHelper(ref arglhs, localInlineAssignHelper()); SomeProperty2 = arglhs; return ret; }
+        int localInlineAssignHelper1() { int arglhs1 = SomeProperty2; var ret = InlineAssignHelper(ref arglhs1, localInlineAssignHelper()); SomeProperty2 = arglhs1; return ret; }
 
         int arglhs = SomeProperty;
         int result = InlineAssignHelper(ref arglhs, localInlineAssignHelper1());
@@ -575,7 +575,7 @@ public partial class MyTestClass
         Prop = argvrbTst3; // Requires variable before, and to assign back after
 
         bool localTakesRef() { int argvrbTst = 3 * Conversions.ToInteger(a); var ret = TakesRef(ref argvrbTst); return ret; }
-        bool localTakesRef1() { int argvrbTst = Prop; var ret = TakesRef(ref argvrbTst); Prop = argvrbTst; return ret; }
+        bool localTakesRef1() { int argvrbTst1 = Prop; var ret = TakesRef(ref argvrbTst1); Prop = argvrbTst1; return ret; }
 
         if (16 > someInt || TakesRef(ref someInt)) // Convert directly
         {

@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -18,6 +19,7 @@ internal class CommentConvertingVisitorWrapper
         _syntaxTree = syntaxTree;
     }
 
+    [DebuggerStepThrough]
     public async Task<T> AcceptAsync<T>(VisualBasicSyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CSharpSyntaxNode =>
         await ConvertHandledAsync<T>(vbNode, sourceTriviaMap);
 

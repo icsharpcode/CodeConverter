@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace ICSharpCode.CodeConverter.Util;
@@ -87,5 +88,10 @@ internal static class StringExtensions
         return !attributeTypeName.EndsWith(attribute, StringComparison.InvariantCulture)
             ? attributeTypeName
             : attributeTypeName.Replace(attribute, null);
+    }
+
+    public static string UppercaseFirstLetter(this string sourceText)
+    {
+        return sourceText.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture) + sourceText.Substring(1);
     }
 }

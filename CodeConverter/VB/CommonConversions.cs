@@ -668,13 +668,8 @@ internal class CommonConversions
     {
         return String.Join("", node.Variables.Select((v, i) => {
             var sourceText1 = v.ToString();
-            return i > 0 ? UppercaseFirstLetter(sourceText1) : sourceText1;
+            return i > 0 ? sourceText1.UppercaseFirstLetter() : sourceText1;
         }));
-    }
-
-    private static string UppercaseFirstLetter(string sourceText)
-    {
-        return sourceText.Substring(0, 1).ToUpper(CultureInfo.InvariantCulture) + sourceText.Substring(1);
     }
 
     public bool IsEventHandlerIdentifier(CS.CSharpSyntaxNode syntax)
