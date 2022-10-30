@@ -41,6 +41,48 @@ public partial class Issue895
     }
 
     [Fact]
+    public async Task Characterize_Issue948_GroupByMember_Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Class C
+    Public Property MyString As String
+End Class
+
+Public Module Module1
+    Public Sub Main()
+        Dim list As New List(Of C)()
+        Dim result = From f In list
+                     Group f By f.MyString Into Group
+                     Order By MyString
+	End Sub
+End Module",
+            @"using System.Collections.Generic;
+using System.Linq;
+
+internal partial class C
+{
+    public string MyString { get; set; }
+}
+
+public static partial class Module1
+{
+    public static void Main()
+    {
+        var list = new List<C>();
+        var result = from f in list
+                     group f by f.MyString into @group
+                     orderby MyString
+                     select @group;
+    }
+}
+1 target compilation errors:
+CS0103: The name 'MyString' does not exist in the current context");
+        // BUG: Order by should be on @group.Key
+    }
+
+    [Fact]
     public async Task Issue736_LinqEarlySelectAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
