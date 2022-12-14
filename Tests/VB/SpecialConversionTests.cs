@@ -7,6 +7,38 @@ namespace ICSharpCode.CodeConverter.Tests.VB;
 public class SpecialConversionTests : ConverterTestBase
 {
     [Fact]
+    public async Task UncheckedConstantAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"internal partial class TestClass
+{
+    private const int GENERIC_READ = unchecked((int)0x80000000);
+}", @"Friend Partial Class TestClass
+    Private Const GENERIC_READ As Integer = &H80000000UI
+End Class
+
+1 target compilation errors:
+BC30439: Constant expression not representable in type 'Integer'.");
+    }
+
+    [Fact]
+    public async Task CheckedAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
+
+internal partial class TestClass
+{
+    private int GENERIC_READ = checked((int) Math.Pow(46341, 2));
+}", @"Imports System
+
+Friend Partial Class TestClass
+    Private GENERIC_READ As Integer = Math.Pow(46341, 2)
+End Class
+WARNING: Expression at character 85 contained the checked keyword before conversion");
+    }
+
+    [Fact]
     public async Task TestSimpleInlineAssignAsync() {
         await TestConversionCSharpToVisualBasicAsync(
             @"class TestClass {

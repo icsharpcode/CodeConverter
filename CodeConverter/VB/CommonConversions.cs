@@ -29,13 +29,15 @@ namespace ICSharpCode.CodeConverter.VB;
 internal class CommonConversions
 {
     public SyntaxGenerator VbSyntaxGenerator { get; }
+    public bool OutputWillBeOverflowChecked { get; }
     private readonly CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> _nodesVisitor;
     private readonly SemanticModel _semanticModel;
 
     public CommonConversions(SemanticModel semanticModel, SyntaxGenerator vbSyntaxGenerator,
-        CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> nodesVisitor)
+        CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> nodesVisitor, bool outputWillBeOverflowChecked)
     {
         VbSyntaxGenerator = vbSyntaxGenerator;
+        OutputWillBeOverflowChecked = outputWillBeOverflowChecked;
         _semanticModel = semanticModel;
         _nodesVisitor = nodesVisitor;
     }
