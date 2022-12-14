@@ -78,20 +78,22 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
 
         var errorString = await GetCompilationErrorsAsync(solution.Projects);
         if (string.IsNullOrEmpty(errorString)) return solution;
+        errorString = "    " + errorString.Replace(Environment.NewLine, Environment.NewLine + "    ");
         progress.Report($"Compilation errors found before conversion.:{Environment.NewLine}{errorString}");
 
         bool wrongFramework = new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains);
         if (_bestEffortConversion) {
             progress.Report("Attempting best effort conversion on broken input due to override");
         } else if (wrongFramework && _isNetCore) {
-            throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)");
+            throw CreateException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)", errorString);
         } else if (wrongFramework && !_isNetCore) {
-            throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution");
+            throw CreateException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution", errorString);
         } else {
-            var mainMessage = "Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
-            throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
+            throw CreateException("Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option", errorString);
         }
         return solution;
+
+        static ValidationException CreateException(string mainMessage, string fullDetail) => new ValidationException($"{mainMessage}:{Environment.NewLine}{fullDetail}{Environment.NewLine}{mainMessage}");
     }
 
     private async Task<string> GetCompilationErrorsAsync(
