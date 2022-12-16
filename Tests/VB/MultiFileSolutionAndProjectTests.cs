@@ -18,13 +18,13 @@ public class MultiFileSolutionAndProjectTests
         _multiFileTestFixture = multiFileTestFixture;
     }
 
-    //[Fact] /* enable for executing locally */
+    [Fact] /* enable for executing locally */
     public async Task ConvertWholeSolutionAsync()
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.VB);
     }
 
-    //[Fact] /* enable for executing locally */
+    [Fact] /* enable for executing locally */
     public async Task ConvertCSharpConsoleAppOnlyAsync()
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "CSharpConsoleApp", Language.VB);
