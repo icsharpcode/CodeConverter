@@ -194,7 +194,7 @@ internal static class VisualStudioInteraction
         if (GetUpdateWarningsOrNull() is {} warning) await writeMessageAsync(warning);
         if (projects.Count == 1 && build.ActiveConfiguration?.Name is { } configuration && projects.Single().UniqueName is {} uniqueName) {
             await writeMessageAsync($"Building project '{uniqueName}' prior to conversion for maximum accuracy...");
-            build.BuildProject(configuration, uniqueName);
+            build.BuildProject(configuration, uniqueName, true);
         } else {
             await writeMessageAsync("Building solution prior to conversion for maximum accuracy...");
             build.Build(true);
