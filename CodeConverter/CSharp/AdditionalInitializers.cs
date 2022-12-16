@@ -24,7 +24,7 @@ internal class AdditionalInitializers
         )) || !instanceConstructors.Any() && !isBestPartToAddParameterlessConstructor;
         var designerGeneratedInitializeComponentOrNull = namedTypeSybol.GetDesignerGeneratedInitializeComponentOrNull(vbCompilation);
         DesignerGeneratedInitializeComponentOrNull =
-            designerGeneratedInitializeComponentOrNull.DeclaringSyntaxReferences.Any(r => !r.SyntaxTree.FilePath.IsGeneratedFile())
+            designerGeneratedInitializeComponentOrNull?.DeclaringSyntaxReferences.Any(r => !r.SyntaxTree.FilePath.IsTempFile()) == true
                 ? designerGeneratedInitializeComponentOrNull
                 : null;
     }
