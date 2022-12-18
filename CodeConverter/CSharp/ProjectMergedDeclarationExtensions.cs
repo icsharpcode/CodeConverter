@@ -164,7 +164,7 @@ End Namespace";
         for (var symbolToRename = await GetElementToRename(project); symbolToRename != null; symbolToRename = await GetElementToRename(project, toSkip)) {
             string newName = symbolToRename.Name.Replace(oldNamePrefix, newNamePrefix);
             try {
-                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, newName, project.Solution.Workspace.Options, cancellationToken);
+                var renamedSolution = await Renamer.RenameSymbolAsync(project.Solution, symbolToRename, new SymbolRenameOptions(), newName, cancellationToken);
                 project = renamedSolution.GetProject(project.Id);
             } catch (Exception e) {
                 toSkip++;
