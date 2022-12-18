@@ -161,7 +161,7 @@ public class VBToCSConversion : ILanguageConversion
     private static bool IsNonTypeEndBlock(SyntaxNode node)
     {
         return node is VBSyntax.EndBlockStatementSyntax ebs &&
-               !ebs.BlockKeyword.IsKind(SyntaxKind.ClassKeyword, SyntaxKind.StructureKeyword, SyntaxKind.InterfaceKeyword, SyntaxKind.ModuleKeyword);
+               !ebs.BlockKeyword.IsKind(SyntaxKind.ClassKeyword, SyntaxKind.StructureKeyword) && !ebs.BlockKeyword.IsKind(SyntaxKind.InterfaceKeyword, SyntaxKind.ModuleKeyword);
     }
 
     public bool MustBeContainedByClass(SyntaxNode node)

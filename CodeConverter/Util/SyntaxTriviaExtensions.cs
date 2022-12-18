@@ -45,7 +45,7 @@ internal static class SyntaxTriviaExtensions
             }
 
             return commentText.TrimStart(null);
-        } else if (CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.MultiLineCommentTrivia) {
+        } else if (trivia.IsKind(CS.SyntaxKind.MultiLineCommentTrivia)) {
             var textBuilder = new StringBuilder();
 
             if (commentText.EndsWith("*/", StringComparison.InvariantCulture)) {
@@ -66,7 +66,7 @@ internal static class SyntaxTriviaExtensions
 
             // remove trailing line breaks
             return textBuilder.ToString().TrimEnd();
-        } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || CS.CSharpExtensions.Kind(trivia) == CS.SyntaxKind.SingleLineDocumentationCommentTrivia) {
+        } else if (trivia.IsKind(VBasic.SyntaxKind.DocumentationCommentTrivia) || trivia.IsKind(CS.SyntaxKind.SingleLineDocumentationCommentTrivia)) {
             var textBuilder = new StringBuilder();
 
             var lines = commentText.Replace("\r\n", "\n").Split('\n');

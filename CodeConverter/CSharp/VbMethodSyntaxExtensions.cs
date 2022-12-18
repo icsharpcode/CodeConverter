@@ -18,7 +18,7 @@ internal static class VbMethodSyntaxExtensions
 
     public static bool HasModifier(this VBSyntax.MethodBaseSyntax d, VBasic.SyntaxKind modifierKind)
     {
-        return d.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, modifierKind));
+        return d.Modifiers.Any(m => m.IsKind(modifierKind));
     }
 
     private static VBSyntax.MethodBaseSyntax GetMethodBlock(VBSyntax.MethodBlockBaseSyntax node)

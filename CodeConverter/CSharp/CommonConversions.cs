@@ -232,7 +232,7 @@ internal class CommonConversions
     private async Task<CSharpSyntaxNode> GetInitializerFromNameAndTypeAsync(ITypeSymbol typeSymbol,
         VBSyntax.ModifiedIdentifierSyntax name, CSharpSyntaxNode initializer)
     {
-        if (!SyntaxTokenExtensions.IsKind(name.Nullable, SyntaxKind.None))
+        if (!name.Nullable.IsKind(SyntaxKind.None))
         {
             if (typeSymbol.IsArrayType())
             {
@@ -347,8 +347,8 @@ internal class CommonConversions
         if (implicitVisibility && !isPartial) declaredAccessibility = Accessibility.NotApplicable;
         var modifierSyntaxs = ConvertModifiersCore(declaredAccessibility, modifiers, context)
             .Concat(extraCsModifierKinds.Select(SyntaxFactory.Token))
-            .Where(t => t.Kind() != CSSyntaxKind.None)
-            .OrderBy(m => SyntaxTokenExtensions.IsKind(m, CSSyntaxKind.PartialKeyword));
+            .Where(t => !t.IsKind(CSSyntaxKind.None))
+            .OrderBy(m => m.IsKind(CSSyntaxKind.PartialKeyword));
         return SyntaxFactory.TokenList(modifierSyntaxs);
     }
 
@@ -399,7 +399,7 @@ internal class CommonConversions
             if (m.HasValue) yield return m.Value;
         }
         if (context == TokenContext.MemberInModule &&
-            !remainingModifiers.Any(a => VisualBasicExtensions.Kind(a) == SyntaxKind.ConstKeyword ))
+            !remainingModifiers.Any(a => a.IsKind(SyntaxKind.ConstKeyword)))
             yield return SyntaxFactory.Token(CSSyntaxKind.StaticKeyword);
     }
 
@@ -617,7 +617,7 @@ internal class CommonConversions
 
     public static bool IsDefaultIndexer(SyntaxNode node)
     {
-        return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, SyntaxKind.DefaultKeyword));
+        return node is VBSyntax.PropertyStatementSyntax pss && pss.Modifiers.Any(m => m.IsKind(SyntaxKind.DefaultKeyword));
     }
 
 

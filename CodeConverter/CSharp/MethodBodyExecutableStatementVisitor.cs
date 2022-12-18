@@ -89,7 +89,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public override async Task<SyntaxList<StatementSyntax>> VisitLocalDeclarationStatement(VBSyntax.LocalDeclarationStatementSyntax node)
     {  
         var modifiers = CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], node.Modifiers, TokenContext.Local);
-        var isConst = modifiers.Any(a => a.Kind() == SyntaxKind.ConstKeyword);
+        var isConst = modifiers.Any(a => a.IsKind(SyntaxKind.ConstKeyword));
         var isVBStatic = node.Modifiers.Any(a => a.IsKind(VBasic.SyntaxKind.StaticKeyword));
 
         var declarations = new List<StatementSyntax>();
@@ -1002,7 +1002,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         if (node.DoStatement.WhileOrUntilClause != null) {
             var stmt = node.DoStatement.WhileOrUntilClause;
-            if (SyntaxTokenExtensions.IsKind(stmt.WhileOrUntilKeyword, VBasic.SyntaxKind.WhileKeyword))
+            if (stmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.WhileKeyword))
                 return SingleStatement(SyntaxFactory.WhileStatement(
                     await stmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor),
                     statements
@@ -1018,7 +1018,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         bool isUntilStmt;
         if (whileOrUntilStmt != null) {
             conditionExpression = await whileOrUntilStmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-            isUntilStmt = SyntaxTokenExtensions.IsKind(whileOrUntilStmt.WhileOrUntilKeyword, VBasic.SyntaxKind.UntilKeyword);
+            isUntilStmt = whileOrUntilStmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword);
         } else {
             conditionExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
             isUntilStmt = false;
