@@ -159,6 +159,9 @@ internal static partial class Module1
     {
         EventClassInstance = new MyEventClass();
         EventClassInstance2 = new MyEventClass();
+        EventClassInstance.TestEvent += PrintTestMessage2;
+        EventClassInstance.TestEvent += PrintTestMessage3;
+        EventClassInstance2.TestEvent += PrintTestMessage2;
     }
 
     public static void PrintTestMessage2()
@@ -193,6 +196,11 @@ internal partial class MyEventClass
 internal partial class Class1
 {
     private MyEventClass MyEventClassInstance;
+
+    public Class1()
+    {
+        MyEventClassInstance.TestEvent += EventClassInstance_TestEvent;
+    }
     public void EventClassInstance_TestEvent()
     {
     }
@@ -255,11 +263,14 @@ internal partial class Class1
     static Class1()
     {
         SharedEventClassInstance = new MyEventClass();
+        SharedEventClassInstance.TestEvent += PrintTestMessage2;
     }
 
     public Class1(int num)
     {
         NonSharedEventClassInstance = new MyEventClass(); // Comment moves to initialization in c# constructor
+        NonSharedEventClassInstance.TestEvent += PrintTestMessage2;
+        NonSharedEventClassInstance.TestEvent += PrintTestMessage3;
     }
 
     public Class1(object obj) : this(7)
@@ -337,12 +348,18 @@ public partial class Class1
     {
         EventClassInstance = new MyEventClass();
         EventClassInstance2 = new MyEventClass();
+        EventClassInstance.TestEvent += PrintTestMessage2;
+        EventClassInstance.TestEvent += PrintTestMessage3;
+        EventClassInstance2.TestEvent += PrintTestMessage2;
     }
 
     public Class1(int num)
     {
         EventClassInstance = new MyEventClass();
         EventClassInstance2 = new MyEventClass(); // Comment moves to initialization in c# constructor
+        EventClassInstance.TestEvent += PrintTestMessage2;
+        EventClassInstance.TestEvent += PrintTestMessage3;
+        EventClassInstance2.TestEvent += PrintTestMessage2;
     }
 
     public Class1(object obj) : this()
@@ -611,6 +628,11 @@ using System.Runtime.CompilerServices;
 
 public partial class Form1
 {
+    public Form1()
+    {
+        Button1.Click += MultiClickHandler;
+        Button2.Click += MultiClickHandler;
+    }
     private void MultiClickHandler(object sender, EventArgs e)
     {
     }

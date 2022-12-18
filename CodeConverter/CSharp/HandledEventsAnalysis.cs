@@ -32,12 +32,15 @@ internal class HandledEventsAnalysis
     public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => !p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
     public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _handlingMethodsByPropertyName.TryGetValue(propertyIdentifierText, out var handled) && !handled.PropertyDetails.IsNeverWrittenOrOverridden;
 
-    public IEnumerable<Assignment> GetConstructorEventHandlers()
+    public (IEnumerable<Assignment> Static, IEnumerable<Assignment> Instance) GetConstructorEventHandlers()
     {
-        return _handlingMethodsForInstance.SelectMany(e => e.HandledMethods, (e, m) => {
-            var methodId = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(m.HandlingMethod.Name));
-            return new Assignment(MemberAccess(EventContainerExpression(e.EventContainer), m.Event), SyntaxKind.AddAssignmentExpression, Invokable(methodId, m.ParametersToDiscard));
-        });
+        IEnumerable<Assignment> SelectAssignment(IEnumerable<(EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)> handlers)
+        {
+            return handlers.SelectMany(e => e.HandledMethods, (e, m) => {
+                var methodId = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(m.HandlingMethod.Name));
+                return new Assignment(MemberAccess(EventContainerExpression(e.EventContainer), m.Event), SyntaxKind.AddAssignmentExpression, Invokable(methodId, m.ParametersToDiscard));
+            });
+        }
 
         ExpressionSyntax EventContainerExpression(EventContainer eventContainer) =>
             eventContainer.Kind switch {
@@ -45,6 +48,11 @@ internal class HandledEventsAnalysis
                 EventContainerKind.This => SyntaxFactory.ThisExpression(),
                 _ => SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(eventContainer.PropertyName))
             };
+
+        var constructorEventHandlers = _handlingMethodsForInstance.Concat(_handlingMethodsByPropertyName.Values)
+            .ToLookup(x => x.EventContainer.Kind == EventContainerKind.Property && x.PropertyDetails.Property.IsStatic || _type.IsStatic);
+        return (SelectAssignment(constructorEventHandlers[true]), SelectAssignment(constructorEventHandlers[false]));
+
     }
 
     /// <summary>Use instead of <see cref="GetConstructorEventHandlers"/> for DesignerGenerated classes: https://github.com/icsharpcode/CodeConverter/issues/550</summary>
@@ -84,9 +92,15 @@ internal class HandledEventsAnalysis
     public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
     {
         if (!_handlingMethodsByPropertyName.TryGetValue(potentialPropertySymbol.Name, out var h)) return SyntaxFactory.List<StatementSyntax>();
-        var prefix = h.PropertyDetails.IsNeverWrittenOrOverridden ? "" : "_";
-        var fieldName = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(prefix + potentialPropertySymbol.Name));
-        var postAssignmentStatements = h.HandledMethods.Select(hm =>
+        return SubscribeToMemberEvent(h);
+    }
+
+    private SyntaxList<StatementSyntax> SubscribeToMemberEvent((EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[]
+            HandledMethods) memberEvents)
+    {
+        var prefix = memberEvents.PropertyDetails.IsNeverWrittenOrOverridden ? "" : "_";
+        var fieldName = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(prefix + memberEvents.PropertyDetails.Property.Name));
+        var postAssignmentStatements = memberEvents.HandledMethods.Select(hm =>
             CreateHandlesUpdater(fieldName, hm.Event, SyntaxKind.AddAssignmentExpression, hm.HandlingMethod, hm.ParametersToDiscard, true));
         {
             return SyntaxFactory.List(postAssignmentStatements);

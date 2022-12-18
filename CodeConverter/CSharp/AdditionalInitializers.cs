@@ -22,7 +22,11 @@ internal class AdditionalInitializers
         HasInstanceConstructorsOutsideThisPart = instanceConstructors.Any(c => c.DeclaringSyntaxReferences.Any(
             reference => !typeSyntax.OverlapsWith(reference)
         )) || !instanceConstructors.Any() && !isBestPartToAddParameterlessConstructor;
-        DesignerGeneratedInitializeComponentOrNull = namedTypeSybol.GetDesignerGeneratedInitializeComponentOrNull(vbCompilation);
+        var designerGeneratedInitializeComponentOrNull = namedTypeSybol.GetDesignerGeneratedInitializeComponentOrNull(vbCompilation);
+        DesignerGeneratedInitializeComponentOrNull =
+            designerGeneratedInitializeComponentOrNull?.DeclaringSyntaxReferences.Any(r => !r.SyntaxTree.FilePath.IsTempFile()) == true
+                ? designerGeneratedInitializeComponentOrNull
+                : null;
     }
 
     public bool HasInstanceConstructorsOutsideThisPart { get; }
