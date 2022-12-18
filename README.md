@@ -5,7 +5,7 @@
 Convert code from VB.NET to C# (and vice versa) using Roslyn - all free and open source:
 * [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
 * [Online snippet converter](https://icsharpcode.github.io/CodeConverter/)
-* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global` (Requires VS2022+ installed)
+* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global` (Requires VS2022 installed)
 * [Nuget library](https://www.nuget.org/packages/ICSharpCode.CodeConverter/) (this underpins all other free converters you'll find online)
 
 See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on getting the best results, or the [changelog](https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md) for recent improvements.
