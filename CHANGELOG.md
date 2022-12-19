@@ -23,12 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Vsix
 
 * Simplification now has a timeout to skip it after a time set in Tools->Options->Code Converter
+* File/snippet/project conversion now correctly waits for a build to complete before conversion begins
 
 ### VB -> C#
 
 * Event handlers now converted for WPF files [#967](https://github.com/icsharpcode/CodeConverter/issues/967)
 * Exit Try/For/Do/While statements in nested blocks now break from the correct construct [#846](https://github.com/icsharpcode/CodeConverter/issues/846)
-
 
 ### C# -> VB
 
