@@ -19,7 +19,8 @@ World!"";
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello,
-World!"" End Sub
+World!""
+    End Sub
 End Class");
     }
 

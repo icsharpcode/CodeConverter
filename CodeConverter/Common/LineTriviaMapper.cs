@@ -114,7 +114,15 @@ internal class LineTriviaMapper
     {
         var trivia = _targetTokenToTrivia[original];
         if (trivia.Leading.Any()) rewritten = rewritten.WithLeadingTrivia(trivia.Leading.SelectMany(tl => tl));
-        if (trivia.Trailing.Any()) rewritten = rewritten.WithTrailingTrivia(trivia.Trailing.SelectMany(tl => tl));
+
+        // Must not ditch newlines, see https://github.com/icsharpcode/CodeConverter/issues/970
+        var trailingTriviaToAdd = trivia.Trailing.SelectMany(l => l).ToList();
+        var originalEndOfLine = original.TrailingTrivia.FirstOrDefault(t => t.IsEndOfLine());
+        if (originalEndOfLine != default && !trailingTriviaToAdd.Any(t => t.IsEndOfLine())) {
+            trailingTriviaToAdd.Add(originalEndOfLine);
+        }
+        if (trailingTriviaToAdd.Any()) rewritten = rewritten.WithTrailingTrivia(trailingTriviaToAdd);
+
         return rewritten;
     }
 

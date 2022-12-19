@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [9.1.0] - 2022-12-18
 
+### Command line
+
+* Compatible with systems running dot net 7 SDK
 
 ### Vsix
 
@@ -29,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Multiline strings correctly followed by a newline [#970](https://github.com/icsharpcode/CodeConverter/issues/970)
 
 ## [9.0.4] - 2022-08-28
 

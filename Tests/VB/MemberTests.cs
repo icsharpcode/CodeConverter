@@ -1082,7 +1082,8 @@ BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protect
 second line"";
 }",
             @"Public Class TestClass
-    Private someMultiLineString As String = ""first line"" & Microsoft.VisualBasic.vbCrLf & ""second line"" End Class", conversionOptions: VisualBasic11, hasLineCommentConversionIssue: true);
+    Private someMultiLineString As String = ""first line"" & Microsoft.VisualBasic.vbCrLf & ""second line""
+End Class", conversionOptions: VisualBasic11, hasLineCommentConversionIssue: true);
     }
     [Fact]
     public async Task TestCustomEvent_TrivialExpressionAsync()
