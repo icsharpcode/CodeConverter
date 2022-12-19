@@ -553,7 +553,7 @@ internal class CommonConversions
     {
         if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
             !VisualBasicExtensions.IsDefault(pro.Property)) {
-            var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.ChildOperations.First() == pro;
+            var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
             var extraArg = isSetter
                 ? await GetParameterizedSetterArgAsync(operation)
                 : null;
