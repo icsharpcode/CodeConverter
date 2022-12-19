@@ -313,7 +313,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         if (simplifiedOrNull != null) return simplifiedOrNull;
 
         var expressionSyntax = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.CDateKeyword)) {
+        if (node.Keyword.IsKind(VBasic.SyntaxKind.CDateKeyword)) {
 
             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
             return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Conversions.ToDate"), SyntaxFactory.ArgumentList(
@@ -1352,7 +1352,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             syntaxParamType = SyntaxFactory.ArrayType(syntaxParamType, rankSpecifiers);
         }
 
-        if (!SyntaxTokenExtensions.IsKind(node.Identifier.Nullable, SyntaxKind.None)) {
+        if (!node.Identifier.Nullable.IsKind(SyntaxKind.None)) {
             var arrayType = syntaxParamType as ArrayTypeSyntax;
             if (arrayType == null) {
                 syntaxParamType = SyntaxFactory.NullableType(syntaxParamType);
@@ -1398,7 +1398,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitPredefinedType(VBasic.Syntax.PredefinedTypeSyntax node)
     {
-        if (SyntaxTokenExtensions.IsKind(node.Keyword, VBasic.SyntaxKind.DateKeyword)) {
+        if (node.Keyword.IsKind(VBasic.SyntaxKind.DateKeyword)) {
             return SyntaxFactory.IdentifierName(nameof(DateTime));
         }
         return SyntaxFactory.PredefinedType(node.Keyword.ConvertToken());

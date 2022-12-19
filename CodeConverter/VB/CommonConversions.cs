@@ -22,6 +22,7 @@ using VariableDeclaratorSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.Varia
 using YieldStatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.YieldStatementSyntax;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using System.Linq;
 
 namespace ICSharpCode.CodeConverter.VB;
 
@@ -556,7 +557,7 @@ internal class CommonConversions
             return true;
 
         // List of the kinds that end in declaration and can have names attached
-        return id.IsKind(CSSyntaxKind.CatchDeclaration,
+        var syntaxKinds = new[]{CSSyntaxKind.CatchDeclaration,
             CSSyntaxKind.ClassDeclaration,
             CSSyntaxKind.DelegateDeclaration,
             CSSyntaxKind.EnumDeclaration,
@@ -569,7 +570,8 @@ internal class CommonConversions
             CSSyntaxKind.PropertyDeclaration,
             CSSyntaxKind.NamespaceDeclaration,
             CSSyntaxKind.StructDeclaration,
-            CSSyntaxKind.VariableDeclaration);
+            CSSyntaxKind.VariableDeclaration};
+        return syntaxKinds.Any(x => id.IsKind(x));
     }
 
 

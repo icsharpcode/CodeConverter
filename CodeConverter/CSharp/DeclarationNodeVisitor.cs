@@ -497,8 +497,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync)).ToList();
         var convertableModifiers =
-            node.Modifiers.Where(m => !SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
-        var isWithEvents = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WithEventsKeyword));
+            node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.WithEventsKeyword));
+        var isWithEvents = node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.WithEventsKeyword));
         var convertedModifiers =
             CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers.ToList(), GetMemberContext(node));
         var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
@@ -637,8 +637,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
     {
         var attributes = SyntaxFactory.List(await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync));
-        var isReadonly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.ReadOnlyKeyword));
-        var isWriteOnly = node.Modifiers.Any(m => SyntaxTokenExtensions.IsKind(m, VBasic.SyntaxKind.WriteOnlyKeyword));
+        var isReadonly = node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword));
+        var isWriteOnly = node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.WriteOnlyKeyword));
         var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
         var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers.ToList(), GetMemberContext(node));
         var isIndexer = CommonConversions.IsDefaultIndexer(node);
@@ -652,7 +652,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var additionalInterfaceImplements = propSymbol.ExplicitInterfaceImplementations;
         directlyConvertedCsIdentifier = hasExplicitInterfaceImplementation ? directlyConvertedCsIdentifier : CommonConversions.ConvertIdentifier(node.Identifier);
 
-        var explicitInterfaceModifiers = modifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword, CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
+        var explicitInterfaceModifiers = modifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword) || m.IsKind(CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
         var shouldConvertToMethods = ShouldConvertAsParameterizedProperty(node);
         var (initializer, vbType) = await GetVbReturnTypeAsync(node);
 
@@ -1129,7 +1129,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         bool hasBody = node.Parent is VBSyntax.MethodBlockBaseSyntax;
 
         if ("Finalize".Equals(node.Identifier.ValueText, StringComparison.OrdinalIgnoreCase) && 
-            node.Modifiers.Any(m => VBasic.VisualBasicExtensions.Kind(m) == VBasic.SyntaxKind.OverridesKeyword)) 
+            node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.OverridesKeyword)))
         {
             var declaration = SyntaxFactory.
                 DestructorDeclaration(CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier)).
@@ -1170,7 +1170,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
             var requiredParameterList = MakeOptionalParametersRequired(parameterList);
             var delegatingClause = GetDelegatingClause(directlyConvertedCsIdentifier, requiredParameterList, false);
-            var explicitInterfaceModifiers = convertedModifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword, CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
+            var explicitInterfaceModifiers = convertedModifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword) || m.IsKind(CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
 
             var interfaceDeclParams = new MethodDeclarationParameters(attributes, explicitInterfaceModifiers, returnType, typeParameters, requiredParameterList, constraints, delegatingClause);
             AddInterfaceMemberDeclarations(declaredSymbol.ExplicitInterfaceImplementations, additionalDeclarations, interfaceDeclParams);
@@ -1573,8 +1573,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     public override async Task<CSharpSyntaxNode> VisitTypeParameter(VBSyntax.TypeParameterSyntax node)
     {
         SyntaxToken variance = default(SyntaxToken);
-        if (!SyntaxTokenExtensions.IsKind(node.VarianceKeyword, VBasic.SyntaxKind.None)) {
-            variance = SyntaxFactory.Token(SyntaxTokenExtensions.IsKind(node.VarianceKeyword, VBasic.SyntaxKind.InKeyword) ? CSSyntaxKind.InKeyword : CSSyntaxKind.OutKeyword);
+        if (!node.VarianceKeyword.IsKind(VBasic.SyntaxKind.None)) {
+            variance = SyntaxFactory.Token(node.VarianceKeyword.IsKind(VBasic.SyntaxKind.InKeyword) ? CSSyntaxKind.InKeyword : CSSyntaxKind.OutKeyword);
         }
         return SyntaxFactory.TypeParameter(SyntaxFactory.List<AttributeListSyntax>(), variance, CommonConversions.ConvertIdentifier(node.Identifier));
     }
@@ -1594,7 +1594,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     public override async Task<CSharpSyntaxNode> VisitSpecialConstraint(VBSyntax.SpecialConstraintSyntax node)
     {
-        if (SyntaxTokenExtensions.IsKind(node.ConstraintKeyword, VBasic.SyntaxKind.NewKeyword))
+        if (node.ConstraintKeyword.IsKind(VBasic.SyntaxKind.NewKeyword))
             return SyntaxFactory.ConstructorConstraint();
         return SyntaxFactory.ClassOrStructConstraint(node.IsKind(VBasic.SyntaxKind.ClassConstraint) ? CSSyntaxKind.ClassConstraint : CSSyntaxKind.StructConstraint);
     }

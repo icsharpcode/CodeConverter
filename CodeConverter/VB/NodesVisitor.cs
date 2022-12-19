@@ -505,7 +505,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     {
         var id = _commonConversions.ConvertIdentifier(node.ThisKeyword);
         var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
-        if (modifiers.Any(x => x.Kind() == SyntaxKind.PrivateKeyword)) {
+        if (modifiers.Any(x => x.IsKind(SyntaxKind.PrivateKeyword))) {
         } else {
             modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
         }
@@ -700,7 +700,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
         foreach (var attrList in attributeLists) {
             var targetIdentifier = attrList.Target?.Identifier;
-            if (targetIdentifier != null && SyntaxTokenExtensions.IsKind((SyntaxToken)targetIdentifier, CS.SyntaxKind.ReturnKeyword))
+            if (targetIdentifier is {} ti && ti.IsKind(CS.SyntaxKind.ReturnKeyword))
                 retAttr.Add((AttributeListSyntax)attrList.Accept(TriviaConvertingVisitor));
             else
                 attr.Add((AttributeListSyntax)attrList.Accept(TriviaConvertingVisitor));
@@ -979,10 +979,10 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                         return SyntaxFactory.SimpleAssignmentStatement(left, invokeDelegateMethod);
                     }
                 } else {
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.PlusEqualsToken)) {
+                    if (node.OperatorToken.IsKind(CS.SyntaxKind.PlusEqualsToken)) {
                         return SyntaxFactory.AddHandlerStatement(left, right);
                     }
-                    if (SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.MinusEqualsToken)) {
+                    if (node.OperatorToken.IsKind(CS.SyntaxKind.MinusEqualsToken)) {
                         return SyntaxFactory.RemoveHandlerStatement(left, right);
                     }
                 }
@@ -1258,8 +1258,8 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         var leftType = _semanticModel.GetTypeInfo(node.Left).ConvertedType;
         var rightType = _semanticModel.GetTypeInfo(node.Right).ConvertedType;
 
-        bool isEquals = SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.EqualsEqualsToken);
-        bool isNotEquals = SyntaxTokenExtensions.IsKind(node.OperatorToken, CS.SyntaxKind.ExclamationEqualsToken);
+        bool isEquals = node.OperatorToken.IsKind(CS.SyntaxKind.EqualsEqualsToken);
+        bool isNotEquals = node.OperatorToken.IsKind(CS.SyntaxKind.ExclamationEqualsToken);
 
         if (leftType.SpecialType == SpecialType.System_String && rightType.SpecialType == SpecialType.System_String && (isEquals || isNotEquals)) {
             var opEquality = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(nameof(Equals)), ExpressionSyntaxExtensions.CreateArgList(vbLeft, vbRight));
@@ -1673,8 +1673,8 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     public override VisualBasicSyntaxNode VisitTypeParameter(CSSyntax.TypeParameterSyntax node)
     {
         SyntaxToken variance = default(SyntaxToken);
-        if (!SyntaxTokenExtensions.IsKind(node.VarianceKeyword, CS.SyntaxKind.None)) {
-            variance = SyntaxFactory.Token(SyntaxTokenExtensions.IsKind(node.VarianceKeyword, CS.SyntaxKind.InKeyword) ? SyntaxKind.InKeyword : SyntaxKind.OutKeyword);
+        if (!node.VarianceKeyword.IsKind(CS.SyntaxKind.None)) {
+            variance = SyntaxFactory.Token(node.VarianceKeyword.IsKind(CS.SyntaxKind.InKeyword) ? SyntaxKind.InKeyword : SyntaxKind.OutKeyword);
         }
         // copy generic constraints
         var clause = FindClauseForParameter(node);

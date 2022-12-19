@@ -328,7 +328,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         if (stepExpression == null || !(stepExpression.Token.Value is int))
             return false;
         int step = (int)stepExpression.Token.Value;
-        if (SyntaxTokenExtensions.IsKind(iterator.OperatorToken, SyntaxKind.MinusEqualsToken))
+        if (iterator.OperatorToken.IsKind(SyntaxKind.MinusEqualsToken))
             step = -step;
 
         var condition = node.Condition as CSSyntax.BinaryExpressionSyntax;
@@ -467,7 +467,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
             simpleTypeName = type.ToString();
         return SyntaxFactory.CatchBlock(
             SyntaxFactory.CatchStatement(
-                SyntaxFactory.IdentifierName(SyntaxTokenExtensions.IsKind(catchClause.Declaration.Identifier, CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : _commonConversions.ConvertIdentifier(catchClause.Declaration.Identifier)),
+                SyntaxFactory.IdentifierName(catchClause.Declaration.Identifier.IsKind(CS.SyntaxKind.None) ? SyntaxFactory.Identifier($"__unused{simpleTypeName}{index + 1}__") : _commonConversions.ConvertIdentifier(catchClause.Declaration.Identifier)),
                 SyntaxFactory.SimpleAsClause(type),
                 catchClause.Filter == null ? null : SyntaxFactory.CatchFilterClause((ExpressionSyntax)catchClause.Filter.FilterExpression.Accept(_nodesVisitor))
             ), statements

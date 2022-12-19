@@ -30,6 +30,7 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
     private readonly AsyncLazy<MSBuildWorkspace> _workspace; //Cached to avoid NullRef from OptionsService when initialized concurrently (e.g. in our tests)
     private AsyncLazy<Solution>? _cachedSolution; //Cached for performance of tests
     private readonly bool _isNetCore;
+    private Version? _versionUsed;
 
     public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, JoinableTaskFactory joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
     {
@@ -78,20 +79,25 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
 
         var errorString = await GetCompilationErrorsAsync(solution.Projects);
         if (string.IsNullOrEmpty(errorString)) return solution;
+        errorString = "    " + errorString.Replace(Environment.NewLine, Environment.NewLine + "    ");
         progress.Report($"Compilation errors found before conversion.:{Environment.NewLine}{errorString}");
 
         bool wrongFramework = new[] { "Type 'System.Void' is not defined", "is missing from assembly" }.Any(errorString.Contains);
         if (_bestEffortConversion) {
             progress.Report("Attempting best effort conversion on broken input due to override");
         } else if (wrongFramework && _isNetCore) {
-            throw new ValidationException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)");
+            throw CreateException($"Compiling with dotnet core caused compilation errors, install VS2019+ or use the option `{CodeConvProgram.CoreOptionDefinition} false` to force attempted conversion with older versions (not recommended)", errorString);
         } else if (wrongFramework && !_isNetCore) {
-            throw new ValidationException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution");
+            throw CreateException($"Compiling with .NET Framework MSBuild caused compilation errors, use the {CodeConvProgram.CoreOptionDefinition} true option if this is a .NET core only solution", errorString);
         } else {
-            var mainMessage = "Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option";
-            throw new ValidationException($"{mainMessage}:{Environment.NewLine}{errorString}{Environment.NewLine}{mainMessage}");
+            throw CreateException("Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option", errorString);
         }
         return solution;
+
+        ValidationException CreateException(string mainMessage, string fullDetail) {
+            var versionUsedString = _versionUsed != null ? $"Used MSBuild {_versionUsed}.{Environment.NewLine}" : "";
+            return new ValidationException($"{mainMessage}:{Environment.NewLine}{versionUsedString}{fullDetail}{Environment.NewLine}{mainMessage}");
+        }
     }
 
     private async Task<string> GetCompilationErrorsAsync(
@@ -112,15 +118,17 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
         if (restoreExitCode != 0) throw new ValidationException("dotnet restore had a non-zero exit code.");
     }
 
-    private static async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
+    private async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
     {
         if (MSBuildLocator.CanRegister) {
             var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
             var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
                            ?? throw new ValidationException("No Visual Studio instance available");
             MSBuildLocator.RegisterInstance(instance);
+            _versionUsed = instance.Version;
             AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
         }
+
         var hostServices = await ThreadSafeWorkspaceHelper.CreateHostServicesAsync(MSBuildMefHostServices.DefaultAssemblies);
         return MSBuildWorkspace.Create(buildProps, hostServices);
     }

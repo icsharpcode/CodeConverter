@@ -79,7 +79,7 @@ internal class PerScopeStateVisitorDecorator : VBasic.VisualBasicSyntaxVisitor<T
     public override Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node) => AddLocalVariablesAsync(node);
     public override Task<SyntaxList<StatementSyntax>> VisitTryBlock(VBSyntax.TryBlockSyntax node)
     {
-        var isExited = node.DescendantNodes(n => n == node || n is not VBSyntax.TryBlockSyntax).OfType<VBSyntax.ExitStatementSyntax>().Any(e => VBasic.VisualBasicExtensions.Kind(e.BlockKeyword) == VBasic.SyntaxKind.TryKeyword);
+        var isExited = node.DescendantNodes(n => n == node || n is not VBSyntax.TryBlockSyntax).OfType<VBSyntax.ExitStatementSyntax>().Any(e => e.BlockKeyword.IsKind(VBasic.SyntaxKind.TryKeyword));
         return AddLocalVariablesAsync(node, VBasic.SyntaxKind.TryKeyword, isExited);
     }
 

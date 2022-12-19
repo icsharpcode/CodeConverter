@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.DotNetTool.Util;
 
-internal static class ProcessRunner
+public static class ProcessRunner
 {
 
     public static Task<int> ConnectConsoleGetExitCodeAsync(string command, params string[] args) =>
