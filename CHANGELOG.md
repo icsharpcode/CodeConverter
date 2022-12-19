@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
-## [9.1.0] - 2022-12-18
+## [9.1.1] - 2022-12-19
 
 ### Command line
 
