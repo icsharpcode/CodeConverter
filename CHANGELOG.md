@@ -20,7 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Vsix
 
 * Simplification now has a timeout to skip it after a time set in Tools->Options->Code Converter
-* Last version supporting VS2019
 
 ### VB -> C#
 
