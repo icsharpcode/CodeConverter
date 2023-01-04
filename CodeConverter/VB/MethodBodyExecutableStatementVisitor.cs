@@ -671,7 +671,10 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
 
     public override SyntaxList<StatementSyntax> VisitCheckedStatement(CSSyntax.CheckedStatementSyntax node)
     {
-        return WrapInComment(ConvertBlock(node.Block), "Visual Basic does not support checked statements!");
+        var inputWasChecked = node.Keyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.CheckedKeyword);
+        var innerBlock = ConvertBlock(node.Block);
+        if (_commonConversions.OutputWillBeOverflowChecked == inputWasChecked) return innerBlock;
+        return WrapInComment(innerBlock, "Visual Basic does not support checked statements!");
     }
 
     private static SyntaxList<StatementSyntax> WrapInComment(SyntaxList<StatementSyntax> nodes, string comment)

@@ -6,7 +6,7 @@ namespace ICSharpCode.CodeConverter.VB;
 internal static class CSharpConverter
 {
     public static async Task<SyntaxNode> ConvertCompilationTreeAsync(Document document,
-        VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject, OptionalOperations optionalOperations, CancellationToken cancellationToken)
+        VisualBasicCompilation vbViewOfCsSymbols, Project vbReferenceProject, OptionalOperations optionalOperations, bool outputWillBeOverflowChecked, CancellationToken cancellationToken)
     {
         document = await document.WithExpandedRootAsync(cancellationToken);
         var compilation = await document.Project.GetCompilationAsync(cancellationToken);
@@ -18,7 +18,7 @@ internal static class CSharpConverter
         var vbSyntaxGenerator = SyntaxGenerator.GetGenerator(vbReferenceProject);
         _ = tree.GetLineSpan(root.FullSpan, cancellationToken).EndLinePosition.Line;
 
-        var visualBasicSyntaxVisitor = new NodesVisitor((CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator);
+        var visualBasicSyntaxVisitor = new NodesVisitor((CS.CSharpCompilation)compilation, semanticModel, vbViewOfCsSymbols, vbSyntaxGenerator, outputWillBeOverflowChecked);
         var converted = (VBSyntax.CompilationUnitSyntax)root.Accept(visualBasicSyntaxVisitor.TriviaConvertingVisitor);
 
         return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);

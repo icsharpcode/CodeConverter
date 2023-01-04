@@ -7,6 +7,25 @@ namespace ICSharpCode.CodeConverter.Tests.VB;
 public class ExpressionTests : ConverterTestBase
 {
     [Fact]
+    public async Task ReturnUncheckedAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"internal static class Hash
+{
+    internal static int Combine(int newKey, int currentKey)
+    {
+        return unchecked((currentKey * (int)0xA5555529) + newKey);
+    }
+}", @"Friend Module Hash
+    Friend Function Combine(ByVal newKey As Integer, ByVal currentKey As Integer) As Integer
+        Return currentKey * CInt(&HA5555529UI) + newKey
+    End Function
+End Module
+
+1 target compilation errors:
+BC30439: Constant expression not representable in type 'Integer'.");
+    }
+
+    [Fact]
     public async Task MultilineStringAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"class TestClass

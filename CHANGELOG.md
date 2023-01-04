@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Return contents of checked/unchecked expressions/statements [#965](https://github.com/icsharpcode/CodeConverter/issues/965) [#975](https://github.com/icsharpcode/CodeConverter/issues/975)
 
 ## [9.1.1] - 2022-12-19
 

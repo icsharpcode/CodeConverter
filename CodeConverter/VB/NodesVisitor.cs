@@ -1,6 +1,8 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ICSharpCode.CodeConverter.VB.Trivia;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
@@ -12,6 +14,9 @@ using AttributeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeSynta
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using InterpolatedStringContentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringContentSyntax;
+using InterpolationAlignmentClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationAlignmentClauseSyntax;
+using InterpolationFormatClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationFormatClauseSyntax;
+using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax;
 using NameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax;
 using OrderingSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.OrderingSyntax;
 using ParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ParameterListSyntax;
@@ -22,6 +27,7 @@ using StatementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSynta
 using SyntaxFactory = Microsoft.CodeAnalysis.VisualBasic.SyntaxFactory;
 using SyntaxFacts = Microsoft.CodeAnalysis.VisualBasic.SyntaxFacts;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
+using TupleElementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TupleElementSyntax;
 using TypeArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeArgumentListSyntax;
 using TypeParameterConstraintClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterConstraintClauseSyntax;
 using TypeParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterListSyntax;
@@ -46,6 +52,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     private readonly HashSet<string> _addedNames = new();
 
     private int _placeholder = 1;
+    private readonly bool _outputWillBeOverflowChecked;
     public CommentConvertingVisitorWrapper<VisualBasicSyntaxNode> TriviaConvertingVisitor { get; }
     public LanguageVersion LanguageVersion { get => _vbViewOfCsSymbols.Options.ParseOptions.LanguageVersion; }
 
@@ -55,14 +62,15 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     }
 
     public NodesVisitor(CS.CSharpCompilation compilation, SemanticModel semanticModel,
-        VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator)
+        VisualBasicCompilation vbViewOfCsSymbols, SyntaxGenerator vbSyntaxGenerator, bool outputWillBeOverflowChecked)
     {
         _compilation = compilation;
         _semanticModel = semanticModel;
         _vbViewOfCsSymbols = vbViewOfCsSymbols;
         _vbSyntaxGenerator = vbSyntaxGenerator;
+        _outputWillBeOverflowChecked = outputWillBeOverflowChecked;
         TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(this);
-        _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor);
+        _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, _outputWillBeOverflowChecked);
         _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
     }
 
@@ -889,6 +897,16 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     public override VisualBasicSyntaxNode VisitInterpolatedStringText(CSSyntax.InterpolatedStringTextSyntax node)
     {
         return SyntaxFactory.InterpolatedStringText(SyntaxFactory.InterpolatedStringTextToken(ConvertUserText(node.TextToken), node.TextToken.ValueText));
+    }
+
+    public override VisualBasicSyntaxNode VisitCheckedExpression(CheckedExpressionSyntax node)
+    {
+        var inputWasChecked = node.Keyword.IsKind(Microsoft.CodeAnalysis.CSharp.SyntaxKind.CheckedKeyword);
+        var innerExpression = node.Expression.Accept(TriviaConvertingVisitor);
+        if (_outputWillBeOverflowChecked == inputWasChecked) return innerExpression;
+
+        return innerExpression.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind,
+            $"WARNING: Expression at character {node.FullSpan.Start} contained the {node.Keyword} keyword before conversion"));
     }
 
     private static string ConvertUserText(SyntaxToken token)

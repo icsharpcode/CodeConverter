@@ -54,7 +54,8 @@ internal class CSToVBProjectContentsConverter : IProjectContentsConverter
 
     public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
     {
-        return await CSharpConverter.ConvertCompilationTreeAsync(document, _vbViewOfCsSymbols, _vbReferenceProject, OptionalOperations, _cancellationToken);
+        bool outputWillBeOverflowChecked = false; //Future: If it's a project conversion, set RemoveIntegerChecks (default true) to match CSharp's compilation option of CheckOverflow (default false)
+        return await CSharpConverter.ConvertCompilationTreeAsync(document, _vbViewOfCsSymbols, _vbReferenceProject, OptionalOperations, outputWillBeOverflowChecked, _cancellationToken);
     }
 
     public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)>
