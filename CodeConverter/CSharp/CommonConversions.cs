@@ -67,7 +67,7 @@ internal class CommonConversions
             preferExplicitType |= ShouldPreferExplicitType(vbInitValue, expType.ConvertedType, out bool vbInitIsNothingLiteral);
             initSymbol = SemanticModel.GetSymbolInfo(vbInitValue).Symbol as IMethodSymbol;
             bool isAnonymousFunction = initSymbol?.IsAnonymousFunction() == true;
-            requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction;
+            requireExplicitTypeForAll |= vbInitIsNothingLiteral || isAnonymousFunction || expType.ConvertedType.IsArrayType(); // https://github.com/icsharpcode/CodeConverter/issues/962
         }
 
         var csVars = new Dictionary<string, VariablesDeclaration>();

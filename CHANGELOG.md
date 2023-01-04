@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Explicitly state type for array initializers [#962](https://github.com/icsharpcode/CodeConverter/issues/962)
 
 ### C# -> VB
 

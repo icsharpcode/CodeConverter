@@ -75,7 +75,7 @@ internal partial class Program
         Next
     End Sub", @"public void DummyMethod()
 {
-    var someArray = new int[] { 1, 2, 3 };
+    int[] someArray = new int[] { 1, 2, 3 };
     for (short index = 0, loopTo = (short)(someArray.Length - 1); index <= loopTo; index++)
         Console.WriteLine(index);
 }");
@@ -507,7 +507,7 @@ internal partial class GotoTest1
         int x = 200;
         int y = 4;
         int count = 0;
-        var array = new string[x, y];
+        string[,] array = new string[x, y];
 
         for (int i = 0, loopTo = x - 1; i <= loopTo; i++)
         {

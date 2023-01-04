@@ -530,10 +530,10 @@ public partial class Issue495AndIssue713
     {
         IEnumerable<int> emptySingle = Array.Empty<int>();
         IEnumerable<int> initializedSingle = new[] { 1 };
-        var emptyNested = Array.Empty<int[]>();
+        int[][] emptyNested = Array.Empty<int[]>();
         var initializedNested = new int[2][];
-        var empty2d = new int[,] { { } };
-        var initialized2d = new[,] { { 1 } };
+        int[,] empty2d = new int[,] { { } };
+        int[,] initialized2d = new[,] { { 1 } };
         return Array.Empty<int>();
     }
 }");
@@ -557,7 +557,7 @@ public partial class Issue713
     public int[] Empty()
     {
         IEnumerable<int> initializedSingle = new[] { 1 };
-        var initialized2d = new[,] { { 1 } };
+        int[,] initialized2d = new[,] { { 1 } };
         return Array.Empty<int>();
     }
 }");
@@ -790,7 +790,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var strings = new[] { ""1"", ""2"" };
+        string[] strings = new[] { ""1"", ""2"" };
     }
 }");
     }
@@ -1486,7 +1486,7 @@ public partial class TargetTypeTestClass
 
     private static void Main()
     {
-        var actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
+        Action[] actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
         var objects = new List<object>() { new Action(() => Debug.Print(3.ToString())), new Action(() => Debug.Print(4.ToString())) };
     }
 }");
@@ -2390,7 +2390,7 @@ public partial class Compound
     public void TypeCast(int someInt)
     {
         var col = Color.FromArgb((int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f));
-        var arry = new float[(int)Math.Round(7d / someInt + 1)];
+        float[] arry = new float[(int)Math.Round(7d / someInt + 1)];
     }
 }");
     }

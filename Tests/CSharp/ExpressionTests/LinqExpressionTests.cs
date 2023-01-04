@@ -158,7 +158,7 @@ public partial class Issue635
 End Sub",
             @"private static void SimpleQuery()
 {
-    var numbers = new[] { 7, 9, 5, 3, 6 };
+    int[] numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
               where n > 5
               select n;
@@ -184,7 +184,7 @@ End Sub",
 End Sub",
             @"public static void Linq40()
 {
-    var numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
+    int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
                        group n by (n % 5) into g
                        let __groupByKey1__ = g.Key
@@ -243,8 +243,8 @@ internal partial class Test
 
     public void Linq102()
     {
-        var categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
-        var products = GetProductList();
+        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        Product[] products = GetProductList();
         var q = from c in categories
                 join p in products on c equals p.Category
                 select new { Category = c, p.ProductName };
@@ -299,8 +299,8 @@ internal partial class Test
 
     public void Linq103()
     {
-        var categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
-        var products = GetProductList();
+        string[] categories = new string[] { ""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood"" };
+        Product[] products = GetProductList();
         var q = from c in categories
                 join p in products on c equals p.Category into ps
                 select new { Category = c, Products = ps };
@@ -417,7 +417,7 @@ public partial class VisualBasicClass
             Distinct
 End Function", @"private static IEnumerable<string> FindPicFilePath()
 {
-    var words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
+    string[] words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
 
     return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
 }");

@@ -827,7 +827,7 @@ public partial class BinaryExpressionRefParameter
         int argarg = Conversions.ToInteger(wide);
         LogAndReset(ref argarg);
         wide = argarg;
-        var wideArray = new object[] { 3, 4, 4 };
+        object[] wideArray = new object[] { 3, 4, 4 };
         var tmp = wideArray;
         int argarg1 = Conversions.ToInteger(tmp[1]);
         LogAndReset(ref argarg1);

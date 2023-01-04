@@ -174,7 +174,7 @@ public partial class A
         string str1 = GetStringFromNone()[0];
         str1 = GetStringFromNone()[0];
         string str2 = GetStringFromNone()[1];
-        var str3 = GetStringsFromString(""abc"");
+        string[] str3 = GetStringsFromString(""abc"");
         str3 = GetStringsFromString(""abc"");
         string str4 = GetStringsFromString(""abc"")[1];
         string fromStr3 = GetMoreStringsFromString(""bc"")[1][0];

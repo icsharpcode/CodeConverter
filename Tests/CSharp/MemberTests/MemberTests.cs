@@ -998,7 +998,7 @@ public static partial class UsagePoint
 {
     public static void Main()
     {
-        var arr = new int[] { 1, 2, 3 };
+        int[] arr = new int[] { 1, 2, 3 };
         MyExtensions.Add(ref arr, 4);
         Console.WriteLine(arr[3]);
     }

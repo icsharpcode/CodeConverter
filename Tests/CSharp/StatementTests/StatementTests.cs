@@ -394,6 +394,14 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NonDefaultTypedArrayDeclarationStatementAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Dim o As Object() = {""a""}", @"{
+    object[] o = new[] { ""a"" };
+}");
+    }
+
+    [Fact]
     public async Task ArrayDeclarationWithRangeStatementAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
@@ -753,7 +761,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[] { 1, 2, 4 };
+        int[] b = new[] { 1, 2, 4 };
     }
 }");
     }
@@ -770,7 +778,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[] { 1, 2, 3 };
+        int[] b = new[] { 1, 2, 3 };
     }
 }");
     }
@@ -787,7 +795,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[] { 1, 2, 3 };
+        int[] b = new int[] { 1, 2, 3 };
     }
 }");
     }
@@ -814,7 +822,7 @@ public partial class Issue554_ImplicitArrayType
 {
     public static void Main()
     {
-        var msg = new byte[] { 2 };
+        byte[] msg = new byte[] { 2 };
         var ep = new IPEndPoint(IPAddress.Loopback, 1434);
         var l_socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         int i_Test;
@@ -837,7 +845,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[3] { 1, 2, 3 };
+        int[] b = new int[3] { 1, 2, 3 };
     }
 }");
     }
@@ -854,7 +862,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[3];
+        int[] b = new int[3];
     }
 }");
     }
@@ -895,20 +903,20 @@ internal partial class TestClass
         var numbers1 = new int[5];
 
         // Declare a single-dimension array and set its 4 values.
-        var numbers2 = new int[] { 1, 2, 4, 8 };
+        int[] numbers2 = new int[] { 1, 2, 4, 8 };
 
         // Declare a 6 x 6 multidimensional array.
         var matrix1 = new double[6, 6];
 
         // Declare a 4 x 3 multidimensional array and set array element values.
-        var matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
+        int[,] matrix2 = new int[4, 3] { { 1, 2, 3 }, { 2, 3, 4 }, { 3, 4, 5 }, { 4, 5, 6 } };
 
         // Combine rank specifiers with initializers of various kinds
-        var rankSpecifiers = new double[2, 2] { { 1.0d, 2.0d }, { 3.0d, 4.0d } };
-        var rankSpecifiers2 = new double[2, 2];
+        double[,] rankSpecifiers = new double[2, 2] { { 1.0d, 2.0d }, { 3.0d, 4.0d } };
+        double[,] rankSpecifiers2 = new double[2, 2];
 
         // Declare a jagged array
-        var sales = new double[12][];
+        double[][] sales = new double[12][];
     }
 }");
     }
@@ -942,7 +950,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[,] { { 1, 2 }, { 3, 4 } };
+        int[,] b = new[,] { { 1, 2 }, { 3, 4 } };
     }
 }");
     }
@@ -959,7 +967,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[,] { { 1, 3 }, { 2, 4 } };
+        int[,] b = new int[,] { { 1, 3 }, { 2, 4 } };
     }
 }");
     }
@@ -982,13 +990,13 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var a = new int[,] { { 1, 2 }, { 3, 4 } };
-        var b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
-        var c = new int[,,] { { { 1 } } };
-        var d = new int[1, 1, 1] { { { 1 } } };
-        var e = new int[][,] { };
-        var f = new int[0][,];
-        var g = new int[1][,];
+        int[,] a = new int[,] { { 1, 2 }, { 3, 4 } };
+        int[,] b = new int[2, 2] { { 1, 2 }, { 3, 4 } };
+        int[,,] c = new int[,,] { { { 1 } } };
+        int[,,] d = new int[1, 1, 1] { { { 1 } } };
+        int[][,] e = new int[][,] { };
+        int[][,] f = new int[0][,];
+        int[][,] g = new int[1][,];
     }
 }");
     }
@@ -1022,7 +1030,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        int[][] b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }");
     }
@@ -1039,7 +1047,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[][] { new int[] { 1 } };
+        int[][] b = new int[][] { new int[] { 1 } };
     }
 }");
     }
@@ -1056,7 +1064,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        var b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
+        int[][] b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
 }");
     }
