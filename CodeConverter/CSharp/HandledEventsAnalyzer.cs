@@ -89,7 +89,6 @@ internal class HandledEventsAnalyzer
         return mbb.Where(mss => mss.HandlesClause?.Events.Any() == true)
             .SelectMany(mss => mss.HandlesClause.Events, (_, e) => {
                 var eventSymbol = semanticModel.GetSymbolInfo(e.EventMember).Symbol as IEventSymbol;
-                // TODO: Need to either use the semantic model containing the event symbol, or bundle up the Event member with the possible symbol here for later use (otherwise it's null)
                 return (CreateEventContainer(e.EventContainer, semanticModel), new EventDescriptor(e.EventMember, eventSymbol), HandlingMethod: methodSymbol);
             });
     }
