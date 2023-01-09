@@ -29,7 +29,7 @@ internal class HandledEventsAnalysis
         _handlingMethodsByPropertyName = handlingMethodsForPropertyEvents.ToDictionary(h => h.EventContainer.PropertyName, StringComparer.OrdinalIgnoreCase);
     }
 
-    public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => !p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
+    public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
     public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _handlingMethodsByPropertyName.TryGetValue(propertyIdentifierText, out var handled) && !handled.PropertyDetails.IsNeverWrittenOrOverridden;
 
     public (IEnumerable<Assignment> Static, IEnumerable<Assignment> Instance) GetConstructorEventHandlers()
@@ -50,7 +50,7 @@ internal class HandledEventsAnalysis
             };
 
         var constructorEventHandlers = _handlingMethodsForInstance.Concat(_handlingMethodsByPropertyName.Values)
-            .ToLookup(x => x.EventContainer.Kind == EventContainerKind.Property && x.PropertyDetails.Property.IsStatic || _type.IsStatic);
+            .ToLookup(x => x.EventContainer.Kind == EventContainerKind.Property && x.PropertyDetails.Property?.IsStatic == true || _type.IsStatic);
         return (SelectAssignment(constructorEventHandlers[true]), SelectAssignment(constructorEventHandlers[false]));
 
     }
@@ -76,7 +76,7 @@ internal class HandledEventsAnalysis
     public IEnumerable<MemberDeclarationSyntax> GetDeclarationsForHandlingBaseMembers()
     {
         return _handlingMethodsByPropertyName.Values
-            .Where(m => m.EventContainer.Kind == EventContainerKind.Property && !_type.Equals(m.PropertyDetails.Property?.ContainingType, SymbolEqualityComparer.IncludeNullability))
+            .Where(m => m.EventContainer.Kind == EventContainerKind.Property && !_type.Equals(m.PropertyDetails.Property?.ContainingType, SymbolEqualityComparer.IncludeNullability) && m.PropertyDetails.Property is not null)
             .Select(x => GetDeclarationsForHandlingBaseMembers(x));
     }
 

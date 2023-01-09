@@ -1,5 +1,6 @@
 ﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -101,7 +102,9 @@ internal class HandledEventsAnalyzer
             case KeywordEventContainerSyntax _:
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.This, null);
             case WithEventsEventContainerSyntax weecs:
-                return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, semanticModel.GetSymbolInfo(weecs).Symbol.Name);
+                var symbol = semanticModel.GetSymbolInfo(weecs).Symbol;
+                var name = symbol?.Name ?? weecs.Identifier.Text;
+                return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, name);
             case WithEventsPropertyEventContainerSyntax wepecs:
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, wepecs.Property.Identifier.Text);
             default:
