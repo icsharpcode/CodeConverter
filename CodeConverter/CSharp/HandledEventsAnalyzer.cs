@@ -1,6 +1,5 @@
 ﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using Microsoft.VisualBasic.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 

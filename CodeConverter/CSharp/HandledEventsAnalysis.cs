@@ -29,7 +29,7 @@ internal class HandledEventsAnalysis
         _handlingMethodsByPropertyName = handlingMethodsForPropertyEvents.ToDictionary(h => h.EventContainer.PropertyName, StringComparer.OrdinalIgnoreCase);
     }
 
-    public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
+    public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => !p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
     public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _handlingMethodsByPropertyName.TryGetValue(propertyIdentifierText, out var handled) && !handled.PropertyDetails.IsNeverWrittenOrOverridden;
 
     public (IEnumerable<Assignment> Static, IEnumerable<Assignment> Instance) GetConstructorEventHandlers()
