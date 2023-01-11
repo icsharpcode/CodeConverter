@@ -10,7 +10,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.1.2] - 2023-01-11
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Explicitly state type for array initializers [#962](https://github.com/icsharpcode/CodeConverter/issues/962)
+* Make best effort when converting one of multiple parts of a partial class [#977](https://github.com/icsharpcode/CodeConverter/issues/977)
 
 ### C# -> VB
 
