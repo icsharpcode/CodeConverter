@@ -397,6 +397,29 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task NullableFlowStateOptimizationAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(newDays As Integer?, oldDays As Integer?)
+        If newDays.HasValue AndAlso oldDays.HasValue AndAlso newDays <> oldDays Then
+            Console.Write(1)
+        End If
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int? newDays, int? oldDays)
+    {
+        if (newDays.HasValue && oldDays.HasValue && newDays != oldDays)
+        {
+            Console.Write(1);
+        }
+    }
+}");
+        }
+
+        [Fact]
         public async Task RelationalOperatorsOnNullableTypeInConditionAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

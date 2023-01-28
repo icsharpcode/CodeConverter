@@ -1,12 +1,24 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using System.Xml.Linq;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 #nullable enable
 
+/// <summary>
+/// Use as `KnownNullability?` where null means nullability is not known, the expression may or may not be null
+/// </summary>
+public enum KnownNullability : byte
+{
+    Null,
+    NotNull
+}
+
 internal class VisualBasicNullableExpressionsConverter
 {
+    private readonly SemanticModel _semanticModel;
     private static readonly IsPatternExpressionSyntax NotFormattedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is {}"));
     private static readonly IsPatternExpressionSyntax NotFormattedNegatedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is not {}"));
 
@@ -16,6 +28,9 @@ internal class VisualBasicNullableExpressionsConverter
     private static readonly ExpressionSyntax True = ValidSyntaxFactory.CastExpression(NullableBoolType, ValidSyntaxFactory.TrueExpression);
 
     private int _argCounter;
+    private static readonly SyntaxAnnotation IsNotNullAnnotation = new SyntaxAnnotation("CodeConverter.KnownNullability", KnownNullability.NotNull.ToString());
+
+    public VisualBasicNullableExpressionsConverter(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
     public ExpressionSyntax InvokeConversionWhenNotNull(ExpressionSyntax expression, MemberAccessExpressionSyntax conversionMethod, TypeSyntax castType)
     {
@@ -35,8 +50,10 @@ internal class VisualBasicNullableExpressionsConverter
             return csBinExp;
         }
 
-        var isLhsNullable = lhsTypeInfo.Type.IsNullable();
-        var isRhsNullable = rhsTypeInfo.Type.IsNullable();
+        var isLhsNullable = lhsTypeInfo.Type.IsNullable() && GetNullabilityWithinBooleanExpression(vbNode.Left) != KnownNullability.NotNull && lhs.HasAnnotation(IsNotNullAnnotation);
+        var isRhsNullable = rhsTypeInfo.Type.IsNullable() && GetNullabilityWithinBooleanExpression(vbNode.Right) != KnownNullability.NotNull && rhs.HasAnnotation(IsNotNullAnnotation);
+        if (!isLhsNullable && !isRhsNullable) return csBinExp.WithAdditionalAnnotations(IsNotNullAnnotation);
+
         lhs = lhs.AddParens();
         rhs = rhs.AddParens();
 
@@ -102,13 +119,14 @@ internal class VisualBasicNullableExpressionsConverter
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
-        ExpressionSyntax notNullCondition, lhsName, rhsName;
-        if (!isRhsNullable) {
-            var lhsPattern = PatternObject(lhs, out lhsName);
-            var rhsPattern = PatternVar(rhs, out rhsName);
-            notNullCondition = rhsPattern.And(lhsPattern);
+        ExpressionSyntax notNullCondition, lhsName = lhs, rhsName = rhs;
+        if (!isRhsNullable || IsSafelyReusable(vbNode.Right)) {
+            notNullCondition = PatternObject(lhs, out lhsName);
+        } else if (!isLhsNullable) {
+            var rhsPattern = PatternObject(rhs, out rhsName);
+            notNullCondition = IsSafelyReusable(vbNode.Left) ? rhsPattern : PatternVar(lhs, out lhsName).And(rhsPattern);
         } else {
-            var lhsPattern = PatternVar(lhs, out lhsName);
+            var lhsPattern = IsSafelyReusable(vbNode.Left) ? lhs : PatternVar(lhs, out lhsName);
             var rhsPattern = PatternObject(rhs, out rhsName);
             notNullCondition = !isLhsNullable ? lhsPattern.And(rhsPattern) : lhsPattern.And(rhsPattern).AndHasValue(lhsName);
         }
@@ -117,6 +135,13 @@ internal class VisualBasicNullableExpressionsConverter
         return vbNode.AlwaysHasBooleanTypeInCSharp() ?
             notNullCondition.And(bin) :
             notNullCondition.Conditional(bin, Null);
+    }
+
+    private bool IsSafelyReusable(VBasic.Syntax.ExpressionSyntax e)
+    {
+        var symbolInfo = VBasic.VisualBasicExtensions.GetSymbolInfo(_semanticModel, e.SkipIntoParens());
+        if (symbolInfo.Symbol is not { } s) return false;
+        return s.IsKind(SymbolKind.Local) || s.IsKind(SymbolKind.Field) || s.IsKind(SymbolKind.Parameter);
     }
 
     private ExpressionSyntax ForAndAlsoOperator(VBSyntax.BinaryExpressionSyntax vbNode,
@@ -147,6 +172,71 @@ internal class VisualBasicNullableExpressionsConverter
         ExpressionSyntax FullAndExpression() => 
             lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName)
                 .Conditional(False, rhsPattern.Negate().Conditional(Null, rhsName.Conditional(lhsName, False)));
+    }
+
+    private KnownNullability? GetNullabilityWithinBooleanExpression(VBSyntax.ExpressionSyntax original)
+    {
+        if (original.SkipIntoParens() is not VBSyntax.IdentifierNameSyntax {Identifier.Text: { } nameText}) return null;
+        for (VBSyntax.ExpressionSyntax? currentNode = original.Parent?.Parent as VBSyntax.ExpressionSyntax, childNode = original.Parent as VBSyntax.ExpressionSyntax;
+             currentNode is VBSyntax.BinaryExpressionSyntax {Left: var l, OperatorToken: var op, Right: var r};
+             currentNode = currentNode?.Parent as VBSyntax.ExpressionSyntax) {
+
+            if (r == childNode) {
+                if (op.IsKind(VBasic.SyntaxKind.AndAlsoKeyword)) {
+                    // Look inside left knowing it'd be true if we evaluate the right
+                    if (GetNullabilityWithinBooleanExpression(nameText, l, true) is {} knownNullability) {
+                        return knownNullability;
+                    }
+                }
+
+                if (op.IsKind(VBasic.SyntaxKind.OrElseKeyword)) {
+                    // Look inside right knowing it'd be false if we evaluate the right
+                    if (GetNullabilityWithinBooleanExpression(nameText, r, false) is { } knownNullability) {
+                        return knownNullability;
+                    }
+                }
+            }
+
+            childNode = currentNode;
+        }
+
+        return null;
+    }
+
+    private KnownNullability? GetNullabilityWithinBooleanExpression(string identifierText, VBSyntax.ExpressionSyntax expression, bool expressionResult)
+    {
+        return expression switch {
+            VBSyntax.MemberAccessExpressionSyntax {Name.Identifier.Text: { } memberText, Expression: VBSyntax.IdentifierNameSyntax {Identifier.Text: { } checkedIdentifierText}}
+                when memberText.Equals("HasValue", StringComparison.OrdinalIgnoreCase) && checkedIdentifierText.Equals(identifierText, StringComparison.OrdinalIgnoreCase) =>
+                expressionResult ? KnownNullability.NotNull : KnownNullability.Null,
+            VBSyntax.BinaryExpressionSyntax bin => GetNullabilityWithinBinaryExpression(identifierText, bin, expressionResult),
+            _ => null
+        };
+    }
+
+    private KnownNullability? GetNullabilityWithinBinaryExpression(string identifierText, VBSyntax.BinaryExpressionSyntax bin, bool expressionResult)
+    {
+        if (bin.OperatorToken.IsKind(VBasic.SyntaxKind.IsKeyword) && ContainsIdentifierAndNothing(bin.Left, bin.Right, identifierText)) {
+            return expressionResult ? KnownNullability.Null : KnownNullability.NotNull;
+        } else if (bin.OperatorToken.IsKind(VBasic.SyntaxKind.IsNotKeyword) && ContainsIdentifierAndNothing(bin.Left, bin.Right, identifierText)) {
+            return expressionResult ? KnownNullability.NotNull : KnownNullability.Null;
+        } else if (bin.OperatorToken.IsKind(VBasic.SyntaxKind.AndAlsoKeyword) || bin.OperatorToken.IsKind(VBasic.SyntaxKind.AndKeyword)) {
+            return GetNullabilityWithinBooleanExpression(identifierText, bin.Left, expressionResult) ?? GetNullabilityWithinBooleanExpression(identifierText, bin.Right, expressionResult);
+        } else if (bin.OperatorToken.IsKind(VBasic.SyntaxKind.OrElseKeyword) || bin.OperatorToken.IsKind(VBasic.SyntaxKind.OrKeyword)) {
+            return GetNullabilityWithinBooleanExpression(identifierText, bin.Left, expressionResult);
+        }
+        return null;
+    }
+
+    private static bool ContainsIdentifierAndNothing(VBSyntax.ExpressionSyntax l, VBSyntax.ExpressionSyntax r, string requiredIdentifierText)
+    {
+        return MatchesIdentifier(l) && MatchesNothing(r) || MatchesNothing(l) && MatchesIdentifier(r);
+
+        bool MatchesNothing(VBSyntax.ExpressionSyntax expr) =>
+            expr.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression);
+
+        bool MatchesIdentifier(VBSyntax.ExpressionSyntax expr) =>
+            expr.SkipIntoParens() is VBSyntax.IdentifierNameSyntax {Identifier.Text: { } identifierTextToCheck} && requiredIdentifierText.Equals(identifierTextToCheck, StringComparison.OrdinalIgnoreCase);
     }
 
     private ExpressionSyntax ForOrElseOperator(VBSyntax.BinaryExpressionSyntax vbNode,
