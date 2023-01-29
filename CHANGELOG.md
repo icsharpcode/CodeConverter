@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Simplify converted expressions involving nullable value types [#982](https://github.com/icsharpcode/CodeConverter/issues/982)
+
 
 ### C# -> VB
 
