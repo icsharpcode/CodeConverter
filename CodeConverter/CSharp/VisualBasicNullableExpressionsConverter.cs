@@ -67,13 +67,11 @@ internal class VisualBasicNullableExpressionsConverter
 
         if (vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression))
         {
-            //TODO Check this logic
             return ForAndAlsoOperator(vbNode, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
         }
 
         if (vbNode.IsKind(VBasic.SyntaxKind.OrElseExpression))
         {
-            // TODO Check this logic
             return ForOrElseOperator(vbNode, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
         }
 
@@ -133,6 +131,62 @@ internal class VisualBasicNullableExpressionsConverter
         };
     }
 
+    private ExpressionSyntax ForAndAlsoOperator(VBSyntax.BinaryExpressionSyntax vbNode,
+        ExpressionSyntax lhs, ExpressionSyntax rhs,
+        bool isLhsNullable, bool isRhsNullable)
+    {
+        var lhsPattern = PatternVar(lhs, out var lhsName);
+        var rhsPattern = PatternObject(rhs, out var rhsName);
+
+        if (vbNode.AlwaysHasBooleanTypeInCSharp()) {
+            if (!isLhsNullable) {
+                return lhs.And(rhs.GetValueOrDefault());
+            }
+            if (!isRhsNullable) {
+                return lhsPattern.AndHasNoValue(lhsName).OrIsTrue(lhsName).And(rhs).AndHasValue(lhsName);
+            }
+            return FullAndExpression().EqualsTrue();
+        }
+
+        if (!isLhsNullable) {
+            return lhs.Conditional(rhs, False);
+        }
+        if (!isRhsNullable) {
+            return lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName).Conditional(False, rhs.Conditional(lhsName, False));
+        }
+        return FullAndExpression();
+
+        ExpressionSyntax FullAndExpression() =>
+            lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName)
+                .Conditional(False, rhsPattern.Negate().Conditional(Null, rhsName.Conditional(lhsName, False)));
+    }
+
+    private ExpressionSyntax ForOrElseOperator(VBSyntax.BinaryExpressionSyntax vbNode,
+        ExpressionSyntax lhs, ExpressionSyntax rhs, bool isLhsNullable, bool isRhsNullable)
+    {
+        if (vbNode.AlwaysHasBooleanTypeInCSharp()) {
+            if (!isLhsNullable) {
+                return lhs.Or(rhs.GetValueOrDefault());
+            }
+            return !isRhsNullable ?
+                lhs.GetValueOrDefault().Or(rhs) :
+                lhs.GetValueOrDefault().Or(rhs.GetValueOrDefault());
+        }
+
+        if (!isLhsNullable) {
+            return lhs.Conditional(True, rhs);
+        }
+
+        var lhsPattern = PatternVar(lhs, out var lhsName);
+        var rhsPattern = NegatedPatternObject(rhs, out var rhsName);
+
+        var whenFalse = !isRhsNullable ?
+            rhs.Conditional(True, lhsName) :
+            rhsPattern.Conditional(Null, rhsName.Conditional(True, lhsName));
+
+        return lhsPattern.And(lhsName.GetValueOrDefault()).Conditional(True, whenFalse);
+    }
+
     private ExpressionSyntax ForRelationalOperators(VBSyntax.BinaryExpressionSyntax vbNode,
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
@@ -180,36 +234,6 @@ internal class VisualBasicNullableExpressionsConverter
         var symbolInfo = VBasic.VisualBasicExtensions.GetSymbolInfo(_semanticModel, e);
         if (symbolInfo.Symbol is not { } s) return false;
         return s.IsKind(SymbolKind.Local) || s.IsKind(SymbolKind.Field) || s.IsKind(SymbolKind.Parameter);
-    }
-
-    private ExpressionSyntax ForAndAlsoOperator(VBSyntax.BinaryExpressionSyntax vbNode,
-        ExpressionSyntax lhs, ExpressionSyntax rhs,
-        bool isLhsNullable, bool isRhsNullable)
-    {
-        var lhsPattern = PatternVar(lhs, out var lhsName);
-        var rhsPattern = PatternObject(rhs, out var rhsName);
-
-        if (vbNode.AlwaysHasBooleanTypeInCSharp()) {
-            if (!isLhsNullable) {
-                return lhs.And(rhs.GetValueOrDefault());
-            }
-            if (!isRhsNullable) {
-                return lhsPattern.AndHasNoValue(lhsName).OrIsTrue(lhsName).And(rhs).AndHasValue(lhsName);
-            }
-            return FullAndExpression().EqualsTrue();
-        }
-
-        if (!isLhsNullable) {
-            return lhs.Conditional(rhs, False);
-        }
-        if (!isRhsNullable) {
-            return lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName).Conditional(False, rhs.Conditional(lhsName, False));
-        }
-        return FullAndExpression();
-
-        ExpressionSyntax FullAndExpression() => 
-            lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName)
-                .Conditional(False, rhsPattern.Negate().Conditional(Null, rhsName.Conditional(lhsName, False)));
     }
 
     private KnownNullability? GetNullabilityWithinBooleanExpression(VBSyntax.ExpressionSyntax original)
@@ -278,32 +302,6 @@ internal class VisualBasicNullableExpressionsConverter
 
         bool MatchesIdentifier(VBSyntax.ExpressionSyntax expr) =>
             expr.SkipIntoParens() is VBSyntax.IdentifierNameSyntax {Identifier.Text: { } identifierTextToCheck} && requiredIdentifierText.Equals(identifierTextToCheck, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private ExpressionSyntax ForOrElseOperator(VBSyntax.BinaryExpressionSyntax vbNode,
-        ExpressionSyntax lhs, ExpressionSyntax rhs, bool isLhsNullable, bool isRhsNullable)
-    {
-        if (vbNode.AlwaysHasBooleanTypeInCSharp()) {
-            if (!isLhsNullable) {
-                return lhs.Or(rhs.GetValueOrDefault());
-            }
-            return !isRhsNullable ?
-                lhs.GetValueOrDefault().Or(rhs) :
-                lhs.GetValueOrDefault().Or(rhs.GetValueOrDefault());
-        }
-
-        if (!isLhsNullable) {
-            return lhs.Conditional(True, rhs);
-        }
-
-        var lhsPattern = PatternVar(lhs, out var lhsName);
-        var rhsPattern = NegatedPatternObject(rhs, out var rhsName);
-
-        var whenFalse = !isRhsNullable ?
-            rhs.Conditional(True, lhsName) :
-            rhsPattern.Conditional(Null, rhsName.Conditional(True, lhsName));
-
-        return lhsPattern.And(lhsName.GetValueOrDefault()).Conditional(True, whenFalse);
     }
 }
 
