@@ -372,26 +372,156 @@ internal partial class TestClass
         int? y = default;
         int a = 0;
 
-        var res = x is var arg1 && y is { } arg2 && arg1.HasValue ? arg1 == arg2 : (bool?)null;
-        res = x is var arg3 && y is { } arg4 && arg3.HasValue ? arg3 != arg4 : (bool?)null;
-        res = x is var arg5 && y is { } arg6 && arg5.HasValue ? arg5 > arg6 : (bool?)null;
-        res = x is var arg7 && y is { } arg8 && arg7.HasValue ? arg7 >= arg8 : (bool?)null;
-        res = x is var arg9 && y is { } arg10 && arg9.HasValue ? arg9 < arg10 : (bool?)null;
-        res = x is var arg11 && y is { } arg12 && arg11.HasValue ? arg11 <= arg12 : (bool?)null;
+        var res = x.HasValue && y.HasValue ? x == y : (bool?)null;
+        res = x.HasValue && y.HasValue ? x != y : null;
+        res = x.HasValue && y.HasValue ? x > y : null;
+        res = x.HasValue && y.HasValue ? x >= y : null;
+        res = x.HasValue && y.HasValue ? x < y : null;
+        res = x.HasValue && y.HasValue ? x <= y : null;
 
-        res = a is var arg13 && y is { } arg14 ? arg13 == arg14 : (bool?)null;
-        res = a is var arg15 && y is { } arg16 ? arg15 != arg16 : (bool?)null;
-        res = a is var arg17 && y is { } arg18 ? arg17 > arg18 : (bool?)null;
-        res = a is var arg19 && y is { } arg20 ? arg19 >= arg20 : (bool?)null;
-        res = a is var arg21 && y is { } arg22 ? arg21 < arg22 : (bool?)null;
-        res = a is var arg23 && y is { } arg24 ? arg23 <= arg24 : (bool?)null;
+        res = y.HasValue ? a == y : null;
+        res = y.HasValue ? a != y : null;
+        res = y.HasValue ? a > y : null;
+        res = y.HasValue ? a >= y : null;
+        res = y.HasValue ? a < y : null;
+        res = y.HasValue ? a <= y : null;
 
-        res = a is var arg26 && x is { } arg25 ? arg25 == arg26 : (bool?)null;
-        res = a is var arg28 && x is { } arg27 ? arg27 != arg28 : (bool?)null;
-        res = a is var arg30 && x is { } arg29 ? arg29 > arg30 : (bool?)null;
-        res = a is var arg32 && x is { } arg31 ? arg31 >= arg32 : (bool?)null;
-        res = a is var arg34 && x is { } arg33 ? arg33 < arg34 : (bool?)null;
-        res = a is var arg36 && x is { } arg35 ? arg35 <= arg36 : (bool?)null;
+        res = x.HasValue ? x == a : null;
+        res = x.HasValue ? x != a : null;
+        res = x.HasValue ? x > a : null;
+        res = x.HasValue ? x >= a : null;
+        res = x.HasValue ? x < a : null;
+        res = x.HasValue ? x <= a : null;
+    }
+}");
+        }
+
+        [Fact]
+        public async Task SimplifiesAlreadyCheckedNullableComparison_HasValueAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Private Function TestMethod(newDays As Integer?, oldDays As Integer?) As Boolean
+    Return newDays.HasValue AndAlso oldDays.HasValue AndAlso newDays <> oldDays
+End Function
+", @"
+private bool TestMethod(int? newDays, int? oldDays)
+{
+    return newDays.HasValue && oldDays.HasValue && newDays != oldDays;
+}");
+    }
+
+        [Fact]
+        public async Task SimplifiesAlreadyCheckedNullableComparison_NotNothingAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Private Function TestMethod(newDays As Integer?, oldDays As Integer?) As Boolean
+    Return newDays IsNot Nothing AndAlso oldDays IsNot Nothing AndAlso newDays = oldDays
+End Function
+", @"
+private bool TestMethod(int? newDays, int? oldDays)
+{
+    return newDays is not null && oldDays is not null && newDays == oldDays;
+}");
+        }
+
+        [Fact]
+        public async Task DoesNotSimplifyComparisonWhenNullChecksAreNotDefinitelyTrueAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Private Function TestMethod(newDays As Integer?, oldDays As Integer?) As Boolean
+    Return (newDays.HasValue AndAlso oldDays.HasValue OrElse True) AndAlso newDays > oldDays
+End Function
+", @"
+private bool TestMethod(int? newDays, int? oldDays)
+{
+    return (bool)(newDays.HasValue && oldDays.HasValue || true ? newDays.HasValue && oldDays.HasValue ? newDays > oldDays : null : (bool?)false);
+}");
+        }
+
+        [Fact]
+        public async Task HalfSimplifiesComparisonWhenOneSideAlreadyNullCheckedAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Private Function TestMethod(newDays As Integer?, oldDays As Integer?) As Boolean
+    Return newDays.HasValue AndAlso newDays < oldDays
+End Function
+", @"
+private bool TestMethod(int? newDays, int? oldDays)
+{
+    return (bool)(newDays.HasValue ? oldDays.HasValue ? newDays < oldDays : null : (bool?)false);
+}");
+    }
+
+        [Fact]
+        public async Task DoesNotSimplifyComparisonWhenNullableChecksAreUncertainAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Private Function TestMethod(newDays As Integer?, oldDays As Integer?) As Boolean
+    Return (newDays.HasValue OrElse oldDays.HasValue) AndAlso newDays <> oldDays
+End Function
+", @"
+private bool TestMethod(int? newDays, int? oldDays)
+{
+    return (bool)(newDays.HasValue || oldDays.HasValue ? newDays.HasValue && oldDays.HasValue ? newDays != oldDays : null : (bool?)false);
+}");
+        }
+
+        [Fact]
+        public async Task SimplifiesNullableEnumIfEqualityCheckAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Enum PasswordStatus
+    Expired
+    Locked    
+End Enum
+Public Class TestForEnums
+    Public Shared Sub WriteStatus(status As PasswordStatus?)
+      If status = PasswordStatus.Locked Then
+          Console.Write(""Locked"")
+      End If
+    End Sub
+End Class
+", @"using System;
+
+public enum PasswordStatus
+{
+    Expired,
+    Locked
+}
+
+public partial class TestForEnums
+{
+    public static void WriteStatus(PasswordStatus? status)
+    {
+        if (status.HasValue && status == PasswordStatus.Locked)
+        {
+            Console.Write(""Locked"");
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task SimplifiesNullableDateIfEqualityCheckAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class TestForDates
+    Public Shared Sub WriteStatus(adminDate As DateTime?, chartingTimeAllowanceEnd As DateTime)
+        If adminDate Is Nothing OrElse adminDate > chartingTimeAllowanceEnd Then
+            adminDate = DateTime.Now
+        End If
+    End Sub
+End Class
+", @"using System;
+
+public partial class TestForDates
+{
+    public static void WriteStatus(DateTime? adminDate, DateTime chartingTimeAllowanceEnd)
+    {
+        if (adminDate is null || adminDate > chartingTimeAllowanceEnd)
+        {
+            adminDate = DateTime.Now;
+        }
     }
 }");
         }
@@ -435,43 +565,43 @@ internal partial class TestClass
         int? y = default;
         int a = 0;
 
-        if (x is var arg1 && y is { } arg2 && arg1.HasValue && arg1 == arg2)
+        if (x.HasValue && y.HasValue && x == y)
             return;
-        if (x is var arg3 && y is { } arg4 && arg3.HasValue && arg3 != arg4)
+        if (x.HasValue && y.HasValue && x != y)
             return;
-        if (x is var arg5 && y is { } arg6 && arg5.HasValue && arg5 > arg6)
+        if (x.HasValue && y.HasValue && x > y)
             return;
-        if (x is var arg7 && y is { } arg8 && arg7.HasValue && arg7 >= arg8)
+        if (x.HasValue && y.HasValue && x >= y)
             return;
-        if (x is var arg9 && y is { } arg10 && arg9.HasValue && arg9 < arg10)
+        if (x.HasValue && y.HasValue && x < y)
             return;
-        if (x is var arg11 && y is { } arg12 && arg11.HasValue && arg11 <= arg12)
-            return;
-
-        if (a is var arg13 && y is { } arg14 && arg13 == arg14)
-            return;
-        if (a is var arg15 && y is { } arg16 && arg15 != arg16)
-            return;
-        if (a is var arg17 && y is { } arg18 && arg17 > arg18)
-            return;
-        if (a is var arg19 && y is { } arg20 && arg19 >= arg20)
-            return;
-        if (a is var arg21 && y is { } arg22 && arg21 < arg22)
-            return;
-        if (a is var arg23 && y is { } arg24 && arg23 <= arg24)
+        if (x.HasValue && y.HasValue && x <= y)
             return;
 
-        if (a is var arg26 && x is { } arg25 && arg25 == arg26)
+        if (y.HasValue && a == y)
             return;
-        if (a is var arg28 && x is { } arg27 && arg27 != arg28)
+        if (y.HasValue && a != y)
             return;
-        if (a is var arg30 && x is { } arg29 && arg29 > arg30)
+        if (y.HasValue && a > y)
             return;
-        if (a is var arg32 && x is { } arg31 && arg31 >= arg32)
+        if (y.HasValue && a >= y)
             return;
-        if (a is var arg34 && x is { } arg33 && arg33 < arg34)
+        if (y.HasValue && a < y)
             return;
-        if (a is var arg36 && x is { } arg35 && arg35 <= arg36)
+        if (y.HasValue && a <= y)
+            return;
+
+        if (x.HasValue && x == a)
+            return;
+        if (x.HasValue && x != a)
+            return;
+        if (x.HasValue && x > a)
+            return;
+        if (x.HasValue && x >= a)
+            return;
+        if (x.HasValue && x < a)
+            return;
+        if (x.HasValue && x <= a)
             return;
     }
 }");
@@ -492,8 +622,8 @@ internal partial class TestClass
     private void TestMethod()
     {
         bool? var1 = default;
-        var a = false is var arg2 && var1 is { } arg1 ? arg1 == arg2 : (bool?)null;
-        var b = true is var arg4 && var1 is { } arg3 ? arg3 == arg4 : (bool?)null;
+        var a = var1.HasValue ? var1 == false : (bool?)null;
+        var b = var1.HasValue ? var1 == true : (bool?)null;
     }
 }");
         }

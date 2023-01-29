@@ -11,6 +11,15 @@ internal static class SyntaxExtensions
         }
         return expression;
     }
+    public static bool AnyInParens(this CS.Syntax.ExpressionSyntax expression, Func<CS.Syntax.ExpressionSyntax, bool> predicate)
+    {
+        if (expression == null) return false;
+        while (true) {
+            if (predicate(expression)) return true;
+            if (expression is not CS.Syntax.ParenthesizedExpressionSyntax pes) return false;
+            expression = pes.Expression;
+        }
+    }
 
     public static VBSyntax.ExpressionSyntax SkipIntoParens(this VBSyntax.ExpressionSyntax expression)
     {
