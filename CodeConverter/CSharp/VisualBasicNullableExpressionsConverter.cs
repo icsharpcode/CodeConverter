@@ -28,7 +28,10 @@ internal class VisualBasicNullableExpressionsConverter
     private static readonly ExpressionSyntax True = ValidSyntaxFactory.CastExpression(NullableBoolType, ValidSyntaxFactory.TrueExpression);
 
     private int _argCounter;
-    private static readonly SyntaxAnnotation IsNotNullAnnotation = new SyntaxAnnotation("CodeConverter.KnownNullability", KnownNullability.NotNull.ToString());
+    /// <summary>
+    /// The code with this annotation is not nullable (even though the source code that created it is)
+    /// </summary>
+    private static readonly SyntaxAnnotation IsNotNullableAnnotation = new("CodeConverter.Nullable", false.ToString());
 
     public VisualBasicNullableExpressionsConverter(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
@@ -49,22 +52,37 @@ internal class VisualBasicNullableExpressionsConverter
             !rhsTypeInfo.ConvertedType.IsNullable()) {
             return csBinExp;
         }
+        var isLhsNullable = IsNullable(vbNode.Left, lhs, lhsTypeInfo);
+        var isRhsNullable = IsNullable(vbNode.Right, rhs, rhsTypeInfo);
+        if (!isLhsNullable && !isRhsNullable) return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation);
 
-        var isLhsNullable = lhsTypeInfo.Type.IsNullable() && GetNullabilityWithinBooleanExpression(vbNode.Left) != KnownNullability.NotNull && lhs.HasAnnotation(IsNotNullAnnotation);
-        var isRhsNullable = rhsTypeInfo.Type.IsNullable() && GetNullabilityWithinBooleanExpression(vbNode.Right) != KnownNullability.NotNull && rhs.HasAnnotation(IsNotNullAnnotation);
-        if (!isLhsNullable && !isRhsNullable) return csBinExp.WithAdditionalAnnotations(IsNotNullAnnotation);
+        return WithBinaryExpressionLogicForNullableTypes(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable);
+    }
 
+    private ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax vbNode, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs, bool isLhsNullable,
+        bool isRhsNullable)
+    {
         lhs = lhs.AddParens();
         rhs = rhs.AddParens();
 
-        if (vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression)) {
+        if (vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression))
+        {
+            //TODO Check this logic
             return ForAndAlsoOperator(vbNode, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
-        } 
-        if (vbNode.IsKind(VBasic.SyntaxKind.OrElseExpression)) {
+        }
+
+        if (vbNode.IsKind(VBasic.SyntaxKind.OrElseExpression))
+        {
+            // TODO Check this logic
             return ForOrElseOperator(vbNode, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
         }
 
         return ForRelationalOperators(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
+    }
+
+    private bool IsNullable(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo lhsTypeInfo)
+    {
+        return lhsTypeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
     }
 
     private string GetArgName() => $"arg{Interlocked.Increment(ref _argCounter)}";
@@ -119,27 +137,47 @@ internal class VisualBasicNullableExpressionsConverter
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
-        ExpressionSyntax notNullCondition, lhsName = lhs, rhsName = rhs;
-        if (!isRhsNullable || IsSafelyReusable(vbNode.Right)) {
-            notNullCondition = PatternObject(lhs, out lhsName);
-        } else if (!isLhsNullable) {
-            var rhsPattern = PatternObject(rhs, out rhsName);
-            notNullCondition = IsSafelyReusable(vbNode.Left) ? rhsPattern : PatternVar(lhs, out lhsName).And(rhsPattern);
-        } else {
-            var lhsPattern = IsSafelyReusable(vbNode.Left) ? lhs : PatternVar(lhs, out lhsName);
-            var rhsPattern = PatternObject(rhs, out rhsName);
-            notNullCondition = !isLhsNullable ? lhsPattern.And(rhsPattern) : lhsPattern.And(rhsPattern).AndHasValue(lhsName);
+        ExpressionSyntax GetCondition(ref ExpressionSyntax csName, bool reusable) =>
+            reusable ? csName.NullableHasValueExpression() : PatternObject(csName, out csName);
+
+        ExpressionSyntax? lhsName = lhs, rhsName = rhs;
+        var lhsReusable = IsSafelyReusable(vbNode.Left);
+        var rhsReusable = IsSafelyReusable(vbNode.Right);
+        List<(bool ExecutionOptional, ExpressionSyntax Expr)> conditions = new(3);
+        if (!lhsReusable && !rhsReusable) {
+            // This is the worst case, where everything's nullable but the names aren't reusable (might have side effects) so we need to use an extra var pattern to save it away first, then we can reuse that name
+            conditions.Add((false, PatternVar(rhsName, out rhsName)));
+            rhsReusable = true;
         }
 
+        if (isLhsNullable || !lhsReusable) {
+            var lhsCondition = GetCondition(ref lhsName, lhsReusable);
+            conditions.Add((lhsReusable, lhsCondition));
+        }
+        if (isRhsNullable || !rhsReusable) {
+            var rhsCondition = GetCondition(ref rhsName, rhsReusable);
+            conditions.Add((rhsReusable, rhsCondition));
+        }
+
+        // Ensure expressions/properties with side effects are evaluated the same number of times as before
+        conditions.Sort((a, b) => a.ExecutionOptional.CompareTo(b.ExecutionOptional));
+        var notNullCondition = conditions.Skip(1)
+            .Aggregate(conditions.ElementAtOrDefault(0).Expr, (current, condition) => current.And(condition.Expr));
+
         var bin = lhsName.Bin(rhsName, csNode.Kind());
-        return vbNode.AlwaysHasBooleanTypeInCSharp() ?
-            notNullCondition.And(bin) :
-            notNullCondition.Conditional(bin, Null);
+
+        if (vbNode.AlwaysHasBooleanTypeInCSharp()) {
+            return notNullCondition is null ? bin : notNullCondition.And(bin);
+        }
+
+        return notNullCondition is null ? bin : notNullCondition.Conditional(bin, Null);
     }
 
     private bool IsSafelyReusable(VBasic.Syntax.ExpressionSyntax e)
     {
-        var symbolInfo = VBasic.VisualBasicExtensions.GetSymbolInfo(_semanticModel, e.SkipIntoParens());
+        e = e.SkipIntoParens();
+        if (e is VBSyntax.LiteralExpressionSyntax) return true;
+        var symbolInfo = VBasic.VisualBasicExtensions.GetSymbolInfo(_semanticModel, e);
         if (symbolInfo.Symbol is not { } s) return false;
         return s.IsKind(SymbolKind.Local) || s.IsKind(SymbolKind.Field) || s.IsKind(SymbolKind.Parameter);
     }
@@ -210,6 +248,7 @@ internal class VisualBasicNullableExpressionsConverter
                 when memberText.Equals("HasValue", StringComparison.OrdinalIgnoreCase) && checkedIdentifierText.Equals(identifierText, StringComparison.OrdinalIgnoreCase) =>
                 expressionResult ? KnownNullability.NotNull : KnownNullability.Null,
             VBSyntax.BinaryExpressionSyntax bin => GetNullabilityWithinBinaryExpression(identifierText, bin, expressionResult),
+            VBSyntax.UnaryExpressionSyntax un when un.OperatorToken.IsKind(VBasic.SyntaxKind.NotKeyword) => GetNullabilityWithinBooleanExpression(identifierText, expression, !expressionResult),
             _ => null
         };
     }
@@ -223,7 +262,9 @@ internal class VisualBasicNullableExpressionsConverter
         } else if (bin.OperatorToken.IsKind(VBasic.SyntaxKind.AndAlsoKeyword) || bin.OperatorToken.IsKind(VBasic.SyntaxKind.AndKeyword)) {
             return GetNullabilityWithinBooleanExpression(identifierText, bin.Left, expressionResult) ?? GetNullabilityWithinBooleanExpression(identifierText, bin.Right, expressionResult);
         } else if (bin.OperatorToken.IsKind(VBasic.SyntaxKind.OrElseKeyword) || bin.OperatorToken.IsKind(VBasic.SyntaxKind.OrKeyword)) {
-            return GetNullabilityWithinBooleanExpression(identifierText, bin.Left, expressionResult);
+            var left = GetNullabilityWithinBooleanExpression(identifierText, bin.Left, expressionResult);
+            var right = GetNullabilityWithinBooleanExpression(identifierText, bin.Right, expressionResult);
+            return left == right ? left : null;
         }
         return null;
     }
