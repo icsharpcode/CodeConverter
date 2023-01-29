@@ -453,7 +453,7 @@ private bool TestMethod(int? newDays, int? oldDays)
     }
 
         [Fact]
-        public async Task CharacterizeDoesNotCurrentlySimplifyComparisonWhenNullableChecksAreUncertainAsync()
+        public async Task DoesNotSimplifyComparisonWhenNullableChecksAreUncertainAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"
 Private Function TestMethod(newDays As Integer?, oldDays As Integer?) As Boolean
@@ -463,6 +463,66 @@ End Function
 private bool TestMethod(int? newDays, int? oldDays)
 {
     return (bool)(newDays.HasValue || oldDays.HasValue ? newDays.HasValue && oldDays.HasValue ? newDays != oldDays : null : (bool?)false);
+}");
+        }
+
+        [Fact]
+        public async Task SimplifiesNullableEnumIfEqualityCheckAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Enum PasswordStatus
+    Expired
+    Locked    
+End Enum
+Public Class TestForEnums
+    Public Shared Sub WriteStatus(status As PasswordStatus?)
+      If status = PasswordStatus.Locked Then
+          Console.Write(""Locked"")
+      End If
+    End Sub
+End Class
+", @"using System;
+
+public enum PasswordStatus
+{
+    Expired,
+    Locked
+}
+
+public partial class TestForEnums
+{
+    public static void WriteStatus(PasswordStatus? status)
+    {
+        if (status.HasValue && status == PasswordStatus.Locked)
+        {
+            Console.Write(""Locked"");
+        }
+    }
+}");
+        }
+
+        [Fact]
+        public async Task SimplifiesNullableDateIfEqualityCheckAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"
+Public Class TestForDates
+    Public Shared Sub WriteStatus(adminDate As DateTime?, chartingTimeAllowanceEnd As DateTime)
+        If adminDate Is Nothing OrElse adminDate > chartingTimeAllowanceEnd Then
+            adminDate = DateTime.Now
+        End If
+    End Sub
+End Class
+", @"using System;
+
+public partial class TestForDates
+{
+    public static void WriteStatus(DateTime? adminDate, DateTime chartingTimeAllowanceEnd)
+    {
+        if (adminDate is null || adminDate > chartingTimeAllowanceEnd)
+        {
+            adminDate = DateTime.Now;
+        }
+    }
 }");
         }
 

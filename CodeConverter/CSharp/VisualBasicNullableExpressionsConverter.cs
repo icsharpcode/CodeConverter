@@ -252,8 +252,8 @@ internal class VisualBasicNullableExpressionsConverter
                 }
 
                 if (op.IsKind(VBasic.SyntaxKind.OrElseKeyword)) {
-                    // Look inside right knowing it'd be false if we evaluate the right
-                    if (GetNullabilityWithinBooleanExpression(nameText, r, false) is { } knownNullability) {
+                    // Look inside left knowing it'd be false if we evaluate the right
+                    if (GetNullabilityWithinBooleanExpression(nameText, l, false) is { } knownNullability) {
                         return knownNullability;
                     }
                 }

@@ -21,8 +21,7 @@ internal static class TypeExtensions
 
     public static bool IsNullableType(this ITypeSymbol type)
     {
-        var original = type.OriginalDefinition;
-        return original.SpecialType == SpecialType.System_Nullable_T;
+        return type?.OriginalDefinition?.SpecialType == SpecialType.System_Nullable_T;
     }
 
     public static ITypeSymbol GetNullableUnderlyingType(this ITypeSymbol type)
