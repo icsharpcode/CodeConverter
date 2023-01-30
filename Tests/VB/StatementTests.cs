@@ -244,16 +244,13 @@ End Class");
 {
     void TestMethod()
     {
-        var b = { 1, 2, 3 };
+        int[] b = { 1, 2, 3 };
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class
-
-1 source compilation errors:
-CS0820: Cannot initialize an implicitly-typed variable with an array initializer");
+End Class");
     }
 
     [Fact]
