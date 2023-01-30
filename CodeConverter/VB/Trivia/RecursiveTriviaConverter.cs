@@ -238,7 +238,7 @@ internal class RecursiveTriviaConverter
 
             case (int)CS.SyntaxKind.DisabledTextTrivia: {
                 if (TriviaDepth > 0) {
-                    return VBFactory.DisabledTextTrivia(t.ToString().WithoutNewLines(' '));
+                    return VBFactory.DisabledTextTrivia(t.ToString().WithoutNewLines());
                 }
                 return VBFactory.DisabledTextTrivia(t.ToString().ConsistentNewlines());
             }
@@ -277,7 +277,7 @@ internal class RecursiveTriviaConverter
             case (int)CS.SyntaxKind.EndIfDirectiveTrivia: {
                 if (TriviaDepth > 0) {
                     TriviaDepth -= 1;
-                    return VBFactory.CommentTrivia($"' TODO VB does not allow directives here, original statement {t.ToFullString().WithoutNewLines(' ')}");
+                    return VBFactory.CommentTrivia($"' TODO VB does not allow directives here, original statement {t.ToFullString().WithoutNewLines()}");
                 }
                 CSSyntax.EndIfDirectiveTriviaSyntax EndIfDirective = (CSSyntax.EndIfDirectiveTriviaSyntax)StructuredTrivia;
                 return VBFactory.Trivia(WithAppendedTriviaFromEndOfDirectiveToken(VBFactory.EndIfDirectiveTrivia().WithConvertedTrailingTriviaFrom(EndIfDirective.EndIfKeyword), EndIfDirective.EndOfDirectiveToken)

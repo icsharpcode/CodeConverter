@@ -182,7 +182,7 @@ internal static class NewLine
     /// <param name="text">Source Test</param>
     /// <param name="SubstituteChar">Default is vbNullChar</param>
     /// <returns>String with Unicode NewLines replaced with SubstituteChar</returns>
-    public static string WithoutNewLines(this string text, char SubstituteChar = default)
+    public static string WithoutNewLines(this string text, char SubstituteChar = ' ')
     {
         Contract.Requires(text != null);
         var sb = new StringBuilder();
@@ -194,6 +194,7 @@ internal static class NewLine
             int j = i;
             if (TryGetDelimiterLengthAndType(ch, out length, () => j < text.Length - 1 ? text[j + 1] : SubstituteChar)) {
                 i += length - 1;
+                sb.Append(SubstituteChar);
                 continue;
             }
             sb.Append(ch);
