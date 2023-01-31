@@ -34,7 +34,8 @@ public class ProjectConversion
 
     public static async Task<ConversionResult> ConvertTextAsync<TLanguageConversion>(string text, TextConversionOptions conversionOptions, IProgress<ConversionProgress> progress = null, CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
     {
-        using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
+        progress ??= new Progress<ConversionProgress>();
+        await RoslynEntryPointAsync();
 
         var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
         var syntaxTree = languageConversion.MakeFullCompilationUnit(text, out var textSpan);
@@ -61,7 +62,8 @@ public class ProjectConversion
         IProgress<ConversionProgress> progress = null, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default) where TLanguageConversion : ILanguageConversion, new()
     {
-        using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
+        progress ??= new Progress<ConversionProgress>();
+        await RoslynEntryPointAsync();
 
         var languageConversion = new TLanguageConversion { ConversionOptions = conversionOptions };
             
@@ -80,7 +82,8 @@ public class ProjectConversion
         [EnumeratorCancellation] CancellationToken cancellationToken,
         params (string Find, string Replace, bool FirstOnly)[] replacements)
     {
-        using var roslynEntryPoint = await RoslynEntryPointAsync(progress ??= new Progress<ConversionProgress>());
+        progress ??= new Progress<ConversionProgress>();
+        await RoslynEntryPointAsync();
         var projectContentsConverter = await languageConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
         var sourceFilePaths = project.Documents.Concat(projectContentsConverter.SourceProject.AdditionalDocuments).Select(d => d.FilePath).ToImmutableHashSet();
         var convertProjectContents = ConvertProjectContentsAsync(projectContentsConverter, languageConversion, progress, cancellationToken);
@@ -342,12 +345,9 @@ public class ProjectConversion
         return path.Replace(this._projectContentsConverter.SourceProject.Solution.GetDirectoryPath() + Path.DirectorySeparatorChar, "");
     }
 
-    private static async Task<IDisposable> RoslynEntryPointAsync(IProgress<ConversionProgress> progress)
+    private static async Task RoslynEntryPointAsync()
     {
         JoinableTaskFactorySingleton.EnsureInitialized();
         await new SynchronizationContextRemover();
-        return RoslynCrashPreventer.Create(LogError);
-
-        void LogError(object e) => progress.Report(new ConversionProgress($"https://github.com/dotnet/roslyn threw an exception: {e}"));
     }
 }

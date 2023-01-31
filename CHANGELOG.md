@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Avoid crashes when referencing CodeAnalysis 4.2.0 [#986](https://github.com/icsharpcode/CodeConverter/issues/986)
 
 ### VB -> C#
 
