@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.1.3] - 2023-01-31
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Simplify converted expressions involving nullable value types [#982](https://github.com/icsharpcode/CodeConverter/issues/982)
 
 
