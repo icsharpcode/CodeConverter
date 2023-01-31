@@ -244,11 +244,11 @@ End Class");
 {
     void TestMethod()
     {
-        int[] b = { 1, 2, 3 };
+        var b = new int[] { 1, 2, 3 };
     }
 }", @"Friend Class TestClass
     Private Sub TestMethod()
-        Dim b = {1, 2, 3}
+        Dim b = New Integer() {1, 2, 3}
     End Sub
 End Class");
     }

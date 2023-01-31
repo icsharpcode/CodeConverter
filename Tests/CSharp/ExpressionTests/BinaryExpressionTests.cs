@@ -608,24 +608,25 @@ internal partial class TestClass
         }
 
         [Fact]
-        public async Task NullableBooleanComparedToNsormalBooleanAsync()
+        public async Task NullableBooleansComparedIssue982Async()
         {
-            await TestConversionVisualBasicToCSharpAsync(@"Dim newDays As Integer?
-Dim oldDays As Integer?
+            await TestConversionVisualBasicToCSharpAsync(@"Dim newDays As Integer? = 1
+Dim oldDays As Integer? = Nothing
 
 If (newDays.HasValue AndAlso Not oldDays.HasValue) _
                 OrElse (newDays.HasValue AndAlso oldDays.HasValue AndAlso newDays <> oldDays) _
                 OrElse (Not newDays.HasValue AndAlso oldDays.HasValue) Then
 
 'Some code
-End If", @"
-internal partial class TestClass
-{
-    private void TestMethod()
-    {sd
-        bool? var1 = default;
-        var a = var1.HasValue ? var1 == false : (bool?)null;
-        var b = var1.HasValue ? var1 == true : (bool?)null;
+End If", @"{
+    int? newDays = 1;
+    int? oldDays = default;
+
+    if (newDays.HasValue && !oldDays.HasValue || newDays.HasValue && oldDays.HasValue && newDays != oldDays || !newDays.HasValue && oldDays.HasValue)
+
+    {
+
+        // Some code
     }
 }");
         }
