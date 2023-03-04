@@ -428,7 +428,7 @@ CS0149: Method name expected");
     Private Sub TestMethod(ByVal str As String)
         Dim length As Integer
         length = str.Length
-        Console.WriteLine(""Test"" & length)
+        Console.WriteLine(""Test"" & length.ToString())
         Console.ReadKey()
     End Sub
 End Class
@@ -1038,9 +1038,9 @@ BC30451: 'GetProductList' is not declared. It may be inaccessible due to its pro
 }
 
     For Each v In q
-        Console.WriteLine(v.Category & "":"")
+        Console.WriteLine(v.Category.ToString() & "":"")
         For Each p In v.Products
-            Console.WriteLine(""   "" & p.ProductName)
+            Console.WriteLine(""   "" & p.ProductName.ToString())
         Next
     Next
 End Sub
@@ -1179,8 +1179,8 @@ public partial class WhyWeNeedToCastNothing
 
 Public Partial Class WhyWeNeedToCastNothing
     Public Shared Sub CorrectOverloadChosen()
-        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
-        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)))
+        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)).ToString())
+        Console.WriteLine(4011.ToString() & Identity(CType(Nothing, Integer?)).ToString())
         Console.WriteLine(""null"" & Identity(DirectCast(Nothing, String)))
         Console.WriteLine(""null"" & Identity(CStr(Nothing)))
     End Sub
