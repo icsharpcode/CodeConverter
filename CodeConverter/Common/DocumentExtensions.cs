@@ -42,7 +42,7 @@ internal static class DocumentExtensions
     {
         //Roslyn bug: empty argument list gets removed and changes behaviour: https://github.com/dotnet/roslyn/issues/40442
         // (Also null Expression blows up even though that's how conditional invocation on an IdentifierName happens)
-        return n is VBSyntax.InvocationExpressionSyntax ies && (!ies.ArgumentList.Arguments.Any() || ies.Expression == null)
+        return n is VBSyntax.InvocationExpressionSyntax ies && (ies.ArgumentList?.Arguments.Any() != true || ies.Expression == null)
                || n is VBSyntax.TryCastExpressionSyntax
                // Roslyn bug: Tries to simplify to "InferredFieldInitializerSyntax" which cannot be placed within an ObjectCreationExpression https://github.com/icsharpcode/CodeConverter/issues/484
                || n is VBSyntax.ObjectCreationExpressionSyntax;

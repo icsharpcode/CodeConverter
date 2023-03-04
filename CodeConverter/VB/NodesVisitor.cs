@@ -16,6 +16,7 @@ using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.Identifie
 using InterpolatedStringContentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringContentSyntax;
 using InterpolationAlignmentClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationAlignmentClauseSyntax;
 using InterpolationFormatClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolationFormatClauseSyntax;
+using InvocationExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InvocationExpressionSyntax;
 using MemberAccessExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.MemberAccessExpressionSyntax;
 using NameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.NameSyntax;
 using OrderingSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.OrderingSyntax;
@@ -1273,20 +1274,22 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             return SyntaxFactory.TypeOfIsExpression(vbLeft, (TypeSyntax)vbRight);
         }
 
-        var leftType = _semanticModel.GetTypeInfo(node.Left).ConvertedType;
-        var rightType = _semanticModel.GetTypeInfo(node.Right).ConvertedType;
+        var leftTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+        var leftConvertedType = leftTypeInfo.ConvertedType;
+        var rightTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+        var rightConvertedType = rightTypeInfo.ConvertedType;
 
         bool isEquals = node.OperatorToken.IsKind(CS.SyntaxKind.EqualsEqualsToken);
         bool isNotEquals = node.OperatorToken.IsKind(CS.SyntaxKind.ExclamationEqualsToken);
 
-        if (leftType.SpecialType == SpecialType.System_String && rightType.SpecialType == SpecialType.System_String && (isEquals || isNotEquals)) {
+        if (leftConvertedType.SpecialType == SpecialType.System_String && rightConvertedType.SpecialType == SpecialType.System_String && (isEquals || isNotEquals)) {
             var opEquality = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(nameof(Equals)), ExpressionSyntaxExtensions.CreateArgList(vbLeft, vbRight));
             return isNotEquals ? SyntaxFactory.NotExpression(opEquality) : opEquality;
         }
 
         var isReferenceComparison = node.Left.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
                                     node.Right.IsKind(CS.SyntaxKind.NullLiteralExpression) ||
-                                    leftType.IsReferenceType && rightType.IsReferenceType;
+                                    leftConvertedType.IsReferenceType && rightConvertedType.IsReferenceType;
 
         if (isEquals && isReferenceComparison) {
             return SyntaxFactory.IsExpression(vbLeft, vbRight);
@@ -1297,9 +1300,15 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         }
 
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
-        if (node.IsKind(CS.SyntaxKind.AddExpression) && (leftType.SpecialType == SpecialType.System_String
-                                                         || rightType.SpecialType == SpecialType.System_String)) {
+        if (node.IsKind(CS.SyntaxKind.AddExpression) && (leftConvertedType.SpecialType == SpecialType.System_String
+                                                         || rightConvertedType.SpecialType == SpecialType.System_String)) {
             kind = SyntaxKind.ConcatenateExpression;
+            if (leftTypeInfo.Type?.SpecialType != SpecialType.System_String) {
+                vbLeft = InvokeMember(vbLeft, nameof(ToString));
+            }
+            if (rightTypeInfo.Type?.SpecialType != SpecialType.System_String) {
+                vbRight = InvokeMember(vbRight, nameof(ToString));
+            }
         }
         return SyntaxFactory.BinaryExpression(
             kind,
@@ -1307,6 +1316,12 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             SyntaxFactory.Token(kind.GetExpressionOperatorTokenKind()),
             vbRight
         );
+    }
+
+    private static InvocationExpressionSyntax InvokeMember(ExpressionSyntax vbLeft, string memberName)
+    {
+        var maes = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, vbLeft, SyntaxFactory.Token(SyntaxKind.DotToken), SyntaxFactory.IdentifierName(memberName));
+        return SyntaxFactory.InvocationExpression(maes, SyntaxFactory.ArgumentList());
     }
 
     public override VisualBasicSyntaxNode VisitTypeOfExpression(CSSyntax.TypeOfExpressionSyntax node)

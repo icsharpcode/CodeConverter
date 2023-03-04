@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 * Convert imported targets of the form "*.CSharp.targets" to "*.VisualBasic.targets" [#988](https://github.com/icsharpcode/CodeConverter/issues/988)
+* Add ToString when concatenating a string and an object [#974](https://github.com/icsharpcode/CodeConverter/issues/974)
 
 ## [9.1.3] - 2023-01-31
 
