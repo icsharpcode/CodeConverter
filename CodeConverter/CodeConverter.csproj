@@ -23,6 +23,7 @@
     <EmbedUntrackedSources>$(ContinuousIntegrationBuild)</EmbedUntrackedSources>
     <ImplicitUsings>enable</ImplicitUsings>
     <AnalysisMode>Recommended</AnalysisMode>
+    <LangVersion>11.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Common\DefaultReferences.cs" />

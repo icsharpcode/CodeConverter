@@ -48,9 +48,9 @@ public class CSToVBConversion : ILanguageConversion
     public IEnumerable<(string, string)> GetProjectFileReplacementRegexes()
     {
         return new[] {
-            ("\\\\Microsoft\\.CSharp\\.targets", "\\Microsoft.VisualBasic.targets"),
-            ("\\.cs\"", ".vb\""),
-            ("\\.cs<", ".vb<")
+            (@"\\([A-Za-z\.]*)\.CSharp\.targets", @"\$1.VisualBasic.targets"),
+            (@"\.cs""", @".vb"""),
+            (@"\.cs<", @".vb<")
         };
     }
     public string PostTransformProjectFile(string xml)

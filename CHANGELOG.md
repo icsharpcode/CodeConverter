@@ -10,9 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Convert imported targets of the form "*.VisualBasic.targets" to "*.CSharp.targets" [#988](https://github.com/icsharpcode/CodeConverter/issues/988)
 
 ### C# -> VB
 
+* Convert imported targets of the form "*.CSharp.targets" to "*.VisualBasic.targets" [#988](https://github.com/icsharpcode/CodeConverter/issues/988)
 
 ## [9.1.3] - 2023-01-31
 
