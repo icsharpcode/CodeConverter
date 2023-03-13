@@ -56,7 +56,7 @@
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <!-- Avoids needing the VSSDK MSI installed. Version is the VS version used during compilation, not where the VSIX will be installed -->
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.1.4054">
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.5.4065">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
