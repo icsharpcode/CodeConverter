@@ -10,6 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.2.0] - 2023-03-16
+
+
+### Vsix
+
+* Enable VSIX for arm64 devices [#990](https://github.com/icsharpcode/CodeConverter/pull/990)
+
+### VB -> C#
+
 * Convert imported targets of the form "*.VisualBasic.targets" to "*.CSharp.targets" [#988](https://github.com/icsharpcode/CodeConverter/issues/988)
 
 ### C# -> VB
