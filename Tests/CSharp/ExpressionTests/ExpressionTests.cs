@@ -467,6 +467,57 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task IfNothingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Class VisualBasicClass
+        Dim SomeDate = """"
+        Dim SomeDateDateNothing As Date? = If(String.IsNullOrEmpty(SomeDate), Nothing, DateTime.Parse(SomeDate))
+        Dim isNotNothing = SomeDateDateNothing IsNot Nothing
+        Dim isSomething = SomeDateDateNothing = New Date()
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class VisualBasicClass
+{
+    private object SomeDate = """";
+    private DateTime? SomeDateDateNothing;
+    private object isNotNothing;
+    private object isSomething;
+
+    public VisualBasicClass()
+    {
+        SomeDateDateNothing = string.IsNullOrEmpty(Conversions.ToString(SomeDate)) ? default : DateTime.Parse(Conversions.ToString(SomeDate));
+        isNotNothing = SomeDateDateNothing is not null;
+        isSomething = new DateTime() is { } arg1 && SomeDateDateNothing.HasValue ? SomeDateDateNothing == arg1 : (bool?)null;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task CTypeNothingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Class VisualBasicClass
+    Dim SomeDate As String = ""2022-01-01""
+    Dim SomeDateDateParsed As Date? = If(String.IsNullOrEmpty(SomeDate), CType(Nothing, Date?), DateTime.Parse(SomeDate))
+End Class", @"using System;
+
+public partial class VisualBasicClass
+{
+    private string SomeDate = ""2022-01-01"";
+    private DateTime? SomeDateDateParsed;
+
+    public VisualBasicClass()
+    {
+        SomeDateDateParsed = string.IsNullOrEmpty(SomeDate) ? default(DateTime?) : DateTime.Parse(SomeDate);
+    }
+}");
+    }
+
+    [Fact]
     public async Task GenericComparisonAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class GenericComparison

@@ -355,7 +355,7 @@ namespace ConsoleApp1.My
             [DebuggerHidden()]
             private void Dispose__Instance__<T>(ref T instance)
             {
-                instance = default;
+                instance = default(T);
             }
 
             [DebuggerHidden()]

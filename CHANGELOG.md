@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* CType(Nothing, Date?) now converts to default(DateTime?) [#994](https://github.com/icsharpcode/CodeConverter/issues/994)
 
 ### C# -> VB
 

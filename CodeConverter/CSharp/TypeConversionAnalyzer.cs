@@ -49,6 +49,7 @@ internal class TypeConversionAnalyzer
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
         if (csNode == null) return null;
+
         var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
         csNode = addParenthesisIfNeeded && conversionKind is TypeConversionKind.DestructiveCast or TypeConversionKind.NonDestructiveCast
             ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode)
@@ -124,7 +125,10 @@ internal class TypeConversionAnalyzer
     private ExpressionSyntax CreateCast(ExpressionSyntax csNode, ITypeSymbol vbConvertedType)
     {
         var typeName = GetTypeSyntax(vbConvertedType);
-        if (csNode is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
+        if (csNode.SkipIntoParens().IsKind(SyntaxKind.DefaultLiteralExpression)) {
+            return SyntaxFactory.DefaultExpression(typeName);
+        }
+        if (csNode.SkipIntoParens() is CastExpressionSyntax cast && cast.Type.IsEquivalentTo(typeName)) {
             return csNode;
         }
 
@@ -134,11 +138,12 @@ internal class TypeConversionAnalyzer
     public TypeConversionKind AnalyzeConversion(VBSyntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
         var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
-            
+
         if (vbConvertedType is null)
         {
             return TypeConversionKind.Unknown;
         }
+        if (vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) return TypeConversionKind.NonDestructiveCast;
 
         if (vbType is null) {
             return GetCommonDelegateTypeOrNull(vbNode, vbConvertedType) is {} ? TypeConversionKind.DelegateConstructor : TypeConversionKind.Unknown;
