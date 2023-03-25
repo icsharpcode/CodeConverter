@@ -954,6 +954,12 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             _typeContext.PerScopeState.PushScope();
         }
         try {
+
+            if (node.Expression is null) {
+                var convertArgumentListOrEmptyAsync = await ConvertArgumentsAsync(node.ArgumentList);
+                return SyntaxFactory.ElementBindingExpression(SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(convertArgumentListOrEmptyAsync)));
+            }
+
             var convertedInvocation = await ConvertOrReplaceInvocationAsync(node, invocationSymbol);
             if (withinLocalFunction) {
                 return await HoistAndCallLocalFunctionAsync(node, methodInvocationSymbol, (ExpressionSyntax)convertedInvocation);

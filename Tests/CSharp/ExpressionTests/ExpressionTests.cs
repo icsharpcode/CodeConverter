@@ -518,6 +518,27 @@ public partial class VisualBasicClass
     }
 
     [Fact]
+    public async Task NullConditionalIndexer_Issue993Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+
+    Private Function TestMethod(testArray As Object()) As Boolean
+        Return Not String.IsNullOrWhiteSpace(testArray?(0)?.ToString())
+    End Function
+    
+End Class", @"
+public partial class VisualBasicClass
+{
+
+    private bool TestMethod(object[] testArray)
+    {
+        return !string.IsNullOrWhiteSpace(testArray?[0]?.ToString());
+    }
+
+}");
+    }
+
+    [Fact]
     public async Task GenericComparisonAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class GenericComparison
