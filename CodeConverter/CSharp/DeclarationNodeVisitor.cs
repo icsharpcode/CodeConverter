@@ -37,7 +37,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     private string _topAncestorNamespace;
 
     private CommonConversions CommonConversions { get; }
-    private Func<VisualBasicSyntaxNode, IReadOnlyCollection<VBSyntax.StatementSyntax>, bool, IdentifierNameSyntax, Task<VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>>> _createMethodBodyVisitorAsync { get; }
+    private Func<VisualBasicSyntaxNode, IReadOnlyCollection<VBSyntax.StatementSyntax>, bool, IdentifierNameSyntax, Task<IReadOnlyCollection<StatementSyntax>>> _convertMethodBodyStatementsAsync { get; }
 
     internal PerScopeState AdditionalLocals => _typeContext.PerScopeState;
 
@@ -57,13 +57,14 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
         var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext, nullableExpressionsConverter);
         _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
-        _createMethodBodyVisitorAsync = expressionNodeVisitor.CreateMethodBodyVisitorAsync;
+        _convertMethodBodyStatementsAsync = expressionNodeVisitor.ConvertMethodBodyStatementsAsync;
         CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
     }
 
-    public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitorAsync(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+    private async Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VisualBasicSyntaxNode node,
+        IReadOnlyCollection<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
     {
-        return await _createMethodBodyVisitorAsync(node, isIterator, csReturnVariable);
+        return await _convertMethodBodyStatementsAsync(node, statements, isIterator, csReturnVariable);
     }
 
     public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
@@ -944,7 +945,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var ancestoryPropertyBlock = node.GetAncestor<VBSyntax.PropertyBlockSyntax>();
         var containingPropertyStmt = ancestoryPropertyBlock?.PropertyStatement;
         var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-        var convertedStatements = await ConvertStatementsAsync(node.Statements, await CreateMethodBodyVisitorAsync(node, isIterator));
+        var convertedStatements = SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, isIterator));
         var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
         var attributes = await CommonConversions.ConvertAttributesAsync(node.AccessorStatement.AttributeLists);
         var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
@@ -1037,8 +1038,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             return methodBlock;
         }
         var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-        var visualBasicSyntaxVisitor = await CreateMethodBodyVisitorAsync(node, node.IsIterator(), csReturnVariableOrNull);
-        var convertedStatements = await ConvertStatementsAsync(node.Statements, visualBasicSyntaxVisitor);
+        var convertedStatements = SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, node.IsIterator(), csReturnVariableOrNull));
 
         //  Just class events - for property events, see other use of IsDesignerGeneratedTypeWithInitializeComponent
         if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.GetDesignerGeneratedInitializeComponentOrNull(_vbCompilation) != null) {
@@ -1101,6 +1101,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private static async Task<BlockSyntax> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> methodBodyVisitor)
     {
+        //TODO If this contains "OnError" statments, put the whole thing in a try catch and declare a catchBlockIndex variable
+        //  Add a catch block with a catchBlockIndex for each of the OnError Goto statements and the appropriate goto contained (or do a switch statement in 1, doesn't matter)
+        //  At each OnErrorGoto, increment catchBlockIndex (setting it explicitly might be nicer but more effort)
+        //  For OnErrorResumeNext, just insert a label and increment between every single statement
         return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
     }
 
@@ -1464,8 +1468,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributeList = SyntaxFactory.List(attributes);
         var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
         var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor);
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node);
-        var body = SyntaxFactory.Block(await containingBlock.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
+        var methodBodyVisitor = await ConvertMethodBodyStatementsAsync(node, containingBlock.Statements);
+        var body = SyntaxFactory.Block(methodBodyVisitor);
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
 
         var conversionModifiers = modifiers.Where(CommonConversions.IsConversionOperator).ToList();
@@ -1505,14 +1509,14 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             ctorCall = null;
         }
 
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node);
+        var convertedBodyStatements = await ConvertMethodBodyStatementsAsync(node, statements.ToArray());
         return SyntaxFactory.ConstructorDeclaration(
             SyntaxFactory.List(attributes),
             modifiers, 
             CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier).WithoutSourceMapping(), //TODO Use semantic model for this name
             await block.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),
             ctorCall,
-            SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)))
+            SyntaxFactory.Block(convertedBodyStatements)
         );
     }
 

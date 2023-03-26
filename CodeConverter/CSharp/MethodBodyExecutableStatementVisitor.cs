@@ -1,10 +1,12 @@
 ﻿using System.Collections;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -24,6 +26,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private PerScopeState _perScopeState;
+    private readonly List<(ExpressionSyntax Index, GotoStatementSyntax Goto)> _gotoIndexes = new();
+    public (StatementSyntax Declaration, IdentifierNameSyntax Reference)? OnErrorIdentifier { get; private set; }
+    private int _onErrorCatchIndex;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -32,7 +37,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     private CommonConversions CommonConversions { get; }
 
-    public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
+    public IReadOnlyCollection<(ExpressionSyntax Index, GotoStatementSyntax Goto)> GotoIndexes => _gotoIndexes;
+
+    public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VisualBasicSyntaxNode node, SemanticModel semanticModel,
+        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
+        ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
     {
         var solution = commonConversions.Document.Project.Solution;
         var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
@@ -42,7 +51,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         };
     }
 
-    private MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
+    private MethodBodyExecutableStatementVisitor(VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
         CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
         Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
         ITypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
@@ -876,6 +885,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
     {
         var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
+        return CreateLocalVariableWithUniqueName(contextNode, variableNameBase, expr, forceType);
+    }
+
+    private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VisualBasicSyntaxNode contextNode, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
+    {
         var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
         var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr, forceType);
         return (stmt, SyntaxFactory.IdentifierName(varName));
@@ -1073,6 +1087,23 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         return SingleStatement(await node.Invocation.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
     }
+
+    public override async Task<SyntaxList<StatementSyntax>> VisitOnErrorGoToStatement(VBSyntax.OnErrorGoToStatementSyntax node)
+    {
+        var caseOrDefaultKeyword = CommonConversions.CsEscapedIdentifier(node.Label.LabelToken.Text);
+        var gotoStatementSyntax = SyntaxFactory.GotoStatement(SyntaxKind.GotoStatement, SyntaxFactory.IdentifierName(caseOrDefaultKeyword));
+        OnErrorIdentifier ??= CreateLocalVariableWithUniqueName(node, "catchIndex", CommonConversions.Literal(-1));
+        var onErrorIdentifier = OnErrorIdentifier.Value.Reference;
+        var indexForThisStatement = CommonConversions.Literal(_onErrorCatchIndex++);
+        var assignmentExpressionSyntax = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, onErrorIdentifier, indexForThisStatement);
+        _gotoIndexes.Add((indexForThisStatement, gotoStatementSyntax));
+        return SingleStatement(assignmentExpressionSyntax);
+    }
+
+    //public override Task<SyntaxList<StatementSyntax>> VisitOnErrorResumeNextStatement(VBSyntax.OnErrorResumeNextStatementSyntax node)
+    //{
+    //    return new SyntaxList<StatementSyntax>();
+    //}
 
     private static SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
     {
