@@ -267,7 +267,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         }
 
         var filter = await stmt.WhenClause.AcceptAsync<CatchFilterClauseSyntax>(TriviaConvertingExpressionVisitor);
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
+        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node, node.Statements); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
         var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
         return SyntaxFactory.CatchClause(
             catcher,
@@ -290,7 +290,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitFinallyBlock(VBasic.Syntax.FinallyBlockSyntax node)
     {
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
+        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node, node.Statements); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
         var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
         return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
     }
@@ -1273,7 +1273,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         IReadOnlyCollection<StatementSyntax> convertedStatements;
         if (node.Body is VBasic.Syntax.StatementSyntax statement) {
-            convertedStatements = await statement.Accept(await CreateMethodBodyVisitorAsync(node));
+            convertedStatements = await statement.Accept(await CreateMethodBodyVisitorAsync(node, statement.Yield().ToArray()));
         } else {
             var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
             convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode)};
@@ -1284,7 +1284,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
     {
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node);
+        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node, node.Statements);
         var body = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
         var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
         return await _lambdaConverter.ConvertAsync(node, param, body.ToList());
@@ -1577,7 +1577,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(args));
     }
 
-    public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitorAsync(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+    public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitorAsync(VBasic.VisualBasicSyntaxNode node, IReadOnlyCollection<VBSyntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
     {
         var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
         return methodBodyVisitor.CommentConvertingVisitor;
