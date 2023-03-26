@@ -255,46 +255,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return SyntaxFactory.AwaitExpression(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
-    public override async Task<CSharpSyntaxNode> VisitCatchBlock(VBasic.Syntax.CatchBlockSyntax node)
-    {
-        var stmt = node.CatchStatement;
-        CatchDeclarationSyntax catcher = null;
-        if (stmt.AsClause != null) {
-            catcher = SyntaxFactory.CatchDeclaration(
-                ConvertTypeSyntax(stmt.AsClause.Type),
-                ConvertIdentifier(stmt.IdentifierName.Identifier)
-            );
-        }
-
-        var filter = await stmt.WhenClause.AcceptAsync<CatchFilterClauseSyntax>(TriviaConvertingExpressionVisitor);
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node, node.Statements); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
-        var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
-        return SyntaxFactory.CatchClause(
-            catcher,
-            filter,
-            SyntaxFactory.Block(stmts)
-        );
-    }
-
-    private TypeSyntax ConvertTypeSyntax(VBSyntax.TypeSyntax vbType)
-    {
-        if (_semanticModel.GetSymbolInfo(vbType).Symbol is ITypeSymbol typeSymbol)
-            return CommonConversions.GetTypeSyntax(typeSymbol);
-        return SyntaxFactory.ParseTypeName(vbType.ToString());
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitCatchFilterClause(VBasic.Syntax.CatchFilterClauseSyntax node)
-    {
-        return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitFinallyBlock(VBasic.Syntax.FinallyBlockSyntax node)
-    {
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node, node.Statements); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
-        var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
-        return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
-    }
-
     public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
     {
         var csharpArg = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);

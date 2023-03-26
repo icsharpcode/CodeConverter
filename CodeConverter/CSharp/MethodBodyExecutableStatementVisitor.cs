@@ -958,10 +958,48 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SingleStatement(
             SyntaxFactory.TryStatement(
                 block,
-                SyntaxFactory.List(await node.CatchBlocks.SelectAsync(async c => await c.AcceptAsync<CatchClauseSyntax>(_expressionVisitor))),
-                await node.FinallyBlock.AcceptAsync<FinallyClauseSyntax>(_expressionVisitor)
+                SyntaxFactory.List(await node.CatchBlocks.SelectAsync(async c => await ConvertCatchBlockAsync(c))),
+                await ConvertFinallyBlockAsync(node.FinallyBlock)
             )
         );
+
+        async Task<CatchClauseSyntax> ConvertCatchBlockAsync(VBasic.Syntax.CatchBlockSyntax node)
+        {
+            var stmt = node.CatchStatement;
+            CatchDeclarationSyntax catcher = null;
+            if (stmt.AsClause != null) {
+                catcher = SyntaxFactory.CatchDeclaration(
+                    ConvertTypeSyntax(stmt.AsClause.Type),
+                    CommonConversions.ConvertIdentifier(stmt.IdentifierName.Identifier)
+                );
+            }
+
+            var filter = await ConvertCatchFilterClauseAsync(stmt.WhenClause);
+            var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(CommentConvertingVisitor));
+            return SyntaxFactory.CatchClause(
+                catcher,
+                filter,
+                SyntaxFactory.Block(stmts)
+            );
+        }
+
+        async Task<CatchFilterClauseSyntax> ConvertCatchFilterClauseAsync(VBasic.Syntax.CatchFilterClauseSyntax node)
+        {
+            return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+        }
+
+        async Task<FinallyClauseSyntax> ConvertFinallyBlockAsync(VBasic.Syntax.FinallyBlockSyntax node)
+        {
+            var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(CommentConvertingVisitor));
+            return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
+        }
+    }
+
+    private TypeSyntax ConvertTypeSyntax(VBSyntax.TypeSyntax vbType)
+    {
+        if (_semanticModel.GetSymbolInfo(vbType).Symbol is ITypeSymbol typeSymbol)
+            return CommonConversions.GetTypeSyntax(typeSymbol);
+        return SyntaxFactory.ParseTypeName(vbType.ToString());
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitSyncLockBlock(VBSyntax.SyncLockBlockSyntax node)
