@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.2.1] - 2023-03-27
+
+
+### Vsix
+
+
+### VB -> C#
+
 * CType(Nothing, Date?) now converts to default(DateTime?) [#994](https://github.com/icsharpcode/CodeConverter/issues/994)
 * Conditional indexer now converted [#993](https://github.com/icsharpcode/CodeConverter/issues/993)
 
