@@ -742,4 +742,36 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ForWithVariableDeclarationIssue998Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(someCondition As Boolean)
+        For j = 1 To 2
+            If someCondition Then
+                Dim b As Boolean
+                Console.WriteLine(b)
+                b = True
+            End If
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(bool someCondition)
+    {
+        var b = default(bool);
+        for (int j = 1; j <= 2; j++)
+        {
+            if (someCondition)
+            {
+                Console.WriteLine(b);
+                b = true;
+            }
+        }
+    }
+}");
+    }
 }

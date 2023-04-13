@@ -46,18 +46,20 @@ internal class PerScopeState
         return additionalLocal;
     }
 
-    private readonly VBasic.SyntaxKind[] loopKinds = {
-        VBasic.SyntaxKind.DoKeyword, 
+    private readonly VBasic.SyntaxKind[] _loopKinds = {
+        VBasic.SyntaxKind.DoKeyword,
         VBasic.SyntaxKind.ForKeyword,
         VBasic.SyntaxKind.WhileKeyword
     };
+
     public bool IsInsideLoop()
     {
-        return _hoistedNodesPerScope.Skip(1).Any(x => loopKinds.Contains(x.ExitableKind));
+        return _hoistedNodesPerScope.Skip(1).Any(x => _loopKinds.Contains(x.ExitableKind));
     }
+
     public bool IsInsideNestedLoop()
     {
-        return _hoistedNodesPerScope.Skip(1).Count(x => loopKinds.Contains(x.ExitableKind)) > 1;
+        return _hoistedNodesPerScope.Skip(1).Count(x => _loopKinds.Contains(x.ExitableKind)) > 1;
     }
 
     public T HoistToTopLevel<T>(T additionalField) where T : IHoistedNode
@@ -113,7 +115,9 @@ internal class PerScopeState
 
         foreach (var variable in GetDefaultInitializedLoopVariables()) {
             if (IsInsideLoop()) {
-                newNames.Add(variable.OriginalVariableName, variable.Id);
+                if (variable.Nested) {
+                    newNames.Add(variable.OriginalVariableName, variable.Id);
+                }
                 HoistToParent(variable);
             } else {
                 string name;
