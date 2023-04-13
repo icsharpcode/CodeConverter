@@ -120,15 +120,14 @@ internal class PerScopeState
                 }
                 HoistToParent(variable);
             } else {
-                string name;
+                // The variable comes from the VB scope, only check for conflict with other hoisted definitions
+                string name = NameGenerator.GenerateUniqueVariableName(generatedNames, variable.OriginalVariableName);
                 if (variable.Nested) {
-                    newNames.Add(variable.Id, NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, variable.OriginalVariableName));
-                    name = newNames[variable.Id];
-                } else {
-                    name = variable.OriginalVariableName;
+                    newNames.Add(variable.Id, name);
+                } else if (name != variable.OriginalVariableName) {
+                    newNames.Add(variable.OriginalVariableName, name);
                 }
-                var decl = 
-                    CommonConversions.CreateVariableDeclarationAndAssignment(name,
+                var decl = CommonConversions.CreateVariableDeclarationAndAssignment(name,
                     variable.Initializer, variable.Type);
                 preDeclarations.Add(CS.SyntaxFactory.LocalDeclarationStatement(decl));
             }

@@ -687,18 +687,18 @@ internal partial class TestClass
             For j = 1 To 3
                 Dim c As Integer
                 c  +=1
-                Console.WriteLine(""c1={0}"", c)
+                Console.WriteLine(""c={0}"", c)
             Next
             For j = 1 To 3
                 Dim c As Integer
                 c +=1
-                Console.WriteLine(""c2={0}"", c)
+                Console.WriteLine(""c1={0}"", c)
             Next
             Dim k=1
             Do while k <= 3
                 Dim c As Integer
                 c +=1
-                Console.WriteLine(""c3={0}"", c)
+                Console.WriteLine(""c2={0}"", c)
                 k+=1
             Loop
         i += 1
@@ -712,33 +712,71 @@ internal partial class TestClass
     {
         int i = 1;
         var b = default(int);
+        var c = default(int);
         var c1 = default(int);
         var c2 = default(int);
-        var c3 = default(int);
         do
         {
             b += 1;
             Console.WriteLine(""b={0}"", b);
             for (int j = 1; j <= 3; j++)
             {
-                c1 += 1;
-                Console.WriteLine(""c1={0}"", c1);
+                c += 1;
+                Console.WriteLine(""c={0}"", c);
             }
             for (int j = 1; j <= 3; j++)
             {
-                c2 += 1;
-                Console.WriteLine(""c2={0}"", c2);
+                c1 += 1;
+                Console.WriteLine(""c1={0}"", c1);
             }
             int k = 1;
             while (k <= 3)
             {
-                c3 += 1;
-                Console.WriteLine(""c3={0}"", c3);
+                c2 += 1;
+                Console.WriteLine(""c2={0}"", c2);
                 k += 1;
             }
             i += 1;
         }
         while (i <= 3);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ForWithVariableDeclarationIssue1000Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        For i = 1 To 2
+            Dim b As Boolean
+            Console.WriteLine(b)
+            b = True
+        Next
+        For i = 1 To 2
+            Dim b As Boolean
+            Console.WriteLine(b)
+            b = True
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        var b = default(bool);
+        for (int i = 1; i <= 2; i++)
+        {
+            Console.WriteLine(b);
+            b = true;
+        }
+        var b1 = default(bool);
+        for (int i = 1; i <= 2; i++)
+        {
+            Console.WriteLine(b1);
+            b1 = true;
+        }
     }
 }");
     }
