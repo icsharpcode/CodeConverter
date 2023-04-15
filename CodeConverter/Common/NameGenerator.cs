@@ -52,4 +52,11 @@ internal static class NameGenerator
         return node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
             .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
     }
+
+    public static string GenerateUniqueVariableName(HashSet<string> generatedNames, string variableNameBase)
+    {
+        string uniqueName = GenerateUniqueName(variableNameBase, string.Empty, n => !generatedNames.Contains(n));
+        generatedNames.Add(uniqueName);
+        return uniqueName;
+    }
 }

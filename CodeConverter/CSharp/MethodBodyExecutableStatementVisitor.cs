@@ -148,7 +148,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 if (!assignedBeforeRead) {
                     _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(
                         csVariable.Identifier.Text,
-                        // e.g. "b As Boolean" has no intializer but can turn into "var b = default(bool)"
+                        // e.g. "b As Boolean" has no initializer but can turn into "var b = default(bool)"
                         csVariable.Initializer?.Value,
                         variablesDecl.Decl.Type,
                         _perScopeState.IsInsideNestedLoop()));
