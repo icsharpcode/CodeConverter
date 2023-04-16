@@ -507,6 +507,8 @@ public class SolutionFileTextEditorTests : IDisposable
             ? (Action<string>) (stringToAppend => referenceBuilder.AppendLine(stringToAppend))
             : stringToAppend => referenceBuilder.Append(stringToAppend);
 
+        builderAppendMethod("<Project>");
+
         foreach ((string projTypeGuid, string projName, string relativeProjPath, string projRefGuid) in projRefTuples)
         {
             var referenceStringToAppend = $@"Project(""{{{projTypeGuid}}}"") = ""{projName}"","
@@ -521,6 +523,8 @@ EndProject";
             builderAppendMethod(referenceStringToAppend);
         }
 
+        builderAppendMethod("</Project>");
+
         var referenceString = referenceBuilder.ToString();
 
         return Utils.HomogenizeEol(referenceString);
@@ -533,11 +537,15 @@ EndProject";
             ? (Action<string>) (stringToAppend => referenceBuilder.AppendLine(stringToAppend))
             : stringToAppend => referenceBuilder.Append(stringToAppend);
 
+        builderAppendMethod("<Project>");
+
         foreach (var relativeProjPath in relProjPaths)
         {
             var referenceStringToAppend = $@"<ProjectReference Include=""{relativeProjPath}"" />";
             builderAppendMethod(referenceStringToAppend);
         }
+
+        builderAppendMethod("</Project>");
 
         var referenceString = referenceBuilder.ToString();
 

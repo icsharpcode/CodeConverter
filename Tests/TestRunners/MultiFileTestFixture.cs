@@ -113,8 +113,13 @@ public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixtu
         var conversionResult = conversionResults[convertedFilePath];
         var actualText = conversionResult.ConvertedCode ?? "" + conversionResult.GetExceptionsAsString() ?? "";
 
-        OurAssert.EqualIgnoringNewlines(expectedText, actualText);
-        Assert.Equal(GetEncoding(expectedFile.FullName), GetEncoding(conversionResult));
+        try {
+            OurAssert.EqualIgnoringNewlines(expectedText + OurAssert.LineSplitter, actualText + OurAssert.LineSplitter);
+            Assert.Equal(GetEncoding(expectedFile.FullName), GetEncoding(conversionResult));
+        } catch (Exception e) {
+            var relativeFile = PathConverter.GetRelativePath(TestConstants.GetTestDataDirectory(), expectedFile.FullName);
+            throw new Exception($"Converted file does not match expected file {relativeFile}" + Environment.NewLine, e);
+        }
     }
 
     private Encoding GetEncoding(ConversionResult conversionResult)
