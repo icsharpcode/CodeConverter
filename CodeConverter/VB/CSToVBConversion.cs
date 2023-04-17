@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text;
+using System.Xml.Linq;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -55,92 +56,53 @@ public class CSToVBConversion : ILanguageConversion
     }
     public string PostTransformProjectFile(string xml)
     {
-        xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "vb", "cs");
-        xml = TweakDefineConstantsSeparator(xml);
-        xml = AddInfer(xml);
-        xml = TweakOutputPaths(xml);
-        return xml;
-    }
+        var xmlDoc = XDocument.Parse(xml);
+        XNamespace xmlNs = xmlDoc.Root.GetDefaultNamespace();
 
-    private static string AddInfer(string xml)
-    {
-        if (xml.IndexOf("<OptionInfer>", StringComparison.Ordinal) > -1) return xml;
+        ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xmlDoc, xmlNs, "vb", "cs");
+        AddInfer(xmlDoc, xmlNs);
 
-        string propertygroup = "<PropertyGroup>";
-        var startOfFirstPropertyGroup = xml.IndexOf(propertygroup, StringComparison.Ordinal);
-        if (startOfFirstPropertyGroup == -1) return xml;
-
-        int endOfFirstPropertyGroupStartTag = startOfFirstPropertyGroup + propertygroup.Length;
-        return xml.Substring(0, endOfFirstPropertyGroupStartTag) + Environment.NewLine + "    <OptionInfer>On</OptionInfer>" +
-               xml.Substring(endOfFirstPropertyGroupStartTag);
-    }
-
-    private static string TweakDefineConstantsSeparator(string s)
-    {
-        var startTag = "<DefineConstants>";
-        var endTag = "</DefineConstants>";
-        var defineConstantsStart = s.IndexOf(startTag, StringComparison.Ordinal);
-        var defineConstantsEnd = s.IndexOf(endTag, StringComparison.Ordinal);
-        if (defineConstantsStart == -1 || defineConstantsEnd == -1)
-            return s;
-
-        return s.Substring(0, defineConstantsStart) +
-               s.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(";", ",") +
-               s.Substring(defineConstantsEnd);
-    }
-
-    private static string TweakOutputPaths(string s)
-    {
-        var startTag = "<PropertyGroup";
-        var endTag = "</PropertyGroup>";
-        var prevGroupEnd = 0;
-        var propertyGroupStart = s.IndexOf(startTag, StringComparison.Ordinal);
-        var propertyGroupEnd = s.IndexOf(endTag, StringComparison.Ordinal);
-
-        if (propertyGroupStart == -1 || propertyGroupEnd == -1) {
-            return s;
-        }
-            
-        var sb = new StringBuilder();
-        while (propertyGroupStart != -1 && propertyGroupEnd != -1) {
-            sb.Append(s, prevGroupEnd, propertyGroupStart - prevGroupEnd);
-
-            var curSegment = s.Substring(propertyGroupStart, propertyGroupEnd - propertyGroupStart);
-            curSegment = TweakOutputPath(curSegment);
-            sb.Append(curSegment);
-            prevGroupEnd = propertyGroupEnd;
-            propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd, StringComparison.Ordinal);
-            propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1, StringComparison.Ordinal);
+        var propertyGroups = xmlDoc.Descendants(xmlNs + "PropertyGroup");
+        foreach (XElement propertyGroup in propertyGroups) {
+            TweakDefineConstants(propertyGroup, xmlNs);
+            TweakOutputPath(propertyGroup, xmlNs);
         }
 
-        sb.Append(s, prevGroupEnd, s.Length - prevGroupEnd);
-
-        return sb.ToString();
+        return xmlDoc.Declaration != null ? xmlDoc.Declaration + Environment.NewLine + xmlDoc : xmlDoc.ToString();
     }
 
-    private static string TweakOutputPath(string s)
+    private static void AddInfer(XDocument xmlDoc, XNamespace xmlNs)
     {
-        var startPathTag = "<OutputPath>";
-        var endPathTag = "</OutputPath>";
-        var pathStart = s.IndexOf(startPathTag, StringComparison.Ordinal);
-        var pathEnd = s.IndexOf(endPathTag, StringComparison.Ordinal);
+        var infer = xmlDoc.Descendants(xmlNs + "OptionInfer").FirstOrDefault();
+        if (infer != null) {
+            return;
+        }
 
-        if (pathStart == -1 || pathEnd == -1)
-            return s;
-        var filePath = s.Substring(pathStart + startPathTag.Length,
-            pathEnd - (pathStart + startPathTag.Length));
-            
-        var startFileTag = "<DocumentationFile";
-        var endFileTag = "</DocumentationFile>";
-        var fileTagStart = s.IndexOf(startFileTag, StringComparison.Ordinal);
-        var fileTagEnd = s.IndexOf(endFileTag, StringComparison.Ordinal);
+        var firstPropertyGroup = xmlDoc.Descendants(xmlNs + "PropertyGroup").FirstOrDefault();
+        infer = new XElement(xmlNs + "OptionInfer", "On");
+        firstPropertyGroup?.AddFirst(infer);
+    }
 
-        if (fileTagStart == -1 || fileTagEnd == -1)
-            return s;
+    private static void TweakDefineConstants(XElement propertyGroup, XNamespace xmlNs)
+    {
+        var defineConstants = propertyGroup.Element(xmlNs + "DefineConstants");
 
-        return s.Substring(0, fileTagStart) +
-               s.Substring(fileTagStart, fileTagEnd - fileTagStart).Replace(filePath, "") +
-               s.Substring(fileTagEnd);
+        if (defineConstants != null) {
+            // CS uses semi-colon as separator, VB uses comma
+            var values = defineConstants.Value.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            defineConstants.Value = string.Join(",", values);
+        }
+    }
+
+    private static void TweakOutputPath(XElement propertyGroup, XNamespace xmlNs)
+    {
+        var outputPath = propertyGroup.Element(xmlNs + "OutputPath");
+        var documentationFile = propertyGroup.Element(xmlNs + "DocumentationFile");
+
+        // In CS, DocumentationFile is prepended by OutputPath, not in VB
+        if (outputPath != null && documentationFile != null) {
+            documentationFile.Value = documentationFile.Value.Replace(outputPath.Value, "");
+        }
     }
 
     public string TargetLanguage { get; } = LanguageNames.VisualBasic;

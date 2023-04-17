@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace ICSharpCode.CodeConverter.Common;
 
@@ -7,19 +8,17 @@ internal static class ProjectFileTextEditor
     /// <summary>
     /// Hide pre-conversion files, and ensure files we've just created aren't hidden
     /// </summary>
-    public static string WithUpdatedDefaultItemExcludes(string s, string extensionNotToExclude, string extensionToExclude)
+    public static void WithUpdatedDefaultItemExcludes(XDocument xmlDoc, XNamespace xmlNs, string extensionNotToExclude, string extensionToExclude)
     {
         string verbatimExcludeToRemove = Regex.Escape($@"$(ProjectDir)**\*.{extensionNotToExclude}");
-        var matchDefaultItemExcludes =
-            new Regex($@"(<DefaultItemExcludes>.*){verbatimExcludeToRemove}(.*<\/DefaultItemExcludes>)");
-        if (matchDefaultItemExcludes.IsMatch(s)) {
-            s = matchDefaultItemExcludes.Replace(s, $@"$1$(ProjectDir)**\*.{extensionToExclude}$2", 1);
+        var matchDefaultItemExcludes = new Regex($@"(.*){verbatimExcludeToRemove}(.*)");
+        var defaultItemExcludes = xmlDoc.Descendants("DefaultItemExcludes").FirstOrDefault(e => matchDefaultItemExcludes.IsMatch(e.Value));
+        if (defaultItemExcludes != null) {
+            defaultItemExcludes.Value = matchDefaultItemExcludes.Replace(defaultItemExcludes.Value, $@"$1$(ProjectDir)**\*.{extensionToExclude}$2");
         } else {
-            var firstPropertyGroupEnd = new Regex(@"(\s*</PropertyGroup>)");
-            s = firstPropertyGroupEnd.Replace(s,
-                "\r\n" + $@"    <DefaultItemExcludes>$(DefaultItemExcludes);$(ProjectDir)**\*.{extensionToExclude}</DefaultItemExcludes>$1", 1);
+            var firstPropertyGroup = xmlDoc.Descendants(xmlNs + "PropertyGroup").FirstOrDefault();
+            defaultItemExcludes = new XElement(xmlNs + "DefaultItemExcludes", $"$(DefaultItemExcludes);$(ProjectDir)**\\*.{extensionToExclude}");
+            firstPropertyGroup?.Add(defaultItemExcludes);
         }
-
-        return s;
     }
 }

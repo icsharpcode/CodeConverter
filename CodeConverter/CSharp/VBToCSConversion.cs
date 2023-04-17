@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.VisualBasic;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
@@ -58,87 +59,89 @@ public class VBToCSConversion : ILanguageConversion
 
     public string PostTransformProjectFile(string xml)
     {
-        xml = ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xml, "cs", "vb");
+        var xmlDoc = XDocument.Parse(xml);
+        XNamespace xmlNs = xmlDoc.Root.GetDefaultNamespace();
 
-        if (!Regex.IsMatch(xml, @"<Reference\s+Include=""Microsoft.VisualBasic""\s*/>")) {
-            xml = new Regex(@"(<ItemGroup>)(\s*)").Replace(xml, "$1$2<Reference Include=\"Microsoft.VisualBasic\" />$2", 1);
+        ProjectFileTextEditor.WithUpdatedDefaultItemExcludes(xmlDoc, xmlNs, "cs", "vb");
+        AddVisualBasicReference(xmlDoc, xmlNs);
+        AddLangVersion(xmlDoc, xmlNs);
+
+        var propertyGroups = xmlDoc.Descendants(xmlNs + "PropertyGroup");
+        foreach (XElement propertyGroup in propertyGroups) {
+            TweakDefineConstants(propertyGroup, xmlNs);
+            TweakOutputPath(propertyGroup, xmlNs);
         }
 
-        if (!Regex.IsMatch(xml, @"<\s*LangVersion\s*>")) {
-            xml = new Regex(@"(\s*)(</\s*PropertyGroup\s*>)").Replace(xml, $"$1  <LangVersion>{_vbToCsProjectContentsConverter.LanguageVersion}</LangVersion>$1$2", 1);
+        return xmlDoc.Declaration != null ? xmlDoc.Declaration + Environment.NewLine + xmlDoc : xmlDoc.ToString();
+    }
+
+    private static void AddVisualBasicReference(XDocument xmlDoc, XNamespace xmlNs)
+    {
+        var reference = xmlDoc.Descendants(xmlNs + "Reference").FirstOrDefault(e => e.Attribute("Include")?.Value == "Microsoft.VisualBasic");
+        if (reference != null) {
+            return;
         }
 
-        xml = TweakDefineConstants(xml);
-        xml = TweakOutputPaths(xml);
-        return xml;
+        var firstItemGroup = xmlDoc.Descendants(xmlNs + "ItemGroup").FirstOrDefault();
+        reference = new XElement(xmlNs + "Reference");
+        reference.SetAttributeValue("Include", "Microsoft.VisualBasic");
+        firstItemGroup?.AddFirst(reference);
     }
 
-    private static string TweakDefineConstants(string xml)
+    private void AddLangVersion(XDocument xmlDoc, XNamespace xmlNs)
     {
-        // TODO Find API to, or parse project file sections to remove "<DefineDebug>true</DefineDebug>" + "<DefineTrace>true</DefineTrace>"
-        // Then add them to the define constants in the same section, or create one if necessary.
+        var langVersion = xmlDoc.Descendants(xmlNs + "LangVersion").FirstOrDefault();
+        if (langVersion != null) {
+            return;
+        }
 
-        var defineConstantsStart = xml.IndexOf("<DefineConstants>", StringComparison.Ordinal);
-        var defineConstantsEnd = xml.IndexOf("</DefineConstants>", StringComparison.Ordinal);
-        if (defineConstantsStart == -1 || defineConstantsEnd == -1)
-            return xml;
-
-        return xml.Substring(0, defineConstantsStart) +
-               xml.Substring(defineConstantsStart, defineConstantsEnd - defineConstantsStart).Replace(",", ";") +
-               xml.Substring(defineConstantsEnd);
+        var firstPropertyGroup = xmlDoc.Descendants(xmlNs + "PropertyGroup").FirstOrDefault();
+        langVersion = new XElement(xmlNs + "LangVersion", _vbToCsProjectContentsConverter.LanguageVersion);
+        firstPropertyGroup?.Add(langVersion);
     }
 
-    private static string TweakOutputPaths(string s)
+    private static void TweakDefineConstants(XElement propertyGroup, XNamespace xmlNs)
     {
-        var startTag = "<PropertyGroup";
-        var endTag = "</PropertyGroup>";
-        var prevGroupEnd = 0;
-        var propertyGroupStart = s.IndexOf(startTag, StringComparison.Ordinal);
-        var propertyGroupEnd = s.IndexOf(endTag, StringComparison.Ordinal);
-        var sb = new StringBuilder();
+        var defineConstants = propertyGroup.Element(xmlNs + "DefineConstants");
 
-        if (propertyGroupStart == -1 || propertyGroupEnd == -1)
-            return s;
+        var defineDebug = propertyGroup.Element(xmlNs + "DefineDebug");
+        bool shouldDefineDebug = defineDebug?.Value == "true";
+        defineDebug?.Remove();
 
-        do {
-            sb.Append(s.Substring(prevGroupEnd, propertyGroupStart - prevGroupEnd));
+        var defineTrace = propertyGroup.Element(xmlNs + "DefineTrace");
+        bool shouldDefineTrace = defineTrace?.Value == "true";
+        defineTrace?.Remove();
 
-            var curSegment = s.Substring(propertyGroupStart, propertyGroupEnd - propertyGroupStart);
-            curSegment = TweakOutputPath(curSegment);
-            sb.Append(curSegment);
-            prevGroupEnd = propertyGroupEnd;
-            propertyGroupStart = s.IndexOf(startTag, propertyGroupEnd, StringComparison.Ordinal);
-            propertyGroupEnd = s.IndexOf(endTag, prevGroupEnd + 1, StringComparison.Ordinal);
-        } while (propertyGroupStart != -1 && propertyGroupEnd != -1);
+        if (defineConstants == null && (shouldDefineDebug || shouldDefineTrace)) {
+            defineConstants = new XElement(xmlNs + "DefineConstants", "");
+            propertyGroup.Add(defineConstants);
+        }
 
-        sb.Append(s.Substring(prevGroupEnd));
+        if (defineConstants != null) {
+            // CS uses semi-colon as separator, VB uses comma
+            var values = defineConstants.Value.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
-        return sb.ToString();
+            // DefineDebug and DefineTrace are ignored in CS
+            if (shouldDefineDebug && !values.Contains("DEBUG")) {
+                values.Insert(0, "DEBUG");
+            }
+            if (shouldDefineTrace && !values.Contains("TRACE")) {
+                values.Insert(0, "TRACE");
+            }
+
+            defineConstants.Value = string.Join(";", values);
+        }
     }
 
-    private static string TweakOutputPath(string s)
+    private static void TweakOutputPath(XElement propertyGroup, XNamespace xmlNs)
     {
-        var startPathTag = "<OutputPath>";
-        var endPathTag = "</OutputPath>";
-        var pathStart = s.IndexOf(startPathTag, StringComparison.Ordinal);
-        var pathEnd = s.IndexOf(endPathTag, StringComparison.Ordinal);
+        var outputPath = propertyGroup.Element(xmlNs + "OutputPath");
+        var documentationFile = propertyGroup.Element(xmlNs + "DocumentationFile");
 
-        if (pathStart == -1 || pathEnd == -1)
-            return s;
-        var filePath = s.Substring(pathStart + startPathTag.Length,
-            pathEnd - (pathStart + startPathTag.Length));
-
-        var startFileTag = "<DocumentationFile>";
-        var endFileTag = "</DocumentationFile>";
-        var fileTagStart = s.IndexOf(startFileTag, StringComparison.Ordinal);
-        var fileTagEnd = s.IndexOf(endFileTag, StringComparison.Ordinal);
-
-        if (fileTagStart == -1 || fileTagEnd == -1)
-            return s;
-
-        return s.Substring(0, fileTagStart + startFileTag.Length) +
-               filePath +
-               s.Substring(fileTagStart + startFileTag.Length);
+        // In CS, DocumentationFile is prepended by OutputPath, not in VB
+        if (outputPath != null && documentationFile != null) {
+            documentationFile.Value = outputPath.Value + documentationFile.Value;
+        }
     }
 
     public string TargetLanguage { get; } = LanguageNames.CSharp;
