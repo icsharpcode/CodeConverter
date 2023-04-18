@@ -1292,9 +1292,9 @@ internal partial class TestClass
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class SomeClass
     Public SomeProperty As String
-    Public Shared Instance As SomeClass = New SomeClass() With {
-             .SomeProperty = .SomeProperty + NameOf(.SomeProperty) ' Line gets moved into its own method
-        }
+    Public Shared Instance As SomeClass = New SomeClass() With { ' First line gets moved
+             .SomeProperty = .SomeProperty + NameOf(.SomeProperty) ' Second line gets moved
+        } ' Third line gets moved
 End Class", @"
 public partial class SomeClass
 {
@@ -1302,10 +1302,10 @@ public partial class SomeClass
     static SomeClass initInstance()
     {
         var init = new SomeClass();
-        return (init.SomeProperty = init.SomeProperty + nameof(init.SomeProperty), init).init; // Line gets moved into its own method
-    }
+        return (init.SomeProperty = init.SomeProperty + nameof(init.SomeProperty), init).init; // Second line gets moved
+    } // Third line gets moved
 
-    public static SomeClass Instance = initInstance();
+    public static SomeClass Instance = initInstance(); // First line gets moved
 }");
     }
 
