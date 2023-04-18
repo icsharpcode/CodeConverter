@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 
 * Fixes for default-initialized loop variables [#1001](https://github.com/icsharpcode/CodeConverter/pull/1001)
+* Convert DefineDebug and DefineTrace into DefineConstants [#1004](https://github.com/icsharpcode/CodeConverter/pull/1004)
 
 ### C# -> VB
 
