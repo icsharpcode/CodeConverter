@@ -580,10 +580,16 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 "Field initializers with nested method calls not currently supported");
         }
 
-        var invocationExpressionSyntax = invocations.First();
-        var methodName = invocationExpressionSyntax.Expression
-            .ChildNodes().OfType<SimpleNameSyntax>().Last();
-        var newMethodName = $"{methodName.Identifier.ValueText}_{v.Identifier.ValueText}";
+        string newMethodName;
+        if (invocations.Length == 1) {
+            var invocationExpressionSyntax = invocations.First();
+            var methodName = invocationExpressionSyntax.Expression
+                .ChildNodes().OfType<SimpleNameSyntax>().Last();
+            newMethodName = $"{methodName?.Identifier.ValueText}_{v.Identifier.ValueText}";
+        } else {
+            newMethodName = "init" + v.Identifier.ValueText.UppercaseFirstLetter();
+        }
+
         var declarationInfo = AdditionalLocals.GetDeclarations();
 
         var localVars = declarationInfo
