@@ -360,8 +360,7 @@ internal partial class DisplayAttribute : Attribute
         Public Property B As integer
     End class
    Public Sub New()
-        Dim y As  New TestClass() With { .A = 1, .B = .A 
-        }
+        On Error Resume Next
    End Sub
 End Class";
 
