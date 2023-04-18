@@ -1288,6 +1288,28 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task WithObjectInitializerCanReadFromPropertiesOfObjectAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class SomeClass
+    Public SomeProperty As String
+    Public Shared Instance As SomeClass = New SomeClass() With { ' First line gets moved
+             .SomeProperty = .SomeProperty + NameOf(.SomeProperty) ' Second line gets moved
+        } ' Third line gets moved
+End Class", @"
+public partial class SomeClass
+{
+    public string SomeProperty;
+    static SomeClass initInstance()
+    {
+        var init = new SomeClass();
+        return (init.SomeProperty = init.SomeProperty + nameof(init.SomeProperty), init).init; // Second line gets moved
+    } // Third line gets moved
+
+    public static SomeClass Instance = initInstance(); // First line gets moved
+}");
+    }
+
+    [Fact]
     public async Task CollectionInitializersAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

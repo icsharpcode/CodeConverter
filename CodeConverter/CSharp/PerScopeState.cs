@@ -184,7 +184,7 @@ internal class PerScopeState
 
     public static T ReplaceNames<T>(T csNode, Dictionary<string, string> newNames) where T : SyntaxNode
     {
-        return csNode.ReplaceNodes(csNode.DescendantNodes().OfType<IdentifierNameSyntax>(), (_, idns) => {
+        return csNode.ReplaceNodes(csNode.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>(), (_, idns) => {
             if (newNames.TryGetValue(idns.Identifier.ValueText, out var newName)) {
                 return idns.WithoutAnnotations(AdditionalLocalAnnotation).WithIdentifier(CS.SyntaxFactory.Identifier(newName));
             }
