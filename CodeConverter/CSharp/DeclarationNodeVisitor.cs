@@ -581,11 +581,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         }
 
         string newMethodName;
-        if (invocations.Length == 1) {
-            var invocationExpressionSyntax = invocations.First();
-            var methodName = invocationExpressionSyntax.Expression
-                .ChildNodes().OfType<SimpleNameSyntax>().Last();
-            newMethodName = $"{methodName?.Identifier.ValueText}_{v.Identifier.ValueText}";
+        if (invocations.OnlyOrDefault() is { Expression: {} e} && e.ChildNodes().OfType<SimpleNameSyntax>().LastOrDefault() is {} sns) {
+            newMethodName = $"{sns?.Identifier.ValueText}_{v.Identifier.ValueText}";
         } else {
             newMethodName = "init" + v.Identifier.ValueText.UppercaseFirstLetter();
         }
