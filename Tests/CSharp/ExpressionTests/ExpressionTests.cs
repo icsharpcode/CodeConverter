@@ -2554,4 +2554,68 @@ public partial interface ITraceMessageTalker
     object IdentifyTalker(object v);
 }");
     }
+
+    [Fact]
+    public async Task NegatedNullableBoolAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Enum CrashEnum
+    None = 0
+    One = 1
+    Two = 2
+End Enum
+Public Class CrashClass
+    Public Property CrashEnum As CrashEnum?
+    Public Property IsSet As Boolean
+End Class
+Public Class CrashTest
+    Public Function Edit(Optional flag2 As Boolean = False, Optional crashEnum As CrashEnum? = Nothing) As Object
+        Dim CrashClass As CrashClass = Nothing
+        Dim Flag0 As Boolean = True
+        Dim Flag1 As Boolean = True
+        If Flag0 Then
+            If Flag1 AndAlso flag2 Then
+                If crashEnum.GetValueOrDefault() > 0 AndAlso (Not CrashClass.CrashEnum.HasValue OrElse crashEnum <> CrashClass.CrashEnum) Then
+                    CrashClass.CrashEnum = crashEnum
+                    CrashClass.IsSet = True
+                End If
+            End If
+        End If
+        Return Nothing
+    End Function
+End Class", @"
+public enum CrashEnum
+{
+    None = 0,
+    One = 1,
+    Two = 2
+}
+
+public partial class CrashClass
+{
+    public CrashEnum? CrashEnum { get; set; }
+    public bool IsSet { get; set; }
+}
+
+public partial class CrashTest
+{
+    public object Edit(bool flag2 = false, CrashEnum? crashEnum = default)
+    {
+        CrashClass CrashClass = null;
+        bool Flag0 = true;
+        bool Flag1 = true;
+        if (Flag0)
+        {
+            if (Flag1 && flag2)
+            {
+                if ((int)crashEnum.GetValueOrDefault() > 0 && (!CrashClass.CrashEnum.HasValue ? true : CrashClass.CrashEnum is { } arg1 && crashEnum.HasValue ? crashEnum != arg1 : (bool?)null).GetValueOrDefault())
+                {
+                    CrashClass.CrashEnum = crashEnum;
+                    CrashClass.IsSet = true;
+                }
+            }
+        }
+        return null;
+    }
+}");
+    }
 }

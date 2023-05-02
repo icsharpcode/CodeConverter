@@ -272,7 +272,7 @@ internal class VisualBasicNullableExpressionsConverter
                 when memberText.Equals("HasValue", StringComparison.OrdinalIgnoreCase) && checkedIdentifierText.Equals(identifierText, StringComparison.OrdinalIgnoreCase) =>
                 expressionResult ? KnownNullability.NotNull : KnownNullability.Null,
             VBSyntax.BinaryExpressionSyntax bin => GetNullabilityWithinBinaryExpression(identifierText, bin, expressionResult),
-            VBSyntax.UnaryExpressionSyntax un when un.OperatorToken.IsKind(VBasic.SyntaxKind.NotKeyword) => GetNullabilityWithinBooleanExpression(identifierText, expression, !expressionResult),
+            VBSyntax.UnaryExpressionSyntax un when un.OperatorToken.IsKind(VBasic.SyntaxKind.NotKeyword) => GetNullabilityWithinBooleanExpression(identifierText, un.Operand, !expressionResult),
             _ => null
         };
     }
