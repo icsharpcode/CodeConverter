@@ -994,11 +994,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         async Task<CatchFilterClauseSyntax> ConvertCatchFilterClauseAsync(VBasic.Syntax.CatchFilterClauseSyntax node)
         {
+            if (node == null) return null;
             return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
         }
 
         async Task<FinallyClauseSyntax> ConvertFinallyBlockAsync(VBasic.Syntax.FinallyBlockSyntax node)
         {
+            if (node == null) return null;
             var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(CommentConvertingVisitor));
             return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
         }

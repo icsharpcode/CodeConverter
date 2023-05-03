@@ -1101,10 +1101,6 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private static async Task<BlockSyntax> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> methodBodyVisitor)
     {
-        //TODO If this contains "OnError" statments, put the whole thing in a try catch and declare a catchBlockIndex variable
-        //  Add a catch block with a catchBlockIndex for each of the OnError Goto statements and the appropriate goto contained (or do a switch statement in 1, doesn't matter)
-        //  At each OnErrorGoto, increment catchBlockIndex (setting it explicitly might be nicer but more effort)
-        //  For OnErrorResumeNext, just insert a label and increment between every single statement
         return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
     }
 
