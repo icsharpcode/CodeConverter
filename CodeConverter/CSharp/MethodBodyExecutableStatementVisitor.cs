@@ -25,10 +25,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _generatedNames = new();
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
-    private PerScopeState _perScopeState;
-    private readonly List<(ExpressionSyntax Index, GotoStatementSyntax Goto)> _gotoIndexes = new();
-    public (StatementSyntax Declaration, IdentifierNameSyntax Reference)? OnErrorIdentifier { get; private set; }
-    private int _onErrorCatchIndex;
+    private readonly PerScopeState _perScopeState;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -36,8 +33,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; }
 
     private CommonConversions CommonConversions { get; }
-
-    public IReadOnlyCollection<(ExpressionSyntax Index, GotoStatementSyntax Goto)> GotoIndexes => _gotoIndexes;
 
     public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VisualBasicSyntaxNode node, SemanticModel semanticModel,
         CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
@@ -1087,23 +1082,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         return SingleStatement(await node.Invocation.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
     }
-
-    public override async Task<SyntaxList<StatementSyntax>> VisitOnErrorGoToStatement(VBSyntax.OnErrorGoToStatementSyntax node)
-    {
-        var caseOrDefaultKeyword = CommonConversions.CsEscapedIdentifier(node.Label.LabelToken.Text);
-        var gotoStatementSyntax = SyntaxFactory.GotoStatement(SyntaxKind.GotoStatement, SyntaxFactory.IdentifierName(caseOrDefaultKeyword));
-        OnErrorIdentifier ??= CreateLocalVariableWithUniqueName(node, "catchIndex", CommonConversions.Literal(-1));
-        var onErrorIdentifier = OnErrorIdentifier.Value.Reference;
-        var indexForThisStatement = CommonConversions.Literal(_onErrorCatchIndex++);
-        var assignmentExpressionSyntax = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, onErrorIdentifier, indexForThisStatement);
-        _gotoIndexes.Add((indexForThisStatement, gotoStatementSyntax));
-        return SingleStatement(assignmentExpressionSyntax);
-    }
-
-    //public override Task<SyntaxList<StatementSyntax>> VisitOnErrorResumeNextStatement(VBSyntax.OnErrorResumeNextStatementSyntax node)
-    //{
-    //    return new SyntaxList<StatementSyntax>();
-    //}
 
     private static SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
     {

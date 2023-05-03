@@ -1251,26 +1251,34 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public async Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VBasic.VisualBasicSyntaxNode node, IReadOnlyCollection<VBSyntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
     {
+
         var innerMethodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
-        var commentConvertingVisitor = innerMethodBodyVisitor.CommentConvertingVisitor;
-        var convertedStatements = await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(commentConvertingVisitor));
-        if (innerMethodBodyVisitor.GotoIndexes.Any()) {
-            var catchIndexIdentifier = innerMethodBodyVisitor.OnErrorIdentifier.Value.Reference;
-            var assignMinusOne = SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, catchIndexIdentifier, CommonConversions.Literal(-1)));
-            var switchSectionSyntaxes = innerMethodBodyVisitor.GotoIndexes.Select(g => {
-                var label = SyntaxFactory.SingletonList<SwitchLabelSyntax>(SyntaxFactory.CaseSwitchLabel(g.Index));
-                var statementSyntaxes = new StatementSyntax[]{assignMinusOne, g.Goto, SyntaxFactory.BreakStatement()};
-                return SyntaxFactory.SwitchSection(label, SyntaxFactory.List(statementSyntaxes));
-            });
-            var switchGoto = SyntaxFactory.SwitchStatement(catchIndexIdentifier, SyntaxFactory.List(switchSectionSyntaxes)); 
-            var tryBody = SyntaxFactory.Block(convertedStatements.Prepend(switchGoto).Append(assignMinusOne));
-            var catchClauseSyntaxes = SyntaxFactory.SingletonList(SyntaxFactory.CatchClause());
-            var tryBlock = SyntaxFactory.TryStatement(catchClauseSyntaxes).WithBlock(tryBody);
-            var d = SyntaxFactory.DoStatement(tryBlock,
-                SyntaxFactory.BinaryExpression(SyntaxKind.NotEqualsExpression, catchIndexIdentifier, CommonConversions.Literal(-1)));
-            return new []{ innerMethodBodyVisitor.OnErrorIdentifier.Value.Declaration, d };
+
+        var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
+        var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
+
+        if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
+            var statementsList = statements.ToList();
+            var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
+            var onlyOnErrorGotoStatementIndex = statementsList.IndexOf(onlyOnErrorGotoStatement);
+            if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
+                var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
+                var tryBlock = SyntaxFactory.Block(await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1)));
+                var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
+                var catchClauseSyntax = SyntaxFactory.CatchClause();
+                var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
+                return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
+            }
         }
+
+        var convertedStatements = await ConvertStatements(statements);
+        
         return convertedStatements;
+
+        async Task<List<StatementSyntax>> ConvertStatements(IEnumerable<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> readOnlyCollection)
+        {
+            return (await readOnlyCollection.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(innerMethodBodyVisitor.CommentConvertingVisitor))).ToList();
+        }
     }
 
     public override async Task<CSharpSyntaxNode> VisitParameterList(VBSyntax.ParameterListSyntax node)
