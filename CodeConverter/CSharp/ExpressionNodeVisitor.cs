@@ -1254,30 +1254,38 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
         var innerMethodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
 
-        var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
-        var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
+        return await GetWithConvertedGotosOrNull(statements) ?? await ConvertStatements(statements);
 
-        if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
-            var statementsList = statements.ToList();
-            var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
-            var onlyOnErrorGotoStatementIndex = statementsList.IndexOf(onlyOnErrorGotoStatement);
-            if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
-                var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
-                var tryBlock = SyntaxFactory.Block(await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1)));
-                var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
-                var catchClauseSyntax = SyntaxFactory.CatchClause();
-                var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
-                return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
-            }
-        }
-
-        var convertedStatements = await ConvertStatements(statements);
-        
-        return convertedStatements;
-
-        async Task<List<StatementSyntax>> ConvertStatements(IEnumerable<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> readOnlyCollection)
+        async Task<List<StatementSyntax>> ConvertStatements(IEnumerable<VBSyntax.StatementSyntax> readOnlyCollection)
         {
             return (await readOnlyCollection.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(innerMethodBodyVisitor.CommentConvertingVisitor))).ToList();
+        }
+
+        async Task<IReadOnlyCollection<StatementSyntax>> GetWithConvertedGotosOrNull(IReadOnlyCollection<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> statements)
+        {
+            var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
+            var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
+
+            if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
+                var statementsList = statements.ToList();
+                var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
+                var onlyOnErrorGotoStatementIndex = statementsList.IndexOf(onlyOnErrorGotoStatement);
+
+                // Even this very simple case can generate compile errors if the error handling uses statements declared in the scope of the try block
+                // For now, the user will have to fix these manually, in future it'd be possible to hoist any used declarations out of the try block
+                if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
+                    var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
+                    var tryBlock = SyntaxFactory.Block(await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1)));
+                    var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
+                    var catchClauseSyntax = SyntaxFactory.CatchClause();
+                    var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
+                    {
+                        return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
+                    }
+                }
+            }
+
+            return null;
         }
     }
 
