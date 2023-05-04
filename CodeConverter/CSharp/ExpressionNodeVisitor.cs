@@ -1266,6 +1266,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
             var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
 
+            // See https://learn.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/on-error-statement
             if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
                 var statementsList = statements.ToList();
                 var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
@@ -1275,13 +1276,20 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 // For now, the user will have to fix these manually, in future it'd be possible to hoist any used declarations out of the try block
                 if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
                     var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
-                    var tryBlock = SyntaxFactory.Block(await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1)));
+                    var tryBlockStatements = await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1));
+                    var tryBlock = SyntaxFactory.Block(tryBlockStatements);
                     var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
+                    
                     var catchClauseSyntax = SyntaxFactory.CatchClause();
-                    var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
-                    {
-                        return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
+
+                    // Default to putting the statements after the catch block in case logic falls through, but if the last statement is a return, put them inside the catch block for neatness.
+                    if (tryBlockStatements.LastOrDefault().IsKind(SyntaxKind.ReturnStatement)) {
+                        catchClauseSyntax = catchClauseSyntax.WithBlock(SyntaxFactory.Block(afterStatements));
+                        afterStatements = new List<StatementSyntax>();
                     }
+
+                    var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
+                    return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
                 }
             }
 
