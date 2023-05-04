@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Handle one very simple case of OnError Goto [#999](https://github.com/icsharpcode/CodeConverter/pull/999)
 * Fix StackOverflowException when converting nullable comparisons [#1007](https://github.com/icsharpcode/CodeConverter/pull/1007)
 * Fixes for default-initialized loop variables [#1001](https://github.com/icsharpcode/CodeConverter/pull/1001)
 * Convert DefineDebug and DefineTrace into DefineConstants [#1004](https://github.com/icsharpcode/CodeConverter/pull/1004)

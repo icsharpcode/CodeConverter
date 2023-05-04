@@ -1,10 +1,12 @@
 ﻿using System.Collections;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.VB;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -23,7 +25,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _generatedNames = new();
     private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
-    private PerScopeState _perScopeState;
+    private readonly PerScopeState _perScopeState;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -32,7 +34,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     private CommonConversions CommonConversions { get; }
 
-    public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VBasic.VisualBasicSyntaxNode node, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives, ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
+    public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VisualBasicSyntaxNode node, SemanticModel semanticModel,
+        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
+        ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
     {
         var solution = commonConversions.Document.Project.Solution;
         var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
@@ -42,7 +46,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         };
     }
 
-    private MethodBodyExecutableStatementVisitor(VBasic.VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
+    private MethodBodyExecutableStatementVisitor(VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
         CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
         Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
         ITypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
@@ -876,6 +880,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
     {
         var contextNode = vbExpr.GetAncestor<VBSyntax.MethodBlockBaseSyntax>() ?? (VBasic.VisualBasicSyntaxNode) vbExpr.Parent;
+        return CreateLocalVariableWithUniqueName(contextNode, variableNameBase, expr, forceType);
+    }
+
+    private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VisualBasicSyntaxNode contextNode, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
+    {
         var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
         var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr, forceType);
         return (stmt, SyntaxFactory.IdentifierName(varName));
@@ -958,10 +967,50 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SingleStatement(
             SyntaxFactory.TryStatement(
                 block,
-                SyntaxFactory.List(await node.CatchBlocks.SelectAsync(async c => await c.AcceptAsync<CatchClauseSyntax>(_expressionVisitor))),
-                await node.FinallyBlock.AcceptAsync<FinallyClauseSyntax>(_expressionVisitor)
+                SyntaxFactory.List(await node.CatchBlocks.SelectAsync(async c => await ConvertCatchBlockAsync(c))),
+                await ConvertFinallyBlockAsync(node.FinallyBlock)
             )
         );
+
+        async Task<CatchClauseSyntax> ConvertCatchBlockAsync(VBasic.Syntax.CatchBlockSyntax node)
+        {
+            var stmt = node.CatchStatement;
+            CatchDeclarationSyntax catcher = null;
+            if (stmt.AsClause != null) {
+                catcher = SyntaxFactory.CatchDeclaration(
+                    ConvertTypeSyntax(stmt.AsClause.Type),
+                    CommonConversions.ConvertIdentifier(stmt.IdentifierName.Identifier)
+                );
+            }
+
+            var filter = await ConvertCatchFilterClauseAsync(stmt.WhenClause);
+            var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(CommentConvertingVisitor));
+            return SyntaxFactory.CatchClause(
+                catcher,
+                filter,
+                SyntaxFactory.Block(stmts)
+            );
+        }
+
+        async Task<CatchFilterClauseSyntax> ConvertCatchFilterClauseAsync(VBasic.Syntax.CatchFilterClauseSyntax node)
+        {
+            if (node == null) return null;
+            return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+        }
+
+        async Task<FinallyClauseSyntax> ConvertFinallyBlockAsync(VBasic.Syntax.FinallyBlockSyntax node)
+        {
+            if (node == null) return null;
+            var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(CommentConvertingVisitor));
+            return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
+        }
+    }
+
+    private TypeSyntax ConvertTypeSyntax(VBSyntax.TypeSyntax vbType)
+    {
+        if (_semanticModel.GetSymbolInfo(vbType).Symbol is ITypeSymbol typeSymbol)
+            return CommonConversions.GetTypeSyntax(typeSymbol);
+        return SyntaxFactory.ParseTypeName(vbType.ToString());
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitSyncLockBlock(VBSyntax.SyncLockBlockSyntax node)

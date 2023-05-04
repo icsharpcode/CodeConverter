@@ -255,46 +255,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return SyntaxFactory.AwaitExpression(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
-    public override async Task<CSharpSyntaxNode> VisitCatchBlock(VBasic.Syntax.CatchBlockSyntax node)
-    {
-        var stmt = node.CatchStatement;
-        CatchDeclarationSyntax catcher = null;
-        if (stmt.AsClause != null) {
-            catcher = SyntaxFactory.CatchDeclaration(
-                ConvertTypeSyntax(stmt.AsClause.Type),
-                ConvertIdentifier(stmt.IdentifierName.Identifier)
-            );
-        }
-
-        var filter = await stmt.WhenClause.AcceptAsync<CatchFilterClauseSyntax>(TriviaConvertingExpressionVisitor);
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
-        var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
-        return SyntaxFactory.CatchClause(
-            catcher,
-            filter,
-            SyntaxFactory.Block(stmts)
-        );
-    }
-
-    private TypeSyntax ConvertTypeSyntax(VBSyntax.TypeSyntax vbType)
-    {
-        if (_semanticModel.GetSymbolInfo(vbType).Symbol is ITypeSymbol typeSymbol)
-            return CommonConversions.GetTypeSyntax(typeSymbol);
-        return SyntaxFactory.ParseTypeName(vbType.ToString());
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitCatchFilterClause(VBasic.Syntax.CatchFilterClauseSyntax node)
-    {
-        return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitFinallyBlock(VBasic.Syntax.FinallyBlockSyntax node)
-    {
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node); //Probably should actually be using the existing method body visitor in order to get variable name generation correct
-        var stmts = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
-        return SyntaxFactory.FinallyClause(SyntaxFactory.Block(stmts));
-    }
-
     public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
     {
         var csharpArg = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
@@ -1273,7 +1233,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         IReadOnlyCollection<StatementSyntax> convertedStatements;
         if (node.Body is VBasic.Syntax.StatementSyntax statement) {
-            convertedStatements = await statement.Accept(await CreateMethodBodyVisitorAsync(node));
+            convertedStatements = await ConvertMethodBodyStatementsAsync(statement, statement.Yield().ToArray());
         } else {
             var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
             convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode)};
@@ -1284,10 +1244,57 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
     {
-        var methodBodyVisitor = await CreateMethodBodyVisitorAsync(node);
-        var body = await node.Statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor));
+        var body = await ConvertMethodBodyStatementsAsync(node, node.Statements);
         var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
         return await _lambdaConverter.ConvertAsync(node, param, body.ToList());
+    }
+
+    public async Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VBasic.VisualBasicSyntaxNode node, IReadOnlyCollection<VBSyntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
+    {
+
+        var innerMethodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
+
+        return await GetWithConvertedGotosOrNull(statements) ?? await ConvertStatements(statements);
+
+        async Task<List<StatementSyntax>> ConvertStatements(IEnumerable<VBSyntax.StatementSyntax> readOnlyCollection)
+        {
+            return (await readOnlyCollection.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(innerMethodBodyVisitor.CommentConvertingVisitor))).ToList();
+        }
+
+        async Task<IReadOnlyCollection<StatementSyntax>> GetWithConvertedGotosOrNull(IReadOnlyCollection<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> statements)
+        {
+            var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
+            var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
+
+            // See https://learn.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/on-error-statement
+            if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
+                var statementsList = statements.ToList();
+                var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
+                var onlyOnErrorGotoStatementIndex = statementsList.IndexOf(onlyOnErrorGotoStatement);
+
+                // Even this very simple case can generate compile errors if the error handling uses statements declared in the scope of the try block
+                // For now, the user will have to fix these manually, in future it'd be possible to hoist any used declarations out of the try block
+                if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
+                    var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
+                    var tryBlockStatements = await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1));
+                    var tryBlock = SyntaxFactory.Block(tryBlockStatements);
+                    var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
+                    
+                    var catchClauseSyntax = SyntaxFactory.CatchClause();
+
+                    // Default to putting the statements after the catch block in case logic falls through, but if the last statement is a return, put them inside the catch block for neatness.
+                    if (tryBlockStatements.LastOrDefault().IsKind(SyntaxKind.ReturnStatement)) {
+                        catchClauseSyntax = catchClauseSyntax.WithBlock(SyntaxFactory.Block(afterStatements));
+                        afterStatements = new List<StatementSyntax>();
+                    }
+
+                    var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
+                    return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
+                }
+            }
+
+            return null;
+        }
     }
 
     public override async Task<CSharpSyntaxNode> VisitParameterList(VBSyntax.ParameterListSyntax node)
@@ -1575,12 +1582,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         var args = await node.Arguments.SelectAsync(async a => await a.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
         return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(args));
-    }
-
-    public async Task<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> CreateMethodBodyVisitorAsync(VBasic.VisualBasicSyntaxNode node, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
-    {
-        var methodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
-        return methodBodyVisitor.CommentConvertingVisitor;
     }
 
     private async Task<CSharpSyntaxNode> ConvertCastExpressionAsync(VBSyntax.CastExpressionSyntax node,
