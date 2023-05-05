@@ -10,9 +10,8 @@
     <AssemblyName>ICSharpCode.CodeConverter.CodeConv</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.CodeConv</RootNamespace>
     <ToolCommandName>codeconv</ToolCommandName>
-    <Description>Bidirectional code converter for VB and C#
-This package contains a command line tool.
-For a nugetted dll, web converter or visual studio extension, see https://github.com/icsharpcode/CodeConverter</Description>
+    <Description>Bidirectional code converter for VB and C#</Description>
+	<PackageReadmeFile>PackageReadme.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/icsharpcode/CodeConverter/</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>CodeConvNuGetPackageIcon.png</PackageIcon>
@@ -21,7 +20,11 @@ For a nugetted dll, web converter or visual studio extension, see https://github
     <Nullable>enable</Nullable>
     <EmbedUntrackedSources>$(ContinuousIntegrationBuild)</EmbedUntrackedSources>
   </PropertyGroup>
-
+  
+  <ItemGroup>
+    <None Include="docs\PackageReadme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
   <ItemGroup>
     <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
     <None Include="$(SolutionDir)CommandLine\CodeConv.NetFramework\bin\$(Configuration)\**" LinkBase="..\NetFramework" PackagePath="tools\NetFramework" Pack="true" />

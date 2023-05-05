@@ -3,14 +3,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>ICSharpCode.CodeConverter</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter</RootNamespace>
-    <Description>
-      Convert VB.NET to/from C#
-      * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
-      * Actively developed: User feedback helps us continuously strive for a more accurate conversion.
-      * Completely free and open source
-      This nuget package is useful if you're building a tool which converts code, or if you want finer-grained control over what's converted.
-      See https://github.com/icsharpcode/CodeConverter for a pre-built command line, visual studio extension and web converter.
-    </Description>
+    <Description> Convert VB.NET to/from C#</Description>
+	<PackageReadmeFile>PackageReadme.md</PackageReadmeFile>
     <Product>Code Converter for C# to/from VB.NET</Product>
     <PackageId>ICSharpCode.CodeConverter</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -24,12 +18,22 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AnalysisMode>Recommended</AnalysisMode>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+	
+  <ItemGroup>
+    <None Include="docs\PackageReadme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+	
   <ItemGroup>
     <Compile Remove="Common\DefaultReferences.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Common\DefaultReferences.cs" />
   </ItemGroup>
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="3.11.0" />
@@ -54,6 +58,7 @@
     </PackageReference>
     <PackageReference Include="IsExternalInit" Version="1.0.2" PrivateAssets="all" />
   </ItemGroup>
+  
   <!-- The InternalVisibleTo fails when building with signing -->
   <ItemGroup Condition="'$(SignAssembly)'=='True'">
     <Compile Remove="Properties\AssemblyInfo.cs" />

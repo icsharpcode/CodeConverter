@@ -11,7 +11,7 @@
     <FileVersion>9.2.2.0</FileVersion>
     <Version>9.2.2</Version>
     <Authors>ICSharpCode</Authors>
-    <Copyright>Copyright (c) 2017-2021 AlphaSierraPapa for the CodeConverter team</Copyright>
+    <Copyright>Copyright (c) 2017-2023 AlphaSierraPapa for the CodeConverter team</Copyright>
     <Company>ICSharpCode</Company>
   </PropertyGroup>
 </Project>
