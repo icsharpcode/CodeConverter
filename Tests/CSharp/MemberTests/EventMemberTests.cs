@@ -651,6 +651,91 @@ public partial class MainWindow
     }
 
     [Fact]
+    public async Task Issue991_EventAssignmentRuntimeNullRefAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Module Program
+    Public Sub Main(args As String())
+        Dim c As New SomeClass(New SomeDependency())
+        Console.WriteLine(""Done"")
+    End Sub
+End Module
+
+Public Class SomeDependency
+    Public Event SomeEvent As EventHandler
+End Class
+
+Public Class SomeClass
+    Private WithEvents _dep As SomeDependency
+
+    Public Sub New(dep)
+        _dep = dep
+    End Sub
+
+    Private Sub _dep_SomeEvent(sender As Object, e As EventArgs) Handles _dep.SomeEvent
+        ' Do Something
+    End Sub
+End Class
+", @"using System;
+using System.Runtime.CompilerServices;
+
+public static partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var c = new SomeClass(new SomeDependency());
+        Console.WriteLine(""Done"");
+    }
+}
+
+public partial class SomeDependency
+{
+    public event EventHandler SomeEvent;
+}
+
+public partial class SomeClass
+{
+    private SomeDependency __dep;
+
+    private SomeDependency _dep
+    {
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        get
+        {
+            return __dep;
+        }
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        set
+        {
+            if (__dep != null)
+            {
+                __dep.SomeEvent -= _dep_SomeEvent;
+            }
+
+            __dep = value;
+            if (__dep != null)
+            {
+                __dep.SomeEvent += _dep_SomeEvent;
+            }
+        }
+    }
+
+    public SomeClass(object dep)
+    {
+        _dep = (SomeDependency)dep;
+    }
+
+    private void _dep_SomeEvent(object sender, EventArgs e)
+    {
+        // Do Something
+    }
+}
+");
+    }
+
+    [Fact]
     public async Task Test_Issue701_MultiLineHandlesSyntaxAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class Form1
