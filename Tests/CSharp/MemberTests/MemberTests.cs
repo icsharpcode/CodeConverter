@@ -1368,6 +1368,19 @@ public partial class A
     }
 
     [Fact]
+    public async Task FieldWithInstanceOperationOfDifferingTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class DoesNotNeedConstructor
+    Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = 5}
+End Class", @"using System.Threading.Tasks;
+
+public partial class DoesNotNeedConstructor
+{
+    private readonly ParallelOptions ClassVariable1 = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
+}");
+    }
+
+    [Fact]
     public async Task Issue281FieldWithNonStaticLambdaInitializerAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System.IO

@@ -356,6 +356,7 @@ internal partial class DisplayAttribute : Attribute
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Public Class ConversionTest8
+    Private x As Integer = 5
 
     Public Sub New()
 
@@ -373,17 +374,18 @@ internal partial class DisplayAttribute : Attribute
 #End Region
 #Region ""Region2""
     'Class Comment 3
-    Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = 5}
+    Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = x}
 #End Region
 End Class
 ", @"using System.Threading.Tasks;
 
 public partial class ConversionTest8
 {
+    private int x = 5;
 
     public ConversionTest8()
     {
-        ClassVariable1 = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
+        ClassVariable1 = new ParallelOptions() { MaxDegreeOfParallelism = x };
 
         // Constructor Comment 1
         bool constructorVar1 = true;

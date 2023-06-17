@@ -51,6 +51,7 @@ internal static class SemanticModelExtensions
     /// </summary>
     private static bool IsDefinitelyStatic(this SemanticModel semanticModel, VBSyntax.ExpressionSyntax e)
     {
-        return semanticModel.GetOperation(e).DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() == false;
+        var instanceReferenceOperations = semanticModel.GetOperation(e).DescendantsAndSelf().OfType<IInstanceReferenceOperation>().ToArray();
+        return !instanceReferenceOperations.Any(x => x.ReferenceKind == InstanceReferenceKind.ContainingTypeInstance);
     }
 }
