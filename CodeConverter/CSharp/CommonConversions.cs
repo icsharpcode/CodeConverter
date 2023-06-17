@@ -663,21 +663,24 @@ internal class CommonConversions
         return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
     }
 
-    public static ExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
+    public static ExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType, bool inExpressionLambda = false)
     {
-        if (isReferenceType) {
-            return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.UnaryPattern(SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression)));
+        var comparand = isReferenceType ? ValidSyntaxFactory.NullExpression : ValidSyntaxFactory.DefaultExpression;
+        if (isReferenceType && !inExpressionLambda) {
+            return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.UnaryPattern(SyntaxFactory.ConstantPattern(comparand)));
         }
-        return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
+        return SyntaxFactory.BinaryExpression(CSSyntaxKind.NotEqualsExpression, otherArgument, comparand);
     }
 
-    public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType)
+    public static ExpressionSyntax NothingComparison(ExpressionSyntax otherArgument, bool isReferenceType, bool inExpressionLambda = false)
     {
-        if (isReferenceType) {
-            return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.ConstantPattern(ValidSyntaxFactory.NullExpression));
+        var comparand = isReferenceType ? ValidSyntaxFactory.NullExpression : ValidSyntaxFactory.DefaultExpression;
+        
+        if (isReferenceType && !inExpressionLambda) {
+            return SyntaxFactory.IsPatternExpression(otherArgument, SyntaxFactory.ConstantPattern(comparand));
         }
 
-        return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, ValidSyntaxFactory.DefaultExpression);
+        return SyntaxFactory.BinaryExpression(CSSyntaxKind.EqualsExpression, otherArgument, comparand);
     }
 
     public CSSyntax.NameSyntax GetFullyQualifiedNameSyntax(INamespaceOrTypeSymbol symbol,

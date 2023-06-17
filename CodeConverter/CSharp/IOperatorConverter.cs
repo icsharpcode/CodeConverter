@@ -5,6 +5,6 @@ namespace ICSharpCode.CodeConverter.CSharp;
 
 public interface IOperatorConverter
 {
-    Task<ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax exprNode, bool negateExpression = false);
-    Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(BinaryExpressionSyntax node, bool inExpressionLambda = false);
+    Task<ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool inExpressionLambda, bool negateExpression = false);
+    Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(BinaryExpressionSyntax node, bool inExpressionLambda);
 }

@@ -820,4 +820,45 @@ public partial class VisualBasicClass
     }
 }");
     }
+
+
+    [Fact]
+    public async Task AnExpressionTreeMayNotContainIsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionTest6
+    Private Class MyEntity
+        Property Name As String
+        Property FavoriteString As String
+    End Class
+    Public Sub BugRepro()
+
+        Dim entities = New List(Of MyEntity) ' If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
+
+        Dim data = (From e In entities
+                    Where e.Name Is Nothing OrElse e.FavoriteString IsNot Nothing
+                    Select e).ToList
+    End Sub
+End Class
+",
+            @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class ConversionTest6
+{
+    private partial class MyEntity
+    {
+        public string Name { get; set; }
+        public string FavoriteString { get; set; }
+    }
+    public void BugRepro()
+    {
+
+        var entities = new List<MyEntity>(); // If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
+
+        var data = (from e in entities
+                    where e.Name == null || e.FavoriteString != null
+                    select e).ToList();
+    }
+}");
+    }
 }

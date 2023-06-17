@@ -32,7 +32,7 @@ internal static class VbOperatorConversion
             _typeConversionAnalyzer = typeConversionAnalyzer;
         }
 
-        public async Task<ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool negateExpression = false)
+        public async Task<ExpressionSyntax> ConvertReferenceOrNothingComparisonOrNullAsync(VBSyntax.ExpressionSyntax exprNode, bool inExpressionLambda, bool negateExpression = false)
         {
             if (!(exprNode is VBSyntax.BinaryExpressionSyntax node) ||
                 !node.IsKind(VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.IsNotExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
@@ -47,8 +47,8 @@ internal static class VbOperatorConversion
             if (ArgComparedToNull(node) is {} vbOtherArg) {
                 var csOtherArg = await ConvertIsOrIsNotExpressionArgAsync(vbOtherArg);
                 return notted
-                    ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison)
-                    : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison);
+                    ? CommonConversions.NotNothingComparison(csOtherArg, isReferenceComparison, inExpressionLambda)
+                    : CommonConversions.NothingComparison(csOtherArg, isReferenceComparison, inExpressionLambda);
             }
 
             if (isReferenceComparison) {
@@ -184,7 +184,7 @@ internal static class VbOperatorConversion
         /// https://github.com/dotnet/roslyn/blob/master/src/Compilers/VisualBasic/Portable/Lowering/LocalConvertTor/LocalConvertTor_BinaryOperators.vb#L233-L464
         /// See file history to understand any changes
         /// </summary>
-        public async Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node, bool inExpressionLambda = false)
+        public async Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node, bool inExpressionLambda)
         {
             var opKind = node.Kind();
             var nodeType = _semanticModel.GetTypeInfo(node).Type;
@@ -192,7 +192,7 @@ internal static class VbOperatorConversion
             switch (opKind) {
                 case BinaryOperatorKind.IsExpression:
                 case BinaryOperatorKind.IsNotExpression: {
-                    if (await ConvertReferenceOrNothingComparisonOrNullAsync(node) is { } nothingComparison) return nothingComparison;
+                    if (await ConvertReferenceOrNothingComparisonOrNullAsync(node,  inExpressionLambda) is { } nothingComparison) return nothingComparison;
                             
                     break;
                 }
@@ -218,7 +218,6 @@ internal static class VbOperatorConversion
                     // NOTE: For some reason Dev11 seems to still ignore inside the expression tree the fact that the target 
                     // type of the binary operator is Boolean and used Object op Object => Object helpers even in this case 
                     // despite what is said in comments in RuntimeMembers CodeGenerator::GetHelperForObjRelOp
-                    // TODO: Recheck
 
                     if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
                         return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectEqual"));
