@@ -32,11 +32,11 @@ internal class HandledEventsAnalysis
     public bool AnySynchronizedPropertiesGenerated() => _handlingMethodsByPropertyName.Any(p => !p.Value.PropertyDetails.IsNeverWrittenOrOverridden);
     public bool ShouldGeneratePropertyFor(string propertyIdentifierText) => _handlingMethodsByPropertyName.TryGetValue(propertyIdentifierText, out var handled) && !handled.PropertyDetails.IsNeverWrittenOrOverridden;
 
-    public (IEnumerable<Assignment> Static, IEnumerable<Assignment> Instance) GetConstructorEventHandlers()
+    public (IEnumerable<Assignment> Static, IEnumerable<Assignment> Instance) GetConstructorEventHandlersWhereNoInitializeComponent()
     {
         IEnumerable<Assignment> SelectAssignment(IEnumerable<(EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)> handlers)
         {
-            return handlers.SelectMany(e => e.HandledMethods, (e, m) => {
+            return handlers.Where(x=> x.EventContainer.Kind != EventContainerKind.Property || x.PropertyDetails.IsNeverWrittenOrOverridden).SelectMany(e => e.HandledMethods, (e, m) => {
                 var methodId = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(m.HandlingMethod.Name));
                 return new Assignment(MemberAccess(EventContainerExpression(e.EventContainer), m.Event), SyntaxKind.AddAssignmentExpression, Invokable(methodId, m.ParametersToDiscard));
             });
@@ -55,7 +55,7 @@ internal class HandledEventsAnalysis
 
     }
 
-    /// <summary>Use instead of <see cref="GetConstructorEventHandlers"/> for DesignerGenerated classes: https://github.com/icsharpcode/CodeConverter/issues/550</summary>
+    /// <summary>Use instead of <see cref="GetConstructorEventHandlersWhereNoInitializeComponent"/> for DesignerGenerated classes: https://github.com/icsharpcode/CodeConverter/issues/550</summary>
     public IEnumerable<StatementSyntax> GetInitializeComponentClassEventHandlers()
     {
         return _handlingMethodsForInstance

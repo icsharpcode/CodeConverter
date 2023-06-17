@@ -628,11 +628,6 @@ using System.Runtime.CompilerServices;
 
 public partial class Form1
 {
-    public Form1()
-    {
-        Button1.Click += MultiClickHandler;
-        Button2.Click += MultiClickHandler;
-    }
     private void MultiClickHandler(object sender, EventArgs e)
     {
     }

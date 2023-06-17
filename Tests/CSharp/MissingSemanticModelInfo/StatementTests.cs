@@ -60,17 +60,11 @@ CS0103: The name 'unknownIntIdentifer' does not exist in the current context", m
 End Class", @"
 public partial class ClassWithEvents
 {
-    public ClassWithEvents()
-    {
-        UndefinedBtn.Click += X;
-    }
     public void X()
     {
     }
 }
 1 source compilation errors:
-BC30506: Handles clause requires a WithEvents variable defined in the containing type or one of its base types.
-1 target compilation errors:
-CS0103: The name 'UndefinedBtn' does not exist in the current context", missingSemanticInfo: true);
+BC30506: Handles clause requires a WithEvents variable defined in the containing type or one of its base types.", missingSemanticInfo: true);
     }
 }

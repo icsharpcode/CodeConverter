@@ -2,7 +2,7 @@
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
-namespace ICSharpCode.CodeConverter.Tests.VB;
+namespace ICSharpCode.CodeConverter.Tests.CSharp;
 
 public class CaseSensitivityTests : ConverterTestBase
 {
@@ -25,10 +25,6 @@ using System.Runtime.CompilerServices;
 
 public partial class VBIsCaseInsensitive : System.Web.UI.Page
 {
-    public VBIsCaseInsensitive()
-    {
-        btnOk.Click += btnOK_Click;
-    }
 
     private void btnOK_Click(object sender, EventArgs e)
     {

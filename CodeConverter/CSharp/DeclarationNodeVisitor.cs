@@ -247,7 +247,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 if (additionalInitializers.IsBestPartToAddTypeInit) convertedMembers = convertedMembers.Concat(methodsWithHandles.CreateDelegatingMethodsRequiredByInitializeComponent());
                 additionalInitializers.AdditionalInstanceInitializers.AddRange(CommonConversions.WinformsConversions.GetConstructorReassignments(otherPartsOfType));
             } else {
-                var (staticHandlers, instanceHandlers) = methodsWithHandles.GetConstructorEventHandlers();
+                var (staticHandlers, instanceHandlers) = methodsWithHandles.GetConstructorEventHandlersWhereNoInitializeComponent();
                 additionalInitializers.AdditionalStaticInitializers.AddRange(staticHandlers);
                 additionalInitializers.AdditionalInstanceInitializers.AddRange(instanceHandlers);
             }
