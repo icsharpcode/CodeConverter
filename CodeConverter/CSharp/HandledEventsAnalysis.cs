@@ -38,7 +38,7 @@ internal class HandledEventsAnalysis
         {
             return handlers.Where(x=> x.EventContainer.Kind != EventContainerKind.Property || x.PropertyDetails.IsNeverWrittenOrOverridden).SelectMany(e => e.HandledMethods, (e, m) => {
                 var methodId = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(m.HandlingMethod.Name));
-                return new Assignment(MemberAccess(EventContainerExpression(e.EventContainer), m.Event), SyntaxKind.AddAssignmentExpression, Invokable(methodId, m.ParametersToDiscard));
+                return new Assignment(MemberAccess(EventContainerExpression(e.EventContainer), m.Event), SyntaxKind.AddAssignmentExpression, Invokable(methodId, m.ParametersToDiscard), true);
             });
         }
 

@@ -604,6 +604,53 @@ public partial class Issue584RaiseEventByRefDemo
     }
 
     [Fact]
+    public async Task Issue967_HandlerAssignmentShouldComeLastInConstructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Windows
+Imports System.Windows.Forms
+
+Public Partial Class MainWindow
+    Inherits Form
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+
+    Private Sub MainWindow_Loaded() Handles MyBase.Load
+        Interaction.MsgBox(""Window, loaded"")
+    End Sub
+End Class
+
+Public Partial Class MainWindow
+    Public Sub InitializeComponent()
+    End Sub
+End Class
+", @"using System.Windows.Forms;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+public partial class MainWindow : Form
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+        Load += (_, __) => MainWindow_Loaded();
+    }
+
+    private void MainWindow_Loaded()
+    {
+        Interaction.MsgBox(""Window, loaded"");
+    }
+}
+
+public partial class MainWindow
+{
+    public void InitializeComponent()
+    {
+    }
+}
+");
+    }
+
+    [Fact]
     public async Task Test_Issue701_MultiLineHandlesSyntaxAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class Form1
