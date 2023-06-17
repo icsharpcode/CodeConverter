@@ -606,8 +606,7 @@ public partial class Issue584RaiseEventByRefDemo
     [Fact]
     public async Task Issue967_HandlerAssignmentShouldComeLastInConstructorAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Windows
-Imports System.Windows.Forms
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Windows.Forms
 
 Public Partial Class MainWindow
     Inherits Form
