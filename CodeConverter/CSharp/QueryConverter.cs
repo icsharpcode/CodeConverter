@@ -24,6 +24,17 @@ internal class QueryConverter
 
     public async Task<CSharpSyntaxNode> ConvertClausesAsync(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
     {
+        try {
+            _triviaConvertingVisitor.IsWithinQuery = true;
+            var convertClausesInnerAsync = await ConvertClausesInnerAsync(clauses);
+            return convertClausesInnerAsync;
+        } finally {
+            _triviaConvertingVisitor.IsWithinQuery = false;
+        }
+    }
+
+    public async Task<CSharpSyntaxNode> ConvertClausesInnerAsync(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
+    {
         var vbBodyClauses = new Queue<VBSyntax.QueryClauseSyntax>(clauses);
         var vbStartClause = vbBodyClauses.Peek();
         CSSyntax.FromClauseSyntax fromClauseSyntaxFromAggregate = null;

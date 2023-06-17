@@ -19,6 +19,8 @@ internal class CommentConvertingVisitorWrapper
         _syntaxTree = syntaxTree;
     }
 
+    public bool IsWithinQuery { get; set; }
+
     [DebuggerStepThrough]
     public async Task<T> AcceptAsync<T>(VisualBasicSyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CSharpSyntaxNode =>
         await ConvertHandledAsync<T>(vbNode, sourceTriviaMap);
