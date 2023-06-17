@@ -352,6 +352,60 @@ internal partial class DisplayAttribute : Attribute
     }
 
     [Fact]
+    public async Task Issue1017_TestRegionsMovingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class ConversionTest8
+
+    Public Sub New()
+
+        'Constructor Comment 1
+        Dim constructorVar1 As Boolean = True
+
+        'Constructor Comment 2
+        Dim constructorVar2 As Boolean = True
+
+    End Sub
+
+#Region ""Region1""
+    Private Sub Method1()
+    End Sub
+#End Region
+#Region ""Region2""
+    'Class Comment 3
+    Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = 5}
+#End Region
+End Class
+", @"using System.Threading.Tasks;
+
+public partial class ConversionTest8
+{
+
+    public ConversionTest8()
+    {
+        ClassVariable1 = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
+
+        // Constructor Comment 1
+        bool constructorVar1 = true;
+
+        // Constructor Comment 2
+        bool constructorVar2 = true;
+
+    }
+
+    #region Region1
+    private void Method1()
+    {
+    }
+    #endregion
+    #region Region2
+    // Class Comment 3
+    private readonly ParallelOptions ClassVariable1;
+    #endregion
+}");
+    }
+
+    [Fact]
     public async Task TestCarryingOverErrorTriviaAddedByConverterAsync()
     {
         var vbCode = @"Public Class VisualBasicClass
