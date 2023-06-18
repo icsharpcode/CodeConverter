@@ -1,6 +1,4 @@
-﻿using System.Xml.Linq;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.CodeAnalysis;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -35,14 +33,14 @@ internal class VisualBasicNullableExpressionsConverter
 
     public VisualBasicNullableExpressionsConverter(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
-    public ExpressionSyntax InvokeConversionWhenNotNull(ExpressionSyntax expression, MemberAccessExpressionSyntax conversionMethod, TypeSyntax castType)
+    public ExpressionSyntax InvokeConversionWhenNotNull(VBSyntax.ExpressionSyntax vbExpr, ExpressionSyntax csExpr, MemberAccessExpressionSyntax conversionMethod, TypeSyntax castType)
     {
-        var pattern = PatternObject(expression, out var argName);
-        var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(argName)));
+        var hasValueCheck = HasValue(vbExpr, ref csExpr);
+        var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csExpr)));
         ExpressionSyntax invocation = SyntaxFactory.InvocationExpression(conversionMethod, arguments);
         invocation = ValidSyntaxFactory.CastExpression(castType, invocation);
 
-        return pattern.Conditional(invocation, ValidSyntaxFactory.NullExpression).AddParens();
+        return hasValueCheck.Conditional(invocation, ValidSyntaxFactory.NullExpression).AddParens();
     }
 
     public ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
@@ -78,12 +76,22 @@ internal class VisualBasicNullableExpressionsConverter
         return ForRelationalOperators(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
     }
 
-    private bool IsNullable(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo lhsTypeInfo)
+    private bool IsNullable(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
     {
-        return lhsTypeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
+        return typeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
     }
 
     private string GetArgName() => $"arg{Interlocked.Increment(ref _argCounter)}";
+
+    private ExpressionSyntax? PatternVar(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, out ExpressionSyntax lhsName)
+    {
+        if (IsSafelyReusable(vbLeft)) {
+            lhsName = csLeft;
+            return null;
+        } else {
+            return PatternVar(csLeft, out lhsName);
+        }
+    }
 
     private ExpressionSyntax PatternVar(ExpressionSyntax expr, out ExpressionSyntax name)
     {
@@ -135,8 +143,7 @@ internal class VisualBasicNullableExpressionsConverter
         ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
-        var lhsPattern = PatternVar(lhs, out var lhsName);
-        var rhsPattern = PatternObject(rhs, out var rhsName);
+        var lhsPattern = PatternVar(vbNode.Left, lhs, out var lhsName);
 
         if (vbNode.AlwaysHasBooleanTypeInCSharp()) {
             if (!isLhsNullable) {
@@ -145,7 +152,7 @@ internal class VisualBasicNullableExpressionsConverter
             if (!isRhsNullable) {
                 return lhsPattern.AndHasNoValue(lhsName).OrIsTrue(lhsName).And(rhs).AndHasValue(lhsName);
             }
-            return FullAndExpression().EqualsTrue();
+            return FullAndExpression(vbNode.Right, rhs).EqualsTrue();
         }
 
         if (!isLhsNullable) {
@@ -154,11 +161,14 @@ internal class VisualBasicNullableExpressionsConverter
         if (!isRhsNullable) {
             return lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName).Conditional(False, rhs.Conditional(lhsName, False));
         }
-        return FullAndExpression();
+        return FullAndExpression(vbNode.Right, rhs);
 
-        ExpressionSyntax FullAndExpression() =>
-            lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName)
+        ExpressionSyntax FullAndExpression(VBSyntax.ExpressionSyntax vbExpr, ExpressionSyntax rhsName)
+        {
+            var rhsPattern = HasValue(vbExpr, ref rhsName);
+            return lhsPattern.AndHasValue(lhsName).AndIsFalse(lhsName)
                 .Conditional(False, rhsPattern.Negate().Conditional(Null, rhsName.Conditional(lhsName, False)));
+        }
     }
 
     private ExpressionSyntax ForOrElseOperator(VBSyntax.BinaryExpressionSyntax vbNode,
@@ -177,7 +187,8 @@ internal class VisualBasicNullableExpressionsConverter
             return lhs.Conditional(True, rhs);
         }
 
-        var lhsPattern = PatternVar(lhs, out var lhsName);
+        var lhsPattern = PatternVar(vbNode.Left, lhs, out var lhsName);
+
         var rhsPattern = NegatedPatternObject(rhs, out var rhsName);
 
         var whenFalse = !isRhsNullable ?
@@ -191,9 +202,6 @@ internal class VisualBasicNullableExpressionsConverter
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
-        ExpressionSyntax GetCondition(ref ExpressionSyntax csName, bool reusable) =>
-            reusable ? csName.NullableHasValueExpression() : PatternObject(csName, out csName);
-
         ExpressionSyntax? lhsName = lhs, rhsName = rhs;
         var lhsReusable = IsSafelyReusable(vbNode.Left);
         var rhsReusable = IsSafelyReusable(vbNode.Right);
@@ -205,11 +213,11 @@ internal class VisualBasicNullableExpressionsConverter
         }
 
         if (isLhsNullable || !lhsReusable) {
-            var lhsCondition = GetCondition(ref lhsName, lhsReusable);
+            var lhsCondition = HasValue(lhsReusable, ref lhsName);
             conditions.Add((lhsReusable, lhsCondition));
         }
         if (isRhsNullable || !rhsReusable) {
-            var rhsCondition = GetCondition(ref rhsName, rhsReusable);
+            var rhsCondition = HasValue(rhsReusable, ref rhsName);
             conditions.Add((rhsReusable, rhsCondition));
         }
 
@@ -227,6 +235,18 @@ internal class VisualBasicNullableExpressionsConverter
         return notNullCondition is null ? bin : notNullCondition.Conditional(bin, Null);
     }
 
+    private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode), ref csName);
+    private ExpressionSyntax HasValue(bool reusable, ref ExpressionSyntax csName)
+    {
+        if (reusable) {
+            var nullableHasValueExpression = csName.NullableHasValueExpression();
+            csName = csName.NullableGetValueExpression();
+            return nullableHasValueExpression;
+        } else {
+            return PatternObject(csName, out csName);
+        }
+    }
+
     private bool IsSafelyReusable(VBasic.Syntax.ExpressionSyntax e)
     {
         e = e.SkipIntoParens();
@@ -241,7 +261,7 @@ internal class VisualBasicNullableExpressionsConverter
         if (original.SkipIntoParens() is not VBSyntax.IdentifierNameSyntax {Identifier.Text: { } nameText}) return null;
         for (VBSyntax.ExpressionSyntax? currentNode = original.Parent?.Parent as VBSyntax.ExpressionSyntax, childNode = original.Parent as VBSyntax.ExpressionSyntax;
              currentNode is VBSyntax.BinaryExpressionSyntax {Left: var l, OperatorToken: var op, Right: var r};
-             currentNode = currentNode?.Parent as VBSyntax.ExpressionSyntax) {
+             currentNode = currentNode.Parent as VBSyntax.ExpressionSyntax) {
 
             if (r == childNode) {
                 if (op.IsKind(VBasic.SyntaxKind.AndAlsoKeyword)) {
@@ -310,10 +330,10 @@ internal static class NullableTypesLogicExtensions
     public static ExpressionSyntax GetValueOrDefault(this ExpressionSyntax node) => SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("GetValueOrDefault")));
     public static ExpressionSyntax Negate(this ExpressionSyntax node) => SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, node.AddParens());
 
-    public static ExpressionSyntax And(this ExpressionSyntax a, ExpressionSyntax b) => SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, a.AddParens(), b.AddParens()).AddParens();
-    public static ExpressionSyntax AndHasValue(this ExpressionSyntax a, ExpressionSyntax b) => And(a, b.NullableHasValueExpression());
-    public static ExpressionSyntax AndHasNoValue(this ExpressionSyntax a, ExpressionSyntax b) => And(a, b.NullableHasValueExpression().Negate());
-    public static ExpressionSyntax AndIsFalse(this ExpressionSyntax a, ExpressionSyntax b) => And(a, b.NullableGetValueExpression().Negate());
+    public static ExpressionSyntax And(this ExpressionSyntax? a, ExpressionSyntax b) => a is null ? b : SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, a.AddParens(), b.AddParens()).AddParens();
+    public static ExpressionSyntax AndHasValue(this ExpressionSyntax? a, ExpressionSyntax b) => And(a, b.NullableHasValueExpression());
+    public static ExpressionSyntax AndHasNoValue(this ExpressionSyntax? a, ExpressionSyntax b) => And(a, b.NullableHasValueExpression().Negate());
+    public static ExpressionSyntax AndIsFalse(this ExpressionSyntax? a, ExpressionSyntax b) => And(a, b.NullableGetValueExpression().Negate());
 
     public static ExpressionSyntax Or(this ExpressionSyntax a, ExpressionSyntax b) => SyntaxFactory.BinaryExpression(SyntaxKind.LogicalOrExpression, a.AddParens(), b.AddParens()).AddParens();
     public static ExpressionSyntax OrIsTrue(this ExpressionSyntax a, ExpressionSyntax b) => Or(a, b.NullableGetValueExpression());

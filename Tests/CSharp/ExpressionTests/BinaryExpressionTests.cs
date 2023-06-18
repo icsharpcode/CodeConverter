@@ -254,11 +254,11 @@ internal partial class TestClass
 
         if ((a & b) == true)
             return;
-        if ((a is var arg1 && arg1.HasValue && !arg1.Value ? false : !(b is { } arg2) ? null : arg2 ? arg1 : false) == true)
+        if ((a.HasValue && !a.Value ? false : !b.HasValue ? null : b.Value ? a : false) == true)
             return;
         if ((a & x) == true)
             return;
-        if ((a is var arg3 && !arg3.HasValue || arg3.Value) && x && arg3.HasValue)
+        if ((!a.HasValue || a.Value) && x && a.HasValue)
             return;
         if ((x & a) == true)
             return;
@@ -266,9 +266,9 @@ internal partial class TestClass
             return;
 
         var res = a & b;
-        res = a is var arg7 && arg7.HasValue && !arg7.Value ? false : !(b is { } arg8) ? null : arg8 ? arg7 : false;
+        res = a.HasValue && !a.Value ? false : !b.HasValue ? null : b.Value ? a : false;
         res = a & x;
-        res = a is var arg9 && arg9.HasValue && !arg9.Value ? false : x ? arg9 : false;
+        res = a.HasValue && !a.Value ? false : x ? a : false;
         res = x & a;
         res = x ? a : false;
 
@@ -323,9 +323,9 @@ internal partial class TestClass
             return;
 
         var res = a | b;
-        res = a is var arg1 && arg1.GetValueOrDefault() ? true : b is not { } arg2 ? null : arg2 ? true : arg1;
+        res = a.GetValueOrDefault() ? true : b is not { } arg1 ? null : arg1 ? true : a;
         res = a | x;
-        res = a is var arg3 && arg3.GetValueOrDefault() ? true : x ? true : arg3;
+        res = a.GetValueOrDefault() ? true : x ? true : a;
         res = x | a;
         res = x ? true : a;
 
@@ -372,26 +372,26 @@ internal partial class TestClass
         int? y = default;
         int a = 0;
 
-        var res = x.HasValue && y.HasValue ? x == y : (bool?)null;
-        res = x.HasValue && y.HasValue ? x != y : null;
-        res = x.HasValue && y.HasValue ? x > y : null;
-        res = x.HasValue && y.HasValue ? x >= y : null;
-        res = x.HasValue && y.HasValue ? x < y : null;
-        res = x.HasValue && y.HasValue ? x <= y : null;
+        var res = x.HasValue && y.HasValue ? x.Value == y.Value : (bool?)null;
+        res = x.HasValue && y.HasValue ? x.Value != y.Value : null;
+        res = x.HasValue && y.HasValue ? x.Value > y.Value : null;
+        res = x.HasValue && y.HasValue ? x.Value >= y.Value : null;
+        res = x.HasValue && y.HasValue ? x.Value < y.Value : null;
+        res = x.HasValue && y.HasValue ? x.Value <= y.Value : null;
 
-        res = y.HasValue ? a == y : null;
-        res = y.HasValue ? a != y : null;
-        res = y.HasValue ? a > y : null;
-        res = y.HasValue ? a >= y : null;
-        res = y.HasValue ? a < y : null;
-        res = y.HasValue ? a <= y : null;
+        res = y.HasValue ? a == y.Value : null;
+        res = y.HasValue ? a != y.Value : null;
+        res = y.HasValue ? a > y.Value : null;
+        res = y.HasValue ? a >= y.Value : null;
+        res = y.HasValue ? a < y.Value : null;
+        res = y.HasValue ? a <= y.Value : null;
 
-        res = x.HasValue ? x == a : null;
-        res = x.HasValue ? x != a : null;
-        res = x.HasValue ? x > a : null;
-        res = x.HasValue ? x >= a : null;
-        res = x.HasValue ? x < a : null;
-        res = x.HasValue ? x <= a : null;
+        res = x.HasValue ? x.Value == a : null;
+        res = x.HasValue ? x.Value != a : null;
+        res = x.HasValue ? x.Value > a : null;
+        res = x.HasValue ? x.Value >= a : null;
+        res = x.HasValue ? x.Value < a : null;
+        res = x.HasValue ? x.Value <= a : null;
     }
 }");
         }
@@ -434,7 +434,7 @@ End Function
 ", @"
 private bool TestMethod(int? newDays, int? oldDays)
 {
-    return (bool)(newDays.HasValue && oldDays.HasValue || true ? newDays.HasValue && oldDays.HasValue ? newDays > oldDays : null : (bool?)false);
+    return (bool)(newDays.HasValue && oldDays.HasValue || true ? newDays.HasValue && oldDays.HasValue ? newDays.Value > oldDays.Value : null : (bool?)false);
 }");
         }
 
@@ -448,7 +448,7 @@ End Function
 ", @"
 private bool TestMethod(int? newDays, int? oldDays)
 {
-    return (bool)(newDays.HasValue ? oldDays.HasValue ? newDays < oldDays : null : (bool?)false);
+    return (bool)(newDays.HasValue ? oldDays.HasValue ? newDays < oldDays.Value : null : (bool?)false);
 }");
     }
 
@@ -462,7 +462,7 @@ End Function
 ", @"
 private bool TestMethod(int? newDays, int? oldDays)
 {
-    return (bool)(newDays.HasValue || oldDays.HasValue ? newDays.HasValue && oldDays.HasValue ? newDays != oldDays : null : (bool?)false);
+    return (bool)(newDays.HasValue || oldDays.HasValue ? newDays.HasValue && oldDays.HasValue ? newDays.Value != oldDays.Value : null : (bool?)false);
 }");
         }
 
@@ -493,7 +493,7 @@ public partial class TestForEnums
 {
     public static void WriteStatus(PasswordStatus? status)
     {
-        if (status.HasValue && status == PasswordStatus.Locked)
+        if (status.HasValue && status.Value == PasswordStatus.Locked)
         {
             Console.Write(""Locked"");
         }
@@ -565,43 +565,43 @@ internal partial class TestClass
         int? y = default;
         int a = 0;
 
-        if (x.HasValue && y.HasValue && x == y)
+        if (x.HasValue && y.HasValue && x.Value == y.Value)
             return;
-        if (x.HasValue && y.HasValue && x != y)
+        if (x.HasValue && y.HasValue && x.Value != y.Value)
             return;
-        if (x.HasValue && y.HasValue && x > y)
+        if (x.HasValue && y.HasValue && x.Value > y.Value)
             return;
-        if (x.HasValue && y.HasValue && x >= y)
+        if (x.HasValue && y.HasValue && x.Value >= y.Value)
             return;
-        if (x.HasValue && y.HasValue && x < y)
+        if (x.HasValue && y.HasValue && x.Value < y.Value)
             return;
-        if (x.HasValue && y.HasValue && x <= y)
-            return;
-
-        if (y.HasValue && a == y)
-            return;
-        if (y.HasValue && a != y)
-            return;
-        if (y.HasValue && a > y)
-            return;
-        if (y.HasValue && a >= y)
-            return;
-        if (y.HasValue && a < y)
-            return;
-        if (y.HasValue && a <= y)
+        if (x.HasValue && y.HasValue && x.Value <= y.Value)
             return;
 
-        if (x.HasValue && x == a)
+        if (y.HasValue && a == y.Value)
             return;
-        if (x.HasValue && x != a)
+        if (y.HasValue && a != y.Value)
             return;
-        if (x.HasValue && x > a)
+        if (y.HasValue && a > y.Value)
             return;
-        if (x.HasValue && x >= a)
+        if (y.HasValue && a >= y.Value)
             return;
-        if (x.HasValue && x < a)
+        if (y.HasValue && a < y.Value)
             return;
-        if (x.HasValue && x <= a)
+        if (y.HasValue && a <= y.Value)
+            return;
+
+        if (x.HasValue && x.Value == a)
+            return;
+        if (x.HasValue && x.Value != a)
+            return;
+        if (x.HasValue && x.Value > a)
+            return;
+        if (x.HasValue && x.Value >= a)
+            return;
+        if (x.HasValue && x.Value < a)
+            return;
+        if (x.HasValue && x.Value <= a)
             return;
     }
 }");
@@ -646,8 +646,8 @@ internal partial class TestClass
     private void TestMethod()
     {
         bool? var1 = default;
-        var a = var1.HasValue ? var1 == false : (bool?)null;
-        var b = var1.HasValue ? var1 == true : (bool?)null;
+        var a = var1.HasValue ? var1.Value == false : (bool?)null;
+        var b = var1.HasValue ? var1.Value == true : (bool?)null;
     }
 }");
         }
@@ -668,7 +668,7 @@ internal partial class TestClass712
     {
         bool? var1 = default;
         bool? var2 = default;
-        return (object)(var1 is var arg1 && arg1.GetValueOrDefault() ? true : !var2 is not { } arg2 ? null : arg2 ? true : arg1);
+        return (object)(var1.GetValueOrDefault() ? true : !var2 is not { } arg1 ? null : arg1 ? true : var1);
     }
 }");
     }

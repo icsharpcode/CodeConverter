@@ -462,35 +462,35 @@ internal partial class Class1
 
     private void TestNullable(bool? b, float? f, double? d, decimal? m)
     {
-        int? i = b is { } arg1 ? (int?)Conversions.ToInteger(arg1) : null;
-        i = f is { } arg2 ? (int?)Math.Round(arg2) : null;
-        i = d is { } arg3 ? (int?)Math.Round(arg3) : null;
-        i = m is { } arg4 ? (int?)Math.Round(arg4) : null;
+        int? i = b.HasValue ? Conversions.ToInteger(b.Value) : null;
+        i = f.HasValue ? (int?)Math.Round(f.Value) : null;
+        i = d.HasValue ? (int?)Math.Round(d.Value) : null;
+        i = m.HasValue ? (int?)Math.Round(m.Value) : null;
 
-        uint? ui = b is { } arg5 ? (uint?)Conversions.ToUInteger(arg5) : null;
-        ui = f is { } arg6 ? (uint?)Math.Round(arg6) : null;
-        ui = d is { } arg7 ? (uint?)Math.Round(arg7) : null;
-        ui = m is { } arg8 ? (uint?)Math.Round(arg8) : null;
+        uint? ui = b.HasValue ? Conversions.ToUInteger(b.Value) : null;
+        ui = f.HasValue ? (uint?)Math.Round(f.Value) : null;
+        ui = d.HasValue ? (uint?)Math.Round(d.Value) : null;
+        ui = m.HasValue ? (uint?)Math.Round(m.Value) : null;
 
-        short? s = b is { } arg9 ? (short?)Conversions.ToShort(arg9) : null;
-        s = f is { } arg10 ? (short?)Math.Round(arg10) : null;
-        s = d is { } arg11 ? (short?)Math.Round(arg11) : null;
-        s = m is { } arg12 ? (short?)Math.Round(arg12) : null;
+        short? s = b.HasValue ? Conversions.ToShort(b.Value) : null;
+        s = f.HasValue ? (short?)Math.Round(f.Value) : null;
+        s = d.HasValue ? (short?)Math.Round(d.Value) : null;
+        s = m.HasValue ? (short?)Math.Round(m.Value) : null;
 
-        long? l = b is { } arg13 ? (long?)Conversions.ToLong(arg13) : null;
-        l = f is { } arg14 ? (long?)Math.Round(arg14) : null;
-        l = d is { } arg15 ? (long?)Math.Round(arg15) : null;
-        l = m is { } arg16 ? (long?)Math.Round(arg16) : null;
+        long? l = b.HasValue ? Conversions.ToLong(b.Value) : null;
+        l = f.HasValue ? (long?)Math.Round(f.Value) : null;
+        l = d.HasValue ? (long?)Math.Round(d.Value) : null;
+        l = m.HasValue ? (long?)Math.Round(m.Value) : null;
 
-        byte? byt = b is { } arg17 ? (byte?)Conversions.ToByte(arg17) : null;
-        byt = f is { } arg18 ? (byte?)Math.Round(arg18) : null;
-        byt = d is { } arg19 ? (byte?)Math.Round(arg19) : null;
-        byt = m is { } arg20 ? (byte?)Math.Round(arg20) : null;
+        byte? byt = b.HasValue ? Conversions.ToByte(b.Value) : null;
+        byt = f.HasValue ? (byte?)Math.Round(f.Value) : null;
+        byt = d.HasValue ? (byte?)Math.Round(d.Value) : null;
+        byt = m.HasValue ? (byte?)Math.Round(m.Value) : null;
 
-        TestEnum? e = b is { } arg21 ? (TestEnum?)Conversions.ToInteger(arg21) : null;
-        e = f is { } arg22 ? (TestEnum?)Math.Round(arg22) : null;
-        e = d is { } arg23 ? (TestEnum?)Math.Round(arg23) : null;
-        e = m is { } arg24 ? (TestEnum?)Math.Round(arg24) : null;
+        TestEnum? e = b.HasValue ? (TestEnum?)Conversions.ToInteger(b.Value) : null;
+        e = f.HasValue ? (TestEnum?)Math.Round(f.Value) : null;
+        e = d.HasValue ? (TestEnum?)Math.Round(d.Value) : null;
+        e = m.HasValue ? (TestEnum?)Math.Round(m.Value) : null;
     }
 }
 ");
@@ -941,7 +941,7 @@ internal partial class Class1
     }
     private bool? Test5(int? a)
     {
-        return a is { } arg1 ? (bool?)Conversions.ToBoolean(arg1) : null;
+        return a.HasValue ? Conversions.ToBoolean(a.Value) : null;
     }
     private bool? Test6(int a)
     {
@@ -954,7 +954,7 @@ internal partial class Class1
     }
     private int? Test5(bool? a)
     {
-        return a is { } arg2 ? (int?)Conversions.ToInteger(arg2) : null;
+        return a.HasValue ? Conversions.ToInteger(a.Value) : null;
     }
     private int? Test6(bool a)
     {
@@ -1161,7 +1161,7 @@ internal partial class Class1
     }
     private int? Test5(float? a)
     {
-        return a is { } arg1 ? (int?)Math.Round(arg1) : null;
+        return a.HasValue ? (int?)Math.Round(a.Value) : null;
     }
 
     private float? Test6(float a)

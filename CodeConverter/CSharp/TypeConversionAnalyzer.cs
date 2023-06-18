@@ -82,7 +82,7 @@ internal class TypeConversionAnalyzer
         switch (conversionKind) {
             case TypeConversionKind.FractionalNumberRoundThenCast:
                 csNode = vbType.IsNullable() && vbConvertedType.IsNullable() 
-                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, GetMathRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
+                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(vbNode, csNode, GetMathRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
                     : AddRoundInvocation(vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode);
 
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
@@ -90,7 +90,7 @@ internal class TypeConversionAnalyzer
                 vbConvertedType.IsNullable(out var convertedNullableType);
                 var underlyingEnumType = ((INamedTypeSymbol)(convertedNullableType ?? vbConvertedType)).EnumUnderlyingType;
                 csNode = vbType.IsNullable() && convertedNullableType != null
-                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, GetConversionsMemberAccess(underlyingEnumType), GetTypeSyntax(vbConvertedType))
+                    ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(vbNode, csNode, GetConversionsMemberAccess(underlyingEnumType), GetTypeSyntax(vbConvertedType))
                     : AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, vbType, underlyingEnumType);
 
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, vbConvertedType);
@@ -449,7 +449,7 @@ internal class TypeConversionAnalyzer
         }
 
         if (nullableCurrentType != null && nullableTargetType != null) {
-            return _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(csNode, memberAccess, GetTypeSyntax(targetType));
+            return _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(vbNode, csNode, memberAccess, GetTypeSyntax(targetType));
         }
 
         var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(csNode)));

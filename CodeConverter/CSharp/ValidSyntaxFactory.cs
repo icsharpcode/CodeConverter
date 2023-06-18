@@ -107,7 +107,7 @@ public static class ValidSyntaxFactory
         SyntaxFactory.Identifier(SyntaxTriviaList.Empty, SyntaxKind.NameOfKeyword, "nameof", "nameof", SyntaxTriviaList.Empty)
     );
 
-    public static ExpressionSyntax NullableHasValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("HasValue"));
-    public static ExpressionSyntax NullableGetValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("Value"));
+    public static ExpressionSyntax NullableHasValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName(nameof(Nullable<int>.HasValue)));
+    public static ExpressionSyntax NullableGetValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName(nameof(Nullable<int>.Value)));
 
 }
