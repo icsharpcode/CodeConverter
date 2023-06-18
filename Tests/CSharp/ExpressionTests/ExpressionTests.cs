@@ -490,7 +490,7 @@ public partial class VisualBasicClass
     {
         SomeDateDateNothing = string.IsNullOrEmpty(Conversions.ToString(SomeDate)) ? default : DateTime.Parse(Conversions.ToString(SomeDate));
         isNotNothing = SomeDateDateNothing is not null;
-        isSomething = new DateTime() is { } arg1 && SomeDateDateNothing.HasValue ? SomeDateDateNothing.Value == arg1 : (bool?)null;
+        isSomething = new DateTime() is var arg1 && SomeDateDateNothing.HasValue ? SomeDateDateNothing.Value == arg1 : (bool?)null;
     }
 }");
     }
@@ -2607,7 +2607,7 @@ public partial class CrashTest
         {
             if (Flag1 && flag2)
             {
-                if ((int)crashEnum.GetValueOrDefault() > 0 && (!CrashClass.CrashEnum.HasValue ? true : CrashClass.CrashEnum is { } arg1 && crashEnum.HasValue ? crashEnum.Value != arg1 : (bool?)null).GetValueOrDefault())
+                if ((int)crashEnum.GetValueOrDefault() > 0 && (!CrashClass.CrashEnum.HasValue ? true : CrashClass.CrashEnum is var arg1 && crashEnum.HasValue && arg1.HasValue ? crashEnum.Value != arg1.Value : (bool?)null).GetValueOrDefault())
                 {
                     CrashClass.CrashEnum = crashEnum;
                     CrashClass.IsSet = true;

@@ -206,17 +206,21 @@ internal class VisualBasicNullableExpressionsConverter
         var lhsReusable = IsSafelyReusable(vbNode.Left);
         var rhsReusable = IsSafelyReusable(vbNode.Right);
         List<(bool ExecutionOptional, ExpressionSyntax Expr)> conditions = new(3);
-        if (!lhsReusable && !rhsReusable) {
-            // This is the worst case, where everything's nullable but the names aren't reusable (might have side effects) so we need to use an extra var pattern to save it away first, then we can reuse that name
+
+        // Ensure both sides executed even if other side null check is false - it's important this goes first since the sort is stable and this needs to happen in all cases
+        if (isLhsNullable && !rhsReusable) {
             conditions.Add((false, PatternVar(rhsName, out rhsName)));
             rhsReusable = true;
+        } else if (isRhsNullable && !lhsReusable) {
+            conditions.Add((false, PatternVar(lhsName, out lhsName)));
+            lhsReusable = true;
         }
 
-        if (isLhsNullable || !lhsReusable) {
+        if (isLhsNullable) {
             var lhsCondition = HasValue(lhsReusable, ref lhsName);
             conditions.Add((lhsReusable, lhsCondition));
         }
-        if (isRhsNullable || !rhsReusable) {
+        if (isRhsNullable) {
             var rhsCondition = HasValue(rhsReusable, ref rhsName);
             conditions.Add((rhsReusable, rhsCondition));
         }
@@ -258,7 +262,9 @@ internal class VisualBasicNullableExpressionsConverter
 
     private KnownNullability? GetNullabilityWithinBooleanExpression(VBSyntax.ExpressionSyntax original)
     {
-        if (original.SkipIntoParens() is not VBSyntax.IdentifierNameSyntax {Identifier.Text: { } nameText}) return null;
+        if (original.SkipIntoParens() is not VBSyntax.IdentifierNameSyntax {Identifier.Text: { } nameText}) {
+            return IsNonNullExpressionType(original) ? KnownNullability.NotNull : null;
+        }
         for (VBSyntax.ExpressionSyntax? currentNode = original.Parent?.Parent as VBSyntax.ExpressionSyntax, childNode = original.Parent as VBSyntax.ExpressionSyntax;
              currentNode is VBSyntax.BinaryExpressionSyntax {Left: var l, OperatorToken: var op, Right: var r};
              currentNode = currentNode.Parent as VBSyntax.ExpressionSyntax) {
@@ -283,6 +289,12 @@ internal class VisualBasicNullableExpressionsConverter
         }
 
         return null;
+    }
+
+    private static bool IsNonNullExpressionType(VBSyntax.ExpressionSyntax original)
+    {
+        original = original.SkipIntoParens();
+        return original is VBSyntax.ObjectCreationExpressionSyntax || original is VBSyntax.LiteralExpressionSyntax l && !l.IsKind(VBasic.SyntaxKind.NothingLiteralExpression);
     }
 
     private KnownNullability? GetNullabilityWithinBooleanExpression(string identifierText, VBSyntax.ExpressionSyntax expression, bool expressionResult)
