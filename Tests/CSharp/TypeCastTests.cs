@@ -1544,4 +1544,31 @@ public partial class VisualBasicClass
     }
 }");
     }
+
+    [Fact]
+    public async Task Issue894_LinqQueryWhereClauseIsAlwaysBooleanAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class C
+    Private Shared Sub LinqWithNullable()
+        Dim a = New List(Of Integer?) From {1, 2, 3, Nothing}
+        Dim result = From x In a Where x = 1
+    End Sub
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class C
+{
+    private static void LinqWithNullable()
+    {
+        var a = new List<int?>() { 1, 2, 3, default };
+        var result = from x in a
+                     where x is { } arg1 && arg1 == 1
+                     select x;
+    }
+}");
+    }
 }
