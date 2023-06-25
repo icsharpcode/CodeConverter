@@ -857,7 +857,7 @@ public partial class ConversionTest2
         var entities = new List<MyEntity>();
 
         string result = (from e in entities
-                         where e.FavoriteNumber.Value == 123
+                         where e.FavoriteNumber == 123
                          select e.Name).Single();
 
     }
