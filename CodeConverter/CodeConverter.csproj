@@ -17,6 +17,7 @@
     <EmbedUntrackedSources>$(ContinuousIntegrationBuild)</EmbedUntrackedSources>
     <ImplicitUsings>enable</ImplicitUsings>
     <AnalysisMode>Recommended</AnalysisMode>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
