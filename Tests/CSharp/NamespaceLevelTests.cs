@@ -1064,4 +1064,22 @@ internal static partial class Module1
     }
 }");
     }
+
+    [Fact]
+    public async Task Issue1019_ImportsClassUsingStaticAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.[String]
+
+Public Class Class1
+    Dim x = IsNullOrEmpty(""test"")
+End Class",
+            @"using static System.String;
+
+public partial class Class1
+{
+    private object x = IsNullOrEmpty(""test"");
+}
+");
+    }
 }

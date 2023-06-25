@@ -26,6 +26,10 @@ public static class ValidSyntaxFactory
             SyntaxFactory.List(sections), SyntaxFactory.Token(SyntaxKind.CloseBraceToken));
     }
 
+    /// <summary>As of VS 17.7.0 Preview 2.0, the equivalent overload on SyntaxFactory is broken</summary>
+    public static UsingDirectiveSyntax UsingDirective(SyntaxToken staticKeyword, NameEqualsSyntax alias, NameSyntax name)
+        => SyntaxFactory.UsingDirective(globalKeyword: default, usingKeyword: SyntaxFactory.Token(SyntaxKind.UsingKeyword), staticKeyword, alias, name, semicolonToken: SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+
     public static ExpressionSyntax MemberAccess(params string[] nameParts) => MemberAccess(null, nameParts);
 
     public static ExpressionSyntax MemberAccess(ExpressionSyntax lhs, params string[] nameParts)

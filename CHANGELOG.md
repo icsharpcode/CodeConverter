@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Only hoist field initializer to constructor when needed, and avoid breaking nearby trivia [#1017](https://github.com/icsharpcode/CodeConverter/issues/1017)
 * No longer incorrectly assigns events in constructor for WithEvents properties
 * Event assignments created from Handles clauses now correctly appear last in the constructor [#991](https://github.com/icsharpcode/CodeConverter/issues/991)
+* Worked around "CONVERSION ERROR: usingKeyword" bug caused by VS 17.7.0 preview 2 [#1019](https://github.com/icsharpcode/CodeConverter/issues/1019)
 
 ### C# -> VB
 

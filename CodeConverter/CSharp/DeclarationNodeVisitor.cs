@@ -164,7 +164,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         };
 
         var usingDirective = staticClassifications.Contains(classification)
-            ? SyntaxFactory.UsingDirective(staticToken, nameEqualsSyntax, name)
+            ? ValidSyntaxFactory.UsingDirective(staticToken, nameEqualsSyntax, name)
             : SyntaxFactory.UsingDirective(nameEqualsSyntax, name);
 
         return usingDirective;
