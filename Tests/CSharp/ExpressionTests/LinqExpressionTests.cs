@@ -823,6 +823,49 @@ public partial class VisualBasicClass
 
 
     [Fact]
+    public async Task Issue1011_LinqExpressionWithNullableCharacterizationAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionTest2
+    Private Class MyEntity
+        Property FavoriteNumber As Integer?
+        Property Name As String
+    End Class
+    Private Sub BugRepro()
+
+        Dim entities As New List(Of MyEntity)
+
+        Dim result As String = (From e In entities
+                                Where e.FavoriteNumber = 123
+                                Select e.Name).Single
+
+    End Sub
+End Class
+",
+            @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class ConversionTest2
+{
+    private partial class MyEntity
+    {
+        public int? FavoriteNumber { get; set; }
+        public string Name { get; set; }
+    }
+    private void BugRepro()
+    {
+
+        var entities = new List<MyEntity>();
+
+        string result = (from e in entities
+                         where e.FavoriteNumber.Value == 123
+                         select e.Name).Single();
+
+    }
+}");
+    }
+
+
+    [Fact]
     public async Task AnExpressionTreeMayNotContainIsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionTest6

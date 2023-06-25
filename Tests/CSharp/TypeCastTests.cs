@@ -1566,7 +1566,7 @@ public partial class C
     {
         var a = new List<int?>() { 1, 2, 3, default };
         var result = from x in a
-                     where x is { } arg1 && arg1 == 1
+                     where x == 1
                      select x;
     }
 }");
