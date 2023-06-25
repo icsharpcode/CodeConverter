@@ -16,6 +16,8 @@ public enum KnownNullability : byte
 
 internal class VisualBasicNullableExpressionsConverter
 {
+    public IQueryTracker? QueryTracker { get; set; }
+    private bool IsWithinQuery => QueryTracker?.IsWithinQuery == true;
     private readonly SemanticModel _semanticModel;
     private static readonly IsPatternExpressionSyntax NotFormattedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is {}"));
     private static readonly IsPatternExpressionSyntax NotFormattedNegatedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is not {}"));

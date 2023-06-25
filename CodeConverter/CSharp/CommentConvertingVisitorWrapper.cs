@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace ICSharpCode.CodeConverter.CSharp;
 
 [System.Diagnostics.DebuggerStepThrough]
-internal class CommentConvertingVisitorWrapper
+internal class CommentConvertingVisitorWrapper : IQueryTracker
 {
     private readonly VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>> _wrappedVisitor;
     private readonly SyntaxTree _syntaxTree;
