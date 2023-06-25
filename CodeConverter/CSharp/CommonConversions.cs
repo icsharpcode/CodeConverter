@@ -107,8 +107,8 @@ internal class CommonConversions
         out bool isNothingLiteral)
     {
         var op = SemanticModel.GetExpressionOperation(exp);
-        exp = op.Syntax as VBSyntax.ExpressionSyntax;
-        var vbInitConstantValue = SemanticModel.GetConstantValue(exp);
+        exp = op?.Syntax as VBSyntax.ExpressionSyntax;
+        var vbInitConstantValue = exp != null ? SemanticModel.GetConstantValue(exp) : default;
         isNothingLiteral = vbInitConstantValue.HasValue && vbInitConstantValue.Value == null || exp is VBSyntax.LiteralExpressionSyntax les && les.IsKind(SyntaxKind.NothingLiteralExpression);
         bool shouldPreferExplicitType = expConvertedType != null && (expConvertedType.HasCsKeyword() || !expConvertedType.Equals(op.Type, SymbolEqualityComparer.IncludeNullability));
         return shouldPreferExplicitType;
