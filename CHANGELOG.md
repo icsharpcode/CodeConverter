@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.2.3] - 2023-06-25
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Fix nullability compilation error when using nullable values in the where clause of query syntax  [#894](https://github.com/icsharpcode/CodeConverter/issues/894)
 * When converting "Is" and "IsNot" within an expression tree, use "==" [#1015](https://github.com/icsharpcode/CodeConverter/issues/1015)
 * Only hoist field initializer to constructor when needed, and avoid breaking nearby trivia [#1017](https://github.com/icsharpcode/CodeConverter/issues/1017)
