@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
@@ -181,20 +182,29 @@ internal class CommonConversions
         bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
         var typeSyntax = initSymbol == null || !initSymbol.IsAnonymousFunction()
             ? GetTypeSyntax(declaredSymbolType, useVar)
-            : GetFuncTypeSyntax(initSymbol);
+            : GetFuncTypeSyntax(declaredSymbolType, initSymbol);
         return SyntaxFactory.VariableDeclaration(typeSyntax, SyntaxFactory.SingletonSeparatedList(v));
     }
 
-    public TypeSyntax GetFuncTypeSyntax(IMethodSymbol method)
+    public TypeSyntax GetFuncTypeSyntax(ITypeSymbol declaredSymbolType, IMethodSymbol method)
     {
-        var parameters = method.Parameters.Select(p => p.Type).ToArray();
-        if (method.ReturnsVoid) {
-            return parameters.Any() ? (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Action), parameters)
-                : SyntaxFactory.ParseTypeName("Action");
-        }
+        var funcTypeSyntax = GetDelegateSyntax();
+        if (!IsLinqDelegateExpression(declaredSymbolType)) return funcTypeSyntax;
+        return (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Expression<object>), funcTypeSyntax);
 
-        parameters = parameters.Concat(new[] {method.ReturnType}).ToArray();
-        return (TypeSyntax)CsSyntaxGenerator.GenericName(nameof(Func<object>), parameters);
+        TypeSyntax GetDelegateSyntax()
+        {
+            var parameters = method.Parameters.Select(p => p.Type).ToArray();
+            if (method.ReturnsVoid)
+            {
+                return parameters.Any()
+                    ? (TypeSyntax) CsSyntaxGenerator.GenericName(nameof(Action), parameters)
+                    : SyntaxFactory.ParseTypeName("Action");
+            }
+
+            parameters = parameters.Concat(new[] {method.ReturnType}).ToArray();
+            return (TypeSyntax) CsSyntaxGenerator.GenericName(nameof(Func<object>), parameters);
+        }
     }
 
     public TypeSyntax GetTypeSyntax(ITypeSymbol typeSymbol, bool useImplicitType = false)
@@ -731,4 +741,16 @@ internal class CommonConversions
 
         return vbParameter?.RefKind ?? RefKind.None;
     }
+
+    public bool IsLinqDelegateExpression(VisualBasicSyntaxNode node)
+    {
+        var convertedType = SemanticModel.GetTypeInfo(node).ConvertedType;
+        if (IsLinqDelegateExpression(convertedType)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsLinqDelegateExpression(ITypeSymbol convertedType) => System_Linq_Expressions_Expression_T.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default);
 }

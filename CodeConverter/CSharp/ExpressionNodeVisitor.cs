@@ -1023,7 +1023,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         }
 
         if (invocationSymbol is IMethodSymbol m && convertedExpression is LambdaExpressionSyntax) {
-            convertedExpression = SyntaxFactory.ObjectCreationExpression(CommonConversions.GetFuncTypeSyntax(m), ExpressionSyntaxExtensions.CreateArgList(convertedExpression), null);
+            convertedExpression = SyntaxFactory.ObjectCreationExpression(CommonConversions.GetFuncTypeSyntax(expressionType, m), ExpressionSyntaxExtensions.CreateArgList(convertedExpression), null);
         }
         return SyntaxFactory.InvocationExpression(convertedExpression, convertedArgumentList);
     }
@@ -1233,7 +1233,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     public override async Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
     {
         var originalIsWithinQuery = TriviaConvertingExpressionVisitor.IsWithinQuery;
-        TriviaConvertingExpressionVisitor.IsWithinQuery = IsLinqExpression(node);
+        TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
         try {
             return await ConvertInnerAsync();
         } finally {
@@ -1261,7 +1261,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
     {
         var originalIsWithinQuery = TriviaConvertingExpressionVisitor.IsWithinQuery;
-        TriviaConvertingExpressionVisitor.IsWithinQuery = IsLinqExpression(node);
+        TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
         try {
             return await ConvertInnerAsync();
         } finally {
@@ -1274,16 +1274,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
             return await _lambdaConverter.ConvertAsync(node, param, body.ToList());
         }
-    }
-
-    private bool IsLinqExpression(VisualBasicSyntaxNode node)
-    {
-        var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
-        if (CommonConversions.System_Linq_Expressions_Expression_T.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default)) {
-            return true;
-        }
-
-        return false;
     }
 
     public async Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VBasic.VisualBasicSyntaxNode node, IReadOnlyCollection<VBSyntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
