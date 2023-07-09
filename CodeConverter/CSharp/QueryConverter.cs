@@ -24,12 +24,13 @@ internal class QueryConverter
 
     public async Task<CSharpSyntaxNode> ConvertClausesAsync(SyntaxList<VBSyntax.QueryClauseSyntax> clauses)
     {
+        bool originalIsWithinQuery = _triviaConvertingVisitor.IsWithinQuery;
+        _triviaConvertingVisitor.IsWithinQuery = true;
         try {
-            _triviaConvertingVisitor.IsWithinQuery = true;
             var convertClausesInnerAsync = await ConvertClausesInnerAsync(clauses);
             return convertClausesInnerAsync;
         } finally {
-            _triviaConvertingVisitor.IsWithinQuery = false;
+            _triviaConvertingVisitor.IsWithinQuery = originalIsWithinQuery;
         }
     }
 
