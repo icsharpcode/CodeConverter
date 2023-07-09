@@ -28,6 +28,7 @@ public static class DefaultReferences
         typeof(System.Web.HttpUtility),
         typeof(System.Xml.XmlElement),
         typeof(System.Xml.Linq.XElement),
+        typeof(System.Linq.Expressions.Expression),
         typeof(Microsoft.VisualBasic.Constants),
         typeof(System.Data.SqlClient.SqlCommand)
     }.Select(t => t.Assembly).Concat(
