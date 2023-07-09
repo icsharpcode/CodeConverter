@@ -60,6 +60,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         _convertMethodBodyStatementsAsync = expressionNodeVisitor.ConvertMethodBodyStatementsAsync;
         CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
         nullableExpressionsConverter.QueryTracker = _triviaConvertingExpressionVisitor;
+        _visualBasicEqualityComparison.QueryTracker = _triviaConvertingExpressionVisitor;
     }
 
     private async Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VisualBasicSyntaxNode node,

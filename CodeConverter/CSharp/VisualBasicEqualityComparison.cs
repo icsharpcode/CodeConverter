@@ -1,5 +1,5 @@
-﻿using System.Globalization;
-using Microsoft.CodeAnalysis.CSharp;
+﻿#nullable enable
+using System.Globalization;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -18,6 +18,8 @@ internal class VisualBasicEqualityComparison
 {
     private readonly SemanticModel _semanticModel;
 
+    public IQueryTracker? QueryTracker { get; set; }
+    private bool IsWithinQuery => QueryTracker?.IsWithinQuery == true;
     public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives)
     {
         ExtraUsingDirectives = extraUsingDirectives;
@@ -50,8 +52,9 @@ internal class VisualBasicEqualityComparison
 
     public HashSet<string> ExtraUsingDirectives { get; }
 
-    public static RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
+    public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
     {
+        if (IsWithinQuery) return RequiredType.None;
         var typeInfos = new[] { leftType, rightType };
         if (!node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
             return RequiredType.None;
@@ -59,7 +62,7 @@ internal class VisualBasicEqualityComparison
         return GetObjectEqualityType(typeInfos);
     }
 
-    public static RequiredType GetObjectEqualityType(params TypeInfo[] typeInfos)
+    public RequiredType GetObjectEqualityType(params TypeInfo[] typeInfos)
     {
         bool requiresVbEqualityCheck = typeInfos.Any(t => t.Type?.SpecialType == SpecialType.System_Object);
 
@@ -67,7 +70,7 @@ internal class VisualBasicEqualityComparison
                 t => t.Type == null || t.Type.SpecialType == SpecialType.System_String ||
                      t.Type.IsArrayOf(SpecialType.System_Char) ) ) {
             return RequiredType.StringOnly;
-        };
+        }
 
         return requiresVbEqualityCheck ? RequiredType.Object : RequiredType.None;
     }
@@ -163,7 +166,7 @@ internal class VisualBasicEqualityComparison
     }
 
     public bool TryConvertToNullOrEmptyCheck(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs,
-        ExpressionSyntax rhs, out CSharpSyntaxNode visitBinaryExpression)
+        ExpressionSyntax rhs, out CSharpSyntaxNode? visitBinaryExpression)
     {
         bool lhsEmpty = IsNothingOrEmpty(node.Left);
         bool rhsEmpty = IsNothingOrEmpty(node.Right);

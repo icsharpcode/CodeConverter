@@ -19,6 +19,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly VBasic.VisualBasicSyntaxNode _methodNode;
     private readonly SemanticModel _semanticModel;
     private readonly CommentConvertingVisitorWrapper _expressionVisitor;
+    private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
     private readonly Stack<ExpressionSyntax> _withBlockLhs;
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly HandledEventsAnalysis _handledEventsAnalysis;
@@ -35,12 +36,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private CommonConversions CommonConversions { get; }
 
     public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VisualBasicSyntaxNode node, SemanticModel semanticModel,
-        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
+        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, VisualBasicEqualityComparison visualBasicEqualityComparison,
+        Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
         ITypeContext typeContext, bool isIterator, IdentifierNameSyntax csReturnVariable)
     {
         var solution = commonConversions.Document.Project.Solution;
         var declarationsToInlineInLoop = await solution.GetDescendantsToInlineInLoopAsync(semanticModel, node);
-        return new MethodBodyExecutableStatementVisitor(node, semanticModel, triviaConvertingExpressionVisitor, commonConversions, withBlockLhs, extraUsingDirectives, typeContext, declarationsToInlineInLoop) {
+        return new MethodBodyExecutableStatementVisitor(node, semanticModel, triviaConvertingExpressionVisitor, commonConversions, visualBasicEqualityComparison, withBlockLhs, extraUsingDirectives, typeContext, declarationsToInlineInLoop) {
             IsIterator = isIterator,
             ReturnVariable = csReturnVariable,
         };
@@ -48,12 +50,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     private MethodBodyExecutableStatementVisitor(VisualBasicSyntaxNode methodNode, SemanticModel semanticModel,
         CommentConvertingVisitorWrapper expressionVisitor, CommonConversions commonConversions,
+        VisualBasicEqualityComparison visualBasicEqualityComparison,
         Stack<ExpressionSyntax> withBlockLhs, HashSet<string> extraUsingDirectives,
         ITypeContext typeContext, HashSet<ILocalSymbol> localsToInlineInLoop)
     {
         _methodNode = methodNode;
         _semanticModel = semanticModel;
         _expressionVisitor = expressionVisitor;
+        _visualBasicEqualityComparison = visualBasicEqualityComparison;
         CommonConversions = commonConversions;
         _withBlockLhs = withBlockLhs;
         _extraUsingDirectives = extraUsingDirectives;
@@ -927,7 +931,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private ExpressionSyntax EqualsAdjustedForStringComparison(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, TypeInfo lhsTypeInfo, ExpressionSyntax csLeft, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
     {
         var vbEquality = CommonConversions.VisualBasicEqualityComparison;
-        switch (VisualBasicEqualityComparison.GetObjectEqualityType(lhsTypeInfo, rhsTypeInfo)) {
+        switch (_visualBasicEqualityComparison.GetObjectEqualityType(lhsTypeInfo, rhsTypeInfo)) {
             case VisualBasicEqualityComparison.RequiredType.Object:
                 return vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight);
             case VisualBasicEqualityComparison.RequiredType.StringOnly:

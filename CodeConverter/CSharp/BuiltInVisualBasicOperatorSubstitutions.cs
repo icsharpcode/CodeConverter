@@ -182,6 +182,7 @@ internal static class VbOperatorConversion
         /// <summary>
         /// Started as a paste of:
         /// https://github.com/dotnet/roslyn/blob/master/src/Compilers/VisualBasic/Portable/Lowering/LocalConvertTor/LocalConvertTor_BinaryOperators.vb#L233-L464
+        /// Now found at: https://github.com/dotnet/roslyn/blob/33496991002bcf1093028e82671fc5c0de2aa4bf/src/Compilers/VisualBasic/Portable/Lowering/LocalRewriter/LocalRewriter_BinaryOperators.vb#L233
         /// See file history to understand any changes
         /// </summary>
         public async Task<ExpressionSyntax> ConvertRewrittenBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node, bool inExpressionLambda)
@@ -218,6 +219,10 @@ internal static class VbOperatorConversion
                     // NOTE: For some reason Dev11 seems to still ignore inside the expression tree the fact that the target 
                     // type of the binary operator is Boolean and used Object op Object => Object helpers even in this case 
                     // despite what is said in comments in RuntimeMembers CodeGenerator::GetHelperForObjRelOp
+
+                    //GH: https://github.com/icsharpcode/CodeConverter/issues/930
+                    //GH: I expect there is some later phase which lowers these methods further in some cases, hence the oddity in this comment from the original code, hence:
+                    if (inExpressionLambda && await ConvertReferenceOrNothingComparisonOrNullAsync(node, inExpressionLambda) is { } nothingComparison) return nothingComparison;
 
                     if (nodeType.IsObjectType() || inExpressionLambda && leftType.IsObjectType()) {
                         return await ConvertToObjectComparisonOperatorAsync(node, (_compilerServices, _operators, "CompareObjectEqual"));
