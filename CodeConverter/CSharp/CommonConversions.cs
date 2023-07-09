@@ -19,6 +19,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 
 internal class CommonConversions
 {
+    public ITypeSymbol System_Linq_Expressions_Expression_T { get; }
     private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
     public Document Document { get; }
     public SemanticModel SemanticModel { get; }
@@ -47,6 +48,7 @@ internal class CommonConversions
         _typeContext = typeContext;
         VisualBasicEqualityComparison = visualBasicEqualityComparison;
         WinformsConversions = new WinformsConversions(typeContext);
+        System_Linq_Expressions_Expression_T = semanticModel.Compilation.GetTypeByMetadataName("System.Linq.Expressions.Expression`1");
     }
 
     public record VariablePair(CSSyntax.VariableDeclaratorSyntax CsVar, VBSyntax.ModifiedIdentifierSyntax VbVar);
