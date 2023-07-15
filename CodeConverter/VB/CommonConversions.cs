@@ -228,8 +228,7 @@ internal class CommonConversions
             case CSSyntaxKind.SetAccessorDeclaration:
                 blockKind = SyntaxKind.SetAccessorBlock;
                 valueParam = SyntaxFactory.Parameter(SyntaxFactory.ModifiedIdentifier("value"))
-                    .WithAsClause(SyntaxFactory.SimpleAsClause((TypeSyntax)parent.Type.Accept(_nodesVisitor, false)))
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
+                    .WithAsClause(SyntaxFactory.SimpleAsClause((TypeSyntax)parent.Type.Accept(_nodesVisitor, false)));
                 stmt = SyntaxFactory.SetAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                 endStmt = SyntaxFactory.EndSetStatement();
                 if (isAutoImplementedProperty) {
@@ -244,16 +243,14 @@ internal class CommonConversions
             case CSSyntaxKind.AddAccessorDeclaration:
                 blockKind = SyntaxKind.AddHandlerAccessorBlock;
                 valueParam = SyntaxFactory.Parameter(SyntaxFactory.ModifiedIdentifier("value"))
-                    .WithAsClause(SyntaxFactory.SimpleAsClause((TypeSyntax)parent.Type.Accept(_nodesVisitor, false)))
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
+                    .WithAsClause(SyntaxFactory.SimpleAsClause((TypeSyntax)parent.Type.Accept(_nodesVisitor, false)));
                 stmt = SyntaxFactory.AddHandlerAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                 endStmt = SyntaxFactory.EndAddHandlerStatement();
                 break;
             case CSSyntaxKind.RemoveAccessorDeclaration:
                 blockKind = SyntaxKind.RemoveHandlerAccessorBlock;
                 valueParam = SyntaxFactory.Parameter(SyntaxFactory.ModifiedIdentifier("value"))
-                    .WithAsClause(SyntaxFactory.SimpleAsClause((TypeSyntax)parent.Type.Accept(_nodesVisitor, false)))
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)));
+                    .WithAsClause(SyntaxFactory.SimpleAsClause((TypeSyntax)parent.Type.Accept(_nodesVisitor, false)));
                 stmt = SyntaxFactory.RemoveHandlerAccessorStatement(attributes, modifiers, SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(valueParam)));
                 endStmt = SyntaxFactory.EndRemoveHandlerStatement();
                 break;

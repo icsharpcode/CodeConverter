@@ -183,7 +183,7 @@ public class Test2 {
 End Class
 
 Public Class Test2
-    Public Sub TestMethod(ByVal o As Object)
+    Public Sub TestMethod(o As Object)
         CType(o, Test).TestMethod()
     End Sub
 End Class");
@@ -206,7 +206,7 @@ public class Test2 {
 End Class
 
 Public Class Test2
-    Public Sub TestMethod(ByVal o As Object)
+    Public Sub TestMethod(o As Object)
         TryCast(o, Test).TestMethod()
     End Sub
 End Class");

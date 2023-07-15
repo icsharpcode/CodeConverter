@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Omit ByVal as recommended by [IDE0081](https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0081#overview) [#1024](https://github.com/icsharpcode/CodeConverter/issues/1024)
 
 ## [9.2.3] - 2023-06-25
 

@@ -626,7 +626,6 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         var raiseEventParameters = eventHandlerSymbol.Parameters.Select(x =>
             SyntaxFactory.Parameter(SyntaxFactory.ModifiedIdentifier(x.Name))
                 .WithAsClause(SyntaxFactory.SimpleAsClause(GetTypeSyntax(x.Type)))
-                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword)))
         );
         var csEventFieldIdentifier = node.AccessorList?.Accessors
             .SelectMany(x => x.Body.Statements)
@@ -838,7 +837,6 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         AttributeListSyntax[] newAttributes;
         var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
         if ((modifiers.Count == 0 && returnType != null) || node.Modifiers.Any(CS.SyntaxKind.ThisKeyword)) {
-            modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ByValKeyword));
             newAttributes = Array.Empty<AttributeListSyntax>();
         } else if (node.Modifiers.Any(CS.SyntaxKind.OutKeyword)) {
             newAttributes = new[] {

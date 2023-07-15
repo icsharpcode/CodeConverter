@@ -16,7 +16,7 @@ public class ExpressionTests : ConverterTestBase
         return unchecked((currentKey * (int)0xA5555529) + newKey);
     }
 }", @"Friend Module Hash
-    Friend Function Combine(ByVal newKey As Integer, ByVal currentKey As Integer) As Integer
+    Friend Function Combine(newKey As Integer, currentKey As Integer) As Integer
         Return currentKey * CInt(&HA5555529UI) + newKey
     End Function
 End Module
@@ -68,7 +68,7 @@ namespace global::InnerNamespace
             @"
 Namespace Global.InnerNamespace
     Public Class Test
-        Public Function StringInter(ByVal t As String, ByVal dt As Date) As String
+        Public Function StringInter(t As String, dt As Date) As String
             Dim a = $""pre{t} t""
             Dim b = $""pre{t} """" t""
             Dim c = $""pre{t} """"\ t""
@@ -97,7 +97,7 @@ public class Test
     }
 }",  @"
 Public Class Test
-    Public Function InterStringDateFormat(ByVal dt As Date) As String
+    Public Function InterStringDateFormat(dt As Date) As String
         Dim a = $""Soak: {dt: d\.h\:mm\:ss\.f}""
         Return a
     End Function
@@ -115,7 +115,7 @@ End Class"
         bool result = (str == """") ? true : false;
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim result = If(Equals(str, """"), True, False)
     End Sub
 End Class");
@@ -190,15 +190,15 @@ End Class");
         return func();
     }
 }", @"Public Class TestClass
-    Public Sub TestMethod(ByVal b As Integer)
+    Public Sub TestMethod(b As Integer)
         Dim a As Integer
         DoAction(Sub() a = b)
         Dim c = Me.DoFunc(Function() CSharpImpl.__Assign(a, b))
     End Sub
-    Public Sub DoAction(ByVal action As Action)
+    Public Sub DoAction(action As Action)
         action()
     End Sub
-    Public Function DoFunc(ByVal func As Func(Of Integer)) As Integer
+    Public Function DoFunc(func As Func(Of Integer)) As Integer
         Return func()
     End Function
 
@@ -230,7 +230,7 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
         return -1;
     }
 }", @"Friend Class TestClass
-    Private Shared Function GetLength(ByVal node As Object) As Integer
+    Private Shared Function GetLength(node As Object) As Integer
         Dim s As String = Nothing
 
         If CSharpImpl.__Assign(s, TryCast(node, String)) IsNot Nothing Then
@@ -290,7 +290,7 @@ class TestClass
 }", @"Imports System
 
 Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New Exception(""empty"")), False)
     End Sub
 
@@ -317,7 +317,7 @@ BC30451: 'CSharpImpl.__Throw' is not declared. It may be inaccessible due to its
 }
 class TestClass2 { }",
             @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim result As Boolean = If(Equals(str, """"), CSharpImpl.__Throw(Of Boolean)(New System.Exception(""empty"")), False)
     End Sub
 
@@ -365,7 +365,7 @@ End Class");
         Console.WriteLine(str ?? ""<null>"");
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
 End Class
@@ -425,7 +425,7 @@ CS0149: Method name expected");
         Console.ReadKey();
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim length As Integer
         length = str.Length
         Console.WriteLine(""Test"" & length.ToString())
@@ -447,7 +447,7 @@ CS0103: The name 'Console' does not exist in the current context");
         Dispatcher.Invoke(new Action(() => Console.WriteLine(1)));
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dispatcher.Invoke(New Action(Function() Console.WriteLine(1)))
     End Sub
 End Class
@@ -517,7 +517,7 @@ End Class");
         string redirectUri = context.OwinContext.Authentication?.AuthenticationResponseChallenge?.Properties?.RedirectUri;
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim length = If(str?.Length, -1)
         Console.WriteLine(length)
         Console.ReadKey()
@@ -556,7 +556,7 @@ Friend Class StudentName
 End Class
 
 Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim student2 As StudentName = New StudentName With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
@@ -578,7 +578,7 @@ End Class");
         };
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal str As String)
+    Private Sub TestMethod(str As String)
         Dim student2 = New With {
             .FirstName = ""Craig"",
             .LastName = ""Playstead""
@@ -718,7 +718,7 @@ Namespace PreHOPL
         Private ReadOnly dict As Dictionary(Of String, ValueTuple(Of Integer, [Delegate])) = New Dictionary(Of String, ValueTuple(Of Integer, [Delegate]))() From {
 {""SAY"", (1, CType(AddressOf Console.WriteLine, Action(Of String)))}
 }
-        Private Sub Main(ByVal args As String())
+        Private Sub Main(args As String())
             dict(""SAY"").Item2.DynamicInvoke(""Hello World!"")
         End Sub
     End Module
@@ -753,7 +753,7 @@ End Namespace");
                                                     End Sub
 
     Private Sub TestMethod()
-        Dim test = Function(ByVal a As Integer) a * 2
+        Dim test = Function(a As Integer) a * 2
 
         test(3)
     End Sub
@@ -778,7 +778,7 @@ static class Program
 }", @"Imports System
 
 Friend Module Program
-    Private Sub Main(ByVal args As String())
+    Private Sub Main(args As String())
         Dim x As Action(Of String) = Sub(__) Environment.Exit(0)
     End Sub
 End Module");
@@ -1142,7 +1142,7 @@ End Class");
     }
 }",
             @"Public Class WhyWeNeedToCastNothing
-    Public Sub Example(ByVal vbInitValue As Integer?)
+    Public Sub Example(vbInitValue As Integer?)
         Dim withDefault = If(vbInitValue IsNot Nothing, 7, DirectCast(Nothing, Integer?))
         Dim withNull = If(vbInitValue IsNot Nothing, CType(8, Integer?), Nothing)
     End Sub
@@ -1185,11 +1185,11 @@ Public Partial Class WhyWeNeedToCastNothing
         Console.WriteLine(""null"" & Identity(CStr(Nothing)))
     End Sub
 
-    Public Shared Function Identity(ByVal vbInitValue As Integer?) As Integer?
+    Public Shared Function Identity(vbInitValue As Integer?) As Integer?
         Return If(Not vbInitValue.HasValue, 4011, vbInitValue)
     End Function
 
-    Public Shared Function Identity(ByVal vbInitValue As String) As String
+    Public Shared Function Identity(vbInitValue As String) As String
         Return If(Equals(vbInitValue, Nothing), ""null"", vbInitValue)
     End Function
 End Class");
@@ -1210,7 +1210,7 @@ public class Class1 {
             @"Imports System.Linq
 
 Public Class Class1
-    Public Sub Example(ByVal values As Date?())
+    Public Sub Example(values As Date?())
         Dim nullableDate = values.SingleOrDefault(Function(x) x IsNot Nothing)
     End Sub
 End Class", hasLineCommentConversionIssue: true);
@@ -1315,7 +1315,7 @@ Imports System.Collections.Concurrent
 Public Class TestClass
     Private pendingOrders As ConcurrentDictionary(Of Guid, TaskCompletionSource(Of Boolean))
     Private orderComplete As TaskCompletionSource(Of Boolean)
-    Private Sub Sdk_OnOrderCompleted(ByVal sender As Object, ByVal e As OrderOutcome)
+    Private Sub Sdk_OnOrderCompleted(sender As Object, e As OrderOutcome)
         Dim tcs As TaskCompletionSource(Of Boolean) = Nothing
         pendingOrders.TryRemove(e.OrderId, tcs)
         tcs.SetResult(e.Success)
@@ -1326,7 +1326,7 @@ Public Class OrderOutcome
     Public Property OrderId As Guid
     Public Property Success As Boolean
 
-    Public Sub New(ByVal orderId As Guid, ByVal success As Boolean)
+    Public Sub New(orderId As Guid, success As Boolean)
         Me.OrderId = orderId
         Me.Success = success
     End Sub

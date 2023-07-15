@@ -62,7 +62,7 @@ Namespace ANamespace 'namespace
         ''' <summary>
         ''' method xml doc
         ''' </summary>
-        Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) 'Only for structs
+        Public Sub TestMethod(Of T As Class, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, argument3 As T3) 'Only for structs
             ' Block start - method
 #If True 'IfDirective keeps comments
             argument = Nothing '1

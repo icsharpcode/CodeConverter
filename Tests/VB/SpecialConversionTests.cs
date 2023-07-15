@@ -206,7 +206,7 @@ public class Foo
 Public Class Foo
     Public Event Bar As EventHandler(Of EventArgs)
 
-    Protected Sub OnBar(ByVal e As EventArgs)
+    Protected Sub OnBar(e As EventArgs)
         If BarEvent Is Nothing Then
             Debug.WriteLine(""No subscriber"")
         Else
@@ -470,19 +470,19 @@ Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
-    Private Function TypeSwitch(ByVal obj As Object, ByVal matchFunc1 As Func(Of String, Object), ByVal matchFunc2 As Func(Of Integer, Object), ByVal defaultFunc As Func(Of Object, Object)) As Object
+    Private Function TypeSwitch(Me obj As Object, matchFunc1 As Func(Of String, Object), matchFunc2 As Func(Of Integer, Object), defaultFunc As Func(Of Object, Object)) As Object
         Return Nothing
     End Function
 
-    Private Function ConvertInt(ByVal node As Integer) As Object
+    Private Function ConvertInt(node As Integer) As Object
         Return node
     End Function
 
-    Private Function ConvertString(ByVal node As String) As Object
+    Private Function ConvertString(node As String) As Object
         Return node
     End Function
 
-    Public Function Convert(ByVal node As Object) As Object
+    Public Function Convert(node As Object) As Object
         Return node.TypeSwitch(New Func(Of String, Object)(AddressOf ConvertString), New Func(Of Integer, Object)(AddressOf ConvertInt), Function(__)
                                                                                                                                              Throw New NotImplementedException($""Conversion for '{node.GetType()}' not implemented"")
                                                                                                                                          End Function)
@@ -610,17 +610,17 @@ BC30451: 'o' is not declared. It may be inaccessible due to its protection level
     Private testField As EventHandler
 
     Public Custom Event Test As EventHandler
-        AddHandler(ByVal value As EventHandler)
+        AddHandler(value As EventHandler)
             Dim lTeSt1 As Object = 5
             Dim lTesT = CInt(o)
             testField = [Delegate].Combine(testField, value)
         End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
+        RemoveHandler(value As EventHandler)
             Dim lTeSt1 As Object = 5
             Dim lTesT = CInt(o)
             testField = [Delegate].Remove(testField, value)
         End RemoveHandler
-        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+        RaiseEvent(sender As Object, e As EventArgs)
             testField?(sender, e)
         End RaiseEvent
     End Event
@@ -640,7 +640,7 @@ BC30451: '[Delegate]' is not declared. It may be inaccessible due to its protect
     int tesT = (int)test;
     return tesT;
 }",
-            @"Private Function Method(ByVal test As Object) As Integer
+            @"Private Function Method(test As Object) As Integer
     Dim lTesT As Integer = test
     Return lTesT
 End Function");
@@ -661,14 +661,14 @@ End Function");
         Get
             Return GetValue()
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             SetValue(value)
         End Set
     End Property
     Private Function GetValue() As Integer
         Return 0
     End Function
-    Private Sub SetValue(ByVal value As Integer)
+    Private Sub SetValue(value As Integer)
     End Sub
 End Class
 
@@ -692,13 +692,13 @@ public class TestClass {
 Public Class TestClass
     Private valueField As EventHandler
     Public Custom Event Value As EventHandler
-        AddHandler(ByVal value As EventHandler)
+        AddHandler(value As EventHandler)
             valueField = [Delegate].Combine(valueField, value)
         End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
+        RemoveHandler(value As EventHandler)
             valueField = [Delegate].Remove(valueField, value)
         End RemoveHandler
-        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+        RaiseEvent(sender As Object, e As EventArgs)
             valueField?(sender, e)
         End RaiseEvent
     End Event
@@ -732,7 +732,7 @@ Public Class TestClass
         Get
             Return propField
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             propField = value
         End Set
     End Property

@@ -77,7 +77,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal arg As Integer)
+    Private Sub TestMethod(arg As Integer)
         While True 'Becomes while loop
             If arg = 3 Then Exit While
             Select Case arg
@@ -469,7 +469,7 @@ End Class");
             b = 3;
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal a As Integer)
+    Private Sub TestMethod(a As Integer)
         Dim b As Integer
         If a = 0 Then
             b = 0
@@ -499,7 +499,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal a As Integer)
+    Private Sub TestMethod(a As Integer)
         Dim b As Integer
         If a = 0 Then
             b = 0
@@ -662,7 +662,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
+    Private Sub TestMethod(values As Integer())
         For Each val In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
@@ -687,7 +687,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
+    Private Sub TestMethod(values As Integer())
         For Each val In values
             If val = 2 Then Continue For
             If val = 3 Then Exit For
@@ -713,7 +713,7 @@ BC30516: Overload resolution failed because no accessible 'Val' accepts this num
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal nullObject As Object)
+    Private Sub TestMethod(nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
         SyncLock nullObject
             Console.WriteLine(nullObject)
@@ -737,7 +737,7 @@ CS0103: The name 'Console' does not exist in the current context");
             b[i] = s[i];
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer, ByVal unknownCondition As Boolean)
+    Private Sub TestMethod(i As Integer, b As Integer(), s As Integer(), [end] As Integer, unknownCondition As Boolean)
         i = 0
 
         While unknownCondition
@@ -760,7 +760,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClassForWithUnknownConditionAndBlockAsync
-    Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer, ByVal unknownCondition As Boolean)
+    Private Sub TestMethod(i As Integer, b As Integer(), s As Integer(), [end] As Integer, unknownCondition As Boolean)
         i = 0
 
         While unknownCondition
@@ -781,7 +781,7 @@ End Class");
         for (i = 0; i < end; i++) b[i] = s[i];
     }
 }", @"Friend Class TestClassForWithSingleStatementAsync
-    Private Sub TestMethod(ByVal i As Integer, ByVal b As Integer(), ByVal s As Integer(), ByVal [end] As Integer)
+    Private Sub TestMethod(i As Integer, b As Integer(), s As Integer(), [end] As Integer)
         For i = 0 To [end] - 1
             b(i) = s(i)
         Next
@@ -802,7 +802,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal b As Integer(), ByVal s As Integer(), ByVal nbMessage As Integer)
+    Private Sub TestMethod(b As Integer(), s As Integer(), nbMessage As Integer)
         For m = nbMessage To 1 Step -1
             ' Loop body
         Next
@@ -941,7 +941,7 @@ End Class");
     }
 }",
             @"Friend Class TestClass
-    Private Sub TestMethod(ByVal counts As IEnumerable(Of Integer))
+    Private Sub TestMethod(counts As IEnumerable(Of Integer))
         Dim summary = 0
         Dim action As Action = Sub()
                                    For Each c In counts
@@ -972,7 +972,7 @@ CS0246: The type or namespace name 'Action' could not be found (are you missing 
         return originalText;
     }
 }", @"Public Class SolutionConverter
-    Private Shared Function ApplyReplacements(ByVal originalText As String, ByVal replacements As IEnumerable(Of (String, String))) As String
+    Private Shared Function ApplyReplacements(originalText As String, replacements As IEnumerable(Of (String, String))) As String
         For Each oldValueNewValue In replacements
             Dim oldValue = oldValueNewValue.Item1
             Dim newValue = oldValueNewValue.Item2
@@ -1091,7 +1091,7 @@ CS0103: The name 'Console' does not exist in the current context");
             throw new ArgumentNullException(nameof(nullObject));
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal nullObject As Object)
+    Private Sub TestMethod(nullObject As Object)
         If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
     End Sub
 End Class
@@ -1130,17 +1130,17 @@ class TestClass
 Friend Class TestClass
     Public Event SomethingHappening As EventHandler
 
-    Private Sub TestMethod(ByVal e As EventHandler)
+    Private Sub TestMethod(e As EventHandler)
         AddHandler SomethingHappening, e
         AddHandler SomethingHappening, AddressOf MyHandler
     End Sub
 
-    Private Sub TestMethod2(ByVal e As EventHandler)
+    Private Sub TestMethod2(e As EventHandler)
         RemoveHandler SomethingHappening, e
         RemoveHandler SomethingHappening, AddressOf MyHandler
     End Sub
 
-    Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
+    Private Sub MyHandler(sender As Object, e As EventArgs)
 
     End Sub
 End Class");
@@ -1168,11 +1168,11 @@ Imports System.Collections.Generic
 Friend Class TestClass
     Private items As List(Of INotifyPropertyChanged)
 
-    Private Sub TestMethod(ByVal e As EventHandler)
+    Private Sub TestMethod(e As EventHandler)
         items.ForEach(Sub(x) AddHandler x.PropertyChanged, AddressOf OnItemPropertyChanged)
     End Sub
 
-    Private Sub OnItemPropertyChanged(ByVal sender As Object, ByVal e As PropertyChangedEventArgs)
+    Private Sub OnItemPropertyChanged(sender As Object, e As PropertyChangedEventArgs)
     End Sub
 End Class");
     }
@@ -1206,7 +1206,7 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal number As Integer)
+    Private Sub TestMethod(number As Integer)
         Select Case number
             Case 0, 1, 2
                 Console.Write(""number is 0, 1, 2"")
@@ -1248,7 +1248,7 @@ CS0103: The name 'Console' does not exist in the current context");
         }
     }
 }", @"Friend Class TestClass
-    Private Sub TestMethod(ByVal number As Double)
+    Private Sub TestMethod(number As Double)
         Select Case number
             Case 3
                 Console.Write(""section 3"")
@@ -1281,7 +1281,7 @@ CS0103: The name 'Console' does not exist in the current context");
         return false;
     }
 }", @"Friend Class TestClass
-    Public Function IsFive(ByVal aNum As Integer) As Boolean
+    Public Function IsFive(aNum As Integer) As Boolean
         Select Case aNum
             Case = 5
                 Return True
@@ -1327,12 +1327,12 @@ End Class");
         }
     }
 }", @"Friend Class TestClass
-    Private Shared Function Log(ByVal message As String) As Boolean
+    Private Shared Function Log(message As String) As Boolean
         Console.WriteLine(message)
         Return False
     End Function
 
-    Private Sub TestMethod(ByVal number As Integer)
+    Private Sub TestMethod(number As Integer)
         Try
             Console.WriteLine(""try"")
         Catch e As Exception
@@ -1379,7 +1379,7 @@ class TestClass
 }", @"Imports System.Collections.Generic
 
 Friend Class TestClass
-    Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
+    Private Iterator Function TestMethod(number As Integer) As IEnumerable(Of Integer)
         If number < 0 Then Return
         For i = 0 To number - 1
             Yield i
@@ -1404,7 +1404,7 @@ End Class");
 }",
             @"Friend Class TestClass
     Private field As Integer
-    Private Sub New(ByVal param As Integer)
+    Private Sub New(param As Integer)
         field = param
     End Sub
 

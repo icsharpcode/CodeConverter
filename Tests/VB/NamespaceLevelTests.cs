@@ -254,7 +254,7 @@ BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) 
             @"Public Delegate Function Test() As Integer");
         await TestConversionCSharpToVisualBasicAsync(
             @"public delegate void Test(int x);",
-            @"Public Delegate Sub Test(ByVal x As Integer)");
+            @"Public Delegate Sub Test(x As Integer)");
         await TestConversionCSharpToVisualBasicAsync(
             @"public delegate void Test(ref int x);",
             @"Public Delegate Sub Test(ByRef x As Integer)");
@@ -404,18 +404,18 @@ public interface iDisplay {
 }",
             @"Public Class ToBeDisplayed
     Implements iDisplay
-    Private Property Item(ByVal i As Integer) As Object Implements iDisplay.Item
+    Private Property Item(i As Integer) As Object Implements iDisplay.Item
         Get
             Throw New NotImplementedException()
         End Get
-        Set(ByVal value As Object)
+        Set(value As Object)
             Throw New NotImplementedException()
         End Set
     End Property
 End Class
 
 Public Interface iDisplay
-    Default Property Item(ByVal i As Integer) As Object
+    Default Property Item(i As Integer) As Object
 End Interface");
     }
 
@@ -544,12 +544,12 @@ public class TestClass : ITestInterface<string> {
     }
 }",
             @"Public Interface ITestInterface(Of T)
-    Sub Method(ByVal list As List(Of T))
+    Sub Method(list As List(Of T))
 End Interface
 
 Public Class TestClass
     Implements ITestInterface(Of String)
-    Public Sub Method(ByVal list As List(Of String)) Implements ITestInterface(Of String).Method
+    Public Sub Method(list As List(Of String)) Implements ITestInterface(Of String).Method
     End Sub
 End Class
 

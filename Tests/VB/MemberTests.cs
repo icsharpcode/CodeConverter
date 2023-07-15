@@ -20,7 +20,7 @@ public class MemberTests : ConverterTestBase
         Get
             Return _Text
         End Get
-        Private Set(ByVal value As String)
+        Private Set(value As String)
             _Text = value
         End Set
     End Property
@@ -46,7 +46,7 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
             Get
                 Return _Text
             End Get
-            Private Set(ByVal value As String)
+            Private Set(value As String)
                 _Text = value
             End Set
         End Property
@@ -72,7 +72,7 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
         Get
             Return _Text
         End Get
-        Private Set(ByVal value As String)
+        Private Set(value As String)
             _Text = value
         End Set
     End Property
@@ -81,7 +81,7 @@ BC30451: '_Text' is not declared. It may be inaccessible due to its protection l
         Get
             Return _Count
         End Get
-        Private Set(ByVal value As Integer)
+        Private Set(value As Integer)
             _Count = value
         End Set
     End Property
@@ -107,7 +107,7 @@ BC30451: '_Count' is not declared. It may be inaccessible due to its protection 
         Get
             Return _Text
         End Get
-        Private Set(ByVal value As String)
+        Private Set(value As String)
             _Text = value
         End Set
     End Property
@@ -158,7 +158,7 @@ End Class");
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, argument3 As T3)
         argument = Nothing '1
         argument2 = Nothing '2
         argument3 = Nothing '3
@@ -183,7 +183,7 @@ CS1026: ) expected");
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-    Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
+    Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, argument3 As T3) As Integer
         Return 0
     End Function
 End Class
@@ -209,7 +209,7 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-    Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+    Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, argument3 As T3)
         argument = Nothing
         argument2 = Nothing
         argument3 = Nothing
@@ -259,7 +259,7 @@ class TestSubclass : TestClass
     Public Sub TestMethod()
     End Sub
 
-    Public Sub TestMethod(ByVal i As Integer)
+    Public Sub TestMethod(i As Integer)
     End Sub
 End Class
 
@@ -348,55 +348,55 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
         return ac;
     }
 }", @"Public Class AcmeClass
-    Public Shared Operator +(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator +(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator &(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator &(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator -(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator -(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator Not(ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator Not(ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator *(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator *(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator /(ByVal i As Integer, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator /(i As Integer, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator Mod(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator Mod(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator <<(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
+    Public Shared Operator <<(ac As AcmeClass, i As Integer) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator >>(ByVal ac As AcmeClass, ByVal i As Integer) As AcmeClass
+    Public Shared Operator >>(ac As AcmeClass, i As Integer) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator =(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator =(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator <>(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator <>(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator <(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator <(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator >(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator >(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator <=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator <=(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator >=(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator >=(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator And(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator And(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
-    Public Shared Operator Or(ByVal s As String, ByVal ac As AcmeClass) As AcmeClass
+    Public Shared Operator Or(s As String, ac As AcmeClass) As AcmeClass
         Return ac
     End Operator
 End Class");
@@ -419,11 +419,11 @@ public partial class MyInt
     }
 }", @"
 Public Partial Class MyInt
-    Public Shared Narrowing Operator CType(ByVal i As Integer) As MyInt
+    Public Shared Narrowing Operator CType(i As Integer) As MyInt
         Return New MyInt()
     End Operator
 
-    Public Shared Widening Operator CType(ByVal myInt As MyInt) As Integer
+    Public Shared Widening Operator CType(myInt As MyInt) As Integer
         Return 1
     End Operator
 End Class"
@@ -445,7 +445,7 @@ End Class"
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass
-    Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+    Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, argument3 As T3)
         argument = Nothing
         argument2 = Nothing
         argument3 = Nothing
@@ -479,11 +479,11 @@ Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
-    Public Sub TestMethod(ByVal str As String)
+    Public Sub TestMethod(Me str As String)
     End Sub
 
     <Extension()>
-    Public Sub TestMethod2Parameters(ByVal str As String, ByVal __ As Action(Of String))
+    Public Sub TestMethod2Parameters(Me str As String, __ As Action(Of String))
     End Sub
 End Module", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
@@ -504,7 +504,7 @@ static class TestClass
 
 Friend Module TestClass
     <Extension()>
-    Public Sub TestMethod(ByVal str As String)
+    Public Sub TestMethod(Me str As String)
     End Sub
 End Module");
     }
@@ -536,7 +536,7 @@ End Module");
         Get
             Return m_test3
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             m_test3 = value
         End Set
     End Property
@@ -567,7 +567,7 @@ public class ShouldNotChange {
         Get
             Return testField
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             testField = value
         End Set
     End Property
@@ -579,7 +579,7 @@ Public Class ShouldNotChange
         Get
             Return test
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             test = value
         End Set
     End Property
@@ -616,7 +616,7 @@ End Class");
 }",
             @"Public Class HasConflictingMethodAndField
 
-    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+    Public Function HasConflictingParam(test As Integer) As Integer
         teStField = test
         Return test
     End Function
@@ -631,11 +631,11 @@ End Class");
         Return testMethod()
     End Function
 
-    Private Function testMethod(ByVal arg As Integer) As Integer
+    Private Function testMethod(arg As Integer) As Integer
         Return arg
     End Function
 
-    Public Function Test(ByVal arg As Integer) As Integer
+    Public Function Test(arg As Integer) As Integer
         Return testMethod(arg)
     End Function
 End Class");
@@ -660,7 +660,7 @@ End Class");
 }",
             @"Public Class HasConflictingPropertyAndField
 
-    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+    Public Function HasConflictingParam(test As Integer) As Integer
         testField = test
         Return test
     End Function
@@ -671,7 +671,7 @@ End Class");
         Get
             Return testField
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             testField = value
         End Set
     End Property
@@ -698,11 +698,11 @@ End Class");
         Get
             Return testField
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             testField = value
         End Set
     End Property
-    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+    Public Function HasConflictingParam(test As Integer) As Integer
         Me.Test = test
         Return test
     End Function
@@ -732,7 +732,7 @@ public partial class HasConflictingPropertyAndField {
     }
 }",
             @"Public Partial Class HasConflictingPropertyAndField
-    Public Function HasConflictingParam(ByVal test As Integer) As Integer
+    Public Function HasConflictingParam(test As Integer) As Integer
         Dim lTEST = 0
         testField = test + lTEST
         Return test
@@ -746,7 +746,7 @@ Public Partial Class HasConflictingPropertyAndField
             Dim lTEST = 0
             Return testField + lTEST
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             testField = value
         End Set
     End Property
@@ -772,7 +772,7 @@ End Class");
         Get
             Return _sourcePathOrNull
         End Get
-        Set(ByVal value As String)
+        Set(value As String)
             _sourcePathOrNull = If(String.IsNullOrWhiteSpace(value), Nothing, value)
         End Set
     End Property
@@ -794,7 +794,7 @@ End Class");
             Return New String() {""Red"", ""Green""}
         End Get
     End Property
-    Default Public ReadOnly Property Item(ByVal index As Integer) As String
+    Default Public ReadOnly Property Item(index As Integer) As String
         Get
             Return favColor(index)
         End Get
@@ -825,13 +825,13 @@ Public Class ConversionResult
     Private _num As Integer
 
     Public WriteOnly Property Num As String
-        Set(ByVal value As String)
+        Set(value As String)
             _num += 1
         End Set
     End Property
 
     Public WriteOnly Property Blanket As String
-        Set(ByVal value As String)
+        Set(value As String)
             Throw New Exception()
         End Set
     End Property
@@ -890,7 +890,7 @@ BC30002: Type 'Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute
 }", @"Imports System.Runtime.InteropServices
 
 Friend Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
-    Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
+    Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, argument3 As T3)
     End Sub
 End Class
 
@@ -930,13 +930,13 @@ public sealed class MyClass
 	{
 	}
 }", @"Public Class MyBaseClass
-    Public Sub New(ByVal o As Object)
+    Public Sub New(o As Object)
     End Sub
 End Class
 
 Public NotInheritable Class [MyClass]
     Inherits MyBaseClass
-    Public Sub New(ByVal o As Object)
+    Public Sub New(o As Object)
         MyBase.New(o)
     End Sub
 End Class");
@@ -965,7 +965,7 @@ End Class");
 static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);",
 
             @"<DllImport(""kernel32.dll"", SetLastError:=True)>
-Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
+Private Shared Function OpenProcess(dwDesiredAccess As AccessMask, bInheritHandle As Boolean, dwProcessId As UInteger) As IntPtr
 End Function
 
 4 source compilation errors:
@@ -1018,13 +1018,13 @@ Friend Class TestClass
     Private backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
-        AddHandler(ByVal value As EventHandler)
+        AddHandler(value As EventHandler)
             backingField = [Delegate].Combine(backingField, value)
         End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
+        RemoveHandler(value As EventHandler)
             backingField = [Delegate].Remove(backingField, value)
         End RemoveHandler
-        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+        RaiseEvent(sender As Object, e As EventArgs)
             backingField?(sender, e)
         End RaiseEvent
     End Event
@@ -1056,13 +1056,13 @@ Friend Class TestClass
     Private backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
-        AddHandler(ByVal value As EventHandler)
+        AddHandler(value As EventHandler)
             backingField = [Delegate].Combine(backingField, value)
         End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
+        RemoveHandler(value As EventHandler)
             backingField = [Delegate].Remove(backingField, value)
         End RemoveHandler
-        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+        RaiseEvent(sender As Object, e As EventArgs)
 
             If backingField IsNot Nothing Then
                 backingField(sender, e)
@@ -1104,13 +1104,13 @@ Friend Class TestClass
     Private _backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
-        AddHandler(ByVal value As EventHandler)
+        AddHandler(value As EventHandler)
             _backingField = [Delegate].Combine(_backingField, value)
         End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
+        RemoveHandler(value As EventHandler)
             _backingField = [Delegate].Remove(_backingField, value)
         End RemoveHandler
-        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+        RaiseEvent(sender As Object, e As EventArgs)
             _backingField?(sender, e)
         End RaiseEvent
     End Event
@@ -1139,13 +1139,13 @@ Friend Class TestClass
     Private Event backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
-        AddHandler(ByVal value As EventHandler)
+        AddHandler(value As EventHandler)
             AddHandler backingField, value
         End AddHandler
-        RemoveHandler(ByVal value As EventHandler)
+        RemoveHandler(value As EventHandler)
             RemoveHandler backingField, value
         End RemoveHandler
-        RaiseEvent(ByVal sender As Object, ByVal e As EventArgs)
+        RaiseEvent(sender As Object, e As EventArgs)
             RaiseEvent backingField(sender, e)
         End RaiseEvent
     End Event
@@ -1179,12 +1179,12 @@ Friend Class TestClass
         Get
             Return ownerField
         End Get
-        Set(ByVal value As OwnerClass)
+        Set(value As OwnerClass)
             ownerField = value
             AddHandler CType(ownerField, INotifyPropertyChanged).PropertyChanged, AddressOf OnOwnerChanged
         End Set
     End Property
-    Private Sub OnOwnerChanged(ByVal sender As Object, ByVal args As PropertyChangedEventArgs)
+    Private Sub OnOwnerChanged(sender As Object, args As PropertyChangedEventArgs)
     End Sub
 End Class
 
@@ -1241,16 +1241,16 @@ BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyCha
 }", @"Friend Class TestClass
     Private _Items As Integer()
 
-    Default Public Property Item(ByVal index As Integer) As Integer
+    Default Public Property Item(index As Integer) As Integer
         Get
             Return _Items(index)
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             _Items(index) = value
         End Set
     End Property
 
-    Default Public ReadOnly Property Item(ByVal index As String) As Integer
+    Default Public ReadOnly Property Item(index As String) As Integer
         Get
             Return 0
         End Get
@@ -1258,11 +1258,11 @@ BC30149: Class 'OwnerClass' must implement 'Event PropertyChanged As PropertyCha
 
     Private m_test3 As Integer
 
-    Default Public Property Item(ByVal index As Double) As Integer
+    Default Public Property Item(index As Double) As Integer
         Get
             Return m_test3
         End Get
-        Set(ByVal value As Integer)
+        Set(value As Integer)
             m_test3 = value
         End Set
     End Property
@@ -1276,7 +1276,7 @@ End Class");
     object this[int i] { get; set; }
 }",
             @"Public Interface iDisplay
-    Default Property Item(ByVal i As Integer) As Object
+    Default Property Item(i As Integer) As Object
 End Interface");
     }
     [Fact]
@@ -1297,11 +1297,11 @@ class TestClass : IList {
 Friend Class TestClass
     Implements IList
 
-    Default Public Property Item(ByVal index As Integer) As Object Implements IList.Item
+    Default Public Property Item(index As Integer) As Object Implements IList.Item
         Get
             Return index
         End Get
-        Set(ByVal value As Object)
+        Set(value As Object)
         End Set
     End Property
 End Class
@@ -1349,10 +1349,10 @@ BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerat
     }
 }",
             @"Friend Class TestClass
-    Default Public Property Item(ByVal index As Integer) As Object
+    Default Public Property Item(index As Integer) As Object
         Get
         End Get
-        Set(ByVal value As Object)
+        Set(value As Object)
         End Set
     End Property
 End Class
@@ -1378,13 +1378,13 @@ public class TestClass : BaseClass {
 }",
             @"
 Public Class BaseClass
-    Public Overridable Sub TestMethod(Of T As Class)(ByVal parameter As T)
+    Public Overridable Sub TestMethod(Of T As Class)(parameter As T)
     End Sub
 End Class
 
 Public Class TestClass
     Inherits BaseClass
-    Public Overrides Sub TestMethod(Of T As Class)(ByVal parameter As T)
+    Public Overrides Sub TestMethod(Of T As Class)(parameter As T)
     End Sub
 End Class");
     }
@@ -1410,7 +1410,7 @@ End Class");
     }
 }",
             @"Public Class TestClass
-    Public Function TestMethod(ByVal param1 As System.Type, ByVal param2 As System.Globalization.CultureInfo) As Object
+    Public Function TestMethod(param1 As System.Type, param2 As System.Globalization.CultureInfo) As Object
         Return Nothing
     End Function
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
@@ -1450,10 +1450,10 @@ End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
 }",
             @"Public Class MailEmployee
     Public Property Email As String
-    Protected Overloads Function Equals(ByVal other As MailEmployee) As Boolean
+    Protected Overloads Function Equals(other As MailEmployee) As Boolean
         Return Equals(Email, other.Email)
     End Function
-    Public Overrides Function Equals(ByVal obj As Object) As Boolean
+    Public Overrides Function Equals(obj As Object) As Boolean
         Return Equals(CType(obj, MailEmployee))
     End Function
 End Class");
