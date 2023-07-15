@@ -32,7 +32,7 @@ Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/i
 
 Let us know what needs improving. If you want to get involved in writing the code yourself, even better! We've already had code contributions from several first time GitHub contributors, so don't be shy! See [Contributing.md](https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md) for more info.
 
-Currently, the VB -> C# conversion quality is higher than the C# -> VB conversion quality. This is due to demand of people raising issues and supply of developers willing to fix them. This seems to be because the use cases for two directions tend to differ considerably.
+The VB -> C# conversion quality is much higher than the C# -> VB conversion quality. The use cases differ considerably as does the supply/demand of improvements.
 
 ### Use cases
 
