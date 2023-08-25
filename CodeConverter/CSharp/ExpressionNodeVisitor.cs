@@ -1904,10 +1904,10 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private async Task<CSharpSyntaxNode> SubstituteVisualBasicMethodOrNullAsync(VBSyntax.InvocationExpressionSyntax node, ISymbol symbol)
     {
         ExpressionSyntax cSharpSyntaxNode = null;
-        if (symbol?.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic) && symbol.Name == "ChrW" || symbol?.Name == "Chr") {
+        if (IsVisualBasicChrMethod(symbol)) {
             var vbArg = node.ArgumentList.Arguments.Single().GetExpression();
             var constValue = _semanticModel.GetConstantValue(vbArg);
-            if (IsCultureInvariant(symbol, constValue)) {
+            if (IsCultureInvariant(constValue)) {
                 var csArg = await vbArg.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
                 cSharpSyntaxNode = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, csArg, true, true, true, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
             }
@@ -1928,11 +1928,16 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         symbol.ContainingType.ContainingNamespace.ContainingNamespace.Name == nameof(Microsoft) &&
         symbol.Name is "InStr" or "InStrRev" or "Replace" or "Split" or "StrComp";
 
+    private static bool IsVisualBasicChrMethod(ISymbol symbol) =>
+        symbol is not null
+        && symbol.ContainingNamespace.MetadataName == nameof(Microsoft.VisualBasic)
+        && (symbol.Name == "ChrW" || symbol.Name == "Chr");
+
     /// <summary>
     /// https://github.com/icsharpcode/CodeConverter/issues/745
     /// </summary>
-    private static bool IsCultureInvariant(ISymbol symbol, Optional<object> constValue) =>
-       (symbol.Name == "ChrW" || symbol.Name == "Chr") && constValue.HasValue && Convert.ToUInt64(constValue.Value, CultureInfo.InvariantCulture) <= 127;
+    private static bool IsCultureInvariant(Optional<object> constValue) =>
+       constValue.HasValue && Convert.ToUInt64(constValue.Value, CultureInfo.InvariantCulture) <= 127;
 
     private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
     {
