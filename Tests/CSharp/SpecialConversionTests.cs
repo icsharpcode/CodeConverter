@@ -278,6 +278,73 @@ internal partial class TestConversions
     }
 
     [Fact]
+    public async Task TestNonVisualBasicChrMethodConversionsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Class TestConversions
+    Sub Test()
+        Dim a As String
+        a = Chr(2)
+        a = Me.Chr(2)
+        a = Strings.Chr(2)
+        a = Microsoft.VisualBasic.Strings.Chr(2)
+        a = Microsoft.VisualBasic.Chr(2)
+    End Sub
+
+    Sub TestW()
+        Dim a As String
+        a = ChrW(2)
+        a = Me.ChrW(2)
+        a = Strings.ChrW(2)
+        a = Microsoft.VisualBasic.Strings.ChrW(2)
+        a = Microsoft.VisualBasic.ChrW(2)
+    End Sub
+
+    Function Chr(o As Object) As Char
+        Return Microsoft.VisualBasic.Chr(o)
+    End Function
+
+    Function ChrW(o As Object) As Char
+        Return Microsoft.VisualBasic.ChrW(o)
+    End Function
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestConversions
+{
+    public void Test()
+    {
+        string a;
+        a = Conversions.ToString(Chr(2));
+        a = Conversions.ToString(Chr(2));
+        a = Conversions.ToString('\u0002');
+        a = Conversions.ToString('\u0002');
+        a = Conversions.ToString('\u0002');
+    }
+
+    public void TestW()
+    {
+        string a;
+        a = Conversions.ToString(ChrW(2));
+        a = Conversions.ToString(ChrW(2));
+        a = Conversions.ToString('\u0002');
+        a = Conversions.ToString('\u0002');
+        a = Conversions.ToString('\u0002');
+    }
+
+    public char Chr(object o)
+    {
+        return Strings.Chr(Conversions.ToInteger(o));
+    }
+
+    public char ChrW(object o)
+    {
+        return Strings.ChrW(Conversions.ToInteger(o));
+    }
+}");
+    }
+
+    [Fact]
     public async Task UsingBoolInToExpressionAsync()
     {
         // Beware, this will never enter the loop, it's buggy input due to the "i <", but it compiles and runs, so the output should too (and do the same thing)
