@@ -6,7 +6,32 @@
 <html>
 <head>
 	<meta charset="utf-8" />
-    <script src="https://cdn.cookielaw.org/consent/3dfce4f2-dab6-4128-9f33-df7e0597da82/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="3dfce4f2-dab6-4128-9f33-df7e0597da82"></script>
+    <script type="text/javascript">
+        var oneTrustHelper = (function () {
+            function evalGTMScript() {
+                var gtmScript = document.getElementById("GTMScript");
+                gtmScript.type = "text/javascript";
+                gtmScript.classList.remove("optanon-category-1");
+                eval(gtmScript.innerHTML);
+            };
+
+            return {
+                gtmFallback: function () {
+                    console.warn('OneTrust not loaded.');
+                    if (document.readyState !== 'loading') {
+                        evalGTMScript();
+                    } else {
+                        document.addEventListener('readystatechange', function () {
+                            if (document.readyState === 'interactive') {
+                                evalGTMScript();
+                            }
+                        });
+                    };
+                }
+            };
+        })();
+    </script>
+    <script onerror="oneTrustHelper.gtmFallback()" src="https://cdn.cookielaw.org/consent/3dfce4f2-dab6-4128-9f33-df7e0597da82/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="3dfce4f2-dab6-4128-9f33-df7e0597da82"></script>
 	<!-- Page hiding snippet (recommended) -->
 	<style>
 		.async-hide {
@@ -22,7 +47,7 @@
 	</script>
 
 	<!-- Google Tag Manager -->
-	<script>
+	<script id="GTMScript" type="text/plain" class="optanon-category-1">
 		(function (w, d, s, l, i) {
 			w[l] = w[l] || []; w[l].push({
 				'gtm.start':
