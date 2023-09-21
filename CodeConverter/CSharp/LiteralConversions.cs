@@ -125,7 +125,9 @@ internal static class LiteralConversions
 
     public static bool IsWorthBeingAVerbatimString(string s1)
     {
-        return s1.IndexOfAny(new[] {'\r', '\n', '\\'}) > -1;
+        return s1.IndexOfAny(new[] {'\r', '\n', '\\'}) > -1 &&
+               // Don't use verbatim except for \r\n within a larger string
+               s1.Replace("\r\n", "") is {Length: > 0} x && x.IndexOfAny(new[] { '\r', '\n' }) == -1;
     }
 
     /// <summary>

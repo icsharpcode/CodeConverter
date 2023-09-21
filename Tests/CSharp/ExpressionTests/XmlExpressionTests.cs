@@ -120,13 +120,26 @@ new XElement(""Catalog"",
         new XElement(""Author"", ""Garghentini, Davide""),
         new XElement(""Title"", ""XML Developer's Guide""),
         new XElement(""Price"", ""44.95""),
-        new XElement(""Description"", ""\r\n          An in-depth look at creating applications\r\n          with "", new XElement(""technology"", ""XML""), "". For\r\n          "", new XElement(""audience"", ""beginners""), "" or\r\n          "", new XElement(""audience"", ""advanced""), "" developers.\r\n        "")
+        new XElement(""Description"", @""
+          An in-depth look at creating applications
+          with "", new XElement(""technology"", ""XML""), @"". For
+          "", new XElement(""audience"", ""beginners""), @"" or
+          "", new XElement(""audience"", ""advanced""), @"" developers.
+        "")
     ),
     new XElement(""Book"", new XAttribute(""id"", ""bk331""),
         new XElement(""Author"", ""Spencer, Phil""),
         new XElement(""Title"", ""Developing Applications with Visual Basic .NET""),
         new XElement(""Price"", ""45.95""),
-        new XElement(""Description"", ""\r\n          Get the expert insights, practical code samples,\r\n          and best practices you need\r\n          to advance your expertise with "", new XElement(""technology"", ""Visual\r\n          Basic .NET""), "".\r\n          Learn how to create faster, more reliable applications\r\n          based on professional,\r\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\r\n        "")
+        new XElement(""Description"", @""
+          Get the expert insights, practical code samples,
+          and best practices you need
+          to advance your expertise with "", new XElement(""technology"", @""Visual
+          Basic .NET""), @"".
+          Learn how to create faster, more reliable applications
+          based on professional,
+          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), @"".
+        "")
     )
 )
 
