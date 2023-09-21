@@ -2,6 +2,7 @@
 using System.Data;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Xml.Linq;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -151,6 +152,13 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitXmlText(VBSyntax.XmlTextSyntax node) =>
         CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
+
+    public override async Task<CSharpSyntaxNode> VisitXmlCDataSection(VBSyntax.XmlCDataSectionSyntax node)
+    {
+        var xcDataTypeSyntax = SyntaxFactory.ParseTypeName(nameof(XCData));
+        var argumentListSyntax = CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + b.Text)).Yield().CreateCsArgList();
+        return SyntaxFactory.ObjectCreationExpression(xcDataTypeSyntax).WithArgumentList(argumentListSyntax);
+    }
 
     /// <summary>
     /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/accessing-xml

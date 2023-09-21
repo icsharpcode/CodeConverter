@@ -13,9 +13,7 @@ internal static class LiteralConversions
     public static ExpressionSyntax GetLiteralExpression(object value, string textForUser = null, ITypeSymbol convertedType = null)
     {
         if (value is string valueTextForCompiler) {
-            textForUser = textForUser == null
-                ? SymbolDisplay.FormatLiteral(valueTextForCompiler, true)
-                : GetQuotedStringTextForUser(textForUser, valueTextForCompiler);
+            textForUser = GetQuotedStringTextForUser(textForUser ?? SymbolDisplay.FormatLiteral(valueTextForCompiler, true), valueTextForCompiler);
             return SyntaxFactory.LiteralExpression(CSSyntaxKind.StringLiteralExpression,
                 SyntaxFactory.Literal(textForUser, valueTextForCompiler));
         }
