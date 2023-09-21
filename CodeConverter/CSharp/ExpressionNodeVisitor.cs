@@ -148,15 +148,15 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     }
 
     public override async Task<CSharpSyntaxNode> VisitXmlString(VBasic.Syntax.XmlStringSyntax node) =>
-        CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
+        CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text)));
 
     public override async Task<CSharpSyntaxNode> VisitXmlText(VBSyntax.XmlTextSyntax node) =>
-        CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + LiteralConversions.EscapeVerbatimQuotes(b.Text)));
+        CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text)));
 
     public override async Task<CSharpSyntaxNode> VisitXmlCDataSection(VBSyntax.XmlCDataSectionSyntax node)
     {
         var xcDataTypeSyntax = SyntaxFactory.ParseTypeName(nameof(XCData));
-        var argumentListSyntax = CommonConversions.Literal(node.TextTokens.Aggregate("", (a, b) => a + b.Text)).Yield().CreateCsArgList();
+        var argumentListSyntax = CommonConversions.Literal(string.Join("", node.TextTokens.Select( b=> b.Text))).Yield().CreateCsArgList();
         return SyntaxFactory.ObjectCreationExpression(xcDataTypeSyntax).WithArgumentList(argumentListSyntax);
     }
 
