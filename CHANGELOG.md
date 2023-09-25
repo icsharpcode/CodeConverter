@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 
 * Omit special VB conversions within expression trees [#930](https://github.com/icsharpcode/CodeConverter/issues/930) [#316](https://github.com/icsharpcode/CodeConverter/issues/316)
+* Support CData [#1032](https://github.com/icsharpcode/CodeConverter/issues/1032)
+* Use verbatim strings for strings containing newlines
 
 ### C# -> VB
 
