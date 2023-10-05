@@ -22,8 +22,16 @@ internal static class ClashingMemberRenamer
 
         var members = containerSymbol.GetMembers()
             .Where(m => m.Locations.Any(loc => loc.SourceTree != null && compilation.ContainsSyntaxTree(loc.SourceTree)))
-            .Where(s => containerSymbol.Name == s.Name || containerSymbol is INamedTypeSymbol nt && nt.IsEnumType() && SymbolRenamer.GetName(s).StartsWith(containerSymbol.Name, StringComparison.InvariantCulture));
+            .Where(s => ShouldBeRenamed(containerSymbol, s));
         var symbolSet = containerSymbol.Yield().Concat(members).ToArray();
         return SymbolRenamer.GetSymbolsWithNewNames(symbolSet, new HashSet<string>(symbolSet.Select(SymbolRenamer.GetName)), true);
+    }
+
+    private static bool ShouldBeRenamed(INamespaceOrTypeSymbol containerSymbol, ISymbol symbol)
+    {
+        if (containerSymbol is ITypeSymbol namedSymbol && namedSymbol.IsEnumType())
+            return false;
+
+        return containerSymbol.Name == symbol.Name;
     }
 }
