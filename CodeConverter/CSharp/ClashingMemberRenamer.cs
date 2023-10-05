@@ -29,7 +29,7 @@ internal static class ClashingMemberRenamer
 
     private static bool ShouldBeRenamed(INamespaceOrTypeSymbol containerSymbol, ISymbol symbol)
     {
-        if (containerSymbol is ITypeSymbol namedSymbol && namedSymbol.IsEnumType())
+        if (containerSymbol is INamedTypeSymbol namedSymbol && namedSymbol.IsEnumType())
             return false;
 
         return containerSymbol.Name == symbol.Name;
