@@ -1,7 +1,7 @@
 
 namespace VbLibrary
 {
-    internal enum AnEnumType
+    internal enum AnEnum
     {
         AnEnumMember
     }

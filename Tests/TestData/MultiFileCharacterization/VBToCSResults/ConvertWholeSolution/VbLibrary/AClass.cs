@@ -29,16 +29,16 @@ namespace VbLibrary
             x = argvalue;
         }
 
-        private void UseEnumFromOtherFileInSolution(AnEnumType m)
+        private void UseEnumFromOtherFileInSolution(AnEnum m)
         {
-            string nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnumType.AnEnumMember];
+            string nothing = Enumerable.Empty<string>().ToArray()[(int)AnEnum.AnEnumMember];
             switch (m)
             {
-                case (AnEnumType)(-1):
+                case (AnEnum)(-1):
                     {
                         return;
                     }
-                case AnEnumType.AnEnumMember:
+                case AnEnum.AnEnumMember:
                     {
                         return;
                     }

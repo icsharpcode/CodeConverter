@@ -3581,15 +3581,33 @@ internal static partial class MainType
     }
 
     [Fact]
-    public async Task Issue420_RenameClashingEnumMemberAsync()
+    public async Task Issue420_DoNotRenameClashingEnumMemberAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"Enum MyEnum
     MyEnumFirst
+    MyEnum
 End Enum", @"
-internal enum MyEnumType
+internal enum MyEnum
 {
+    MyEnumFirst,
+    MyEnum
+}
+");
+    }
+
+    [Fact]
+    public async Task Issue420_DoNotRenameClashingEnumMemberForPublicEnumAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Enum MyEnum
     MyEnumFirst
+    MyEnum
+End Enum", @"
+public enum MyEnum
+{
+    MyEnumFirst,
+    MyEnum
 }
 ");
     }
