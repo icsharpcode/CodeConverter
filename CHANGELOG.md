@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Support CData [#1032](https://github.com/icsharpcode/CodeConverter/issues/1032)
 * Use verbatim strings for strings containing newlines
 * Fix clashing symbol renamer for Enum types [#1035](https://github.com/icsharpcode/CodeConverter/issues/1035)
+* Convert nullable operators within a binary condition expression [#1038](https://github.com/icsharpcode/CodeConverter/issues/1038)
 
 ### C# -> VB
 

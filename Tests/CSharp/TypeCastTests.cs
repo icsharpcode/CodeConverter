@@ -870,6 +870,25 @@ internal partial class Class1
     }
 
     [Fact]
+    public async Task RetainNullableBoolWhenNeededAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Class1
+    Function F(a As Net.IPAddress) As Boolean
+        Return If(a?.ScopeId = 0, True)
+End Function
+End Class",
+            @"
+internal partial class Class1
+{
+    public bool F(System.Net.IPAddress a)
+    {
+        return ((a?.ScopeId) is { } arg1 ? arg1 == 0 : (bool?)null) ?? true;
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestNullableBoolConversionsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
