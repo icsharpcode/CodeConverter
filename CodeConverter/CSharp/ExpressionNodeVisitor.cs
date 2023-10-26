@@ -847,15 +847,33 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
     public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
     {
+        // Manually walk tree bottom up to avoid stack overflow for deeply nested binary expressions like 3 + 4 + 5 + ...
+        // Test "DeeplyNestedBinaryExpressionShouldNotStackOverflowAsync()" skipped because it's too slow
+        while (node.Left is VBSyntax.BinaryExpressionSyntax l) {
+            node = l;
+        }
+
+        ExpressionSyntax csLhs = null;
+        for (; node is not null; node = BinaryParentWithLhs(node)) {
+            csLhs = (ExpressionSyntax) await ConvertBinaryExpressionAsync(node, csLhs);
+        }
+
+        return csLhs;
+
+        VBSyntax.BinaryExpressionSyntax BinaryParentWithLhs(SyntaxNode currentSyntaxNode) => currentSyntaxNode.Parent is VBSyntax.BinaryExpressionSyntax {Left: var l} p && l == currentSyntaxNode ? p : null;
+    }
+
+    private async Task<CSharpSyntaxNode> ConvertBinaryExpressionAsync(VBasic.Syntax.BinaryExpressionSyntax node, ExpressionSyntax lhs = null, ExpressionSyntax rhs = null)
+    {
         if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node, TriviaConvertingExpressionVisitor.IsWithinQuery) is { } operatorNode) {
             return operatorNode;
         }
 
+        lhs ??= await node.Left.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        rhs ??= await node.Right.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+
         var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-
-        var lhs = await node.Left.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
         ITypeSymbol forceLhsTargetType = null;
         bool omitRightConversion = false;
