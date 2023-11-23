@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/CodeConverter/static/css/main.56ca63e3.css",
-    "main.js": "/CodeConverter/static/js/main.902bbd91.js",
+    "main.js": "/CodeConverter/static/js/main.cc53f0e8.js",
     "index.html": "/CodeConverter/index.html",
     "main.56ca63e3.css.map": "/CodeConverter/static/css/main.56ca63e3.css.map",
-    "main.902bbd91.js.map": "/CodeConverter/static/js/main.902bbd91.js.map"
+    "main.cc53f0e8.js.map": "/CodeConverter/static/js/main.cc53f0e8.js.map"
   },
   "entrypoints": [
     "static/css/main.56ca63e3.css",
-    "static/js/main.902bbd91.js"
+    "static/js/main.cc53f0e8.js"
   ]
 }
