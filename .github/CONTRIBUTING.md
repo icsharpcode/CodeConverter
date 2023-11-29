@@ -72,3 +72,7 @@ At the moment there's just a very small amount of first draft documentation. Con
 * All parallelism is controlled by Env.MaxDop. When a debugger is attached to a debug build, it sets parallelism to 1. If you're seeing a transient issue when the debugger isn't attached but can't reproduce the issue with the debugger, set this to a large number instead.
 * The worst part of the code is the query syntax conversion. It's just evolved messily to cover basic cases. To comprehensively cover the syntax would need a proper architecture defined to match how the queries are formed. For an example of other code that solves a similar query syntax problem, see ILSpy's [`CSharpDecompiler`](https://github.com/icsharpcode/ILSpy/blob/e189ad9ca301142b9134c2839e416199cbd3360e/ICSharpCode.Decompiler/CSharp/Transforms/IntroduceQueryExpressions.cs)
 * There are a few areas where different special cases collide which are incredibly difficult to reason about all cases. Function hoisting and select case statements are some examples which need care. If major work is required, they'll need some extra test cases adding and refactoring to separate the concerns.
+
+## Roslyn versions
+
+The core library and Visual Studio extension target the Roslyn version matching the oldest supported version of VS. This avoids introducing compatibility issues. If there are newer APIs needed though, we'll weigh up the pros and cons. 
