@@ -598,7 +598,7 @@ internal class CommonConversions
             var flow = SemanticModel.AnalyzeDataFlow(node.Statements.First(), node.Statements.Last());
 
             if (flow.Succeeded) {
-                assignsToMethodNameVariable = flow.ReadInside.Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
+                assignsToMethodNameVariable = flow.ReadInsideSafe().Any(equalsMethodName) || flow.WrittenInside.Any(equalsMethodName);
             }
         }
 
