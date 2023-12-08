@@ -30,12 +30,12 @@
     <ProjectReference Include="..\CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj" />
   </ItemGroup>
   <ItemGroup Label="ReSharper test runner requirements - test against latest Visual Studio version">
-    <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="4.2.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.2.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.2.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Build" Version="17.4.0" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.8.0" />
+    <PackageReference Include="Microsoft.Build" Version="17.8.3" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.8.3" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
