@@ -12,12 +12,9 @@ internal static class DataFlowAnalysisExtensions
     /// </summary>
     public static System.Collections.Immutable.ImmutableArray<ISymbol> ReadInsideSafe(this DataFlowAnalysis dataFlow)
     {
-        try
-        {
+        try {
             return dataFlow.ReadInside;
-        }
-        catch
-        {
+        } catch {
             return dataFlow.ReadInside;
         }
     }
