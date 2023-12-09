@@ -1,8 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <RootNamespace>VbLibrary</RootNamespace>
-    <TargetFramework>netstandard2.1</TargetFramework>
-  </PropertyGroup>
+    <PropertyGroup>
+        <RootNamespace>VbLibrary</RootNamespace>
+        <TargetFramework>netstandard2.1</TargetFramework>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\VbNetStandardLib\VbNetStandardLib.vbproj" />
+    </ItemGroup>
+
+    <Target Name="GenerateResource" />
 
 </Project>
