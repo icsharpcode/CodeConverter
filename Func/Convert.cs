@@ -4,10 +4,9 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Microsoft.Azure.Functions.Worker;
 
 namespace ICSharpCode.CodeConverter.Func;
 
@@ -26,7 +25,7 @@ public class Convert
     //
     // Sample data: {"code":"Public Class VisualBasicClass\r\n\r\nEnd Class","requestedConversion":"vbnet2cs"}
     //
-    [FunctionName("Convert")]
+    [Function("Convert")]
 #pragma warning disable VSTHRD200 // Use "Async" suffix for async methods - Name must be "Run" for this to work AFAIK
     public async Task<IActionResult> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
