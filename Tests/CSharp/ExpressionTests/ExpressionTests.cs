@@ -2491,6 +2491,48 @@ public partial class Compound
     }
 
     [Fact]
+    public async Task SquareBracketsInLabelAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Sub S()
+    GoTo [finally]
+[finally]:
+    GoTo [Step]
+[Step]:
+End Sub",
+            @"
+public void S()
+{
+    goto @finally;
+@finally:
+    ;
+
+    goto Step;
+Step:
+    ;
+
+}");
+    }
+
+    [Fact]
+    public async Task SquareBracketsInIdentifierAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+    Sub [Step]()
+        Static i As Integer
+    End Sub",
+            @"
+internal partial class SurroundingClass
+{
+    private int _[Step]_i;
+
+    public void Step()
+    {
+    }
+}");
+    }
+
+    [Fact]
     public async Task CintIsConvertedCorrectlyAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(

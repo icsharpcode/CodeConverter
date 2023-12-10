@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Remove square brackets when escaping labels and identifiers [#1043](https://github.com/icsharpcode/CodeConverter/issues/1043) and [#1044](https://github.com/icsharpcode/CodeConverter/issues/1044)
 * Exit Property now returns value assigned to return variable [#1051](https://github.com/icsharpcode/CodeConverter/issues/1051)
 * Avoid stack overflow for very deeply nested binary expressions [#1033](https://github.com/icsharpcode/CodeConverter/issues/1033)
 * Omit special VB conversions within expression trees [#930](https://github.com/icsharpcode/CodeConverter/issues/930) [#316](https://github.com/icsharpcode/CodeConverter/issues/316)

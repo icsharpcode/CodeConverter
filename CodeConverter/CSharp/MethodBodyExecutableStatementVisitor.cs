@@ -727,13 +727,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitLabelStatement(VBSyntax.LabelStatementSyntax node)
     {
-        return SingleStatement(SyntaxFactory.LabeledStatement(node.LabelToken.Text, SyntaxFactory.EmptyStatement()));
+        return SingleStatement(SyntaxFactory.LabeledStatement(CommonConversions.CsEscapedIdentifier(node.LabelToken.Text), SyntaxFactory.EmptyStatement()));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitGoToStatement(VBSyntax.GoToStatementSyntax node)
     {
         return SingleStatement(SyntaxFactory.GotoStatement(SyntaxKind.GotoStatement,
-            SyntaxFactory.IdentifierName(node.Label.LabelToken.Text)));
+            SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(node.Label.LabelToken.Text))));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
