@@ -1408,10 +1408,12 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 var arg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(defaultExpression));
                 _extraUsingDirectives.Add("System.Runtime.InteropServices");
                 _extraUsingDirectives.Add("System.Runtime.CompilerServices");
-                var optionalAttributes = new[] {
+                var optionalAttributes = new List<AttributeSyntax> {
                     SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("Optional")),
-                    SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("DefaultParameterValue"), arg)
                 };
+                if (!node.Default.Value.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
+                    optionalAttributes.Add(SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
+                }
                 attributes.Insert(0,
                     SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalAttributes)));
             } else {

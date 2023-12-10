@@ -347,14 +347,26 @@ public partial class OptionalRefIssue91
     public async Task RefAfterOptionalArgumentAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
-    Sub S(Optional a As Integer = 0, Optional ByRef b As Integer = 0)
-        S()
-    End Sub
+Sub S(Optional a As Integer = 0, Optional ByRef b As Integer = 0)
+    S()
+End Sub
 ", @"
 public void S([Optional, DefaultParameterValue(0)] int a, [Optional, DefaultParameterValue(0)] ref int b)
 {
     int argb = 0;
     S(b: ref argb);
+}");
+    }
+
+    [Fact]
+    public async Task DateRefAfterOptionalArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Sub S(Optional ByRef dt As Date = Nothing)
+End Sub
+", @"
+public void S([Optional] ref DateTime dt)
+{
 }");
     }
 
@@ -378,7 +390,7 @@ End Class", @"using System.Runtime.InteropServices;
 
 public partial class OptionalOutIssue882
 {
-    private void TestSub(out int a, [Optional, DefaultParameterValue(default(int))] out int b)
+    private void TestSub(out int a, [Optional] out int b)
     {
         a = 42;
         b = 23;
