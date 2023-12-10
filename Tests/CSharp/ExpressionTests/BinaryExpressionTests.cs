@@ -724,6 +724,30 @@ public partial class ConversionInComparisonOperatorTest
 }");
     }
 
+    [Fact]
+    public async Task RewrittenObjectOperatorDoesNotStackOverflowAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Sub S()
+    Dim a As Object
+    Dim b As Object
+    If (1=Integer.Parse(""1"") And b And a = 1) Then
+    Else If (a = 1 Or b Or a = 2 Or a = 3) Then
+    End If
+End Sub", @"
+public void S()
+{
+    var a = default(object);
+    var b = default(object);
+    if (Conversions.ToBoolean(Operators.AndObject(Operators.AndObject(1 == int.Parse(""1""), b), Operators.ConditionalCompareObjectEqual(a, 1, false))))
+    {
+    }
+    else if (Conversions.ToBoolean(Operators.OrObject(Operators.OrObject(Operators.OrObject(Operators.ConditionalCompareObjectEqual(a, 1, false), b), Operators.ConditionalCompareObjectEqual(a, 2, false)), Operators.ConditionalCompareObjectEqual(a, 3, false))))
+    {
+    }
+}");
+    }
+
     [Fact(Skip = "Too slow")]
     public async Task DeeplyNestedBinaryExpressionShouldNotStackOverflowAsync()
     {

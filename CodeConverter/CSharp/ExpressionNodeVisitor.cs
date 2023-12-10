@@ -2,6 +2,7 @@
 using System.Data;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -845,30 +846,35 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         return expr;
     }
 
-    public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax node)
+    public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax entryNode)
     {
-        // Manually walk tree bottom up to avoid stack overflow for deeply nested binary expressions like 3 + 4 + 5 + ...
+        // Walk down the syntax tree for deeply nested binary expressions to avoid stack overflow
+        // e.g. 3 + 4 + 5 + ...
         // Test "DeeplyNestedBinaryExpressionShouldNotStackOverflowAsync()" skipped because it's too slow
-        while (node.Left is VBSyntax.BinaryExpressionSyntax l) {
-            node = l;
-        }
 
         ExpressionSyntax csLhs = null;
-        for (; node is not null; node = BinaryParentWithLhs(node)) {
-            csLhs = (ExpressionSyntax) await ConvertBinaryExpressionAsync(node, csLhs);
+        int levelsToConvert = 0;
+        VBSyntax.BinaryExpressionSyntax currentNode = entryNode;
+
+        // Walk down the nested levels to count them
+        for (var nextNode = entryNode; nextNode != null; currentNode = nextNode, nextNode = currentNode.Left as VBSyntax.BinaryExpressionSyntax, levelsToConvert++) {
+            // Don't go beyond a rewritten operator because that code has many paths that can call VisitBinaryExpression. Passing csLhs through all of that would harm the code quality more than it's worth to help that edge case.
+            if (await RewriteBinaryOperatorOrNullAsync(nextNode) is { } operatorNode) {
+                csLhs = operatorNode;
+                break;
+            }
+        }
+
+        // Walk back up the same levels converting as we go.
+        for (; levelsToConvert > 0; currentNode = currentNode!.Parent as VBSyntax.BinaryExpressionSyntax, levelsToConvert--) {
+            csLhs = (ExpressionSyntax)await ConvertBinaryExpressionAsync(currentNode, csLhs);
         }
 
         return csLhs;
-
-        VBSyntax.BinaryExpressionSyntax BinaryParentWithLhs(SyntaxNode currentSyntaxNode) => currentSyntaxNode.Parent is VBSyntax.BinaryExpressionSyntax {Left: var l} p && l == currentSyntaxNode ? p : null;
     }
 
     private async Task<CSharpSyntaxNode> ConvertBinaryExpressionAsync(VBasic.Syntax.BinaryExpressionSyntax node, ExpressionSyntax lhs = null, ExpressionSyntax rhs = null)
     {
-        if (await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node, TriviaConvertingExpressionVisitor.IsWithinQuery) is { } operatorNode) {
-            return operatorNode;
-        }
-
         lhs ??= await node.Left.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         rhs ??= await node.Right.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
@@ -925,6 +931,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
         return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
     }
+
+    private async Task<ExpressionSyntax> RewriteBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node) =>
+        await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node, TriviaConvertingExpressionVisitor.IsWithinQuery);
 
     private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
     {
