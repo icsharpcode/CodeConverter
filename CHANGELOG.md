@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.2.4] - 2023-12-10
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Ensure static declarations within property setters are converted [#1053](https://github.com/icsharpcode/CodeConverter/issues/1053)
 * Convert optional DateTime parameters [#1056](https://github.com/icsharpcode/CodeConverter/issues/1056)
 * Convert optional parameters before ref parameters using attributes to avoid compile error [#1057](https://github.com/icsharpcode/CodeConverter/issues/1057)

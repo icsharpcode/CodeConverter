@@ -7,9 +7,9 @@
     <WarningLevel>4</WarningLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <LangVersion>10.0</LangVersion>
-    <AssemblyVersion>9.2.3.0</AssemblyVersion>
-    <FileVersion>9.2.3.0</FileVersion>
-    <Version>9.2.3</Version>
+    <AssemblyVersion>9.2.4.0</AssemblyVersion>
+    <FileVersion>9.2.4.0</FileVersion>
+    <Version>9.2.4</Version>
     <Authors>ICSharpCode</Authors>
     <Copyright>Copyright (c) 2017-2023 AlphaSierraPapa for the CodeConverter team</Copyright>
     <Company>ICSharpCode</Company>
