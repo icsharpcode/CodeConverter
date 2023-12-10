@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
-* Avoid stack overflow in stack overflow prevention code [#1047](https://github.com/icsharpcode/CodeConverter/issues/1047)
+* Ensure static declarations within property setters are converted [#1053](https://github.com/icsharpcode/CodeConverter/issues/1053)
 * Convert optional DateTime parameters [#1056](https://github.com/icsharpcode/CodeConverter/issues/1056)
 * Convert optional parameters before ref parameters using attributes to avoid compile error [#1057](https://github.com/icsharpcode/CodeConverter/issues/1057)
 * Remove square brackets when escaping labels and identifiers [#1043](https://github.com/icsharpcode/CodeConverter/issues/1043) and [#1044](https://github.com/icsharpcode/CodeConverter/issues/1044)

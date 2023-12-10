@@ -221,10 +221,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             var convertedMembers = await members.SelectManyAsync(async member => {
                 _typeContext.PerScopeState.PushScope();
                 try {
-                    var convertedMember = (await ConvertMemberAsync(member)).Yield();
-                    var convertedPlusAdditional = (await _typeContext.PerScopeState.CreateVbStaticFieldsAsync(
+                    var convertedMember = (await ConvertMemberAsync(member)).Yield().Concat(GetAdditionalDeclarations(member));
+                    IEnumerable<MemberDeclarationSyntax> convertedPlusAdditional = (await _typeContext.PerScopeState.CreateVbStaticFieldsAsync(
                             parentType, namedTypeSymbol, convertedMember, _generatedNames, _semanticModel)
-                        ).Concat(GetAdditionalDeclarations(member));
+                        );
                     return convertedPlusAdditional;
                 }
                 finally

@@ -609,6 +609,42 @@ internal partial class ChildClass : IClass
     }
 
     [Fact]
+    public async Task SetterProperty1053Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Property Prop(ByVal i As Integer) As String
+    Get
+        Static bGet As Boolean
+        bGet = False
+    End Get
+
+    Set(ByVal s As String)
+        Static bSet As Boolean
+        bSet = False
+    End Set
+End Property
+", @"
+internal partial class SurroundingClass
+{
+    private bool _Prop_bGet;
+    private bool _Prop_bSet;
+
+    public string get_Prop(int i)
+    {
+        _Prop_bGet = false;
+        return default;
+    }
+
+    public void set_Prop(int i, string value)
+    {
+        _Prop_bSet = false;
+    }
+
+}", incompatibleWithAutomatedCommentTesting: true);// Known bug: Additional declarations don't get comments correctly converted
+    }
+
+    [Fact]
     public async Task TestReadOnlyAndWriteOnlyParametrizedPropertyAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
