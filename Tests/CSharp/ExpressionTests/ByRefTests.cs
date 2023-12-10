@@ -344,6 +344,21 @@ public partial class OptionalRefIssue91
     }
 
     [Fact]
+    public async Task RefAfterOptionalArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+    Sub S(Optional a As Integer = 0, Optional ByRef b As Integer = 0)
+        S()
+    End Sub
+", @"
+public void S([Optional, DefaultParameterValue(0)] int a, [Optional, DefaultParameterValue(0)] ref int b)
+{
+    int argb = 0;
+    S(b: ref argb);
+}");
+    }
+
+    [Fact]
     public async Task OutOptionalArgumentAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
