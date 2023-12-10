@@ -947,7 +947,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var ancestoryPropertyBlock = node.GetAncestor<VBSyntax.PropertyBlockSyntax>();
         var containingPropertyStmt = ancestoryPropertyBlock?.PropertyStatement;
         var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-        var convertedStatements = SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, isIterator));
+        var convertedStatements = SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, isIterator, csReturnVariableOrNull));
         var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
         var attributes = await CommonConversions.ConvertAttributesAsync(node.AccessorStatement.AttributeLists);
         var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);

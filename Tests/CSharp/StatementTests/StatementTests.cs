@@ -2053,4 +2053,61 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task SetterReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public ReadOnly Property Prop() As Object
+    Get
+        Try
+            Prop = New Object
+            Exit Property
+        Catch ex As Exception
+        End Try
+    End Get
+End Property
+
+Public Function Func() As Object
+    Try
+        Func = New Object
+        Exit Function
+    Catch ex As Exception
+    End Try
+End Function", @"
+internal partial class SurroundingClass
+{
+    public object Prop
+    {
+        get
+        {
+            object PropRet = default;
+            try
+            {
+                PropRet = new object();
+                return PropRet;
+            }
+            catch (Exception ex)
+            {
+            }
+
+            return PropRet;
+        }
+    }
+
+    public object Func()
+    {
+        object FuncRet = default;
+        try
+        {
+            FuncRet = new object();
+            return FuncRet;
+        }
+        catch (Exception ex)
+        {
+        }
+
+        return FuncRet;
+    }
+}");
+    }
 }
