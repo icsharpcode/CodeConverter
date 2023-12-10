@@ -34,11 +34,18 @@ See the main 3 visitors containing a method for each bit of syntax (e.g. for an 
 * https://github.com/icsharpcode/CodeConverter/blob/master/CodeConverter/CSharp/MethodBodyExecutableStatementVisitor.cs
 * https://github.com/icsharpcode/CodeConverter/blob/master/CodeConverter/CSharp/ExpressionNodeVisitor.cs
 
-
 There are some surrounding visitors which keep cross-cutting details out of the way of the main body of code.
 After conversion, the roslyn simplifier runs to tidy up the code, removing redundant qualification etc.
 
 Always try to understand the root problem and find the general place to apply a fix that covers or helps with related cases. Example here: https://github.com/icsharpcode/CodeConverter/issues/557
+
+### Example of finding where to put a breakpoint
+
+If you look at the syntax tree of the input code you can see the names of the problematic part. There will be a "Visit..." method for most syntax types. If one doesn't exist, just pick the next one up the tree, and step in from that point.
+![image](https://github.com/icsharpcode/CodeConverter/assets/2490482/5ff25972-b795-447b-861f-1fe955ca4d3c)
+(source: https://sharplab.io/#v2:DYLgbgRgNALiCGBnGUAmIDUAfACgVwmAEsBjAAgGFglEyBpAUwE8B3AewCdUA5eAWwYBYAFBkxZAMoFJACgCUI8UrIBxNgBU2ZANoAzIgDt4wYEwC6IvYeOmzIRcrFrNOiTAYAHC8O1vPdhzEAUQNUSQIRELCqGiA===)
+
+https://github.com/icsharpcode/CodeConverter/blob/0647b8d2056b1a7d0fc110290caff50b55cdc3f3/CodeConverter/CSharp/MethodBodyExecutableStatementVisitor.cs#L728-L737
 
 ## For documentation, prefer:
 * Anything process/project related to be visible on GitHub (e.g. these bullet points)
