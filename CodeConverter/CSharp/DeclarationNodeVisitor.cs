@@ -220,11 +220,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             var membersFromBase = additionalInitializers.IsBestPartToAddTypeInit ? methodsWithHandles.GetDeclarationsForHandlingBaseMembers() : Array.Empty<MemberDeclarationSyntax>();
             var convertedMembers = await members.SelectManyAsync(async member => {
                 _typeContext.PerScopeState.PushScope();
-                try
-                {
-                    return (await _typeContext.PerScopeState.CreateVbStaticFieldsAsync(
-                            parentType, namedTypeSymbol, (await ConvertMemberAsync(member)).Yield(), _generatedNames, _semanticModel)
+                try {
+                    var convertedMember = (await ConvertMemberAsync(member)).Yield();
+                    var convertedPlusAdditional = (await _typeContext.PerScopeState.CreateVbStaticFieldsAsync(
+                            parentType, namedTypeSymbol, convertedMember, _generatedNames, _semanticModel)
                         ).Concat(GetAdditionalDeclarations(member));
+                    return convertedPlusAdditional;
                 }
                 finally
                 {
