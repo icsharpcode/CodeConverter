@@ -37,7 +37,7 @@ internal class HandledEventsAnalysis
         IEnumerable<Assignment> SelectAssignment(IEnumerable<(EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)> handlers)
         {
             return handlers.Where(x=> x.EventContainer.Kind != EventContainerKind.Property || x.PropertyDetails.IsNeverWrittenOrOverridden).SelectMany(e => e.HandledMethods, (e, m) => {
-                var methodId = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(m.HandlingMethod.Name));
+                var methodId = ValidSyntaxFactory.IdentifierName((m.HandlingMethod.Name));
                 return new Assignment(MemberAccess(EventContainerExpression(e.EventContainer), m.Event), SyntaxKind.AddAssignmentExpression, Invokable(methodId, m.ParametersToDiscard), true);
             });
         }
@@ -46,7 +46,7 @@ internal class HandledEventsAnalysis
             eventContainer.Kind switch {
                 EventContainerKind.Base => SyntaxFactory.BaseExpression(),
                 EventContainerKind.This => SyntaxFactory.ThisExpression(),
-                _ => SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(eventContainer.PropertyName))
+                _ => ValidSyntaxFactory.IdentifierName((eventContainer.PropertyName))
             };
 
         var constructorEventHandlers = _handlingMethodsForInstance.Concat(_handlingMethodsByPropertyName.Values)
@@ -68,7 +68,7 @@ internal class HandledEventsAnalysis
     {
         return _handlingMethodsForInstance.Concat(_handlingMethodsByPropertyName.Values).SelectMany(x => x.HandledMethods, (c, s) => (Container: c, Subscription: s))
             .Where(h => h.Subscription.ParametersToDiscard > 0 && h.Subscription.Event.SymbolOrNull?.Type.GetDelegateInvokeMethod() != null)
-            .Select(e => CreateDelegatingMethod(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(e.Subscription.HandlingMethod.Name)), e.Subscription.Event))
+            .Select(e => CreateDelegatingMethod(ValidSyntaxFactory.IdentifierName((e.Subscription.HandlingMethod.Name)), e.Subscription.Event))
             .GroupBy(m => (m.Identifier.Text, string.Join(",", m.ParameterList.Parameters.Select(p => p.Type.ToString()))))
             .Select(g => g.First());
     }
@@ -86,7 +86,7 @@ internal class HandledEventsAnalysis
         var modifiers = prop.Modifiers.RemoveWhere(m => m.IsKind(SyntaxKind.VirtualKeyword)).Add(SyntaxFactory.Token(SyntaxKind.OverrideKeyword));
         //TODO Stash away methodwithandles in constructor that don't match any symbol from that type, to match here against base symbols
         return GetDeclarationsForFieldBackedProperty(basePropertyEventSubscription.HandledMethods, SyntaxFactory.List<SyntaxNode>(), modifiers, 
-            prop.Type, prop.Identifier, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.BaseExpression(), SyntaxFactory.IdentifierName(prop.Identifier)));
+            prop.Type, prop.Identifier, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.BaseExpression(), ValidSyntaxFactory.IdentifierName(prop.Identifier)));
     }
 
     public SyntaxList<StatementSyntax> GetPostAssignmentStatements(ISymbol potentialPropertySymbol)
@@ -99,7 +99,7 @@ internal class HandledEventsAnalysis
             HandledMethods) memberEvents)
     {
         var prefix = memberEvents.PropertyDetails.IsNeverWrittenOrOverridden ? "" : "_";
-        var fieldName = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(prefix + memberEvents.PropertyDetails.Property.Name));
+        var fieldName = ValidSyntaxFactory.IdentifierName((prefix + memberEvents.PropertyDetails.Property.Name));
         var postAssignmentStatements = memberEvents.HandledMethods.Select(hm =>
             CreateHandlesUpdater(fieldName, hm.Event, SyntaxKind.AddAssignmentExpression, hm.HandlingMethod, hm.ParametersToDiscard, true));
         {
@@ -138,7 +138,7 @@ internal class HandledEventsAnalysis
 
             yield return GetDeclarationsForFieldBackedProperty(toHandle.HandledMethods, attributes, propModifiers,
                 decl.Type, variable.Identifier,
-                SyntaxFactory.IdentifierName(newId));
+                ValidSyntaxFactory.IdentifierName(newId));
         }
     }
 
@@ -174,7 +174,7 @@ internal class HandledEventsAnalysis
     {
         var assignBackingField = SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(
             SyntaxKind.SimpleAssignmentExpression, fieldIdSyntax,
-            SyntaxFactory.IdentifierName("value")));
+            ValidSyntaxFactory.IdentifierName("value")));
 
         if (!methods.Any()) return new StatementSyntax[] { assignBackingField };
 
@@ -204,7 +204,7 @@ internal class HandledEventsAnalysis
         bool requiresNewDelegate)
     {
         var handledFieldMember = MemberAccess(eventSource, e);
-        var methodId = SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(methodSymbol.Name));
+        var methodId = ValidSyntaxFactory.IdentifierName((methodSymbol.Name));
         var invocableRight = requiresNewDelegate && e.SymbolOrNull != null ? NewDelegateMethodId(methodId, e.SymbolOrNull)
             : Invokable(methodId, parametersToDiscard);
 
@@ -245,7 +245,7 @@ internal class HandledEventsAnalysis
 
     private ExpressionSyntax MemberAccess(ExpressionSyntax eventContainer, EventDescriptor e)
     {
-        var csEventName = SyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(e.VBEventName.Identifier).WithoutSourceMapping());
+        var csEventName = ValidSyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(e.VBEventName.Identifier).WithoutSourceMapping());
         return SyntaxFactory.MemberAccessExpression(
             SyntaxKind.SimpleMemberAccessExpression,
             eventContainer, csEventName);
@@ -268,11 +268,11 @@ internal class HandledEventsAnalysis
 
     private static AttributeListSyntax CreateSynchronizedAttribute()
     {
-        var methodImplOptions = SyntaxFactory.IdentifierName(nameof(MethodImplOptions));
-        var synchronized = SyntaxFactory.IdentifierName("Synchronized"); // Switch to nameof(MethodImplOptions.Synchronized) when upgrading to netstandard 2.0
+        var methodImplOptions = ValidSyntaxFactory.IdentifierName(nameof(MethodImplOptions));
+        var synchronized = ValidSyntaxFactory.IdentifierName("Synchronized"); // Switch to nameof(MethodImplOptions.Synchronized) when upgrading to netstandard 2.0
         var methodImplOptionsSynchronized = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, methodImplOptions, synchronized);
         var attributeArg = SyntaxFactory.AttributeArgument(methodImplOptionsSynchronized);
-        var attribute = SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("MethodImpl"), CommonConversions.CreateAttributeArgumentList(attributeArg));
+        var attribute = SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("MethodImpl"), CommonConversions.CreateAttributeArgumentList(attributeArg));
         return SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(new[] { attribute }));
     }
 }

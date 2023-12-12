@@ -35,10 +35,10 @@ public static class ValidSyntaxFactory
     public static ExpressionSyntax MemberAccess(ExpressionSyntax lhs, params string[] nameParts)
     {
         foreach (var namePart in nameParts) {
-            if (lhs == null) lhs = SyntaxFactory.IdentifierName(namePart);
+            if (lhs == null) lhs = ValidSyntaxFactory.IdentifierName(namePart);
             else {
                 lhs = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    lhs, SyntaxFactory.IdentifierName(namePart));
+                    lhs, ValidSyntaxFactory.IdentifierName(namePart));
             }
         }
 
@@ -103,11 +103,14 @@ public static class ValidSyntaxFactory
     public static LiteralExpressionSyntax TrueExpression => SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
     public static LiteralExpressionSyntax FalseExpression => SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
 
-    public static IdentifierNameSyntax NameOf() => SyntaxFactory.IdentifierName(
+    public static IdentifierNameSyntax NameOf() => ValidSyntaxFactory.IdentifierName(
         SyntaxFactory.Identifier(SyntaxTriviaList.Empty, SyntaxKind.NameOfKeyword, "nameof", "nameof", SyntaxTriviaList.Empty)
     );
 
-    public static ExpressionSyntax NullableHasValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName(nameof(Nullable<int>.HasValue)));
-    public static ExpressionSyntax NullableGetValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName(nameof(Nullable<int>.Value)));
+    public static ExpressionSyntax NullableHasValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), ValidSyntaxFactory.IdentifierName(nameof(Nullable<int>.HasValue)));
+    public static ExpressionSyntax NullableGetValueExpression(this ExpressionSyntax node) => SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), ValidSyntaxFactory.IdentifierName(nameof(Nullable<int>.Value)));
 
+    public static IdentifierNameSyntax IdentifierName(string name) => SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(name));
+    public static IdentifierNameSyntax IdentifierName(SyntaxToken identifier) =>
+        SyntaxFacts.IsValidIdentifier(identifier.Text) ? SyntaxFactory.IdentifierName(identifier) : IdentifierName(identifier.Text).WithLeadingTrivia(identifier.LeadingTrivia).WithTrailingTrivia(identifier.TrailingTrivia);
 }

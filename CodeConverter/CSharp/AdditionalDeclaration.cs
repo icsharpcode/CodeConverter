@@ -18,5 +18,5 @@ internal class AdditionalDeclaration : IHoistedNode
         Type = type;
     }
 
-    public IdentifierNameSyntax IdentifierName => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(PerScopeState.AdditionalLocalAnnotation);
+    public IdentifierNameSyntax IdentifierName => ValidSyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(PerScopeState.AdditionalLocalAnnotation);
 }

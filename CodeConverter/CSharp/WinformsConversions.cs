@@ -73,7 +73,7 @@ internal class WinformsConversions
 
     private static Assignment CreateNameAssignment(VBSyntax.IdentifierNameSyntax id)
     {
-        var nameAccess = ValidSyntaxFactory.MemberAccess(SyntaxFactory.IdentifierName("_" + id.Identifier.Text), "Name");
+        var nameAccess = ValidSyntaxFactory.MemberAccess(ValidSyntaxFactory.IdentifierName("_" + id.Identifier.Text), "Name");
         var originalRuntimeNameToRestore = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(id.Identifier.Text));
         return new Assignment(nameAccess, SyntaxKind.SimpleAssignmentExpression, originalRuntimeNameToRestore, true);
     }
@@ -86,8 +86,8 @@ internal class WinformsConversions
     /// </summary>
     private static Assignment CreatePropertyAssignment(VBSyntax.IdentifierNameSyntax id)
     {
-        var lhs = SyntaxFactory.IdentifierName(id.Identifier.Text);
-        var rhs = SyntaxFactory.IdentifierName("_" + id.Identifier.Text);
+        var lhs = ValidSyntaxFactory.IdentifierName(id.Identifier.Text);
+        var rhs = ValidSyntaxFactory.IdentifierName("_" + id.Identifier.Text);
         return new Assignment(lhs, SyntaxKind.SimpleAssignmentExpression, rhs, true);
     }
 

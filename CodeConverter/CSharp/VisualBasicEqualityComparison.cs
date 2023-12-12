@@ -177,7 +177,7 @@ internal class VisualBasicEqualityComparison
             var nullOrEmpty = SyntaxFactory.InvocationExpression(
                 SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword)),
-                    SyntaxFactory.IdentifierName("IsNullOrEmpty")),
+                    ValidSyntaxFactory.IdentifierName("IsNullOrEmpty")),
                 SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                     {SyntaxFactory.Argument(arg)})));
             {

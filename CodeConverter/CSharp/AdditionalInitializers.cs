@@ -61,7 +61,7 @@ internal class AdditionalInitializers
         if (addConstructor) {
             var statements = new List<StatementSyntax>();
             if (addedConstructorRequiresInitializeComponent) {
-                statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName("InitializeComponent"))));
+                statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName("InitializeComponent"))));
             }
 
             constructors.Add(SyntaxFactory.ConstructorDeclaration(convertIdentifier)

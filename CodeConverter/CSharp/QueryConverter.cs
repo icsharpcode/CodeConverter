@@ -158,7 +158,7 @@ internal class QueryConverter
         var linqMethodName = GetLinqMethodName(queryEnd);
         var parenthesizedQuery = query is CSSyntax.QueryExpressionSyntax ? SyntaxFactory.ParenthesizedExpression(query) : query;
         var linqMethod = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, parenthesizedQuery,
-            SyntaxFactory.IdentifierName(linqMethodName));
+            ValidSyntaxFactory.IdentifierName(linqMethodName));
         var linqArguments = await GetLinqArgumentsAsync(reusableCsFromId, queryEnd);
         var linqArgumentList = SyntaxFactory.ArgumentList(
             SyntaxFactory.SeparatedList(linqArguments.Select(SyntaxFactory.Argument)));
@@ -189,12 +189,12 @@ internal class QueryConverter
 
                 var continuationClauses = SyntaxFactory.List<CSSyntax.QueryClauseSyntax>();
                 if (groupKeyIds.Count == 1) {
-                    var letGroupKey = SyntaxFactory.LetClause(groupKeyIds.First(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), SyntaxFactory.IdentifierName("Key")));
+                    var letGroupKey = SyntaxFactory.LetClause(groupKeyIds.First(), SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ValidSyntaxFactory.IdentifierName(GetGroupIdentifier(gcs)), ValidSyntaxFactory.IdentifierName("Key")));
                     continuationClauses = continuationClauses.Add(letGroupKey);
                 }
                 if (!gcs.Items.Any()) {
                     var identifierNameSyntax =
-                        SyntaxFactory.IdentifierName(reusableCsFromId);
+                        ValidSyntaxFactory.IdentifierName(reusableCsFromId);
                     selectOrGroup = SyntaxFactory.GroupClause(identifierNameSyntax, await GetGroupExpressionAsync(gcs));
                 } else {
                     var item = await gcs.Items.Single().Expression.AcceptAsync<CSSyntax.IdentifierNameSyntax>(_triviaConvertingVisitor);
@@ -314,7 +314,7 @@ internal class QueryConverter
     /// </summary>
     private static CSSyntax.SelectClauseSyntax CreateDefaultSelectClause(SyntaxToken reusableCsFromId)
     {
-        return SyntaxFactory.SelectClause(SyntaxFactory.IdentifierName(reusableCsFromId));
+        return SyntaxFactory.SelectClause(ValidSyntaxFactory.IdentifierName(reusableCsFromId));
     }
 
     private async Task<IEnumerable<CSSyntax.QueryClauseSyntax>> ConvertQueryBodyClauseAsync(VBSyntax.QueryClauseSyntax node)
@@ -344,7 +344,7 @@ internal class QueryConverter
     private static CSSyntax.AnonymousObjectMemberDeclaratorSyntax CreateAnonymousMember((ExpressionSyntax vb, CSSyntax.ExpressionSyntax cs) expr, int i)
     {
         var name = SyntaxFactory.Identifier(expr.vb.ExtractAnonymousTypeMemberName()?.Text ?? ("key" + i));
-        return SyntaxFactory.AnonymousObjectMemberDeclarator(SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(name)), expr.cs);
+        return SyntaxFactory.AnonymousObjectMemberDeclarator(SyntaxFactory.NameEquals(ValidSyntaxFactory.IdentifierName(name)), expr.cs);
     }
 
     private SyntaxToken GetGroupIdentifier(VBSyntax.GroupByClauseSyntax gs)

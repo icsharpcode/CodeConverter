@@ -343,7 +343,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         ExpressionSyntax targetArrayExpression,
         List<ExpressionSyntax> convertedBounds)
     {
-        var sourceLength = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, sourceArrayExpression, SyntaxFactory.IdentifierName("Length"));
+        var sourceLength = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, sourceArrayExpression, ValidSyntaxFactory.IdentifierName("Length"));
         var arrayCopyStatement = convertedBounds.Count == 1
             ? CreateArrayCopyWithMinOfLengths(sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds.Single())
             : CreateArrayCopy(originalVbNode, sourceArrayExpression, sourceLength, targetArrayExpression, convertedBounds);
@@ -374,7 +374,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var length = SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Math.Min"), ExpressionSyntaxExtensions.CreateArgList(sourceLastRankLength, targetLastRankLength));
 
         var loopVariableName = GetUniqueVariableNameInScope(originalVbNode, "i");
-        var loopVariableIdentifier = SyntaxFactory.IdentifierName(loopVariableName);
+        var loopVariableIdentifier = ValidSyntaxFactory.IdentifierName(loopVariableName);
         var sourceStartForThisIteration =
             SyntaxFactory.BinaryExpression(SyntaxKind.MultiplyExpression, loopVariableIdentifier, sourceLastRankLength);
         var targetStartForThisIteration =
@@ -503,11 +503,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var symbolInfo = _semanticModel.GetSymbolInfo(node.Name).ExtractBestMatch<IEventSymbol>();
         if (symbolInfo?.RaiseMethod != null) {
             return SingleStatement(SyntaxFactory.InvocationExpression(
-                SyntaxFactory.IdentifierName($"On{symbolInfo.Name}"),
+                ValidSyntaxFactory.IdentifierName($"On{symbolInfo.Name}"),
                 argumentListSyntax));
         }
 
-        var memberBindingExpressionSyntax = SyntaxFactory.MemberBindingExpression(SyntaxFactory.IdentifierName("Invoke"));
+        var memberBindingExpressionSyntax = SyntaxFactory.MemberBindingExpression(ValidSyntaxFactory.IdentifierName("Invoke"));
         var conditionalAccessExpressionSyntax = SyntaxFactory.ConditionalAccessExpression(
             await node.Name.AcceptAsync<NameSyntax>(_expressionVisitor),
             SyntaxFactory.InvocationExpression(memberBindingExpressionSyntax, argumentListSyntax)
@@ -598,7 +598,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         if (stmt.ControlVariable is VBSyntax.VariableDeclaratorSyntax v) {
             declaration = (await SplitVariableDeclarationsAsync(v)).Variables.Single().Decl;
             declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(declaration.Variables[0].WithInitializer(SyntaxFactory.EqualsValueClause(startValue))));
-            id = SyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
+            id = ValidSyntaxFactory.IdentifierName(declaration.Variables[0].Identifier);
         } else {
             id = await stmt.ControlVariable.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
                 
@@ -619,7 +619,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         // If it could evaluate differently or has side effects, it must be extracted as a variable
         if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
             var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-            var toVariableId = SyntaxFactory.IdentifierName(loopToVariableName);
+            var toVariableId = ValidSyntaxFactory.IdentifierName(loopToVariableName);
 
             var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
             if (initializers.Any()) {
@@ -707,7 +707,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 id = vId.Identifier;
             } else {
                 id = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "current" + varSymbol.Name.ToPascalCase()));
-                statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, v, SyntaxFactory.IdentifierName(id))));
+                statements.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, v, ValidSyntaxFactory.IdentifierName(id))));
             }
         } else {
             var v = await stmt.ControlVariable.AcceptAsync<IdentifierNameSyntax>(_expressionVisitor);
@@ -733,7 +733,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public override async Task<SyntaxList<StatementSyntax>> VisitGoToStatement(VBSyntax.GoToStatementSyntax node)
     {
         return SingleStatement(SyntaxFactory.GotoStatement(SyntaxKind.GotoStatement,
-            SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(node.Label.LabelToken.Text))));
+            ValidSyntaxFactory.IdentifierName((node.Label.LabelToken.Text))));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitSelectBlock(VBSyntax.SelectBlockSyntax node)
@@ -781,14 +781,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
 
                     var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                    ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName);
+                    ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                     var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
                     var relationalValue = await relational.Value.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
                     var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, relationalValue);
                     labels.Add(VarWhen(varName, binaryExp));
                 } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
                     var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                    ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName);
+                    ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                     var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, await range.LowerBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor), csLeft);
                     var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csLeft, await range.UpperBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
                     var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
@@ -891,7 +891,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         var varName = GetUniqueVariableNameInScope(contextNode, variableNameBase);
         var stmt = CommonConversions.CreateLocalVariableDeclarationAndAssignment(varName, expr, forceType);
-        return (stmt, SyntaxFactory.IdentifierName(varName));
+        return (stmt, ValidSyntaxFactory.IdentifierName(varName));
     }
 
     private async Task<bool> CanEvaluateMultipleTimesAsync(VBSyntax.ExpressionSyntax vbExpr)
@@ -919,7 +919,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         } else {
             var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
             patternMatch = ValidSyntaxFactory.VarPattern(varName);
-            ExpressionSyntax csLeft = SyntaxFactory.IdentifierName(varName), csRight = expression;
+            ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName), csRight = expression;
             var caseTypeInfo = _semanticModel.GetTypeInfo(vbCase);
             expression = EqualsAdjustedForStringComparison(node, vbCase, typeInfo, csLeft, csRight, caseTypeInfo);
         }

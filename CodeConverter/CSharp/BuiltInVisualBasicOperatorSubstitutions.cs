@@ -94,7 +94,7 @@ internal static class VbOperatorConversion
                     var associatedField = pro.Property.GetAssociatedField();
                     var propertyReferenceSyntax = (VisualBasicSyntaxNode)((IPropertyReferenceOperation)pro.Instance).Syntax;
                     var qualification = await propertyReferenceSyntax.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
-                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, SyntaxFactory.IdentifierName(associatedField.Name));
+                    return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, qualification, ValidSyntaxFactory.IdentifierName(associatedField.Name));
                 default:
                     return null;
             }

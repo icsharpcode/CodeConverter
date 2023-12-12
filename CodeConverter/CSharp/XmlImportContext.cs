@@ -9,11 +9,11 @@ internal class XmlImportContext
 {
     private readonly List<FieldDeclarationSyntax> _xNamespaceFields = new();
     public IdentifierNameSyntax HelperClassUniqueIdentifierName { get; }
-    public static IdentifierNameSyntax HelperClassShortIdentifierName => SyntaxFactory.IdentifierName("XmlImports");
+    public static IdentifierNameSyntax HelperClassShortIdentifierName => ValidSyntaxFactory.IdentifierName("XmlImports");
 
     public XmlImportContext(Document document)            
     {
-        HelperClassUniqueIdentifierName = SyntaxFactory.IdentifierName(HelperClassShortIdentifierName + String.Join("", document.Name.Where(c=>Char.IsLetterOrDigit(c))));
+        HelperClassUniqueIdentifierName = ValidSyntaxFactory.IdentifierName(HelperClassShortIdentifierName + String.Join("", document.Name.Where(c=>Char.IsLetterOrDigit(c))));
     }
 
     public async Task<XmlImportContext> HandleImportsAsync(List<VBSyntax.ImportsClauseSyntax> importsClauses, Func<VBSyntax.XmlNamespaceImportsClauseSyntax, Task<FieldDeclarationSyntax>> declarationConversion)
@@ -26,7 +26,7 @@ internal class XmlImportContext
 
     public bool HasImports => _xNamespaceFields.Any();
 
-    public static IdentifierNameSyntax DefaultIdentifierName => SyntaxFactory.IdentifierName("Default");
+    public static IdentifierNameSyntax DefaultIdentifierName => ValidSyntaxFactory.IdentifierName("Default");
 
     public bool HasDefaultImport => _xNamespaceFields.Any(x => x.Declaration.Variables.Single().Identifier.IsEquivalentTo(DefaultIdentifierName.Identifier));
 
@@ -42,12 +42,12 @@ internal class XmlImportContext
                     CSSyntaxKind.ArrayInitializerExpression,
                     SyntaxFactory.SeparatedList<ExpressionSyntax>(
                         from x in _xNamespaceFields
-                        let fieldIdentifierName = SyntaxFactory.IdentifierName(x.Declaration.Variables.Single().Identifier)
-                        let namespaceNameExpression = SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, fieldIdentifierName, SyntaxFactory.IdentifierName("NamespaceName"))
+                        let fieldIdentifierName = ValidSyntaxFactory.IdentifierName(x.Declaration.Variables.Single().Identifier)
+                        let namespaceNameExpression = SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, fieldIdentifierName, ValidSyntaxFactory.IdentifierName("NamespaceName"))
                         let attributeNameExpression = fieldIdentifierName.IsEquivalentTo(DefaultIdentifierName) ? CommonConversions.Literal("xmlns") : BuildXmlnsAttributeName(fieldIdentifierName)
                         let arguments = SyntaxFactory.Argument(attributeNameExpression).Yield().Concat(SyntaxFactory.Argument(namespaceNameExpression))
-                        select SyntaxFactory.ObjectCreationExpression(SyntaxFactory.IdentifierName("XAttribute")).WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments))))),
-                SyntaxFactory.ArrayType(SyntaxFactory.IdentifierName("XAttribute"), SyntaxFactory.SingletonList(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression()))))));
+                        select SyntaxFactory.ObjectCreationExpression(ValidSyntaxFactory.IdentifierName("XAttribute")).WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments))))),
+                SyntaxFactory.ArrayType(ValidSyntaxFactory.IdentifierName("XAttribute"), SyntaxFactory.SingletonList(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression()))))));
 
 
         var boilerplate = new[] {
@@ -98,7 +98,7 @@ internal class XmlImportContext
 
     private static ExpressionSyntax BuildXmlnsAttributeName(IdentifierNameSyntax fieldIdentifierName)
     {
-        var xmlns = SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.IdentifierName("XNamespace"), SyntaxFactory.IdentifierName("Xmlns"));
+        var xmlns = SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, ValidSyntaxFactory.IdentifierName("XNamespace"), ValidSyntaxFactory.IdentifierName("Xmlns"));
         return SyntaxFactory.BinaryExpression(CSSyntaxKind.AddExpression, xmlns, CommonConversions.Literal(fieldIdentifierName.Identifier.ValueText));
     }
 }

@@ -19,7 +19,7 @@ internal class HoistedParameterlessFunction : IHoistedNode
         _block = block;
     }
 
-    public IdentifierNameSyntax TempIdentifier => SyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(PerScopeState.AdditionalLocalAnnotation);
+    public IdentifierNameSyntax TempIdentifier => ValidSyntaxFactory.IdentifierName(Id).WithAdditionalAnnotations(PerScopeState.AdditionalLocalAnnotation);
     public LocalFunctionStatementSyntax AsLocalFunction(string functionName) => SyntaxFactory.LocalFunctionStatement(_returnType, SyntaxFactory.Identifier(functionName)).WithBody(_block);
     public MethodDeclarationSyntax AsInstanceMethod(string functionName) => ValidSyntaxFactory.CreateParameterlessMethod(functionName, _returnType, _block);
 }

@@ -161,7 +161,7 @@ internal static class LiteralConversions
                     SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.PredefinedType(
                         SyntaxFactory.Token(SyntaxKind.IntKeyword)),
-                    SyntaxFactory.IdentifierName(nameof(int.MinValue)));
+                    ValidSyntaxFactory.IdentifierName(nameof(int.MinValue)));
                 var positiveValueExpr = NumericLiteral(SyntaxFactory.Literal("0x" + positiveValue.ToString("X8", CultureInfo.InvariantCulture), positiveValue));
                 return (null, SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, intMinValueExpr, positiveValueExpr));
             }

@@ -7,7 +7,7 @@ namespace ICSharpCode.CodeConverter.CSharp.Replacements;
 internal class SimpleMethodReplacement
 {
     private const string AnnotationKind = nameof(SimpleMethodReplacement) + "placeholder";
-    private static readonly IdentifierNameSyntax FirstArgPlaceholder = SyntaxFactory.IdentifierName("placeholder0").WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationKind, "0"));
+    private static readonly IdentifierNameSyntax FirstArgPlaceholder = ValidSyntaxFactory.IdentifierName("placeholder0").WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationKind, "0"));
 
     private static readonly IReadOnlyDictionary<string, SimpleMethodReplacement> MethodReplacements = new SimpleMethodReplacement[] {
         new("Microsoft.VisualBasic.MyServices.FileSystemProxy.CurrentDirectory", "System.IO.Directory.GetCurrentDirectory"),
@@ -70,7 +70,7 @@ internal class SimpleMethodReplacement
         SyntaxFactory.BinaryExpression(SyntaxKind.IsExpression, FirstArgPlaceholder, typeSyntax);
 
     private static QualifiedNameSyntax SystemType(string isTypeName) =>
-        SyntaxFactory.QualifiedName(SyntaxFactory.IdentifierName(nameof(System)), SyntaxFactory.IdentifierName(isTypeName));
+        SyntaxFactory.QualifiedName(ValidSyntaxFactory.IdentifierName(nameof(System)), ValidSyntaxFactory.IdentifierName(isTypeName));
 
     private readonly string[] _toReplace;
     private readonly ExpressionSyntax _replaceWith;

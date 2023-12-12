@@ -110,7 +110,7 @@ internal class TypeConversionAnalyzer
                 return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
                     LiteralConversions.GetLiteralExpression(true));
             case TypeConversionKind.StringToCharArray:
-                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, SyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
+                var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, ValidSyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
                 return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,
                     SyntaxFactory.ArgumentList());
             case TypeConversionKind.DelegateConstructor:
@@ -255,7 +255,7 @@ internal class TypeConversionAnalyzer
     private static CSSyntax.NameSyntax CreateType(string baseTypeName, IEnumerable<SyntaxNode> parameters)
     {
         var parameterList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(parameters));
-        if (!parameterList.Arguments.Any()) return SyntaxFactory.IdentifierName(baseTypeName);
+        if (!parameterList.Arguments.Any()) return ValidSyntaxFactory.IdentifierName(baseTypeName);
         return SyntaxFactory.GenericName(SyntaxFactory.Identifier(baseTypeName), parameterList);
     }
 
@@ -378,7 +378,7 @@ internal class TypeConversionAnalyzer
     {
         _extraUsingDirectives.Add("System");
         return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-            SyntaxFactory.IdentifierName("Math"),  SyntaxFactory.IdentifierName("Round"));
+            ValidSyntaxFactory.IdentifierName("Math"),  ValidSyntaxFactory.IdentifierName("Round"));
     }
 
     private MemberAccessExpressionSyntax GetConversionsMemberAccess(ITypeSymbol type)
@@ -394,16 +394,16 @@ internal class TypeConversionAnalyzer
     {
         _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
         return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-            SyntaxFactory.IdentifierName("Conversions"), SyntaxFactory.IdentifierName(methodId));
+            ValidSyntaxFactory.IdentifierName("Conversions"), ValidSyntaxFactory.IdentifierName(methodId));
     }
 
     private MemberAccessExpressionSyntax GetConversionsMemberAccessGeneric(ITypeSymbol typeParameter)
     {
         _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
         return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-            SyntaxFactory.IdentifierName("Conversions"), 
+            ValidSyntaxFactory.IdentifierName("Conversions"), 
             SyntaxFactory.GenericName(SyntaxFactory.Identifier("ToGenericParameter"), 
-                SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList<TypeSyntax>(SyntaxFactory.IdentifierName(typeParameter.Name)))));
+                SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList<TypeSyntax>(ValidSyntaxFactory.IdentifierName(typeParameter.Name)))));
     }
 
     private ExpressionSyntax AddRoundInvocation(ExpressionSyntax csNode)
@@ -471,7 +471,7 @@ internal class TypeConversionAnalyzer
 
         if (currentType.IsNumericType()) {
             var toString = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                csNode.AddParens(), SyntaxFactory.IdentifierName(toStringMethodName));
+                csNode.AddParens(), ValidSyntaxFactory.IdentifierName(toStringMethodName));
             return SyntaxFactory.InvocationExpression(toString, SyntaxFactory.ArgumentList());
         }
         return null;

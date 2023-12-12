@@ -95,7 +95,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
             ? sourceAndConverted.Select(sd => sd.Converted)
-            : PrependRootNamespace(sourceAndConverted, SyntaxFactory.IdentifierName(options.RootNamespace));
+            : PrependRootNamespace(sourceAndConverted, ValidSyntaxFactory.IdentifierName(options.RootNamespace));
             
         var usings = await importsClauses
             .SelectAsync(async c => await c.AcceptAsync<UsingDirectiveSyntax>(TriviaConvertingDeclarationVisitor));
@@ -280,8 +280,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var csId = CommonConversions.ConvertIdentifier(f.n.Identifier);
         string initializerFunctionName = CommonConversions.GetInitialValueFunctionName(f.n);
-        var invocation = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(initializerFunctionName)), SyntaxFactory.ArgumentList());
-        return new Assignment(SyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
+        var invocation = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName((initializerFunctionName)), SyntaxFactory.ArgumentList());
+        return new Assignment(ValidSyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
     }
 
     private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)
@@ -561,7 +561,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             ? initializerState.AdditionalStaticInitializers
             : initializerState.AdditionalInstanceInitializers;
         foreach (var initializer in initializers) {
-            initializerCollection.Add(new Assignment(SyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
+            initializerCollection.Add(new Assignment(ValidSyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
         }
 
         var fieldDecls = _typeContext.HandledEventsAnalysis.GetDeclarationsForFieldBackedProperty(fieldDecl,
@@ -608,7 +608,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var newVar =
             v.WithInitializer(SyntaxFactory.EqualsValueClause(
-                SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(newMethodName))));
+                SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(newMethodName))));
         var newVarDecl =
             SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
 
@@ -887,7 +887,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         if (writeOnly || !readOnly) {
             var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(
                 SyntaxFactory.AssignmentExpression(CSSyntaxKind.SimpleAssignmentExpression, thisDotIdentifier,
-                    SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier("value")))));
+                    ValidSyntaxFactory.IdentifierName(("value")))));
             var setAccessor = SyntaxFactory.AccessorDeclaration(CSSyntaxKind.SetAccessorDeclaration, setValue);
             accessors = accessors.Add(setAccessor);
         }
@@ -1186,7 +1186,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         // we need to emit a non-virtual method for it to call
         if (accessedThroughMyClass) {
             var identifierName = "MyClass" + directlyConvertedCsIdentifier.ValueText;
-            var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(identifierName), CreateDelegatingArgList(parameterList)));
+            var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(identifierName), CreateDelegatingArgList(parameterList)));
             var declModifiers = convertedModifiers;
 
             var originalNameDecl = SyntaxFactory.MethodDeclaration(
@@ -1324,7 +1324,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var arrowClauseExpression = isSetAccessor
             ? SyntaxFactory.AssignmentExpression(CSSyntaxKind.SimpleAssignmentExpression, simpleMemberAccess,
-                SyntaxFactory.IdentifierName("value"))
+                ValidSyntaxFactory.IdentifierName("value"))
             : expression;
 
         var arrowClause = SyntaxFactory.ArrowExpressionClause(arrowClauseExpression);
@@ -1335,7 +1335,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var simpleMemberAccess = SyntaxFactory.MemberAccessExpression(
             CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ThisExpression(),
-            SyntaxFactory.Token(CSSyntaxKind.DotToken), SyntaxFactory.IdentifierName(csIdentifier));
+            SyntaxFactory.Token(CSSyntaxKind.DotToken), ValidSyntaxFactory.IdentifierName(csIdentifier));
 
         return simpleMemberAccess;
     }
@@ -1367,7 +1367,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     private static ArgumentListSyntax CreateDelegatingArgList(ParameterListSyntax parameterList)
     {
         var refKinds = parameterList.Parameters.Select(GetSingleModifier).ToArray();
-        return parameterList.Parameters.Select(p => SyntaxFactory.IdentifierName(p.Identifier)).CreateCsArgList(refKinds);
+        return parameterList.Parameters.Select(p => ValidSyntaxFactory.IdentifierName(p.Identifier)).CreateCsArgList(refKinds);
     }
 
     private static CSSyntaxKind? GetSingleModifier(ParameterSyntax p)
@@ -1438,7 +1438,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             var eventDecl = SyntaxFactory.EventFieldDeclaration(
                 SyntaxFactory.List(attributes),
                 modifiers,
-                SyntaxFactory.VariableDeclaration(SyntaxFactory.IdentifierName(delegateName),
+                SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.IdentifierName(delegateName),
                     SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
             );
 
@@ -1533,7 +1533,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         }
 
         if (!node.CharsetKeyword.IsKind(CSSyntaxKind.None)) {
-            importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(CharSetType.Name), null, SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(CharSetType.Name), SyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+            importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(CharSetType.Name), null, SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(CharSetType.Name), ValidSyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
         }
 
         var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());
@@ -1620,7 +1620,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             SyntaxFactory.TokenList(SyntaxFactory.Token(CSSyntaxKind.InternalKeyword), 
                 SyntaxFactory.Token(CSSyntaxKind.StaticKeyword), 
                 SyntaxFactory.Token(CSSyntaxKind.ReadOnlyKeyword)),
-            SyntaxFactory.VariableDeclaration(SyntaxFactory.IdentifierName("XNamespace"), SyntaxFactory.SingletonSeparatedList(declarator)));
+            SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.IdentifierName("XNamespace"), SyntaxFactory.SingletonSeparatedList(declarator)));
     }
 
     public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
@@ -1630,7 +1630,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             return XmlImportContext.DefaultIdentifierName;
         } else if (node.Prefix.Name.ValueText == "xmlns") { 
             // namespace alias
-            return SyntaxFactory.IdentifierName(node.LocalName.ValueText);
+            return ValidSyntaxFactory.IdentifierName(node.LocalName.ValueText);
         } else {
             // Having this case in VB would cause error BC31187: Namespace declaration must start with 'xmlns'
             throw new NotImplementedException($"Cannot convert non-xmlns attribute in XML namespace import").WithNodeInformation(node);

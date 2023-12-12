@@ -229,7 +229,7 @@ internal class CommonConversions
         return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, _) =>
         {
             var originalName = originalNames.FirstOrDefault(on => string.Equals(on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
-            return originalName != null ? SyntaxFactory.IdentifierName(originalName) : oldNode;
+            return originalName != null ? ValidSyntaxFactory.IdentifierName(originalName) : oldNode;
         });
     }
 
@@ -609,7 +609,7 @@ internal class CommonConversions
             // In VB, assigning to the method name implicitly creates a variable that is returned when the method exits
             var csReturnVariableName =
                 ConvertIdentifier(GetMethodBlockBaseIdentifierForImplicitReturn(node)).ValueText + "Ret";
-            csReturnVariable = SyntaxFactory.IdentifierName(csReturnVariableName);
+            csReturnVariable = ValidSyntaxFactory.IdentifierName(csReturnVariableName);
         }
 
         return csReturnVariable;

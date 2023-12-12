@@ -100,7 +100,7 @@ internal class VisualBasicNullableExpressionsConverter
     {
         var arg = GetArgName();
         var identifier = SyntaxFactory.Identifier(arg);
-        name = SyntaxFactory.IdentifierName(identifier);
+        name = ValidSyntaxFactory.IdentifierName(identifier);
 
         return SyntaxFactory.IsPatternExpression(expr, SyntaxFactory.VarPattern(SyntaxFactory.SingleVariableDesignation(identifier)));
     }
@@ -108,7 +108,7 @@ internal class VisualBasicNullableExpressionsConverter
     private ExpressionSyntax PatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
     {
         var identifier = SyntaxFactory.Identifier(GetArgName());
-        name = SyntaxFactory.IdentifierName(identifier);
+        name = ValidSyntaxFactory.IdentifierName(identifier);
         var variable = SyntaxFactory.SingleVariableDesignation(identifier);
 
         var recursivePattern = (RecursivePatternSyntax)NotFormattedIsPattern.Pattern;
@@ -118,7 +118,7 @@ internal class VisualBasicNullableExpressionsConverter
     private ExpressionSyntax NegatedPatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
     {
         var identifier = SyntaxFactory.Identifier(GetArgName());
-        name = SyntaxFactory.IdentifierName(identifier);
+        name = ValidSyntaxFactory.IdentifierName(identifier);
         var variable = SyntaxFactory.SingleVariableDesignation(identifier);
         var unaryPattern = (UnaryPatternSyntax)NotFormattedNegatedIsPattern.Pattern;
         var recursivePattern = (RecursivePatternSyntax)unaryPattern.Pattern;
@@ -346,7 +346,7 @@ internal class VisualBasicNullableExpressionsConverter
 
 internal static class NullableTypesLogicExtensions
 {
-    public static ExpressionSyntax GetValueOrDefault(this ExpressionSyntax node) => SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), SyntaxFactory.IdentifierName("GetValueOrDefault")));
+    public static ExpressionSyntax GetValueOrDefault(this ExpressionSyntax node) => SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, node.AddParens(), ValidSyntaxFactory.IdentifierName("GetValueOrDefault")));
     public static ExpressionSyntax Negate(this ExpressionSyntax node) => SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, node.AddParens());
 
     public static ExpressionSyntax And(this ExpressionSyntax? a, ExpressionSyntax b) => a is null ? b : SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, a.AddParens(), b.AddParens()).AddParens();
