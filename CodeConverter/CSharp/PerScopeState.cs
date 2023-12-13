@@ -100,7 +100,7 @@ internal class PerScopeState
     {
         var localFunctions = GetParameterlessFunctions(); 
         var newNames = localFunctions.ToDictionary(f => f.Id, f =>
-            NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.Prefix)
+            NameGenerator.CS.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, f.Prefix)
         );
         var functions = localFunctions.Select(f => f.AsLocalFunction(newNames[f.Id]));
         statements = ReplaceNames(functions.Concat(statements), newNames);
@@ -121,7 +121,7 @@ internal class PerScopeState
                 HoistToParent(variable);
             } else {
                 // The variable comes from the VB scope, only check for conflict with other hoisted definitions
-                string name = NameGenerator.GenerateUniqueVariableName(generatedNames, variable.OriginalVariableName);
+                string name = NameGenerator.CS.GenerateUniqueVariableName(generatedNames, CommonConversions.CsEscapedIdentifier(variable.OriginalVariableName).Text);
                 if (variable.Nested) {
                     newNames.Add(variable.Id, name);
                 } else if (name != variable.OriginalVariableName) {
@@ -135,7 +135,7 @@ internal class PerScopeState
 
         var additionalDeclarationInfo = GetDeclarations();
         foreach (var additionalLocal in additionalDeclarationInfo) {
-            newNames.Add(additionalLocal.Id, NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, additionalLocal.Prefix)); 
+            newNames.Add(additionalLocal.Id, NameGenerator.CS.GetUniqueVariableNameInScope(semanticModel, generatedNames, vbNode, additionalLocal.Prefix)); 
             var decl = CommonConversions.CreateVariableDeclarationAndAssignment(newNames[additionalLocal.Id],
                 additionalLocal.Initializer, additionalLocal.Type);
             preDeclarations.Add(CS.SyntaxFactory.LocalDeclarationStatement(decl));
@@ -158,7 +158,7 @@ internal class PerScopeState
 
         var fieldInfo = GetFields();
         var newNames = fieldInfo.ToDictionary(f => f.OriginalVariableName, f =>
-            NameGenerator.GetUniqueVariableNameInScope(semanticModel, generatedNames, typeNode, f.FieldName)
+            NameGenerator.CS.GetUniqueVariableNameInScope(semanticModel, generatedNames, typeNode, f.FieldName)
         );
         foreach (var field in fieldInfo) {
             var decl = (field.Initializer != null) 
