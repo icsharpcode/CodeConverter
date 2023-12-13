@@ -95,7 +95,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var convertedMembers = string.IsNullOrEmpty(options.RootNamespace)
             ? sourceAndConverted.Select(sd => sd.Converted)
-            : PrependRootNamespace(sourceAndConverted, ValidSyntaxFactory.IdentifierName(options.RootNamespace));
+            : PrependRootNamespace(sourceAndConverted, options.RootNamespace);
             
         var usings = await importsClauses
             .SelectAsync(async c => await c.AcceptAsync<UsingDirectiveSyntax>(TriviaConvertingDeclarationVisitor));
@@ -126,13 +126,13 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private IReadOnlyCollection<MemberDeclarationSyntax> PrependRootNamespace(
         IReadOnlyCollection<(VBSyntax.StatementSyntax VbNode, MemberDeclarationSyntax CsNode)> membersConversions,
-        IdentifierNameSyntax rootNamespaceIdentifier)
+        string rootNamespace)
     {
 
         if (_topAncestorNamespace != null) {
-            var csMembers = membersConversions.ToLookup(c => ShouldBeNestedInRootNamespace(c.VbNode, rootNamespaceIdentifier.Identifier.Text), c => c.CsNode);
+            var csMembers = membersConversions.ToLookup(c => ShouldBeNestedInRootNamespace(c.VbNode, rootNamespace), c => c.CsNode);
             var nestedMembers = csMembers[true].Select<MemberDeclarationSyntax, SyntaxNode>(x => x);
-            var newNamespaceDecl = (MemberDeclarationSyntax) _csSyntaxGenerator.NamespaceDeclaration(rootNamespaceIdentifier.Identifier.Text, nestedMembers);
+            var newNamespaceDecl = (MemberDeclarationSyntax) _csSyntaxGenerator.NamespaceDeclaration(rootNamespace, nestedMembers);
             return csMembers[false].Concat(new[] { newNamespaceDecl }).ToArray();
         }
         return membersConversions.Select(n => n.CsNode).ToArray();
