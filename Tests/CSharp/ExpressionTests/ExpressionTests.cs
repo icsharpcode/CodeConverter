@@ -1029,7 +1029,7 @@ End Module", @"using System;
 
 public static partial class MyExtensions
 {
-    public static void NewColumn(Type type, string strV1 = null, string code = ""code"", int argInt = 1)
+    public static void NewColumn(Type @type, string strV1 = null, string code = ""code"", int argInt = 1)
     {
     }
 
@@ -2524,7 +2524,7 @@ Step:
             @"
 internal partial class SurroundingClass
 {
-    private int _[Step]_i;
+    private int _Step_i;
 
     public void Step()
     {

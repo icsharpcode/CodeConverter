@@ -341,8 +341,11 @@ internal class CommonConversions
 
     public static SyntaxToken CsEscapedIdentifier(string text)
     {
-        text = text.TrimStart('[').TrimEnd(']');
-        if (SyntaxFacts.GetKeywordKind(text) != CSSyntaxKind.None) text = "@" + text;
+        if (!CS.SyntaxFacts.IsValidIdentifier(text)) {
+            text = new string(text.Where(CS.SyntaxFacts.IsIdentifierPartCharacter).ToArray());
+            if (!CS.SyntaxFacts.IsIdentifierStartCharacter(text[0])) text = "a" + text;
+        }
+        if (SyntaxFacts.GetKeywordKind(text) != CSSyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(text) != CSSyntaxKind.None) text = "@" + text;
         return SyntaxFactory.Identifier(text);
     }
 

@@ -5,6 +5,8 @@ namespace ICSharpCode.CodeConverter.Common;
 
 internal static class SymbolRenamer
 {
+    private static readonly NameGenerator NameGenerator = NameGenerator.Generic;
+
     public static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(
         IEnumerable<ISymbol> toRename, Func<string, bool> canUse, bool canKeepOne)
     {

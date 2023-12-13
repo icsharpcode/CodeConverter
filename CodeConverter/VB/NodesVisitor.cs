@@ -475,7 +475,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 #pragma warning restore RS1024 // Compare symbols correctly
             string explicitMemberName = UndottedMemberName(memberInfo.Name);
             var hasDuplicateNames = memberNames[explicitMemberName].Count() > 1;
-            if (hasDuplicateNames) id = SyntaxFactory.Identifier(NameGenerator.GenerateUniqueName(explicitMemberName, n => !memberNames.Contains(n) && _addedNames.Add(n)));
+            if (hasDuplicateNames) id = SyntaxFactory.Identifier(NameGenerator.Generic.GenerateUniqueName(explicitMemberName, n => !memberNames.Contains(n) && _addedNames.Add(n)));
         } else {
             var containingType = memberInfo.ContainingType;
             var baseClassesAndInterfaces = containingType.GetAllBaseClassesAndInterfaces(true);
