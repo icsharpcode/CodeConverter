@@ -420,6 +420,12 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         }
         if (left == null) {
             left = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            if (left != null && _semanticModel.GetSymbolInfo(node) is {CandidateReason: CandidateReason.LateBound, CandidateSymbols.Length: 0}
+                             && _semanticModel.GetSymbolInfo(node.Expression).Symbol is {Kind: var expressionSymbolKind}
+                             && expressionSymbolKind != SymbolKind.ErrorType
+                             && _semanticModel.GetOperation(node) is IDynamicMemberReferenceOperation) {
+                left = SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(SyntaxFactory.ParseTypeName("dynamic"), left));
+            }
         }
         if (left == null) {
             if (IsSubPartOfConditionalAccess(node)) {
