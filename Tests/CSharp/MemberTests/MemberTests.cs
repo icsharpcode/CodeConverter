@@ -2280,7 +2280,7 @@ public partial class Foo : IFoo
         return 5;
     }
 
-    int IFoo.ExplicitFunc(string str, int i2) => ExplicitFunc(str, i2);
+    int IFoo.ExplicitFunc(string str = """", int i2 = 1) => ExplicitFunc(str, i2);
 
     private int get_ExplicitProp(string str = """")
     {
@@ -2291,8 +2291,8 @@ public partial class Foo : IFoo
     {
     }
 
-    int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
-    void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
+    int IFoo.get_ExplicitProp(string str = """") => get_ExplicitProp(str);
+    void IFoo.set_ExplicitProp(string str = """", int value = default) => set_ExplicitProp(str, value);
 }
 ");
     }

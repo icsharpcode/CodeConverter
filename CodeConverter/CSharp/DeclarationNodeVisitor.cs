@@ -818,7 +818,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 GetMethodId(interfaceImplement.Name) : 
                 SetMethodId(interfaceImplement.Name));
             var interfaceMethodDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers,
-                method.ReturnType, method.TypeParameterList, MakeOptionalParametersRequired(method.ParameterList), method.ConstraintClauses, clause, identifier);
+                method.ReturnType, method.TypeParameterList, method.ParameterList, method.ConstraintClauses, clause, identifier);
 
             AddInterfaceMemberDeclarations(interfaceImplement, additionalDeclarations, interfaceMethodDeclParams);
         });
@@ -1173,12 +1173,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         directlyConvertedCsIdentifier = hasExplicitInterfaceImplementation ? directlyConvertedCsIdentifier : CommonConversions.ConvertIdentifier(node.Identifier);
 
         if (hasExplicitInterfaceImplementation) {
-
-            var requiredParameterList = MakeOptionalParametersRequired(parameterList);
-            var delegatingClause = GetDelegatingClause(directlyConvertedCsIdentifier, requiredParameterList, false);
+            var delegatingClause = GetDelegatingClause(directlyConvertedCsIdentifier, parameterList, false);
             var explicitInterfaceModifiers = convertedModifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword) || m.IsKind(CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
 
-            var interfaceDeclParams = new MethodDeclarationParameters(attributes, explicitInterfaceModifiers, returnType, typeParameters, requiredParameterList, constraints, delegatingClause);
+            var interfaceDeclParams = new MethodDeclarationParameters(attributes, explicitInterfaceModifiers, returnType, typeParameters, parameterList, constraints, delegatingClause);
             AddInterfaceMemberDeclarations(declaredSymbol.ExplicitInterfaceImplementations, additionalDeclarations, interfaceDeclParams);
         }
 
@@ -1271,41 +1269,6 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var declaration = declDelegate.Invoke(newExplicitInterfaceSpecifier, interfaceImplIdentifier);
         additionalDeclarations.Add(declaration);
-    }
-
-
-    private static ParameterListSyntax MakeOptionalParametersRequired(ParameterListSyntax parameterList)
-    {
-        if (parameterList == null) return null;
-
-        var nonOptionalParameters = parameterList.Parameters.Select(ConvertOptionalParameter);
-
-        var separatedSyntaxList = SyntaxFactory.SeparatedList(nonOptionalParameters);
-        var newParameterList = parameterList.WithParameters(separatedSyntaxList);
-        return newParameterList;
-    }
-
-    private static ParameterSyntax ConvertOptionalParameter(ParameterSyntax parameter)
-    {
-        var optionalAttributes = new List<string> { nameof(OptionalAttribute).GetAttributeIdentifier(),
-            nameof(DefaultParameterValueAttribute).GetAttributeIdentifier() };
-
-        var attrListsToRemove = parameter.AttributeLists.SingleOrDefault(aList => aList.Attributes
-            .All(a =>
-            {
-                string attrIdentifier = string.Empty;
-
-                if (a.Name is IdentifierNameSyntax identifierNameSyntax) {
-                    attrIdentifier = identifierNameSyntax.Identifier.Text;
-                } else if (a.Name is AliasQualifiedNameSyntax aliasQualifiedNameSyntax) {
-                    attrIdentifier = aliasQualifiedNameSyntax.Alias.Identifier.Text;
-                }
-
-                return optionalAttributes.Contains(attrIdentifier);
-            }));
-
-        var newAttrLists = parameter.AttributeLists.Remove(attrListsToRemove);
-        return parameter.WithDefault(null).WithAttributeLists(newAttrLists);
     }
 
     private static ArrowExpressionClauseSyntax GetDelegatingClause(SyntaxToken csIdentifier,
