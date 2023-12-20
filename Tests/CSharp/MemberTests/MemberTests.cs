@@ -2212,6 +2212,92 @@ public partial class FooBar : IFoo, IBar
     }
 
     [Fact]
+    public async Task ExplicitInterfaceImplementationOptionalParameters_1062_Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Interface InterfaceWithOptionalParameters
+    Sub S(Optional i As Integer = 0)
+End Interface
+
+Public Class ImplInterfaceWithOptionalParameters : Implements InterfaceWithOptionalParameters
+    Public Sub InterfaceWithOptionalParameters_S(Optional i As Integer = 0) Implements InterfaceWithOptionalParameters.S
+    End Sub
+End Class", @"
+public partial interface InterfaceWithOptionalParameters
+{
+    void S(int i = 0);
+}
+
+public partial class ImplInterfaceWithOptionalParameters : InterfaceWithOptionalParameters
+{
+    public void InterfaceWithOptionalParameters_S(int i = 0)
+    {
+    }
+
+    void InterfaceWithOptionalParameters.S(int i = 0) => InterfaceWithOptionalParameters_S(i);
+}
+");
+    }
+
+
+    [Fact]
+    public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFoo
+  Property ExplicitProp(Optional str As String = """") As Integer
+  Function ExplicitFunc(Optional str2 As String = """", Optional i2 As Integer = 1) As Integer
+End Interface
+
+Public Class Foo
+  Implements IFoo
+
+  Private Function ExplicitFunc(Optional str As String = """", Optional i2 As Integer = 1) As Integer Implements IFoo.ExplicitFunc
+    Return 5
+  End Function
+    
+  Private Property ExplicitProp(Optional str As String = """") As Integer Implements IFoo.ExplicitProp
+    Get
+      Return 5
+    End Get
+    Set(value As Integer)
+    End Set
+  End Property
+End Class", @"
+public partial interface IFoo
+{
+    int get_ExplicitProp(string str = """");
+    void set_ExplicitProp(string str = """", int value = default);
+    int ExplicitFunc(string str2 = """", int i2 = 1);
+}
+
+public partial class Foo : IFoo
+{
+
+    private int ExplicitFunc(string str = """", int i2 = 1)
+    {
+        return 5;
+    }
+
+    int IFoo.ExplicitFunc(string str, int i2) => ExplicitFunc(str, i2);
+
+    private int get_ExplicitProp(string str = """")
+    {
+        return 5;
+    }
+
+    private void set_ExplicitProp(string str = """", int value = default)
+    {
+    }
+
+    int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
+    void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
+}
+");
+    }
+
+    [Fact]
     public async Task RenamedInterfaceMethodFullyQualifiedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
@@ -3504,62 +3590,6 @@ public partial class Foo : IFoo, IBar
     void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
     void IBar.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }");
-    }
-
-    [Fact]
-    public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
-    {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
-  Property ExplicitProp(Optional str As String = """") As Integer
-  Function ExplicitFunc(Optional str2 As String = """", Optional i2 As Integer = 1) As Integer
-End Interface
-
-Public Class Foo
-  Implements IFoo
-
-  Private Function ExplicitFunc(Optional str As String = """", Optional i2 As Integer = 1) As Integer Implements IFoo.ExplicitFunc
-    Return 5
-  End Function
-    
-  Private Property ExplicitProp(Optional str As String = """") As Integer Implements IFoo.ExplicitProp
-    Get
-      Return 5
-    End Get
-    Set(value As Integer)
-    End Set
-  End Property
-End Class", @"
-public partial interface IFoo
-{
-    int get_ExplicitProp(string str = """");
-    void set_ExplicitProp(string str = """", int value = default);
-    int ExplicitFunc(string str2 = """", int i2 = 1);
-}
-
-public partial class Foo : IFoo
-{
-
-    private int ExplicitFunc(string str = """", int i2 = 1)
-    {
-        return 5;
-    }
-
-    int IFoo.ExplicitFunc(string str, int i2) => ExplicitFunc(str, i2);
-
-    private int get_ExplicitProp(string str = """")
-    {
-        return 5;
-    }
-
-    private void set_ExplicitProp(string str = """", int value = default)
-    {
-    }
-
-    int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
-    void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
-}
-");
     }
 
     /// <summary>
