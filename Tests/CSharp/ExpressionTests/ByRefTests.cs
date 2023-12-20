@@ -371,6 +371,44 @@ public void S([Optional] ref DateTime dt)
     }
 
     [Fact]
+    public async Task ParenthesizedArgShouldNotBeAssignedBackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class C
+    Public Sub S()
+        Dim i As Integer = 0
+        Modify(i)
+        System.Diagnostics.Debug.Assert(i = 1)
+        Modify((i))
+        System.Diagnostics.Debug.Assert(i = 1)
+    End Sub
+
+    Sub Modify(ByRef i As Integer)
+        i = i + 1
+    End Sub
+End Class
+", @"using System.Diagnostics;
+
+public partial class C
+{
+    public void S()
+    {
+        int i = 0;
+        Modify(ref i);
+        Debug.Assert(i == 1);
+        int argi = i;
+        Modify(ref argi);
+        Debug.Assert(i == 1);
+    }
+
+    public void Modify(ref int i)
+    {
+        i = i + 1;
+    }
+}");
+    }
+
+    [Fact]
     public async Task OutOptionalArgumentAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"

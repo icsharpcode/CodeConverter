@@ -1819,8 +1819,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private RefConversion NeedsVariableForArgument(VBasic.Syntax.ArgumentSyntax node, RefKind refKind)
     {
         if (refKind == RefKind.None) return RefConversion.Inline;
-        if (!(node is VBSyntax.SimpleArgumentSyntax sas)) return RefConversion.PreAssigment;
-        var expression = sas.Expression.SkipIntoParens();
+        if (!(node is VBSyntax.SimpleArgumentSyntax sas) || sas is { Expression: VBSyntax.ParenthesizedExpressionSyntax }) return RefConversion.PreAssigment;
+        var expression = sas.Expression;
 
         return GetRefConversion(expression);
 
