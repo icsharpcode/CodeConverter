@@ -1360,6 +1360,42 @@ internal partial class CharTestClass
 }");
     }
 
+
+    [Fact]
+    public async Task TestSelectCaseComparesCharsAndStringsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Class CharTestClass
+    Private Sub Q()
+        Select Case ""a""
+            Case ""x""c To ""y""c
+            Case ""b""c
+        End Select
+    End Sub
+End Class", @"
+internal partial class CharTestClass
+{
+    private void Q()
+    {
+        switch (""a"")
+        {
+            case var @case when ""x"" <= @case && @case <= ""y"":
+                {
+                    break;
+                }
+
+            case ""b"":
+                {
+                    break;
+                }
+        }
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+    }
+
     [Fact]
     public async Task TestSingleCharacterStringLiteralBecomesChar_WhenExplictCastAsync()
     {

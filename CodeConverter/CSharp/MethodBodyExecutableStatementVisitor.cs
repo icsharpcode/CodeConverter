@@ -770,7 +770,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
                     // CSharp requires an explicit cast from the base type (e.g. int) in most cases switching on an enum
                     var isBooleanCase = caseTypeInfo.Type?.SpecialType == SpecialType.System_Boolean;
-                    var csExpressionToUse = IsEnumOrNullableEnum(switchExprTypeInfo.ConvertedType) ^ IsEnumOrNullableEnum(caseTypeInfo.Type) && !isBooleanCase ? correctTypeExpressionSyntax.Expr : originalExpressionSyntax;
+                    bool enumRelated = IsEnumOrNullableEnum(switchExprTypeInfo.ConvertedType) || IsEnumOrNullableEnum(caseTypeInfo.Type);
+                    bool convertingEnum = IsEnumOrNullableEnum(switchExprTypeInfo.ConvertedType) ^ IsEnumOrNullableEnum(caseTypeInfo.Type);
+                    var csExpressionToUse = !isBooleanCase && (convertingEnum || !enumRelated && correctTypeExpressionSyntax.IsConst) ? correctTypeExpressionSyntax.Expr : originalExpressionSyntax;
 
                     var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                         ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
@@ -783,14 +785,19 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
                     ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                     var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
-                    var relationalValue = await relational.Value.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-                    var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, relationalValue);
+                    var csRelationalValue = await relational.Value.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+                    csRelationalValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(relational.Value, csRelationalValue);
+                    var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, csRelationalValue);
                     labels.Add(VarWhen(varName, binaryExp));
                 } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
                     var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
                     ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
-                    var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, await range.LowerBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor), csLeft);
-                    var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csLeft, await range.UpperBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+                    var lowerBound = await range.LowerBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+                    lowerBound = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(range.LowerBound, lowerBound);
+                    var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, lowerBound, csLeft);
+                    var upperBound = await range.UpperBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+                    upperBound = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(range.UpperBound, upperBound);
+                    var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csLeft, upperBound);
                     var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
                     labels.Add(VarWhen(varName, withinBounds));
                 } else {
