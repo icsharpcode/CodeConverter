@@ -474,7 +474,7 @@ public partial class Foo : IFoo
         return 5;
     }
 
-    int IFoo.ExplicitFunc(ref string str) => ExplicitFunc(ref str);
+    int IFoo.ExplicitFunc([Optional, DefaultParameterValue("""")] ref string str) => ExplicitFunc(ref str);
 }");
     }
 
