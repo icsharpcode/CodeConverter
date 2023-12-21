@@ -317,9 +317,9 @@ internal partial class TestConversions
         string a;
         a = Conversions.ToString(Chr(2));
         a = Conversions.ToString(Chr(2));
-        a = Conversions.ToString('\u0002');
-        a = Conversions.ToString('\u0002');
-        a = Conversions.ToString('\u0002');
+        a = ""\u0002"";
+        a = ""\u0002"";
+        a = ""\u0002"";
     }
 
     public void TestW()
@@ -327,9 +327,9 @@ internal partial class TestConversions
         string a;
         a = Conversions.ToString(ChrW(2));
         a = Conversions.ToString(ChrW(2));
-        a = Conversions.ToString('\u0002');
-        a = Conversions.ToString('\u0002');
-        a = Conversions.ToString('\u0002');
+        a = ""\u0002"";
+        a = ""\u0002"";
+        a = ""\u0002"";
     }
 
     public char Chr(object o)
