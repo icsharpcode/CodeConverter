@@ -16,7 +16,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Constant chars are converted to constant strings where needed
 * Select case for a mixture of strings and characters converts correctly [#1062](https://github.com/icsharpcode/CodeConverter/issues/1062)
 
-
 ### C# -> VB
 
 

@@ -525,8 +525,8 @@ public partial class SomeClass : IFoo
     {
     }
 
-    int IFoo.get_Prop(int x, int y) => get_Prop2(x, y);
-    void IFoo.set_Prop(int x, int y, int value) => set_Prop2(x, y, value);
+    int IFoo.get_Prop(int x = 1, int y = 2) => get_Prop2(x, y);
+    void IFoo.set_Prop(int x = 1, int y = 2, int value = default) => set_Prop2(x, y, value);
 
     public void TestGet()
     {
@@ -615,8 +615,8 @@ public partial class SomeClass : IFoo
     {
     }
 
-    int IFoo.get_Prop(int x, int y, int z) => get_Prop2(x, y, z);
-    void IFoo.set_Prop(int x, int y, int z, int value) => set_Prop2(x, y, z, value);
+    int IFoo.get_Prop(int x = 1, int y = 2, int z = 3) => get_Prop2(x, y, z);
+    void IFoo.set_Prop(int x = 1, int y = 2, int z = 3, int value = default) => set_Prop2(x, y, z, value);
 
     public void TestGet()
     {

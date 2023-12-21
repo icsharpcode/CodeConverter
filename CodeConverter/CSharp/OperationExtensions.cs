@@ -56,7 +56,7 @@ internal static class OperationExtensions
             case OperationKind.DynamicMemberReference:
                 return true;
 
-            //Just documenting since it's the only one mentioning reference that can't be assigned to AFAIK
+            //Just documenting since it's the only one mentioning reference that can't necessarily be assigned to AFAIK
             case OperationKind.PropertyReference:
                 return false;
         }
