@@ -2212,6 +2212,62 @@ public partial class FooBar : IFoo, IBar
     }
 
     [Fact]
+    public async Task ExplicitInterfaceImplementationRequiredMethodParameters_749_Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Interface IFoo
+  Function DoFooBar(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Public Interface IBar
+  Function DoFooBar(ByRef str As String, i As Integer) As Integer
+End Interface
+
+Public Class FooBar
+  Implements IFoo, IBar
+
+  Function Foo(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFooBar
+    Return 4
+  End Function
+
+  Function Bar(ByRef str As String, i As Integer) As Integer Implements IBar.DoFooBar
+    Return 2
+  End Function
+
+End Class", @"
+public partial interface IFoo
+{
+    int DoFooBar(ref string str, int i);
+}
+
+public partial interface IBar
+{
+    int DoFooBar(ref string str, int i);
+}
+
+public partial class FooBar : IFoo, IBar
+{
+
+    public int Foo(ref string str, int i)
+    {
+        return 4;
+    }
+
+    int IFoo.DoFooBar(ref string str, int i) => Foo(ref str, i);
+
+    public int Bar(ref string str, int i)
+    {
+        return 2;
+    }
+
+    int IBar.DoFooBar(ref string str, int i) => Bar(ref str, i);
+
+}
+");
+    }
+
+    [Fact]
     public async Task ExplicitInterfaceImplementationOptionalParameters_1062_Async()
     {
         await TestConversionVisualBasicToCSharpAsync(
@@ -2293,6 +2349,63 @@ public partial class Foo : IFoo
 
     int IFoo.get_ExplicitProp(string str = """") => get_ExplicitProp(str);
     void IFoo.set_ExplicitProp(string str = """", int value = default) => set_ExplicitProp(str, value);
+}
+");
+    }
+
+
+    [Fact]
+    public async Task ExplicitInterfaceImplementationOptionalMethodParameters_749_Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Interface IFoo
+  Function DoFooBar(ByRef str As String, Optional i As Integer = 4) As Integer
+End Interface
+
+Public Interface IBar
+  Function DoFooBar(ByRef str As String, Optional i As Integer = 8) As Integer
+End Interface
+
+Public Class FooBar
+  Implements IFoo, IBar
+
+  Function Foo(ByRef str As String, Optional i As Integer = 4) As Integer Implements IFoo.DoFooBar
+    Return 4
+  End Function
+
+  Function Bar(ByRef str As String, Optional i As Integer = 8) As Integer Implements IBar.DoFooBar
+    Return 2
+  End Function
+
+End Class", @"
+public partial interface IFoo
+{
+    int DoFooBar(ref string str, int i = 4);
+}
+
+public partial interface IBar
+{
+    int DoFooBar(ref string str, int i = 8);
+}
+
+public partial class FooBar : IFoo, IBar
+{
+
+    public int Foo(ref string str, int i = 4)
+    {
+        return 4;
+    }
+
+    int IFoo.DoFooBar(ref string str, int i = 4) => Foo(ref str, i);
+
+    public int Bar(ref string str, int i = 8)
+    {
+        return 2;
+    }
+
+    int IBar.DoFooBar(ref string str, int i = 8) => Bar(ref str, i);
+
 }
 ");
     }
