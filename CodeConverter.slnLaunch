@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Func \u002B Web",
+    "Projects": [
+      {
+        "Name": "Web\\Web.csproj",
+        "Action": "Start"
+      },
+      {
+        "Name": "Func\\Func.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
