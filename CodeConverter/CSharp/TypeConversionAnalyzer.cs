@@ -469,6 +469,11 @@ internal class TypeConversionAnalyzer
             return csNode;
         }
 
+        if (currentType is {SpecialType: SpecialType.System_Char} && csNode is CSSyntax.LiteralExpressionSyntax {Token: {} t} l) {
+            return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Token(t.LeadingTrivia, SyntaxKind.StringLiteralToken, "\"" + t.Text.Trim('\'') + "\"", t.ValueText, t.TrailingTrivia))
+                .WithLeadingTrivia(csNode.GetLeadingTrivia()).WithTrailingTrivia(csNode.GetTrailingTrivia());
+        }
+
         if (currentType.IsNumericType()) {
             var toString = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                 csNode.AddParens(), ValidSyntaxFactory.IdentifierName(toStringMethodName));

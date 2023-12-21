@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Remove square brackets from identifiers [#1043](https://github.com/icsharpcode/CodeConverter/issues/1043)
 * Conversion of parenthesized ref arguments no longer assigns back [#1046](https://github.com/icsharpcode/CodeConverter/issues/1046)
 * Conversion of explicit interface implementations now converts optional parameters [#1062](https://github.com/icsharpcode/CodeConverter/issues/1062)
+* Constant chars are converted to constant strings where needed
+* Select case for a mixture of strings and characters converts correctly [#1062](https://github.com/icsharpcode/CodeConverter/issues/1062)
 
 ### C# -> VB
 

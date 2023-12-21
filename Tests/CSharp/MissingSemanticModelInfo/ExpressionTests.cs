@@ -310,6 +310,7 @@ public partial class CastToSameTypeTest
                     Console.WriteLine(1);
                     break;
                 }
+
             case ',':
                 {
                     Console.WriteLine(2);
