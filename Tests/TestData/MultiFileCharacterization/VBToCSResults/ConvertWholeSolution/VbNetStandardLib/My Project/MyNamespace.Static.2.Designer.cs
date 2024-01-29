@@ -1624,7 +1624,7 @@ namespace Microsoft.VisualBasic
                 }
                 else if (Equals(reflectedType, typeof(string)))
                 {
-                    return (T)ToString(Value);
+                    return (T)(object)ToString(Value);
                 }
                 else
                 {

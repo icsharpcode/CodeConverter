@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Conversion of explicit interface implementations now converts optional parameters [#1062](https://github.com/icsharpcode/CodeConverter/issues/1062)
 * Constant chars are converted to constant strings where needed
 * Select case for a mixture of strings and characters converts correctly [#1062](https://github.com/icsharpcode/CodeConverter/issues/1062)
+* Implicit boxing conversion converted correctly to no-op [#1071](https://github.com/icsharpcode/CodeConverter/issues/1071)
 
 ### C# -> VB
 

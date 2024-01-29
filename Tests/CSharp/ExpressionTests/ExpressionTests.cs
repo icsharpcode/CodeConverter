@@ -81,6 +81,33 @@ public partial class C
     }
 
     [Fact]
+    public async Task DynamicAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off ' Directive gets removed
+
+Public Class TestDynamicUsage
+    Property Prop As Integer
+
+    Sub S()
+        Dim o As Object
+        o = New TestDynamicUsage
+        o.Prop = 1 'Must not cast to object here
+    End Sub
+End Class", @"
+public partial class TestDynamicUsage
+{
+    public int Prop { get; set; }
+
+    public void S()
+    {
+        object o;
+        o = new TestDynamicUsage();
+        ((dynamic)o).Prop = 1; // Must not cast to object here
+    }
+}");
+    }
+
+    [Fact]
     public async Task ConversionOfNotUsesParensIfNeededAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
@@ -267,12 +294,11 @@ public partial class VisualBasicClass
     public void Rounding()
     {
         object o = 3.0f;
-        var x = Math.Round(o, (object)2);
+        var x = Math.Round(o, 2);
     }
 }
-2 target compilation errors:
-CS1503: Argument 1: cannot convert from 'object' to 'double'
-CS1503: Argument 2: cannot convert from 'object' to 'int'");
+1 target compilation errors:
+CS1503: Argument 1: cannot convert from 'object' to 'double'");
     }
 
     [Fact]

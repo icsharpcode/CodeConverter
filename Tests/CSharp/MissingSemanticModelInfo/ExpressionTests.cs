@@ -391,7 +391,7 @@ internal partial class A
     {
         SomeUnknownType x = default;
         int y = 3;
-        if (x == null || (object)y == null)
+        if (x == null || y == null)
         {
 
         }

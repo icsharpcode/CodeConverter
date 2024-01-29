@@ -311,7 +311,7 @@ internal class TypeConversionAnalyzer
         } else if (vbConversion.IsNumeric && (csConversion.IsNumeric || nullableVbConvertedType.IsEnumType()) && isConvertFractionalToInt) {
             typeConversionKind = TypeConversionKind.FractionalNumberRoundThenCast;
             return true;
-        } else if (csConversion.IsExplicit && csConversion.IsEnumeration || csConversion.IsBoxing) {
+        } else if (csConversion is {IsExplicit: true, IsEnumeration: true} or {IsBoxing: true, IsImplicit: false}) {
             typeConversionKind = TypeConversionKind.NonDestructiveCast;
             return true;
         } else if (vbConversion.IsNumeric && csConversion.IsNumeric) {
