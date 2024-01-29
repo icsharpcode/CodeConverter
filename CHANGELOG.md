@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [9.2.5] - 2024-01-29
+
+
+### Vsix
+
+
+### VB -> C#
+
 * Remove square brackets from identifiers [#1043](https://github.com/icsharpcode/CodeConverter/issues/1043)
 * Conversion of parenthesized ref arguments no longer assigns back [#1046](https://github.com/icsharpcode/CodeConverter/issues/1046)
 * Conversion of explicit interface implementations now converts optional parameters [#1062](https://github.com/icsharpcode/CodeConverter/issues/1062)

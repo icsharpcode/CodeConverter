@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 env:
-  BuildVersion: '9.2.4'
+  BuildVersion: '9.2.5'
   
 jobs:
  build:
