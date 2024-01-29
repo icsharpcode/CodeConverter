@@ -45,7 +45,7 @@
     <PackageReference Include="NuGet.Build.Tasks" Version="6.1.0" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
 
