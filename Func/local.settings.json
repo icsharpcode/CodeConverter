@@ -1,10 +1,7 @@
-﻿{
+{
     "IsEncrypted": false,
     "Values": {
         "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-        "FUNCTIONS_WORKER_RUNTIME": "dotnet"
-    },
-    "Host": {
-        "CORS": "*"
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated"
     }
 }
