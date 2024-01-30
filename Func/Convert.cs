@@ -1,11 +1,7 @@
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Web;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -16,32 +12,34 @@ public class Convert
     public const string DefaultRequest = @"{""code"":""Public Class VisualBasicClass\r\n\r\nEnd Class"",""requestedConversion"":""vbnet2cs""}";
     public const string DefaultConversion = "\r\npublic partial class VisualBasicClass\r\n{\r\n\r\n}";
 
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<Convert> _logger;
 
-    public Convert(ILoggerFactory loggerFactory)
+    public Convert(ILogger<Convert> logger)
     {
-        _loggerFactory = loggerFactory;
+        _logger = logger;
     }
 
     //
     // Sample data: {"code":"Public Class VisualBasicClass\r\n\r\nEnd Class","requestedConversion":"vbnet2cs"}
     //
-    [FunctionName("Convert")]
-#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods - Name must be "Run" for this to work AFAIK
-    public async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req,
-        CancellationToken hostCancellationToken)
+    [Function("Convert")]
+#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
 #pragma warning restore VSTHRD200 // Use "Async" suffix for async methods
+        CancellationToken hostCancellationToken)
     {
-        var logger = _loggerFactory.CreateLogger<Convert>();
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
         if (0 == string.CompareOrdinal(requestBody, DefaultRequest)) {
-            logger.LogInformation("Short-circuiting for default conversion request");
+            _logger.LogInformation("Short-circuiting for default conversion request");
             return new OkObjectResult(new ConvertResponse(true, DefaultConversion, ""));
         }
 
         var data = JsonConvert.DeserializeObject<ConvertRequest>(requestBody);
+
+        if (null == data) {
+            return new BadRequestResult();
+        }
 
         using var cancellationSource = CancellationTokenSource.CreateLinkedTokenSource(hostCancellationToken, req.HttpContext.RequestAborted);
         var response = await WebConverter.ConvertAsync(data, cancellationSource.Token);
