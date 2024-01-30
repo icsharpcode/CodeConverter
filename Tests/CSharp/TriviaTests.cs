@@ -424,7 +424,7 @@ End Class";
         var conversionResult = await ProjectConversion.ConvertTextAsync<VBToCSConversion>(vbCode, options);
 
         var regex = new Regex(@"#error Cannot convert \w+ - see comment for details\s+ \/\* Cannot convert.*?\*\/", RegexOptions.Singleline);
-        Assert.Equal(1, conversionResult.Exceptions.Count);
+        Assert.Single(conversionResult.Exceptions);
         Assert.Matches(regex, conversionResult.ConvertedCode);
     }
 }

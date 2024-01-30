@@ -74,7 +74,7 @@ public class ConverterTestBase
             .Skip(1).Select(afterPrefix => afterPrefix.Split('\n')[0].TrimEnd()).ToList();
         var missingSourceLineNumbers = lineNumbersAdded.Except(convertedCommentLineNumbers);
         if (missingSourceLineNumbers.Any()) {
-            Assert.False(true, "Comments not converted from source lines: " + string.Join(", ", missingSourceLineNumbers) + GetSourceAndConverted(sourceWithComments, convertedCode));
+            Assert.Fail("Comments not converted from source lines: " + string.Join(", ", missingSourceLineNumbers) + GetSourceAndConverted(sourceWithComments, convertedCode));
         }
         OurAssert.Equal(string.Join(", ", lineNumbersAdded), string.Join(", ", convertedCommentLineNumbers), () => GetSourceAndConverted(sourceWithComments, convertedCode));
     }
@@ -107,8 +107,7 @@ End Sub";
         bool incompatibleWithAutomatedCommentTesting = false)
     {
         if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-        var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2)
-        {
+        var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) {
             RootNamespaceOverride = _rootNamespace,
             ShowCompilationErrors = !expectSurroundingBlock
         };
@@ -163,8 +162,7 @@ End Sub";
 
     private static void AssertCodeEqual(string originalSource, string expectedConversion, string actualConversion)
     {
-        OurAssert.EqualIgnoringNewlines(expectedConversion, actualConversion, () =>
-        {
+        OurAssert.EqualIgnoringNewlines(expectedConversion, actualConversion, () => {
             StringBuilder sb = OurAssert.DescribeStringDiff(expectedConversion, actualConversion);
             sb.AppendLine(OurAssert.LineSplitter);
             sb.AppendLine("source:");
@@ -182,8 +180,7 @@ End Sub";
     {
         var lines = Utils.HomogenizeEol(code).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
         var lineNumbersAdded = new List<string>();
-        var newLines = lines.Select((line, i) =>
-        {
+        var newLines = lines.Select((line, i) => {
             var lineNumber = i.ToString();
             var potentialExistingComments = line.Split(new[] { singleLineCommentStart }, StringSplitOptions.None).Skip(1);
             if (potentialExistingComments.Count() == 1 || !lineCanHaveComment(line)) return line;
@@ -207,8 +204,7 @@ public class CSToVBWithoutSimplifierConversion : ILanguageConversion
 
     string ILanguageConversion.TargetLanguage => _baseConversion.TargetLanguage;
 
-    ConversionOptions ILanguageConversion.ConversionOptions
-    {
+    ConversionOptions ILanguageConversion.ConversionOptions {
         get => _baseConversion.ConversionOptions;
         set => _baseConversion.ConversionOptions = value;
     }
