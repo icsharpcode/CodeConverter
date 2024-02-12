@@ -108,6 +108,25 @@ public partial class TestDynamicUsage
     }
 
     [Fact]
+    public async Task DynamicBoolAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class C
+    Public Function IsHybridApp() As Boolean
+        Return New Object().Session(""hybrid"") IsNot Nothing AndAlso New Object().Session(""hybrid"") = 1
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public bool IsHybridApp()
+    {
+        return Conversions.ToBoolean(((dynamic)new object()).Session(""hybrid"") is not null && Operators.ConditionalCompareObjectEqual(((dynamic)new object()).Session(""hybrid""), 1, false));
+    }
+}");
+    }
+
+    [Fact]
     public async Task ConversionOfNotUsesParensIfNeededAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
