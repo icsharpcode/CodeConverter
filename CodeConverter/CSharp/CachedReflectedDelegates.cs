@@ -26,8 +26,15 @@ internal static class CachedReflectedDelegates
         GetCachedReflectedPropertyDelegate(loc, "PossiblyEmbeddedOrMySourceTree", ref _possiblyEmbeddedOrMySourceTree);
     private static Func<Location, SyntaxTree> _possiblyEmbeddedOrMySourceTree;
     
-    public static bool GetIsUsing(this ILocalSymbol l) =>
-        GetCachedReflectedPropertyDelegate(l, "IsUsing", ref _isUsing);
+    public static bool GetIsUsing(this ILocalSymbol l)
+    {
+        try {
+            return GetCachedReflectedPropertyDelegate(l, "IsUsing", ref _isUsing);
+        } catch (Exception) {
+            return false;
+        }
+    }
+
     private static Func<ILocalSymbol, bool> _isUsing;
 
 
