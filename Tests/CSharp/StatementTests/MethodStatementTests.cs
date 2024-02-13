@@ -531,6 +531,92 @@ public partial struct SomeStruct
     }
 
     [Fact]
+    public async Task WithBlockMeClassAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestWithMe
+    Private _x As Integer
+    Sub S()
+        With Me
+            ._x = 1
+            ._x = 2
+        End With
+    End Sub
+End Class", @"
+public partial class TestWithMe
+{
+    private int _x;
+    public void S()
+    {
+        _x = 1;
+        _x = 2;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task WithBlockMeStructAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure TestWithMe
+    Private _x As Integer
+    Sub S()
+        With Me
+            ._x = 1
+            ._x = 2
+        End With
+    End Sub
+End Structure", @"
+public partial struct TestWithMe
+{
+    private int _x;
+    public void S()
+    {
+        _x = 1;
+        _x = 2;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task WithBlockForEachAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+
+Public Class TestWithForEachClass
+    Private _x As Integer
+
+    Public Shared Sub Main()
+        Dim x = New List(Of TestWithForEachClass)()
+        For Each y In x
+            With y
+                ._x = 1
+                System.Console.Write(._x)
+            End With
+            y = Nothing
+        Next
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+
+public partial class TestWithForEachClass
+{
+    private int _x;
+
+    public static void Main()
+    {
+        var x = new List<TestWithForEachClass>();
+        foreach (var y in x)
+        {
+            y._x = 1;
+            Console.Write(y._x);
+            y = (TestWithForEachClass)null;
+        }
+    }
+}
+1 target compilation errors:
+CS1656: Cannot assign to 'y' because it is a 'foreach iteration variable'");
+    }
+
+    [Fact]
     public async Task NestedWithBlockAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

@@ -25,6 +25,12 @@ internal static class CachedReflectedDelegates
     public static SyntaxTree GetEmbeddedSyntaxTree(this Location loc) =>
         GetCachedReflectedPropertyDelegate(loc, "PossiblyEmbeddedOrMySourceTree", ref _possiblyEmbeddedOrMySourceTree);
     private static Func<Location, SyntaxTree> _possiblyEmbeddedOrMySourceTree;
+    
+    public static bool GetIsUsing(this ILocalSymbol l) =>
+        GetCachedReflectedPropertyDelegate(l, "IsUsing", ref _isUsing);
+    private static Func<ILocalSymbol, bool> _isUsing;
+
+
 
     /// <remarks>Unfortunately the roslyn UnassignedVariablesWalker and all useful collections created from it are internal only
     /// Other attempts using DataFlowsIn on each reference showed that "DataFlowsIn" even from an uninitialized variable (at least in the case of ints)

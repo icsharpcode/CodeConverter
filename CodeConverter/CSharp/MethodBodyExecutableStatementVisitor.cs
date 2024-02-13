@@ -870,7 +870,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         SyntaxList<StatementSyntax> stmts = SyntaxFactory.List<StatementSyntax>();
         ExpressionSyntax exprWithoutSideEffects;
         ExpressionSyntax reusableExprWithoutSideEffects;
-        if (!await CanEvaluateMultipleTimesAsync(vbExpr)) {
+        if (IsReusableReadOnlyLocalKind(_semanticModel.GetSymbolInfo(vbExpr).Symbol) || await CanEvaluateMultipleTimesAsync(vbExpr)) {
+            exprWithoutSideEffects = expr;
+            reusableExprWithoutSideEffects = expr.WithoutSourceMapping();
+        } else {
             TypeSyntax forceType = null;
             if (_semanticModel.GetOperation(vbExpr.SkipIntoParens()).IsAssignableExpression()) {
                 forceType = SyntaxFactory.RefType(ValidSyntaxFactory.VarType);
@@ -880,13 +883,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var (stmt, id) = CreateLocalVariableWithUniqueName(vbExpr, variableNameBase, expr, forceType);
             stmts = stmts.Add(stmt);
             reusableExprWithoutSideEffects = exprWithoutSideEffects = id;
-        } else {
-            exprWithoutSideEffects = expr;
-            reusableExprWithoutSideEffects = expr.WithoutSourceMapping();
         }
 
         return (reusableExprWithoutSideEffects, stmts, exprWithoutSideEffects);
     }
+
+    private static bool IsReusableReadOnlyLocalKind(ISymbol symbol) => symbol is ILocalSymbol ls && (VBasic.VisualBasicExtensions.IsForEach(ls) || ls.GetIsUsing());
 
     private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
     {
@@ -903,7 +905,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     private async Task<bool> CanEvaluateMultipleTimesAsync(VBSyntax.ExpressionSyntax vbExpr)
     {
-        return _semanticModel.GetConstantValue(vbExpr).HasValue || vbExpr.SkipIntoParens() is VBSyntax.NameSyntax ns && await IsNeverMutatedAsync(ns);
+        return _semanticModel.GetConstantValue(vbExpr).HasValue || vbExpr.IsKind(VBasic.SyntaxKind.MeExpression) || vbExpr.SkipIntoParens() is VBSyntax.NameSyntax ns && await IsNeverMutatedAsync(ns);
     }
 
     private async Task<bool> IsNeverMutatedAsync(VBSyntax.NameSyntax ns)
