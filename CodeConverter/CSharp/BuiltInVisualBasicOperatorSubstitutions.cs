@@ -472,7 +472,7 @@ internal static class VbOperatorConversion
 
     private static bool IsObjectType(this ITypeSymbol @this)
     {
-        return @this.SpecialType == SpecialType.System_Object;
+        return @this?.SpecialType == SpecialType.System_Object;
     }
 
     private static bool IsDecimalType(this ITypeSymbol @this)

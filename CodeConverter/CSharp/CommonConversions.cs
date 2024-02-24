@@ -756,5 +756,5 @@ internal class CommonConversions
         return false;
     }
 
-    private bool IsLinqDelegateExpression(ITypeSymbol convertedType) => System_Linq_Expressions_Expression_T.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default);
+    private bool IsLinqDelegateExpression(ITypeSymbol convertedType) => System_Linq_Expressions_Expression_T?.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default) == true;
 }

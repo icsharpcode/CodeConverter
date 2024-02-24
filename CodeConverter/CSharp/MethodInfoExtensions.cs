@@ -42,7 +42,9 @@ internal static class MethodInfoExtensions
     public static MethodInfo ReflectedPropertyGetter<TInstance>(this TInstance instance,
         string propertyToAccess)
     {
-        var propertyInfo = instance.GetType().GetProperty(propertyToAccess, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        var type = instance.GetType();
+        var propertyInfo = type.GetProperty(propertyToAccess, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        propertyInfo ??= type.ReflectedType?.GetProperty(propertyToAccess, BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
         return propertyInfo?.GetMethod.GetRuntimeBaseDefinition();
     }
 }
