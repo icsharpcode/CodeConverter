@@ -10,12 +10,12 @@ internal static class ClashingMemberRenamer
     /// Cases in different named scopes should be dealt with by <seealso cref="DocumentExtensions.ExpandAsync"/>.
     /// For names scoped within a type member, see <seealso cref="SemanticModelSymbolSetExtensions.GetCsLocalSymbolsPerScope"/>.
     /// </remarks>
-    public static async Task<Project> RenameClashingSymbolsAsync(Project project)
+    public static async Task<Project> RenameClashingSymbolsAsync(Project project, CancellationToken cancellationToken)
     {
-        var compilation = await project.GetCompilationAsync();
+        var compilation = await project.GetCompilationAsync(cancellationToken);
         var memberRenames = SymbolRenamer.GetNamespacesAndTypesInAssembly(project, compilation)
             .SelectMany(x => GetSymbolsWithNewNames(x, compilation));
-        return await SymbolRenamer.PerformRenamesAsync(project, memberRenames.ToList());
+        return await SymbolRenamer.PerformRenamesAsync(project, memberRenames.ToList(), cancellationToken);
     }
 
     private static IEnumerable<(ISymbol Original, string NewName)> GetSymbolsWithNewNames(INamespaceOrTypeSymbol containerSymbol, Compilation compilation)
