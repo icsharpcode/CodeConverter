@@ -35,7 +35,7 @@ internal static class SymbolRenamer
             ISymbol currentDeclaration = SymbolFinder.FindSimilarSymbols(originalSymbol, compilation).FirstOrDefault();
             if (currentDeclaration == null)
                 continue; //Must have already renamed this symbol for a different reason
-            solution = await Renamer.RenameSymbolAsync(solution, currentDeclaration, newName, solution.Workspace.Options);
+            solution = await Renamer.RenameSymbolAsync(solution, currentDeclaration, new SymbolRenameOptions(), newName, cancellationToken);
         }
 
         return solution.GetProject(project.Id);
