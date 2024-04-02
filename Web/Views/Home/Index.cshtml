@@ -1,169 +1,175 @@
-﻿<script src="~/Scripts/angular.min.js"></script>
+﻿<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.3/angular.min.js"></script>
 
-<div ng-app="ccApp" ng-controller="ccController">
-	<div class="d-flex align-items-center">
-		<div class="flex-50 text-right"><span class="font-size-l" ng-bind="convertFrom"></span></div>
-		<div class="px-3">
-			<a class="btn btn-default btn-circle" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && toggle()"><img class="img-responsive" src="~/Images/change.svg" /></a>
-		</div>
-		<div class="flex-50"><span class="font-size-l" ng-bind="convertTo"></span></div>
-	</div>
-	<div class="row h-50">
-		<div class="col-md-6 p-2 pb-1 pr-md-1 py-md-2">
-			<div class="code-buttons code-buttons-left">
-			</div>
-			<textarea class="form-control pt-5" ng-model="inputCode" ng-keydown="keyDown($event)" rows="10"></textarea>
-		</div>
-		<div class="d-flex d-md-none justify-content-center py-2">
-			@*<button class="btn btn-default" ng-click="upload()">Upload files</button>*@
-			<button class="btn btn-accent px-3" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && convert()">Convert Code</button>
-		</div>
-		<div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2" ng-hide="showErrors">
-			<div class="spinner ng-hide" ng-show="converterCallInflight"></div>
-			<div class="code-buttons ng-hide" ng-show="convertedCode">
-				<button class="btn btn-code btn-primary" ng-click="copy()">Copy to clipboard</button>
-				<button class="btn btn-code btn-primary" ng-click="download()">Download</button>
-			</div>
-			<div class="alert alert-success ng-hide py-1" ng-show="showCopiedLabel">
-				Copied!
-			</div>
-			<textarea class="form-control pt-5" ng-model="convertedCode" ng-keydown="keyDown($event)" rows="10" disabled></textarea>
-		</div>
-		<div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2 has-error ng-hide" ng-show="showErrors">
-			<div class="code-buttons">
-			</div>
-			<div class="form-control pt-5">
-				<div class="font-weight-bold mb-2 text-accent">Error converting code</div>
-				Error message:<br />
-				<div class="content" ng-bind="errorMessage">
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="d-none d-md-flex justify-content-center">
-		@*<button class="btn btn-default" ng-click="upload()">Upload files</button>*@
-		<button class="btn btn-accent px-3" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && convert()">Convert Code</button>
-	</div>
+<div style="height:60%" ng-app="ccApp" ng-controller="ccController">
+    <div class="d-flex align-items-center">
+        <div class="flex-50 text-right"><span class="float-right font-size-l" ng-bind="convertFrom"></span></div>
+        <div class="px-3">
+            <a class="btn btn-default btn-circle" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && toggle()"><img class="img-responsive" src="~/change.svg" /></a>
+        </div>
+        <div class="flex-50"><span class="font-size-l" ng-bind="convertTo"></span></div>
+    </div>
+    <div class="row" style="height:80%; overflow:hidden;">
+        <div class="col-md-6 p-2 pb-1 pr-md-1 py-md-2" style="position: relative;display: flex;">
+            <div class="code-buttons">
+            </div>
+            <textarea class="form-control pt-5" ng-model="inputCode" ng-keydown="keyDown($event)" rows="10"></textarea>
+        </div>
+        <div class="d-flex d-md-none justify-content-center py-2">
+            @*<button class="btn btn-default" ng-click="upload()">Upload files</button>*@
+            <button class="btn btn-accent px-3" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && convert()">Convert Code</button>
+        </div>
+        <div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2" style="position: relative;display:flex;" ng-hide="showErrors">
+            <div id="page-loader" class="k-loader k-vstack d-flex justify-content-center align-items-center k-align-items-center k-gap-8 text-center" ng-show="converterCallInflight">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="k-loader-text"></div>
+            </div>
+            <div class="code-buttons ng-hide" ng-show="convertedCode">
+                <button class="btn btn-code btn-primary" ng-click="copy()">Copy to clipboard</button>
+                <button class="btn btn-code btn-primary" ng-click="download()">Download</button>
+            </div>
+            <div class="alert alert-success ng-hide py-1" ng-show="showCopiedLabel">
+                Copied!
+            </div>
+            <textarea class="form-control pt-5" ng-model="convertedCode" ng-keydown="keyDown($event)" rows="10" disabled></textarea>
+        </div>
+        <div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2 has-error ng-hide" style="position: relative; display:flex; height: 100%;" ng-show="showErrors">
+            <div class="code-buttons">
+            </div>
+            <div class="form-control pt-5">
+                <div class="font-weight-bold mb-2 text-accent">Error converting code</div>
+                Error message:<br />
+                <div class="content" ng-bind="errorMessage">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="padding:15px">
+        <div class="d-none d-md-flex justify-content-center">
+            @*<button class="btn btn-default" ng-click="upload()">Upload files</button>*@
+            <button class="btn btn-accent px-3" ng-disabled="converterCallInflight" ng-click="converterCallInflight === false && convert()">Convert Code</button>
+        </div>
+    </div>
+
 </div>
 
 <script>
-	 @functions{
+    @functions {
         public string TokenHeaderValue()
         {
-            string cookieToken, formToken;
-            AntiForgery.GetTokens(null, out cookieToken, out formToken);
-            return cookieToken + ":" + formToken;
+            return @Html.AntiForgeryToken().ToString() ?? "";
         }
     }
 
-	var app = angular.module('ccApp', []);
+    var app = angular.module('ccApp', []);
 
-	app.controller('ccController', function ($scope, $http) {
-		$scope.inputCode = "";
-		$scope.convertedCode = "";
-		$scope.errorMessage;
-		$scope.requestedConversion;
-		$scope.convertFrom;
-		$scope.convertTo;
-		$scope.showErrors = false;
-		$scope.converterCallInflight = false;
-		$scope.downloadUrl = "";
-		$scope.fileExtension = "";
-		$scope.showCopiedLabel = false;
+    app.controller('ccController', function ($scope, $http) {
+        $scope.inputCode = "";
+        $scope.convertedCode = "";
+        $scope.errorMessage;
+        $scope.requestedConversion;
+        $scope.convertFrom;
+        $scope.convertTo;
+        $scope.showErrors = false;
+        $scope.converterCallInflight = false;
+        $scope.downloadUrl = "";
+        $scope.fileExtension = "";
+        $scope.showCopiedLabel = false;
 
-		$scope.keyDown = function (e) {
-			if (e.keyCode == 9) {
-				e.preventDefault();
-				var start = e.target.selectionStart;
-				var end = e.target.selectionEnd;
+        $scope.keyDown = function (e) {
+            if (e.keyCode == 9) {
+                e.preventDefault();
+                var start = e.target.selectionStart;
+                var end = e.target.selectionEnd;
 
-				// set textarea value to: text before caret + tab + text after caret
-				$(e.target).val($(e.target).val().substring(0, start)
-					+ "\t"
-					+ $(e.target).val().substring(end));
+                // set textarea value to: text before caret + tab + text after caret
+                $(e.target).val($(e.target).val().substring(0, start)
+                    + "\t"
+                    + $(e.target).val().substring(end));
 
-				// put caret at right position again
-				e.target.selectionStart =
-					e.target.selectionEnd = start + 1;
-			}
-		}
+                // put caret at right position again
+                e.target.selectionStart =
+                    e.target.selectionEnd = start + 1;
+            }
+        }
 
-		$scope.toggle = function () {
-			if (this.requestedConversion == "cs2vbnet") {
-				this.requestedConversion = "vbnet2cs";
-				this.convertFrom = "VB.NET";
-				this.convertTo = "C#";
-				this.fileExtension = "cs"
-			} else {
-				this.requestedConversion = "cs2vbnet";
-				this.convertFrom = "C#";
-				this.convertTo = "VB.NET";
-				this.fileExtension = "vb"
-			}
+        $scope.toggle = function () {
+            if (this.requestedConversion == "cs2vbnet") {
+                this.requestedConversion = "vbnet2cs";
+                this.convertFrom = "VB.NET";
+                this.convertTo = "C#";
+                this.fileExtension = "cs"
+            } else {
+                this.requestedConversion = "cs2vbnet";
+                this.convertFrom = "C#";
+                this.convertTo = "VB.NET";
+                this.fileExtension = "vb"
+            }
 
-			this.inputCode = this.convertedCode = "";
-			this.showErrors = false;
-		}
+            this.inputCode = this.convertedCode = "";
+            this.showErrors = false;
+        }
 
-		$scope.toggle();
+        $scope.toggle();
 
-		$scope.copy = function () {
+        $scope.copy = function () {
 
-			var textArea = document.createElement("textarea");
-			textArea.value = this.convertedCode;
-			document.body.appendChild(textArea);
-			textArea.focus();
-			textArea.select();
+            var textArea = document.createElement("textarea");
+            textArea.value = this.convertedCode;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
 
-			try {
-				var successful = document.execCommand('copy');
-			} catch (err) {
-			}
+            try {
+                var successful = document.execCommand('copy');
+            } catch (err) {
+            }
 
-			document.body.removeChild(textArea);
-			this.showCopiedLabel = true;
-			var that = this;
-			setTimeout(function () {
-				$scope.$apply(function () {
-					that.showCopiedLabel = false;
-				});
-			}, 1000);
-		}
+            document.body.removeChild(textArea);
+            this.showCopiedLabel = true;
+            var that = this;
+            setTimeout(function () {
+                $scope.$apply(function () {
+                    that.showCopiedLabel = false;
+                });
+            }, 1000);
+        }
 
-		$scope.download = function () {
-			var blob = new Blob([this.convertedCode], { type: "text/plain;charset=utf-8" });
-			saveAs(blob, "Code." + this.fileExtension);
-		}
+        $scope.download = function () {
+            var blob = new Blob([this.convertedCode], { type: "text/plain;charset=utf-8" });
+            saveAs(blob, "Code." + this.fileExtension);
+        }
 
-		$scope.convert = function () {
-			$scope.converterCallInflight = true;
-			$scope.convertedCode = "";
-			$scope.errorMessage = "";
-			$scope.showErrors = false;
+        $scope.convert = function () {
+            $scope.converterCallInflight = true;
+            $scope.convertedCode = "";
+            $scope.errorMessage = "";
+            $scope.showErrors = false;
 
-			var data = JSON.stringify({ code: $scope.inputCode, requestedConversion: $scope.requestedConversion });
+            var data = JSON.stringify({ code: $scope.inputCode, requestedConversion: $scope.requestedConversion });
 
-			$http({
-				method: "POST",
-				url: "/api/converter/",
-				headers: {
-					"RequestVerificationToken": "@TokenHeaderValue()"
-				},
-				data: data
+            $http({
+                method: "POST",
+                url: "/api/converter/",
+                headers: {
+                    "RequestVerificationToken": "@TokenHeaderValue()"
+                },
+                data: data
 
-			}).then(function successCallback(response) {
-				$scope.converterCallInflight = false;
-				$scope.convertedCode = response.data.convertedCode;
+            }).then(function successCallback(response) {
+                $scope.converterCallInflight = false;
+                $scope.convertedCode = response.data.convertedCode;
 
-				if (!response.data.conversionOk) {
-					$scope.showErrors = true;
-					$scope.errorMessage = response.data.errorMessage;
-				}
-			}, function errorCallback(response) {
-				$scope.converterCallInflight = false;
-				$scope.showErrors = true;
-				$scope.errorMessage = response.data.ExceptionMessage;
-			});
-		};
-	});
+                if (!response.data.conversionOk) {
+                    $scope.showErrors = true;
+                    $scope.errorMessage = response.data.errorMessage;
+                }
+            }, function errorCallback(response) {
+                $scope.converterCallInflight = false;
+                $scope.showErrors = true;
+                $scope.errorMessage = response.data.ExceptionMessage;
+            });
+        };
+    });
 </script>

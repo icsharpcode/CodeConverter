@@ -46,11 +46,17 @@ namespace ICSharpCode.CodeConverter.CSharp
             {
                 var systemDotConvert = typeof(Convert).FullName;
                 var convertMethods = semanticModel.Compilation.GetTypeByMetadataName(systemDotConvert).GetMembers().Where(m =>
-                    m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
+                    m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1).ToList();
                 var methodsByType = convertMethods.Where(m => m.Name != nameof(Convert.ToBase64String))
                     .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{systemDotConvert}.{m.Name}" })
-                    .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
-                return methodsByType;
+                    .ToList();
+                var dict = new Dictionary<ITypeSymbol, string>();
+
+                foreach (var method in methodsByType) {
+                    dict[method.Key.ReturnType] = method.Key.Name;
+                }
+
+                return dict;
             }
 
             public override CSharpSyntaxNode DefaultVisit(SyntaxNode node)
