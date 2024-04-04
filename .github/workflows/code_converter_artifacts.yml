@@ -36,6 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+          path: .temp/codeconverter
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -44,7 +45,7 @@ jobs:
 
       - name: Build CodeConverter App
         run: |
-          dotnet publish .Web/CodeConverterWebApp.csproj --configuration Release --output ${{inputs.azure-package-path}}
+          dotnet publish .temp/codeconverter/Web/CodeConverterWebApp.csproj --configuration Release --output ${{inputs.azure-package-path}}
 
       - name: List packages after restore
         run: ls ~/.nuget/packages/**
