@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
-using System.Web.Http.Description;
-using CodeConverterWebApp.Models;
+﻿using CodeConverterWebApp.Models;
 using ICSharpCode.CodeConverter;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CodeConverterWebApp.Controllers
 {
-    public class ConverterController : ApiController
+    [Route("/api/[controller]")]
+    [ApiController]
+    public class ConverterController : Controller
     {
         [HttpPost]
-        [ResponseType(typeof(ConvertResponse))]
-        public IHttpActionResult Post([FromBody]ConvertRequest todo)
+        public IActionResult Post([FromBody] ConvertRequest todo)
         {
             var languages = todo.requestedConversion.Split('2');
 
@@ -23,8 +18,7 @@ namespace CodeConverterWebApp.Controllers
             int fromVersion = 6;
             int toVersion = 14;
 
-            if (languages.Length == 2)
-            {
+            if (languages.Length == 2) {
                 fromLanguage = ParseLanguage(languages[0]);
                 fromVersion = GetDefaultVersionForLanguage(languages[0]);
                 toLanguage = ParseLanguage(languages[1]);
@@ -37,8 +31,7 @@ namespace CodeConverterWebApp.Controllers
                 .SetToLanguage(toLanguage, toVersion);
             var result = CodeConverter.Convert(codeWithOptions);
 
-            var response = new ConvertResponse()
-            {
+            var response = new ConvertResponse() {
                 conversionOk = result.Success,
                 convertedCode = result.ConvertedCode,
                 errorMessage = result.GetExceptionsAsString()
@@ -46,7 +39,6 @@ namespace CodeConverterWebApp.Controllers
 
             return Ok(response);
         }
-
         string ParseLanguage(string language)
         {
             if (language == null)

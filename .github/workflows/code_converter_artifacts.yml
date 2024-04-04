@@ -1,0 +1,56 @@
+name: Code Converter App artifacts
+
+on:
+  workflow_call:
+    inputs:
+      app_branch:
+        description: "The branch name"
+        required: true
+        default: "master"
+        type: string
+      azure-package-path:
+        description: "The path where the artifacts of the package will be stored"
+        type: string
+        default: "codeconverter-app"
+        required: false
+      artifacts-name:
+        description: "The name of the artifacts"
+        type: string
+        required: true
+
+jobs:
+  build_app:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.ref }}-build-code-converter-app
+      cancel-in-progress: true
+
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      DOTNET_INSTALL_DIR: ./.dotnet
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Clone Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x.x"
+
+      - name: Build CodeConverter App
+        run: |
+          dotnet publish .Web/CodeConverterWebApp.csproj --configuration Release --output ${{inputs.azure-package-path}}
+
+      - name: List packages after restore
+        run: ls ~/.nuget/packages/**
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{inputs.artifacts-name}}
+          path: ${{inputs.azure-package-path}}
