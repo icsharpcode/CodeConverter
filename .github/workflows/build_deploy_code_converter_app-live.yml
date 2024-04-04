@@ -1,0 +1,49 @@
+name: Build and deploy Code Converter app on LIVE
+
+env:
+  AZURE_WEBAPP_NAME: convertertelerik # set this to the name of your Azure Web App
+  PUBLISH_PATH: '.'
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  build:
+    uses: ./.github/workflows/code_converter_artifacts.yml
+    secrets: inherit
+    with:
+      artifacts-name: .code-converter-app-artifacts
+      app_branch: master
+
+  deploy:
+    permissions:
+      contents: read
+      id-token: write
+    needs: build
+    runs-on: ubuntu-latest
+    environment: 'Production'
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: .code-converter-app-artifacts
+
+      - name: 'Az CLI login'
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.PUBLISH_PATH }}
+
+      - name: logout
+        run: |
+          az logout
