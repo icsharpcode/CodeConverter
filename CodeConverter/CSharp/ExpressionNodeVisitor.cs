@@ -1747,7 +1747,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
             var argSyntax = await arg.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
             if (forceNamedParameters && !arg.IsNamed && parameterSymbol != null) {
-                return argSyntax.WithNameColon(SyntaxFactory.NameColon(parameterSymbol.Name));
+                return argSyntax.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(parameterSymbol.Name))));
             }
 
             return argSyntax;

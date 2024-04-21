@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Escape parameter names [#1092](https://github.com/icsharpcode/CodeConverter/issues/1092)
 
 ### C# -> VB
 

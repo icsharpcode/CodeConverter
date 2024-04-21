@@ -2296,6 +2296,33 @@ public partial class ImplInterfaceWithOptionalParameters : InterfaceWithOptional
 ");
     }
 
+    [Fact]
+    public async Task OptionalParameterWithReservedName_1092_Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Class WithOptionalParameters
+    Sub S1(Optional a As Object = Nothing, Optional [default] As String = """")
+    End Sub
+
+    Sub S()
+        S1(, ""a"")
+    End Sub
+End Class", @"
+public partial class WithOptionalParameters
+{
+    public void S1(object a = null, string @default = """")
+    {
+    }
+
+    public void S()
+    {
+        S1(@default: ""a"");
+    }
+}
+");
+    }
+
 
     [Fact]
     public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
