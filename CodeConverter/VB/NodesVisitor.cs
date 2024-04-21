@@ -156,7 +156,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     }
     #endregion
 
-    public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CSSyntax.NamespaceDeclarationSyntax node)
+    public override VisualBasicSyntaxNode VisitFileScopedNamespaceDeclaration(FileScopedNamespaceDeclarationSyntax node) => ConvertNamespaceDeclaration(node);
+
+    public override VisualBasicSyntaxNode VisitNamespaceDeclaration(CSSyntax.NamespaceDeclarationSyntax node) => ConvertNamespaceDeclaration(node);
+
+    private VisualBasicSyntaxNode ConvertNamespaceDeclaration(BaseNamespaceDeclarationSyntax node)
     {
         foreach (var @using in node.Usings)
             _importsToConvert.AddRange(node.Usings);
