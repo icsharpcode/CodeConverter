@@ -67,7 +67,7 @@ internal class LambdaConverter
         // Could do: See if we can improve upon returning "object" for pretty much everything (which is what the symbols say)
         // I believe that in general, special VB functions such as MultiplyObject are designed to work the same as integer when given two integers for example.
         // If all callers currently pass an integer, perhaps it'd be more idiomatic in C# to specify "int", than to have Operators
-        var paramsWithTypes = anonFuncOp.Symbol.Parameters.Select(p => CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p));
+        var paramsWithTypes = anonFuncOp.Symbol.Parameters.Select(p => (ParameterSyntax) CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p));
 
         var paramListWithTypes = param.WithParameters(SyntaxFactory.SeparatedList(paramsWithTypes));
         if (potentialAncestorDeclarationOperation is IFieldInitializerOperation fieldInit) {

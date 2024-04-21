@@ -611,7 +611,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         }
 
            
-        var preLoopStatements = new List<SyntaxNode>();
+        var preLoopStatements = new List<StatementSyntax>();
         var csToValue = await stmt.ToValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
 

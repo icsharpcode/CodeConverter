@@ -242,17 +242,17 @@ internal class TypeConversionAnalyzer
     private CSSyntax.NameSyntax CreateCommonDelegateTypeSyntax(IMethodSymbol vbLambda)
     {
         var parameters = vbLambda.Parameters
-            .Select(p => _csSyntaxGenerator.TypeExpression(p.Type));
+            .Select(p => (TypeSyntax) _csSyntaxGenerator.TypeExpression(p.Type));
             
         if (vbLambda.ReturnType.IsSystemVoid()) {
             return CreateType("Action", parameters);
         }
 
-        var typeExpression = _csSyntaxGenerator.TypeExpression(vbLambda.ReturnType);
+        var typeExpression = (TypeSyntax) _csSyntaxGenerator.TypeExpression(vbLambda.ReturnType);
         return CreateType("Func", parameters.Concat(typeExpression));
     }
 
-    private static CSSyntax.NameSyntax CreateType(string baseTypeName, IEnumerable<SyntaxNode> parameters)
+    private static CSSyntax.NameSyntax CreateType(string baseTypeName, IEnumerable<TypeSyntax> parameters)
     {
         var parameterList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(parameters));
         if (!parameterList.Arguments.Any()) return ValidSyntaxFactory.IdentifierName(baseTypeName);

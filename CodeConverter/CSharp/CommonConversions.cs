@@ -674,7 +674,7 @@ internal class CommonConversions
         return SyntaxFactory.ParenthesizedLambdaExpression(parameters, SyntaxFactory.InvocationExpression(invocable));
     }
 
-    public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
+    public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<CSSyntax.ParameterSyntax> ps)
     {
         return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
     }

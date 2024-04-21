@@ -85,7 +85,7 @@ internal class HandledEventsAnalysis
         var prop = (PropertyDeclarationSyntax) _commonConversions.CsSyntaxGenerator.Declaration(basePropertyEventSubscription.PropertyDetails.Property);
         var modifiers = prop.Modifiers.RemoveWhere(m => m.IsKind(SyntaxKind.VirtualKeyword)).Add(SyntaxFactory.Token(SyntaxKind.OverrideKeyword));
         //TODO Stash away methodwithandles in constructor that don't match any symbol from that type, to match here against base symbols
-        return GetDeclarationsForFieldBackedProperty(basePropertyEventSubscription.HandledMethods, SyntaxFactory.List<SyntaxNode>(), modifiers, 
+        return GetDeclarationsForFieldBackedProperty(basePropertyEventSubscription.HandledMethods, SyntaxFactory.List<AttributeListSyntax>(), modifiers, 
             prop.Type, prop.Identifier, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.BaseExpression(), ValidSyntaxFactory.IdentifierName(prop.Identifier)));
     }
 

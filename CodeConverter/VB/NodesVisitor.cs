@@ -657,7 +657,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 );
             } else {
                 if ((int)LanguageVersion < 14) {
-                    var conditionalStatement = _vbSyntaxGenerator.IfStatement(
+                    var conditionalStatement = (StatementSyntax) _vbSyntaxGenerator.IfStatement(
                         _vbSyntaxGenerator.ReferenceNotEqualsExpression(eventFieldIdentifier,
                             _vbSyntaxGenerator.NullLiteralExpression()),
                         SyntaxFactory.InvocationExpression(
