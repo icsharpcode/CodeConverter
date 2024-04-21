@@ -40,7 +40,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
 
     public async Task InitializeSourceAsync(Project project)
     {
-        project = await ClashingMemberRenamer.RenameClashingSymbolsAsync(project);
+        project = await ClashingMemberRenamer.RenameClashingSymbolsAsync(project, _cancellationToken);
         var cSharpCompilationOptions = CSharpCompiler.CreateCompilationOptions();
         _convertedCsProject = project.ToProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);
         _csharpReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(cSharpCompilationOptions, CSharpCompiler.ParseOptions);

@@ -7,12 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
+* Compatible with Visual Studio 2022 17.1 onwards
 
 ### VB -> C#
 
 
 ### C# -> VB
 
+* Converts file scoped namespaces
 
 ## [9.2.5] - 2024-01-31
 

@@ -51,7 +51,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Build against VS 16.10 -->
-    <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="3.11.0" />
+    <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="4.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.10.31321.278" ExcludeAssets="runtime">
       <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

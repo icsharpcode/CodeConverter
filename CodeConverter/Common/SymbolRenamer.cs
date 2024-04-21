@@ -26,7 +26,7 @@ internal static class SymbolRenamer
         return m.Name;
     }
 
-    public static async Task<Project> PerformRenamesAsync(Project project, IEnumerable<(ISymbol Original, string NewName)> symbolsWithNewNames)
+    public static async Task<Project> PerformRenamesAsync(Project project, IEnumerable<(ISymbol Original, string NewName)> symbolsWithNewNames, CancellationToken cancellationToken)
     {
         var solution = project.Solution;
         foreach (var (originalSymbol, newName) in symbolsWithNewNames.OrderByDescending(s => s.Original.DeclaringSyntaxReferences.Select(x => x.Span.End).Max())) {

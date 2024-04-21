@@ -67,6 +67,21 @@ End Namespace");
     }
 
     [Fact]
+    public async Task TestClassWithNamespaceStatementAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"namespace Test.@class;
+
+class TestClass<T>
+{
+}
+", @"Namespace Test.class
+
+    Friend Class TestClass(Of T)
+    End Class
+End Namespace");
+    }
+
+    [Fact]
     public async Task TestInternalStaticClassAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"namespace Test.@class
