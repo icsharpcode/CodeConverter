@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Vsix
 
-* Compatible with Visual Studio 2022 17.6 onwards
+* Compatible with Visual Studio 2022 17.1 onwards
 
 ### VB -> C#
 
