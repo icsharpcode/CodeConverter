@@ -17,7 +17,7 @@ internal static class CSharpUtil
     private static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition)
     {
         if (condition is ParenthesizedExpressionSyntax) {
-            return SyntaxFactory.ParenthesizedExpression(InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression));
+            return InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression).AddParens();
         }
 
         if (condition is PrefixUnaryExpressionSyntax) {
@@ -131,7 +131,7 @@ internal static class CSharpUtil
     /// </summary>
     public static ExpressionSyntax AddParens(this ExpressionSyntax expression)
     {
-        return SyntaxFactory.ParenthesizedExpression(expression);
+        return expression.IsKind(SyntaxKind.ParenthesizedExpression) || expression.IsKind(SyntaxKind.IdentifierName) || expression is LiteralExpressionSyntax ? expression : SyntaxFactory.ParenthesizedExpression(expression);
     }
 
     /// <summary>

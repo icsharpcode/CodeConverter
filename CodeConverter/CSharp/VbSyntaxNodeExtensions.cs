@@ -6,7 +6,7 @@ internal static class VbSyntaxNodeExtensions
 {
     public static CSSyntax.ExpressionSyntax ParenthesizeIfPrecedenceCouldChange(this VBasic.VisualBasicSyntaxNode node, CSSyntax.ExpressionSyntax expression)
     {
-        return PrecedenceCouldChange(node) ? SyntaxFactory.ParenthesizedExpression(expression) : expression;
+        return PrecedenceCouldChange(node) ? expression.AddParens() : expression;
     }
 
     public static bool PrecedenceCouldChange(this VBasic.VisualBasicSyntaxNode node)

@@ -452,7 +452,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpression);
-        return SingleStatement(SyntaxFactory.ReturnStatement(csExpression));
+        return SingleStatement(SyntaxFactory.ReturnStatement(csExpression.SkipIntoParens()));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)

@@ -381,7 +381,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     {
         var cSharpSyntaxNode = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
         // If structural changes are necessary the expression may have been lifted a statement (e.g. Type inferred lambda)
-        return cSharpSyntaxNode is ExpressionSyntax expr ? SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
+        return cSharpSyntaxNode is ExpressionSyntax expr ? expr.AddParens() : cSharpSyntaxNode;
     }
 
     public override async Task<CSharpSyntaxNode> VisitMemberAccessExpression(VBasic.Syntax.MemberAccessExpressionSyntax node)
@@ -767,7 +767,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             node.SecondExpression.ParenthesizeIfPrecedenceCouldChange(rightSide));
 
         if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || node.PrecedenceCouldChange())
-            return SyntaxFactory.ParenthesizedExpression(expr);
+            return expr.AddParens();
 
         return expr;
     }
@@ -787,7 +787,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
 
 
         if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || node.PrecedenceCouldChange())
-            return SyntaxFactory.ParenthesizedExpression(expr);
+            return expr.AddParens();
 
         return expr;
     }
