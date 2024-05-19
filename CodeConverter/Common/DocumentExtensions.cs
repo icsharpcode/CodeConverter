@@ -50,7 +50,9 @@ internal static class DocumentExtensions
 
     private static bool CsWouldBeSimplifiedIncorrectly(SyntaxNode n)
     {
-        return false;
+        // https://github.com/icsharpcode/CodeConverter/issues/1102
+        return n is CSSyntax.ParenthesizedExpressionSyntax {Expression: CSSyntax.BinaryExpressionSyntax {OperatorToken: var operatorToken}}
+               && operatorToken.IsKind(CS.SyntaxKind.BarToken);
     }
 
     public static async Task<Document> WithExpandedRootAsync(this Document document, CancellationToken cancellationToken)

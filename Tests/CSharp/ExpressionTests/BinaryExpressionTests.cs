@@ -55,6 +55,19 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task OrAndAlsoAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Function GetString(tb as Boolean, tc As Boolean, td as Boolean) As Boolean
+    Return (tb Or tc) AndAlso td
+End Function",
+            @"public bool GetString(bool tb, bool tc, bool td)
+{
+    return (tb | tc) && td;
+}");
+    }
+
+    [Fact]
     public async Task LikeOperatorAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
