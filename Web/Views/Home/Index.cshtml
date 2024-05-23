@@ -32,7 +32,20 @@
             <div class="alert alert-success ng-hide py-1" ng-show="showCopiedLabel">
                 Copied!
             </div>
-            <textarea class="form-control pt-5" ng-model="convertedCode" ng-keydown="keyDown($event)" rows="10" disabled></textarea>
+
+            <div style="text-align:center; width:100%; background-color:white">
+                <div style="margin-top:8%" ng-show="showNinja" class="k-d-flex-col k-align-items-center k-justify-content-center k-text-center">
+                    <img width="300px" src="https://netcorerepl.telerik.com/img/repl-ninja-dotnet.svg" alt=">ASP.NET Ninja" class="k-repl-dotnet-ninja">
+                    <p style="width:550px; margin:auto">
+                        Develop .NET applications in half the time with our easy to use and customize components available in our
+                        <a href="https://demos.telerik.com/aspnet-core/">Telerik UI for ASP.NET Core</a>
+                        and
+                        <a href="https://demos.telerik.com/blazor-ui">Telerik UI for Blazor</a>                        
+                        libraries.
+                    </p>
+                </div>
+            </div>
+            <textarea ng-show="!showNinja" class="form-control pt-5" ng- ng-model="convertedCode" ng-keydown="keyDown($event)" rows="10" disabled></textarea>
         </div>
         <div class="col-md-6 p-2 pt-1 pl-md-1 py-md-2 has-error ng-hide" style="position: relative; display:flex; height: 100%;" ng-show="showErrors">
             <div class="code-buttons">
@@ -76,6 +89,7 @@
         $scope.downloadUrl = "";
         $scope.fileExtension = "";
         $scope.showCopiedLabel = false;
+        $scope.showNinja = true;
 
         $scope.keyDown = function (e) {
             if (e.keyCode == 9) {
@@ -165,10 +179,12 @@
                     $scope.showErrors = true;
                     $scope.errorMessage = response.data.errorMessage;
                 }
+                $scope.showNinja = false;
             }, function errorCallback(response) {
                 $scope.converterCallInflight = false;
                 $scope.showErrors = true;
                 $scope.errorMessage = response.data.ExceptionMessage;
+                $scope.showNinja = false;
             });
         };
     });

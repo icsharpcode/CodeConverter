@@ -33,6 +33,10 @@
 		.async-hide {
 			opacity: 0 !important
 		}
+
+        .navbar.navbar-inverse a:hover{
+            color: aquamarine !important;
+        }
 	</style>
 	<script>
 		(function (a, s, y, n, c, h, i, d, e) {
@@ -79,6 +83,13 @@
         <div class="navbar-header">
             <a href="~/" class="navbar-brand"><img src="~/logo.svg" alt="Code Converter Logo" /></a>
         </div>
+        <div style="margin-right:10px">
+            <ul class="footer-list">
+                <li><a class="text-white" href="https://blazorrepl.telerik.com/">Telerik REPL for Blazor</a></li>
+                <li><a class="text-white" href="https://netcorerepl.telerik.com/">Telerik REPL for ASP.NET Core</a></li>
+            </ul>
+        </div>
+
     </div>
     <div class="body-content p-2 flex-100">
         @RenderBody()
