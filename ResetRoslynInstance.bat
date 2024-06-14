@@ -1,0 +1,1 @@
+%comspec% /C "C:\Program Files\Microsoft Visual Studio\2022\Preview\VSSDK\VisualStudioIntegration\Tools\Bin\CreateExpInstance.exe" /Reset /VSInstance=17.0_56947084 /RootSuffix=Roslyn && PAUSE
