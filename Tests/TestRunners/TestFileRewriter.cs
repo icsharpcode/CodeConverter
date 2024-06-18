@@ -19,7 +19,7 @@ public static class TestFileRewriter
 
     private static string GetTestSourceDirectoryPath()
     {
-        string assemblyDir = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).AbsolutePath);
+        string assemblyDir = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().Location).AbsolutePath);
         string testSourceDirectoryPath = Path.Combine(assemblyDir, @"..\..\");
         return testSourceDirectoryPath;
     }

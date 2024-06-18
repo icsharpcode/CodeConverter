@@ -19,8 +19,8 @@ public static class TestConstants
     public static string GetTestDataDirectory()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var solutionDir = new FileInfo(new Uri(assembly.CodeBase).LocalPath).Directory?.Parent?.Parent ??
-                          throw new InvalidOperationException(assembly.CodeBase);
+        var solutionDir = new FileInfo(new Uri(assembly.Location).LocalPath).Directory?.Parent?.Parent ??
+                          throw new InvalidOperationException(assembly.Location);
         return Path.Combine(solutionDir.FullName, "TestData");
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using System.Windows.Forms;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 

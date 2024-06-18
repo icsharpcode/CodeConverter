@@ -308,7 +308,8 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
         var projectsByPath =
             _visualStudioWorkspace.CurrentSolution.Projects.ToLookup(p => p.FilePath, p => p);
 #pragma warning disable VSTHRD010 // Invoke single-threaded types on Main thread - ToList ensures this happens within the same thread just switched to above
-        var projects = selectedProjects.Select(p => projectsByPath[p.FullName].First()).ToList();
+        var projects = selectedProjects.SelectMany(p => projectsByPath[p.FullName]).ToList();
+
 #pragma warning restore VSTHRD010 // Invoke single-threaded types on Main thread
         await TaskScheduler.Default;
 
