@@ -19,6 +19,7 @@ public class ExpressionTests : ConverterTestBase
         result = Nothing = a
         result = a Is Nothing
         result = a IsNot Nothing
+        result = Not(a IsNot Nothing)
         result = a = a
         result = a = (""test"")
         result = ""test"" = a
@@ -36,6 +37,7 @@ internal partial class TestClass
         result = string.IsNullOrEmpty(a);
         result = a is null;
         result = a is not null;
+        result = a is null;
         result = (a ?? """") == (a ?? """");
         result = a == ""test"";
         result = ""test"" == a;
