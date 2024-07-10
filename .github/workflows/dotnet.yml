@@ -17,7 +17,7 @@ jobs:
       BuildTarget: Release
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Update project version
       uses: roryprimrose/set-vs-sdk-project-version@v1.0.6
@@ -28,12 +28,12 @@ jobs:
         fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
 
     - name: Setup .NET for main build
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 6.0.x
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.3
+      uses: microsoft/setup-msbuild@v2
       with:
        vs-version: '[17.0,)'
 
@@ -52,27 +52,27 @@ jobs:
         Tests1: Tests/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.Tests.dll
 
     - name: Upload NuGet package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ICSharpCode.CodeConverter.${{ env.BuildVersion }}.nupkg
         path: CodeConverter/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.*.nupkg
     - name: Upload VSIX
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ICSharpCode.CodeConverter.VsExtension.${{ env.BuildVersion }}.vsix
         path: Vsix/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.VsExtension.vsix
     - name: Upload Tool
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ICSharpCode.CodeConverter.CodeConv.${{ env.BuildVersion }}.nupkg
         path: CommandLine/CodeConv/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.CodeConv.*.nupkg
     - name: Upload Web
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
         path: Web/bin/${{ env.BuildTarget }}/publish/
     - name: Upload Function
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip
         path: Func/bin/${{ env.BuildTarget }}/publish/
@@ -84,10 +84,10 @@ jobs:
      runs-on: ubuntu-latest
      steps:
        - name: Checkout 🛎️
-         uses: actions/checkout@v3
+         uses: actions/checkout@v4
  
        - name: Download Artifacts 🔻 # The built project is downloaded into the 'site' folder.
-         uses: actions/download-artifact@v3
+         uses: actions/download-artifact@v4
          with:
            name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
            path: site
