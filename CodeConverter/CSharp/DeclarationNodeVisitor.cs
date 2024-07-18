@@ -1504,7 +1504,13 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var attributeLists = (await CommonConversions.ConvertAttributesAsync(node.AttributeLists)).Add(dllImportAttributeList);
 
-        var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers).Add(SyntaxFactory.Token(CSSyntaxKind.StaticKeyword)).Add(SyntaxFactory.Token(CSSyntaxKind.ExternKeyword));
+        var tokenContext = GetMemberContext(node);
+        var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
+        if (!modifiers.Any(m => m.IsKind(CSSyntaxKind.StaticKeyword))) {
+            modifiers = modifiers.Add(SyntaxFactory.Token(CSSyntaxKind.StaticKeyword));
+        }
+        modifiers = modifiers.Add(SyntaxFactory.Token(CSSyntaxKind.ExternKeyword));
+
         var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
         var parameterListSyntax = await (node.ParameterList).AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ??
                                   SyntaxFactory.ParameterList();

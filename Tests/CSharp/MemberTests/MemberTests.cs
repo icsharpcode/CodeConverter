@@ -85,6 +85,34 @@ internal static partial class Module1
     }
 
     [Fact]
+    public async Task TestDeclareMethodVisibilityInModuleAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+    Declare Sub External Lib ""lib.dll"" ()
+End Module", @"using System.Runtime.InteropServices;
+
+internal static partial class Module1
+{
+    [DllImport(""lib.dll"")]
+    public static extern void External();
+}");
+    }
+
+    [Fact]
+    public async Task TestDeclareMethodVisibilityInClassAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Class1
+    Declare Sub External Lib ""lib.dll"" ()
+End Class", @"using System.Runtime.InteropServices;
+
+internal partial class Class1
+{
+    [DllImport(""lib.dll"")]
+    public static extern void External();
+}");
+    }
+
+    [Fact]
     public async Task TestTypeInferredConstAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
