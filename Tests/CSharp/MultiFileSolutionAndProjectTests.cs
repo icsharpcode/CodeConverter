@@ -30,4 +30,10 @@ public class MultiFileSolutionAndProjectTests
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VbLibrary", Language.CS);
     }
+
+    [Fact]
+    public async Task ConvertVbUsingCSharpRefReturnOnlyAsync()
+    {
+        await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VisualBasicUsingCSharpRefReturn", Language.CS);
+    }
 }
