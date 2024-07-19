@@ -17,13 +17,20 @@ namespace VisualBasicUsesCSharpRefReturn
 
         public void UseRefReturn()
         {
-            CSharpRefReturn.RefReturnList<SomeStruct> lst;
-            string s;
+            var lst = default(CSharpRefReturn.RefReturnList<SomeStruct>);
+            var s = default(string);
 
-            // With lst(0)
-            // .P = s
-            // s = .P
-            // End With
+            {
+                ref var withBlock = ref lst[0];
+                withBlock.P = s;
+                s = withBlock.P;
+            }
+
+            {
+                ref var withBlock1 = ref lst.RefProperty;
+                withBlock1.P = s;
+                s = withBlock1.P;
+            }
         }
 
         public struct SomeStruct

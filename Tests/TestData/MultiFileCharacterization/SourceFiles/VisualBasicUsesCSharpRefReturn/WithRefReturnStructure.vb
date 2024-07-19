@@ -13,10 +13,15 @@
         Dim lst As CSharpRefReturn.RefReturnList(Of SomeStruct)
         Dim s As String
 
-        'With lst(0)
-        '    .P = s
-        '    s = .P
-        'End With
+        With lst(0)
+            .P = s
+            s = .P
+        End With
+
+        With lst.RefProperty
+            .P = s
+            s = .P
+        End With
     End Sub
 
     Structure SomeStruct
