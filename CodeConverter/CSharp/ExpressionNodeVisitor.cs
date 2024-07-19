@@ -1860,7 +1860,16 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         bool IsRefArrayAcces(VBSyntax.ExpressionSyntax expression)
         {
             if (!(expression is VBSyntax.InvocationExpressionSyntax ies)) return false;
-            return _semanticModel.GetOperation(ies).IsArrayElementAccess() && GetRefConversion(ies.Expression) == RefConversion.Inline;
+            var op = _semanticModel.GetOperation(ies);
+            return (op.IsArrayElementAccess() || IsReturnsByRefPropertyElementAccess(op))
+                && GetRefConversion(ies.Expression) == RefConversion.Inline;
+
+            static bool IsReturnsByRefPropertyElementAccess(IOperation op)
+            {
+                return op.IsPropertyElementAccess()
+                 && op is IPropertyReferenceOperation { Property: { } prop }
+                 && (prop.ReturnsByRef || prop.ReturnsByRefReadonly);
+            }
         }
     }
 
