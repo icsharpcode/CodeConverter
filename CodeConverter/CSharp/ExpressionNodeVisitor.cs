@@ -1833,7 +1833,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
         {
             var symbolInfo = GetSymbolInfoInDocument<ISymbol>(expression);
-            if (symbolInfo is IPropertySymbol propertySymbol) {
+            if (symbolInfo is IPropertySymbol propertySymbol
+            // a property in VB.NET code can be ReturnsByRef if it's defined in a C# assembly the VB.NET code references
+            && !propertySymbol.ReturnsByRef && !propertySymbol.ReturnsByRefReadonly) {
                 return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
             }
 
