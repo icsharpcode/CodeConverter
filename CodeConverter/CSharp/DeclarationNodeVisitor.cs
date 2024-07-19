@@ -674,7 +674,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                     throw new NotImplementedException("MyClass indexing not implemented");
                 }
                 var methodDeclarationSyntaxs = await propertyBlock.Accessors.SelectAsync(async a =>
-                    await a.AcceptAsync<MethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, a == propertyBlock.Accessors.First() ? SourceTriviaMapKind.All : SourceTriviaMapKind.None));
+                    await a.AcceptAsync<MethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.All));
                 var accessorMethods = methodDeclarationSyntaxs.Select(WithMergedModifiers).ToArray();
 
                 if (hasExplicitInterfaceImplementation) {
