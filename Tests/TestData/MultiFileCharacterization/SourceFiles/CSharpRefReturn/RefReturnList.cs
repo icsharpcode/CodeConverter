@@ -14,5 +14,13 @@ namespace CSharpRefReturn
                 return ref dummy;
             }
         }
+
+        public ref T RefProperty
+        {
+            get
+            {
+                return ref dummy;
+            }
+        }
     }
 }
