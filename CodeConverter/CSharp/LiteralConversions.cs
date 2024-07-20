@@ -152,18 +152,16 @@ internal static class LiteralConversions
             int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
             // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
-            // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `int.MinValue + 0x11234567`
+            // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `unchecked((int)0x91234567)`
             // This way the value looks pretty close to before and remains a compile time constant
             if (parsedHexValue < 0) {
-                int positiveValue = parsedHexValue - int.MinValue;
-
-                var intMinValueExpr = SyntaxFactory.MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.PredefinedType(
-                        SyntaxFactory.Token(SyntaxKind.IntKeyword)),
-                    ValidSyntaxFactory.IdentifierName(nameof(int.MinValue)));
-                var positiveValueExpr = NumericLiteral(SyntaxFactory.Literal("0x" + positiveValue.ToString("X8", CultureInfo.InvariantCulture), positiveValue));
-                return (null, SyntaxFactory.BinaryExpression(SyntaxKind.AddExpression, intMinValueExpr, positiveValueExpr));
+                var hexValueExpr = NumericLiteral(SyntaxFactory.Literal(textForUser, parsedHexValue));
+                var checkedExpr = SyntaxFactory.CheckedExpression(
+                    CSSyntaxKind.UncheckedExpression,
+                    SyntaxFactory.CastExpression(
+                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.IntKeyword)),
+                        hexValueExpr));
+                return (null, checkedExpr);
             }
         } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
             textForUser = "0b" + textForUser.Substring(2);
