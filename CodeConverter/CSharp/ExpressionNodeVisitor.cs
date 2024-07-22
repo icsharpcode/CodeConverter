@@ -1739,6 +1739,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             if (arg.IsOmitted) {
                 if (invocationSymbol != null && !invocationHasOverloads) {
                     forceNamedParameters = true;
+                    processedParameters.Remove(parameterSymbol?.Name);
                     return null; //Prefer to skip omitted and use named parameters when the symbol has only one overload
                 }
 
