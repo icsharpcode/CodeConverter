@@ -1836,6 +1836,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             if (symbolInfo is IPropertySymbol propertySymbol) {
                 return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
             }
+            else if (symbolInfo is IFieldSymbol { IsConst: true } || symbolInfo is ILocalSymbol { IsConst: true }) {
+                return RefConversion.PreAssigment;
+            }
 
             if (DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
 
