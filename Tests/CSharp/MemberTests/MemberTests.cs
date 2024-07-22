@@ -4051,50 +4051,45 @@ internal partial class StaticLocalConvertedToField
     }
 
     [Fact]
-    public async Task TestMissingByRefArgumentWithNoExplicitDefaultValueAsync()
+    public async Task TestOmittedArgumentsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System.Runtime.InteropServices
+            @"Class OmittedArguments
+    Sub M(Optional a As String = ""a"", ByRef Optional b As String = ""b"")
+        Dim s As String = """"
 
-Class MissingByRefArgumentWithNoExplicitDefaultValue
-    Sub S()
-        ByRefNoDefault()
-        OptionalByRefNoDefault()
-        OptionalByRefWithDefault()
+        M() 'omitted implicitly
+        M(,) 'omitted explicitly
+
+        M(s) 'omitted implicitly
+        M(s,) 'omitted explicitly
+
+        M(a:=s) 'omitted implicitly
+        M(a:=s, ) 'omitted explicitly
     End Sub
-
-    Private Sub ByRefNoDefault(ByRef str1 As String) : End Sub
-    Private Sub OptionalByRefNoDefault(<[Optional]> ByRef str2 As String) : End Sub
-    Private Sub OptionalByRefWithDefault(<[Optional], DefaultParameterValue(""a"")> ByRef str3 As String) : End Sub
 End Class", @"using System.Runtime.InteropServices;
 
-internal partial class MissingByRefArgumentWithNoExplicitDefaultValue
+internal partial class OmittedArguments
 {
-    public void S()
+    public void M([Optional, DefaultParameterValue(""a"")] string a, [Optional, DefaultParameterValue(""b"")] ref string b)
     {
-        ByRefNoDefault();
-        string argstr2 = default;
-        OptionalByRefNoDefault(str2: ref argstr2);
-        string argstr3 = ""a"";
-        OptionalByRefWithDefault(str3: ref argstr3);
-    }
+        string s = """";
 
-    private void ByRefNoDefault(ref string str1)
-    {
+        string argb = ""b"";
+        M(b: ref argb); // omitted implicitly
+        string argb1 = ""b"";
+        M(b: ref argb1); // omitted explicitly
+
+        string argb2 = ""b"";
+        M(s, b: ref argb2); // omitted implicitly
+        string argb3 = ""b"";
+        M(s, b: ref argb3); // omitted explicitly
+
+        string argb4 = ""b"";
+        M(a: s, b: ref argb4); // omitted implicitly
+        string argb5 = ""b"";
+        M(a: s, b: ref argb5); // omitted explicitly
     }
-    private void OptionalByRefNoDefault([Optional] ref string str2)
-    {
-    }
-    private void OptionalByRefWithDefault([Optional][DefaultParameterValue(""a"")] ref string str3)
-    {
-    }
-}
-3 source compilation errors:
-BC30455: Argument not specified for parameter 'str1' of 'Private Sub ByRefNoDefault(ByRef str1 As String)'.
-BC30455: Argument not specified for parameter 'str2' of 'Private Sub OptionalByRefNoDefault(ByRef str2 As String)'.
-BC30455: Argument not specified for parameter 'str3' of 'Private Sub OptionalByRefWithDefault(ByRef str3 As String)'.
-1 target compilation errors:
-CS7036: There is no argument given that corresponds to the required formal parameter 'str1' of 'MissingByRefArgumentWithNoExplicitDefaultValue.ByRefNoDefault(ref string)'
-");
+}");
     }
 }
