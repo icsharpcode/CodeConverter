@@ -1884,7 +1884,9 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
         {
             var symbolInfo = GetSymbolInfoInDocument<ISymbol>(expression);
-            if (symbolInfo is IPropertySymbol propertySymbol) {
+            if (symbolInfo is IPropertySymbol propertySymbol
+            // a property in VB.NET code can be ReturnsByRef if it's defined in a C# assembly the VB.NET code references
+            && !propertySymbol.ReturnsByRef && !propertySymbol.ReturnsByRefReadonly) {
                 return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
             }
             else if (symbolInfo is IFieldSymbol { IsConst: true } or ILocalSymbol { IsConst: true }) {
@@ -1912,7 +1914,16 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         bool IsRefArrayAcces(VBSyntax.ExpressionSyntax expression)
         {
             if (!(expression is VBSyntax.InvocationExpressionSyntax ies)) return false;
-            return _semanticModel.GetOperation(ies).IsArrayElementAccess() && GetRefConversion(ies.Expression) == RefConversion.Inline;
+            var op = _semanticModel.GetOperation(ies);
+            return (op.IsArrayElementAccess() || IsReturnsByRefPropertyElementAccess(op))
+                && GetRefConversion(ies.Expression) == RefConversion.Inline;
+
+            static bool IsReturnsByRefPropertyElementAccess(IOperation op)
+            {
+                return op.IsPropertyElementAccess()
+                 && op is IPropertyReferenceOperation { Property: { } prop }
+                 && (prop.ReturnsByRef || prop.ReturnsByRefReadonly);
+            }
         }
     }
 
