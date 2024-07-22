@@ -24,7 +24,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly HandledEventsAnalysis _handledEventsAnalysis;
     private readonly HashSet<string> _generatedNames = new();
-    private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private readonly PerScopeState _perScopeState;
 
@@ -65,7 +64,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         _perScopeState = typeContext.PerScopeState;
         var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
         CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
-        _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
         _localsToInlineInLoop = localsToInlineInLoop;
     }
 
@@ -520,7 +518,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public override async Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
     {
         var condition = await node.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
+        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
         ElseClauseSyntax elseClause = null;
 
@@ -534,7 +532,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public override async Task<SyntaxList<StatementSyntax>> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
     {
         var condition = await node.IfStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
+        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
 
         var elseClause = await ConvertElseClauseAsync(node.ElseBlock);
@@ -553,7 +551,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         var elseBlock = SyntaxFactory.Block(await ConvertStatementsAsync(elseIf.Statements));
         var elseIfCondition = await elseIf.ElseIfStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: _vbBooleanTypeSymbol);
+        elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: CommonConversions.KnownTypes.Boolean);
         return (elseIfCondition, elseBlock);
     }
 
