@@ -1818,8 +1818,54 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p, RefKind refKind)
     {
         string prefix = $"arg{p.Name}";
-        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+        var type = CommonConversions.GetTypeSyntax(p.Type);
+        ExpressionSyntax initializer;
+        if (p.HasExplicitDefaultValue) {
+            initializer = CommonConversions.Literal(p.ExplicitDefaultValue);
+        } else if (HasOptionalAttribute(p)) {
+            if (TryGetDefaultParameterValueAttributeValue(p, out var defaultValue)){
+                initializer = CommonConversions.Literal(defaultValue);
+            } else {
+                initializer = SyntaxFactory.DefaultExpression(type);
+            }
+        } else {
+            //invalid VB.NET code
+            return null;
+        }
+        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, initializer, type));
         return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, refKind, local.IdentifierName);
+
+        bool HasOptionalAttribute(IParameterSymbol p)
+        {
+            var optionalAttribute = _semanticModel.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.OptionalAttribute");
+            if (optionalAttribute == null) {
+                return false;
+            }
+
+            return p.GetAttributes().Any(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, optionalAttribute));
+        }
+    
+        bool TryGetDefaultParameterValueAttributeValue(IParameterSymbol p, out object defaultValue)
+        {
+            defaultValue = null;
+
+            var defaultParameterValueAttribute = _semanticModel.Compilation.GetTypeByMetadataName("System.Runtime.InteropServices.DefaultParameterValueAttribute");
+            if (defaultParameterValueAttribute == null) {
+                return false;
+            }
+
+            var attributeData = p.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, defaultParameterValueAttribute));
+            if (attributeData == null) {
+                return false;
+            }
+
+            if (attributeData.ConstructorArguments.Length == 0) {
+                return false;
+            }
+
+            defaultValue = attributeData.ConstructorArguments.First().Value;
+            return true;
+        }
     }
 
     private RefConversion NeedsVariableForArgument(VBasic.Syntax.ArgumentSyntax node, RefKind refKind)
