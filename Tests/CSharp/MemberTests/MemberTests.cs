@@ -4049,4 +4049,47 @@ internal partial class StaticLocalConvertedToField
     }
 }");
     }
+
+    [Fact]
+    public async Task TestOmittedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class OmittedArguments
+    Sub M(Optional a As String = ""a"", ByRef Optional b As String = ""b"")
+        Dim s As String = """"
+
+        M() 'omitted implicitely
+        M(,) 'omitted explicitely
+
+        M(s) 'omitted implicitely
+        M(s,) 'omitted explicitely
+
+        M(a:=s) 'omitted implicitely
+        M(a:=s, ) 'omitted explicitely
+    End Sub
+End Class", @"using System.Runtime.InteropServices;
+
+internal partial class OmittedArguments
+{
+    public void M([Optional, DefaultParameterValue(""a"")] string a, [Optional, DefaultParameterValue(""b"")] ref string b)
+    {
+        string s = """";
+
+        string argb = ""b"";
+        M(b: ref argb); // omitted implicitely
+        string argb1 = ""b"";
+        M(b: ref argb1); // omitted explicitely
+
+        string argb2 = ""b"";
+        M(s, b: ref argb2); // omitted implicitely
+        string argb3 = ""b"";
+        M(s, b: ref argb3); // omitted explicitely
+
+        string argb4 = ""b"";
+        M(a: s, b: ref argb4); // omitted implicitely
+        string argb5 = ""b"";
+        M(a: s, b: ref argb5); // omitted explicitely
+    }
+}");
+    }
 }
