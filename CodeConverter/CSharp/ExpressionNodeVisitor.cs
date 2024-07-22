@@ -1731,18 +1731,22 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         {
             var argName = arg is VBSyntax.SimpleArgumentSyntax { IsNamed: true } namedArg ? namedArg.NameColonEquals.Name.Identifier.Text : null;
             var parameterSymbol = invocationSymbol?.GetParameters().GetArgument(argName, argIndex);
+            var convertedArg = await ConvertArgForParameter(arg, parameterSymbol);
 
-            if (parameterSymbol != null) {
+            if (convertedArg is not null && parameterSymbol is not null) {
                 processedParameters.Add(parameterSymbol.Name);
             }
 
+            return convertedArg;
+        }
+
+        async Task<ArgumentSyntax> ConvertArgForParameter(VBSyntax.ArgumentSyntax arg, IParameterSymbol parameterSymbol)
+        {
             if (arg.IsOmitted) {
                 if (invocationSymbol != null && !invocationHasOverloads) {
                     forceNamedParameters = true;
-                    processedParameters.Remove(parameterSymbol?.Name);
                     return null; //Prefer to skip omitted and use named parameters when the symbol has only one overload
                 }
-
                 return ConvertOmittedArgument(parameterSymbol);
             }
 
