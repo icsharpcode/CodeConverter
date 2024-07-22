@@ -26,10 +26,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prefix.VbLibrary", "Prefix.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VisualBasicConsoleApp", "ConsoleApp1\VisualBasicConsoleApp.csproj", "{74B9A6AA-3316-0C3A-3957-518673283B21}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpRefReturn", "CSharpRefReturn\CSharpRefReturn.csproj", "{8B843547-F49D-40A2-8C4E-1B81D8C5D589}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VisualBasicUsingCSharpRefReturn", "VisualBasicUsesCSharpRefReturn\VisualBasicUsingCSharpRefReturn.csproj", "{D0421946-845F-09E8-2545-DE3EB2218254}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,14 +68,6 @@ Global
 		{74B9A6AA-3316-0C3A-3957-518673283B21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74B9A6AA-3316-0C3A-3957-518673283B21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74B9A6AA-3316-0C3A-3957-518673283B21}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8B843547-F49D-40A2-8C4E-1B81D8C5D589}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8B843547-F49D-40A2-8C4E-1B81D8C5D589}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8B843547-F49D-40A2-8C4E-1B81D8C5D589}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8B843547-F49D-40A2-8C4E-1B81D8C5D589}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D0421946-845F-09E8-2545-DE3EB2218254}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D0421946-845F-09E8-2545-DE3EB2218254}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D0421946-845F-09E8-2545-DE3EB2218254}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D0421946-845F-09E8-2545-DE3EB2218254}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

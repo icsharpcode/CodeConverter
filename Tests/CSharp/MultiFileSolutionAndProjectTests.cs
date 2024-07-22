@@ -18,20 +18,20 @@ public class MultiFileSolutionAndProjectTests
         _multiFileTestFixture = multiFileTestFixture;
     }
 
-    [Fact] /* enable for executing locally */
+    [Fact]
     public async Task ConvertWholeSolutionAsync()
     {
 
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.CS);
     }
 
-    [Fact] /* enable for executing locally */
+    [Fact]
     public async Task ConvertVbLibraryOnlyAsync()
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VbLibrary", Language.CS);
     }
 
-    [Fact]
+    [Fact(Skip= "Roslyn bugs mean we can't run this test: https://github.com/icsharpcode/CodeConverter/pull/1116#issuecomment-2242645546")]
     public async Task ConvertVbUsingCSharpRefReturnOnlyAsync()
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VisualBasicUsingCSharpRefReturn", Language.CS);
