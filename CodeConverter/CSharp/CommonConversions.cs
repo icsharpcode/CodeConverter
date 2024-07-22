@@ -20,7 +20,6 @@ namespace ICSharpCode.CodeConverter.CSharp;
 
 internal class CommonConversions
 {
-    public ITypeSymbol System_Linq_Expressions_Expression_T { get; }
     private static readonly Type ExtensionAttributeType = typeof(ExtensionAttribute);
     public Document Document { get; }
     public SemanticModel SemanticModel { get; }
@@ -49,8 +48,10 @@ internal class CommonConversions
         _typeContext = typeContext;
         VisualBasicEqualityComparison = visualBasicEqualityComparison;
         WinformsConversions = new WinformsConversions(typeContext);
-        System_Linq_Expressions_Expression_T = semanticModel.Compilation.GetTypeByMetadataName("System.Linq.Expressions.Expression`1");
+        KnownTypes = new KnownNamedTypes(semanticModel);
     }
+
+    public KnownNamedTypes KnownTypes { get; }
 
     public record VariablePair(CSSyntax.VariableDeclaratorSyntax CsVar, VBSyntax.ModifiedIdentifierSyntax VbVar);
     public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VariablePair> Variables);
@@ -756,5 +757,5 @@ internal class CommonConversions
         return false;
     }
 
-    private bool IsLinqDelegateExpression(ITypeSymbol convertedType) => System_Linq_Expressions_Expression_T?.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default) == true;
+    private bool IsLinqDelegateExpression(ITypeSymbol convertedType) =>KnownTypes.System_Linq_Expressions_Expression_T?.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default) == true;
 }
