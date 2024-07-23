@@ -35,7 +35,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private readonly QueryConverter _queryConverter;
     private readonly Lazy<IReadOnlyDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
     private readonly LambdaConverter _lambdaConverter;
-    private readonly INamedTypeSymbol _vbBooleanTypeSymbol;
     private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope = new();
     private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
@@ -58,7 +57,6 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
         _convertMethodsLookupByReturnType =
             new Lazy<IReadOnlyDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
-        _vbBooleanTypeSymbol = _semanticModel.Compilation.GetTypeByMetadataName("System.Boolean");
     }
 
     private static IReadOnlyDictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(
@@ -775,7 +773,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     public override async Task<CSharpSyntaxNode> VisitTernaryConditionalExpression(VBasic.Syntax.TernaryConditionalExpressionSyntax node)
     {
         var condition = await node.Condition.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: _vbBooleanTypeSymbol);
+        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
 
         var whenTrue = await node.WhenTrue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         whenTrue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.WhenTrue, whenTrue);
@@ -900,7 +898,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
                                  rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
                 if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
-                    forceLhsTargetType = _semanticModel.Compilation.GetTypeByMetadataName("System.String");
+                    forceLhsTargetType = CommonConversions.KnownTypes.String;
                 }
             }
         }
@@ -937,6 +935,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
         return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
     }
+
+
 
     private async Task<ExpressionSyntax> RewriteBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node) =>
         await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node, TriviaConvertingExpressionVisitor.IsWithinQuery);
@@ -1731,17 +1731,22 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         {
             var argName = arg is VBSyntax.SimpleArgumentSyntax { IsNamed: true } namedArg ? namedArg.NameColonEquals.Name.Identifier.Text : null;
             var parameterSymbol = invocationSymbol?.GetParameters().GetArgument(argName, argIndex);
+            var convertedArg = await ConvertArgForParameter(arg, parameterSymbol);
 
-            if (parameterSymbol != null) {
+            if (convertedArg is not null && parameterSymbol is not null) {
                 processedParameters.Add(parameterSymbol.Name);
             }
 
+            return convertedArg;
+        }
+
+        async Task<ArgumentSyntax> ConvertArgForParameter(VBSyntax.ArgumentSyntax arg, IParameterSymbol parameterSymbol)
+        {
             if (arg.IsOmitted) {
                 if (invocationSymbol != null && !invocationHasOverloads) {
                     forceNamedParameters = true;
                     return null; //Prefer to skip omitted and use named parameters when the symbol has only one overload
                 }
-
                 return ConvertOmittedArgument(parameterSymbol);
             }
 
@@ -1818,8 +1823,54 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
     private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p, RefKind refKind)
     {
         string prefix = $"arg{p.Name}";
-        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, CommonConversions.Literal(p.ExplicitDefaultValue), CommonConversions.GetTypeSyntax(p.Type)));
+        var type = CommonConversions.GetTypeSyntax(p.Type);
+        ExpressionSyntax initializer;
+        if (p.HasExplicitDefaultValue) {
+            initializer = CommonConversions.Literal(p.ExplicitDefaultValue);
+        } else if (HasOptionalAttribute(p)) {
+            if (TryGetDefaultParameterValueAttributeValue(p, out var defaultValue)){
+                initializer = CommonConversions.Literal(defaultValue);
+            } else {
+                initializer = SyntaxFactory.DefaultExpression(type);
+            }
+        } else {
+            //invalid VB.NET code
+            return null;
+        }
+        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, initializer, type));
         return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, refKind, local.IdentifierName);
+
+        bool HasOptionalAttribute(IParameterSymbol p)
+        {
+            var optionalAttribute = CommonConversions.KnownTypes.OptionalAttribute;
+            if (optionalAttribute == null) {
+                return false;
+            }
+
+            return p.GetAttributes().Any(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, optionalAttribute));
+        }
+    
+        bool TryGetDefaultParameterValueAttributeValue(IParameterSymbol p, out object defaultValue)
+        {
+            defaultValue = null;
+
+            var defaultParameterValueAttribute = CommonConversions.KnownTypes.DefaultParameterValueAttribute;
+            if (defaultParameterValueAttribute == null) {
+                return false;
+            }
+
+            var attributeData = p.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, defaultParameterValueAttribute));
+            if (attributeData == null) {
+                return false;
+            }
+
+            if (attributeData.ConstructorArguments.Length == 0) {
+                return false;
+            }
+
+            defaultValue = attributeData.ConstructorArguments.First().Value;
+            return true;
+        }
     }
 
     private RefConversion NeedsVariableForArgument(VBasic.Syntax.ArgumentSyntax node, RefKind refKind)
@@ -1833,8 +1884,13 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
         {
             var symbolInfo = GetSymbolInfoInDocument<ISymbol>(expression);
-            if (symbolInfo is IPropertySymbol propertySymbol) {
+            if (symbolInfo is IPropertySymbol propertySymbol
+            // a property in VB.NET code can be ReturnsByRef if it's defined in a C# assembly the VB.NET code references
+            && !propertySymbol.ReturnsByRef && !propertySymbol.ReturnsByRefReadonly) {
                 return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
+            }
+            else if (symbolInfo is IFieldSymbol { IsConst: true } or ILocalSymbol { IsConst: true }) {
+                return RefConversion.PreAssigment;
             }
 
             if (DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
@@ -1858,7 +1914,16 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         bool IsRefArrayAcces(VBSyntax.ExpressionSyntax expression)
         {
             if (!(expression is VBSyntax.InvocationExpressionSyntax ies)) return false;
-            return _semanticModel.GetOperation(ies).IsArrayElementAccess() && GetRefConversion(ies.Expression) == RefConversion.Inline;
+            var op = _semanticModel.GetOperation(ies);
+            return (op.IsArrayElementAccess() || IsReturnsByRefPropertyElementAccess(op))
+                && GetRefConversion(ies.Expression) == RefConversion.Inline;
+
+            static bool IsReturnsByRefPropertyElementAccess(IOperation op)
+            {
+                return op.IsPropertyElementAccess()
+                 && op is IPropertyReferenceOperation { Property: { } prop }
+                 && (prop.ReturnsByRef || prop.ReturnsByRefReadonly);
+            }
         }
     }
 
@@ -1895,7 +1960,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
             (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
             (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
-            (VBSyntax.MidExpressionSyntax _) => _semanticModel.Compilation.GetTypeByMetadataName("Microsoft.VisualBasic.CompilerServices.StringType")?.GetMembers("MidStmtStr").FirstOrDefault(),
+            (VBSyntax.MidExpressionSyntax _) => CommonConversions.KnownTypes.VbCompilerStringType?.GetMembers("MidStmtStr").FirstOrDefault(),
             _ => throw new NotSupportedException());
         return symbol;
     }

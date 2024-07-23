@@ -56,9 +56,10 @@ internal static class OperationExtensions
             case OperationKind.DynamicMemberReference:
                 return true;
 
-            //Just documenting since it's the only one mentioning reference that can't necessarily be assigned to AFAIK
             case OperationKind.PropertyReference:
-                return false;
+                //a property might be RefReturn, if it's defined in a referenced C# assembly
+                var prop = ((IPropertyReferenceOperation)operation).Property;
+                return prop.ReturnsByRef || prop.ReturnsByRefReadonly;
         }
 
         return false;

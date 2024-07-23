@@ -21,7 +21,8 @@ public class MultiFileSolutionAndProjectTests
     [Fact] /* enable for executing locally */
     public async Task ConvertWholeSolutionAsync()
     {
-        await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.VB);
+        //the `CSharpRefReturn` project is excluded because it has ref return properties which are not supported in VB
+        await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name != "CSharpRefReturn", Language.VB);
     }
 
     [Fact] /* enable for executing locally */
