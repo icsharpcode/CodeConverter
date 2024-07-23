@@ -157,18 +157,22 @@ internal class PerScopeState
         var declarations = new List<FieldDeclarationSyntax>();
 
         var fieldInfo = GetFields();
-        var newNames = fieldInfo.ToDictionary(f => f.OriginalVariableName, f =>
+        var newNames = fieldInfo.ToDictionary(f => f.PrefixedOriginalVariableName, f =>
             NameGenerator.CS.GetUniqueVariableNameInScope(semanticModel, generatedNames, typeNode, f.FieldName)
         );
         foreach (var field in fieldInfo) {
             var decl = (field.Initializer != null) 
-                ? CommonConversions.CreateVariableDeclarationAndAssignment(newNames[field.OriginalVariableName], field.Initializer, field.Type)
-                : SyntaxFactory.VariableDeclaration(field.Type, SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(newNames[field.OriginalVariableName])));
+                ? CommonConversions.CreateVariableDeclarationAndAssignment(newNames[field.PrefixedOriginalVariableName], field.Initializer, field.Type)
+                : SyntaxFactory.VariableDeclaration(field.Type, SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(newNames[field.PrefixedOriginalVariableName])));
             var modifiers = new List<SyntaxToken> { CS.SyntaxFactory.Token(SyntaxKind.PrivateKeyword) };
             if (field.IsStatic || namedTypeSymbol.IsModuleType()) {
                 modifiers.Add(CS.SyntaxFactory.Token(SyntaxKind.StaticKeyword));
             }
-            declarations.Add(CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List<AttributeListSyntax>(), CS.SyntaxFactory.TokenList(modifiers), decl));
+            var fieldDecl = CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List<AttributeListSyntax>(), CS.SyntaxFactory.TokenList(modifiers), decl);
+            if (!string.IsNullOrEmpty(field.OriginalParentAccessorKind)) {
+                fieldDecl = fieldDecl.WithParentPropertyAccessorKind(field.OriginalParentAccessorKind);
+            }
+            declarations.Add(fieldDecl);
         }
 
         var statementsWithUpdatedIds = ReplaceNames(declarations.Concat(csNodes), newNames);
@@ -185,11 +189,23 @@ internal class PerScopeState
     public static T ReplaceNames<T>(T csNode, Dictionary<string, string> newNames) where T : SyntaxNode
     {
         return csNode.ReplaceNodes(csNode.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>(), (_, idns) => {
-            if (newNames.TryGetValue(idns.Identifier.ValueText, out var newName)) {
+            if (TryGetValue(newNames, idns, out var newName)) {
                 return idns.WithoutAnnotations(AdditionalLocalAnnotation).WithIdentifier(CS.SyntaxFactory.Identifier(newName));
             }
             return idns;
         });
+
+        static bool TryGetValue(Dictionary<string, string> newNames, IdentifierNameSyntax idns, out string newName)
+        {
+            var ann = idns.GetAnnotations(AnnotationConstants.ParentPropertyAccessorKindAnnotation).FirstOrDefault();
+            var key = GetPrefixedName(ann?.Data, idns.Identifier.ValueText);
+            return newNames.TryGetValue(key, out newName);
+        }
+    }
+
+    internal static string GetPrefixedName(string prefix, string name)
+    {
+        return string.IsNullOrEmpty(prefix) ? name : $"<{prefix}>.{name}";
     }
 
     public IEnumerable<StatementSyntax> ConvertExit(VBasic.SyntaxKind vbBlockKeywordKind)

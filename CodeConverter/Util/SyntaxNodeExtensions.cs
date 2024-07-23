@@ -173,6 +173,11 @@ internal static class SyntaxNodeExtensions
         return node.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind);
     }
 
+    public static T WithParentPropertyAccessorKind<T>(this T node, string accessorKind) where T : SyntaxNode
+    {
+        return node.WithAdditionalAnnotations(AnnotationConstants.ParentPropertyAccessorKind(accessorKind));
+    }
+
     private static bool IsBlockParent(SyntaxNode converted, SyntaxToken lastCsConvertedToken)
     {
         return lastCsConvertedToken.Parent == converted || lastCsConvertedToken.Parent is BlockSyntax b && b.Parent == converted;
