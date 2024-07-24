@@ -75,9 +75,16 @@ public static class ValidSyntaxFactory
 
     public static MethodDeclarationSyntax CreateParameterlessMethod(string newMethodName, TypeSyntax type, BlockSyntax body)
     {
+        var parameterList = SyntaxFactory.ParameterList();
+        return CreateMethod(newMethodName, type, parameterList, body);
+    }
+
+    public static MethodDeclarationSyntax CreateMethod(string newMethodName, TypeSyntax type, ParameterListSyntax parameterList, BlockSyntax body)
+    {
         var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
         var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
-        var parameterList = SyntaxFactory.ParameterList();
+        parameterList ??= SyntaxFactory.ParameterList();
+
         var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
 
         ArrowExpressionClauseSyntax arrowExpression = null;

@@ -86,9 +86,9 @@ internal class PerScopeState
             .ToArray();
     }
 
-    public IReadOnlyCollection<HoistedParameterlessFunction> GetParameterlessFunctions()
+    public IReadOnlyCollection<HoistedFunction> GetParameterlessFunctions()
     {
-        return _hoistedNodesPerScope.Peek().OfType<HoistedParameterlessFunction>().ToArray();
+        return _hoistedNodesPerScope.Peek().OfType<HoistedFunction>().ToArray();
     }
 
     public IReadOnlyCollection<HoistedFieldFromVbStaticVariable> GetFields()

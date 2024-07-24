@@ -1174,9 +1174,41 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             statements.Concat(SyntaxFactory.ReturnStatement(ValidSyntaxFactory.IdentifierName(retVariableName)).Yield())
         );
         var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
-            
-        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedParameterlessFunction(localFuncName, returnType, block));
-        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList());
+
+        //any argument that's a ByRef parameter of the parent method needs to be passed as a ref parameter to the local function (to avoid error CS1628)
+        var refParametersOfParent = GetRefParameters(invocation.ArgumentList);
+        var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
+
+        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
+        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
+    
+        List<IParameterSymbol> GetRefParameters(VBSyntax.ArgumentListSyntax argumentList)
+        {
+            var result = new List<IParameterSymbol>();
+            if (argumentList is null) return result;
+
+            foreach (var arg in argumentList.Arguments) {
+                if (_semanticModel.GetSymbolInfo(arg.GetExpression()).Symbol is not IParameterSymbol p) continue;
+                if (p.RefKind != RefKind.None) {
+                    result.Add(p);
+                }
+            }
+
+            return result;
+        }
+
+        (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
+        {
+            var arguments = new List<ArgumentSyntax>();
+            var parameters = new List<ParameterSyntax>();
+            foreach (var p in parameterSymbols) {
+                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
+                arguments.Add(arg);
+                var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
+                parameters.Add(par);
+            }
+            return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
+        }
     }
 
     private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)

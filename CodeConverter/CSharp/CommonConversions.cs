@@ -145,7 +145,7 @@ internal class CommonConversions
                     equalsValueClauseSyntax = null;
                 } else {
                     var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
-                    _typeContext.PerScopeState.Hoist(new HoistedParameterlessFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock));
+                    _typeContext.PerScopeState.Hoist(new HoistedFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock, null));
                     equalsValueClauseSyntax = null;
                 }
             } else {
