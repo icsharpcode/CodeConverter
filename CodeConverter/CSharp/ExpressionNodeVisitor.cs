@@ -1891,6 +1891,8 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             }
             else if (symbolInfo is IFieldSymbol { IsConst: true } or ILocalSymbol { IsConst: true }) {
                 return RefConversion.PreAssigment;
+            } else if (symbolInfo is IMethodSymbol) {
+                return RefConversion.PreAssigment;
             }
 
             if (DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
