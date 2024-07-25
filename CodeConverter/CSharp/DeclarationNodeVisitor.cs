@@ -950,8 +950,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             var firstVbSourceToken = node.GetFirstToken();
             first = first.ReplaceToken(firstCsConvertedToken, firstCsConvertedToken.WithSourceMappingFrom(firstVbSourceToken));
 
-            _additionalDeclarations.TryGetValue(node, out var members);
-            var last = members?.OfType<MethodDeclarationSyntax>().LastOrDefault() ?? first;
+            var members = _additionalDeclarations[node];
+            var last = members.OfType<MethodDeclarationSyntax>().LastOrDefault() ?? first;
             var lastIx = members.ToList().IndexOf(last);
             var lastIsFirst = lastIx < 0;
             var lastCsConvertedToken = last.GetLastToken();
@@ -960,7 +960,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
             converted = lastIsFirst ? last : first;
             if (!lastIsFirst) {
-                members![lastIx] = last;
+                members[lastIx] = last;
             }
         }
 
