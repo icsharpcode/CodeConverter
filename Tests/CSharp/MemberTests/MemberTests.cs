@@ -669,7 +669,7 @@ internal partial class SurroundingClass
         _Prop_bSet = false;
     }
 
-}", incompatibleWithAutomatedCommentTesting: true);// Known bug: Additional declarations don't get comments correctly converted
+}");
     }
 
     [Fact]
