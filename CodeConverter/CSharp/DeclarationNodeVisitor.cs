@@ -305,7 +305,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     private async Task<MemberDeclarationSyntax> ConvertMemberAsync(VBSyntax.StatementSyntax member)
     {
         try {
-            return await member.AcceptAsync<MemberDeclarationSyntax>(TriviaConvertingDeclarationVisitor);
+            var sourceTriviaMapKind = member is VBSyntax.PropertyBlockSyntax propBlock && ShouldConvertAsParameterizedProperty(propBlock.PropertyStatement)
+                ? SourceTriviaMapKind.SubNodesOnly
+                : SourceTriviaMapKind.All;
+            return await member.AcceptAsync<MemberDeclarationSyntax>(TriviaConvertingDeclarationVisitor, sourceTriviaMapKind);
         } catch (Exception e) {
             return CreateErrorMember(member, e);
         }
@@ -938,7 +941,30 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
     {
-        return await node.PropertyStatement.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
+        var converted = await node.PropertyStatement.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
+
+        if (converted is MethodDeclarationSyntax) {
+            var first = (MethodDeclarationSyntax)converted;
+
+            var firstCsConvertedToken = first.GetFirstToken();
+            var firstVbSourceToken = node.GetFirstToken();
+            first = first.ReplaceToken(firstCsConvertedToken, firstCsConvertedToken.WithSourceMappingFrom(firstVbSourceToken));
+
+            _additionalDeclarations.TryGetValue(node, out var members);
+            var last = members?.OfType<MethodDeclarationSyntax>().LastOrDefault() ?? first;
+            var lastIx = members.ToList().IndexOf(last);
+            var lastIsFirst = lastIx < 0;
+            var lastCsConvertedToken = last.GetLastToken();
+            var lastVbSourceToken = node.GetLastToken();
+            last = last.ReplaceToken(lastCsConvertedToken, lastCsConvertedToken.WithSourceMappingFrom(lastVbSourceToken));
+
+            converted = lastIsFirst ? last : first;
+            if (!lastIsFirst) {
+                members![lastIx] = last;
+            }
+        }
+
+        return converted;
     }
 
     public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
