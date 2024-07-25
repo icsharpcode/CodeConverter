@@ -84,7 +84,7 @@ BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide bot
                 Return FirstName & "" "" & LastName
             End If
         End Get
-        ' Bug: Comment moves inside generated method
+        ' This comment belongs to the set method
         Friend Set
             If isFirst Then FirstName = Value
         End Set
@@ -110,9 +110,8 @@ internal partial class TestClass
         {
             return FirstName + "" "" + LastName;
         }
-        // Bug: Comment moves inside generated method
     }
-
+    // This comment belongs to the set method
     internal void set_FullName(bool lastNameFirst, bool isFirst, string value)
     {
         if (isFirst)
@@ -151,7 +150,6 @@ public partial class Class1
     {
         return 1.5f;
     }
-
     public void set_SomeProp(int index, float value)
     {
     }
@@ -176,7 +174,7 @@ public partial class Class1
         Get
             Return FirstName & "" "" & LastName
         End Get
-'Bug: Comment moves inside generated get method
+'This comment belongs to the set method
         Friend Set
             If isFirst Then FirstName = Value
         End Set
@@ -197,9 +195,8 @@ internal partial class TestClass
     public string get_FullName(bool isFirst = false)
     {
         return FirstName + "" "" + LastName;
-        // Bug: Comment moves inside generated get method
     }
-
+    // This comment belongs to the set method
     internal void set_FullName(bool isFirst = false, string value = default)
     {
         if (isFirst)
@@ -259,7 +256,6 @@ public partial class ParameterizedPropertiesAndEnumTest
     {
         return blah.ToString();
     }
-
     public void set_MyProp(int blah, string value)
     {
     }
@@ -284,6 +280,57 @@ public partial class ParameterizedPropertiesAndEnumTest
                     return;
                 }
         }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestParameterizedPropertyWithTriviaAsync()
+    {
+        //issue 1095
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class IndexedPropertyWithTrivia
+    'a
+    Property P(i As Integer) As Integer
+        'b
+        Get
+            '1
+            Dim x = 1 '2
+            '3
+        End Get
+
+        'c
+        Set(value As Integer)
+            '4
+            Dim x = 1 '5
+            '6
+            x = value + i '7
+            '8
+        End Set
+        'd
+    End Property
+End Class", @"
+internal partial class IndexedPropertyWithTrivia
+{
+    // a
+    // b
+    public int get_P(int i)
+    {
+        // 1
+        int x = 1; // 2
+        return default;
+        // 3
+    }
+
+    // c
+    public void set_P(int i, int value)
+    {
+        // 4
+        int x = 1; // 5
+                   // 6
+        x = value + i; // 7
+                       // 8
+                       // d
     }
 }");
     }
@@ -520,7 +567,6 @@ public partial class SomeClass : IFoo
     {
         return default;
     }
-
     internal void set_Prop2(int x = 1, int y = 2, int value = default)
     {
     }
@@ -610,7 +656,6 @@ public partial class SomeClass : IFoo
     {
         return default;
     }
-
     internal void set_Prop2(int x = 1, int y = 2, int z = 3, int value = default)
     {
     }
