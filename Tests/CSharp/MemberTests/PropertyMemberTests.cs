@@ -150,7 +150,6 @@ public partial class Class1
     {
         return 1.5f;
     }
-
     public void set_SomeProp(int index, float value)
     {
     }
@@ -257,7 +256,6 @@ public partial class ParameterizedPropertiesAndEnumTest
     {
         return blah.ToString();
     }
-
     public void set_MyProp(int blah, string value)
     {
     }
@@ -569,7 +567,6 @@ public partial class SomeClass : IFoo
     {
         return default;
     }
-
     internal void set_Prop2(int x = 1, int y = 2, int value = default)
     {
     }
@@ -659,7 +656,6 @@ public partial class SomeClass : IFoo
     {
         return default;
     }
-
     internal void set_Prop2(int x = 1, int y = 2, int z = 3, int value = default)
     {
     }
