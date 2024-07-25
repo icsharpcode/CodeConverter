@@ -289,6 +289,57 @@ public partial class ParameterizedPropertiesAndEnumTest
     }
 
     [Fact]
+    public async Task TestParameterizedPropertyWithTriviaAsync()
+    {
+        //issue 1095
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class IndexedPropertyWithTrivia
+    'a
+    Property P(i As Integer) As Integer
+        'b
+        Get
+            '1
+            Dim x = 1 '2
+            '3
+        End Get
+
+        'c
+        Set(value As Integer)
+            '4
+            Dim x = 1 '5
+            '6
+            x = value + i '7
+            '8
+        End Set
+        'd
+    End Property
+End Class", @"
+internal partial class IndexedPropertyWithTrivia
+{
+    // a
+    // b
+    public int get_P(int i)
+    {
+        // 1
+        int x = 1; // 2
+        return default;
+        // 3
+    }
+
+    // c
+    public void set_P(int i, int value)
+    {
+        // 4
+        int x = 1; // 5
+                   // 6
+        x = value + i; // 7
+                       // 8
+                       // d
+    }
+}");
+    }
+
+    [Fact]
     public async Task PropertyWithMissingTypeDeclarationAsync()//TODO Check object is the inferred type
     {
         await TestConversionVisualBasicToCSharpAsync(
