@@ -4075,30 +4075,29 @@ internal partial class StaticLocalConvertedToField
         End Set
         'd
     End Property
-End Class", @"using System;
-
+End Class", @"
 internal partial class IndexedPropertyWithTrivia
 {
-        // a
-        public int get_P(int i)
-        // b
-        {
-            // 1
-            int x = 1; // 2
-            return default;
-            // 3
-        }
-        
-        // c
-        public void set_P(int i, int value)
-        {
-            // 4
-            int x = 1; // 5
-            // 6
-            x = value + i; // 7
-            // 8
-        }
-        // d
+    // a
+    // b
+    public int get_P(int i)
+    {
+        // 1
+        int x = 1; // 2
+        return default;
+        // 3
+    }
+
+    // c
+    public void set_P(int i, int value)
+    {
+        // 4
+        int x = 1; // 5
+                   // 6
+        x = value + i; // 7
+                       // 8
+                       // d
+    }
 }");
     }
 
