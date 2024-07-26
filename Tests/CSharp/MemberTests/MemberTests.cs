@@ -590,11 +590,9 @@ internal partial class ChildClass : IClass
     {
         return 1;
     }
-
     public virtual void set_RenamedPropertyParam(int i, int value)
     {
     }
-
     int IClass.get_ReadOnlyPropParam(int i) => get_RenamedPropertyParam(i);
 
     public virtual int RenamedReadOnlyProperty
@@ -614,11 +612,9 @@ internal partial class ChildClass : IClass
     {
         return 1;
     }
-
     public virtual void set_RenamedWriteOnlyPropParam(int i, int value)
     {
     }
-
     void IClass.set_WriteOnlyPropParam(int i, int value) => set_RenamedWriteOnlyPropParam(i, value);
 
     public virtual int RenamedWriteOnlyProperty
@@ -669,7 +665,7 @@ internal partial class SurroundingClass
         _Prop_bSet = false;
     }
 
-}", incompatibleWithAutomatedCommentTesting: true);// Known bug: Additional declarations don't get comments correctly converted
+}");
     }
 
     [Fact]
@@ -871,21 +867,18 @@ internal partial class ChildClass : IClass
     {
         throw new NotImplementedException();
     }
-
     string IClass.get_ReadOnlyPropToRename(int i) => get_ReadOnlyPropRenamed(i);
 
     public virtual void set_WriteOnlyPropRenamed(int i, string value)
     {
         throw new NotImplementedException();
     }
-
     void IClass.set_WriteOnlyPropToRename(int i, string value) => set_WriteOnlyPropRenamed(i, value);
 
     public virtual string get_PropRenamed(int i)
     {
         throw new NotImplementedException();
     }
-
     public virtual void set_PropRenamed(int i, string value)
     {
         throw new NotImplementedException();
@@ -898,21 +891,18 @@ internal partial class ChildClass : IClass
     {
         throw new NotImplementedException();
     }
-
     string IClass.get_ReadOnlyPropNonPublic(int i) => get_ReadOnlyPropNonPublic(i);
 
     protected internal virtual void set_WriteOnlyPropNonPublic(int i, string value)
     {
         throw new NotImplementedException();
     }
-
     void IClass.set_WriteOnlyPropNonPublic(int i, string value) => set_WriteOnlyPropNonPublic(i, value);
 
     internal virtual string get_PropNonPublic(int i)
     {
         throw new NotImplementedException();
     }
-
     internal virtual void set_PropNonPublic(int i, string value)
     {
         throw new NotImplementedException();
@@ -925,21 +915,18 @@ internal partial class ChildClass : IClass
     {
         throw new NotImplementedException();
     }
-
     string IClass.get_ReadOnlyPropToRenameNonPublic(int i) => get_ReadOnlyPropRenamedNonPublic(i);
 
     private void set_WriteOnlyPropRenamedNonPublic(int i, string value)
     {
         throw new NotImplementedException();
     }
-
     void IClass.set_WriteOnlyPropToRenameNonPublic(int i, string value) => set_WriteOnlyPropRenamedNonPublic(i, value);
 
     internal virtual string get_PropToRenameNonPublic(int i)
     {
         throw new NotImplementedException();
     }
-
     internal virtual void set_PropToRenameNonPublic(int i, string value)
     {
         throw new NotImplementedException();
@@ -2436,7 +2423,6 @@ public partial class Foo : IFoo
     {
         return 5;
     }
-
     private void set_ExplicitProp(string str = """", int value = default)
     {
     }
@@ -3111,7 +3097,6 @@ public partial class Foo : IFoo
     {
         return 5;
     }
-
     private void set_ExplicitProp(string str, int value)
     {
     }
@@ -3164,7 +3149,6 @@ public partial class Foo : IFoo
     {
         return 5;
     }
-
     public virtual void set_PropParams(string str, int value)
     {
     }
@@ -3787,7 +3771,6 @@ public partial class Foo : IFoo, IBar
     {
         return 5;
     }
-
     private void set_ExplicitProp(string str, int value)
     {
     }

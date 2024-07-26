@@ -28,7 +28,6 @@ namespace WindowsAppVb.My
                 return item.Value;
             return null;
         }
-
         public static void set_Value(IEnumerable<XElement> source, string value)
         {
             foreach (XElement item in source)
@@ -43,7 +42,6 @@ namespace WindowsAppVb.My
                 return (string)item.Attribute(name);
             return null;
         }
-
         public static void set_AttributeValue(IEnumerable<XElement> source, XName name, string value)
         {
             foreach (XElement item in source)
@@ -56,7 +54,6 @@ namespace WindowsAppVb.My
         {
             return (string)source.Attribute(name);
         }
-
         public static void set_AttributeValue(XElement source, XName name, string value)
         {
             source.SetAttributeValue(name, value);
