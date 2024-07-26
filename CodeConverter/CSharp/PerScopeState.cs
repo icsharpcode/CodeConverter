@@ -169,7 +169,7 @@ internal class PerScopeState
                 modifiers.Add(CS.SyntaxFactory.Token(SyntaxKind.StaticKeyword));
             }
             var fieldDecl = CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List<AttributeListSyntax>(), CS.SyntaxFactory.TokenList(modifiers), decl);
-            if (!string.IsNullOrEmpty(field.OriginalParentAccessorKind)) {
+            if (field.OriginalParentAccessorKind != MethodKind.Ordinary) {
                 fieldDecl = fieldDecl.WithParentPropertyAccessorKind(field.OriginalParentAccessorKind);
             }
             declarations.Add(fieldDecl);

@@ -173,9 +173,9 @@ internal static class SyntaxNodeExtensions
         return node.WithoutAnnotations(AnnotationConstants.SourceStartLineAnnotationKind).WithoutAnnotations(AnnotationConstants.SourceEndLineAnnotationKind);
     }
 
-    public static T WithParentPropertyAccessorKind<T>(this T node, string accessorKind) where T : SyntaxNode
+    public static T WithParentPropertyAccessorKind<T>(this T node, MethodKind accessorKind) where T : SyntaxNode
     {
-        return node.WithAdditionalAnnotations(AnnotationConstants.ParentPropertyAccessorKind(accessorKind));
+        return node.WithAdditionalAnnotations(AnnotationConstants.ParentPropertyAccessorKind(accessorKind.ToString()));
     }
 
     private static bool IsBlockParent(SyntaxNode converted, SyntaxToken lastCsConvertedToken)

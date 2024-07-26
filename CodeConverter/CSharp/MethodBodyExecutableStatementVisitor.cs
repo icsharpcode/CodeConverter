@@ -110,7 +110,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     string methodName;
                     SyntaxTokenList methodModifiers;
 
-                    string parentAccessorKind = null;
+                    MethodKind parentAccessorKind = MethodKind.Ordinary;
                     if (_methodNode is VBSyntax.MethodBlockSyntax methodBlock) {
                         var methodStatement = methodBlock.BlockStatement as VBSyntax.MethodStatementSyntax;
                         methodModifiers = methodStatement.Modifiers;
@@ -121,7 +121,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     } else if (_methodNode is VBSyntax.AccessorBlockSyntax accessorBlock) {
                         var propertyBlock = accessorBlock.Parent as VBSyntax.PropertyBlockSyntax;
                         methodName = propertyBlock.PropertyStatement.Identifier.Text;
-                        parentAccessorKind = accessorBlock.IsKind(VBasic.SyntaxKind.GetAccessorBlock) ? "PropertyGet" : "PropertySet";
+                        parentAccessorKind = accessorBlock.IsKind(VBasic.SyntaxKind.GetAccessorBlock) ? MethodKind.PropertyGet : MethodKind.PropertySet;
                         methodModifiers = propertyBlock.PropertyStatement.Modifiers;
                     } else {
                         throw new NotImplementedException(_methodNode.GetType() + " not implemented!");

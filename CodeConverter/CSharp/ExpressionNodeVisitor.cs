@@ -1545,7 +1545,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
         var sym = GetSymbolInfoInDocument<ISymbol>(node);
         if (sym is ILocalSymbol) {
             if (sym.IsStatic && sym.ContainingSymbol is IMethodSymbol m && m.AssociatedSymbol is IPropertySymbol) {
-                qualifiedIdentifier = qualifiedIdentifier.WithParentPropertyAccessorKind(m.MethodKind.ToString());
+                qualifiedIdentifier = qualifiedIdentifier.WithParentPropertyAccessorKind(m.MethodKind);
             }
             
             var vbMethodBlock = node.Ancestors().OfType<VBasic.Syntax.MethodBlockBaseSyntax>().FirstOrDefault();
