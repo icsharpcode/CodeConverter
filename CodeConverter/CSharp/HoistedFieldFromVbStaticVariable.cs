@@ -22,5 +22,5 @@ internal class HoistedFieldFromVbStaticVariable : IHoistedNode
     }
 
     public string FieldName => OriginalMethodName != null ? $"_{OriginalMethodName}_{OriginalVariableName}" : $"_{OriginalVariableName}";
-    public string PrefixedOriginalVariableName => PerScopeState.GetPrefixedName(OriginalParentAccessorKind.ToString(), OriginalVariableName);
+    public string PrefixedOriginalVariableName => PerScopeState.GetPrefixedName(OriginalParentAccessorKind == MethodKind.Ordinary ? "" : OriginalParentAccessorKind.ToString(), OriginalVariableName);
 }
