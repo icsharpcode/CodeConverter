@@ -669,6 +669,45 @@ internal partial class SurroundingClass
     }
 
     [Fact]
+    public async Task StaticLocalsInPropertyGetterAndSetterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Property Prop As String
+    Get
+        Static b As Boolean
+        b = True
+    End Get
+
+    Set(ByVal s As String)
+        Static b As Boolean
+        b = False
+    End Set
+End Property
+", @"
+internal partial class SurroundingClass
+{
+    private bool _Prop_b;
+    private bool _Prop_b1;
+
+    public string Prop
+    {
+        get
+        {
+            _Prop_b = true;
+            return default;
+        }
+
+        set
+        {
+            _Prop_b1 = false;
+        }
+    }
+
+}");
+    }
+
+    [Fact]
     public async Task TestReadOnlyAndWriteOnlyParametrizedPropertyAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(

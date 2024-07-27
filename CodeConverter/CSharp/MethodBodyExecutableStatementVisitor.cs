@@ -110,6 +110,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     string methodName;
                     SyntaxTokenList methodModifiers;
 
+                    MethodKind parentAccessorKind = MethodKind.Ordinary;
                     if (_methodNode is VBSyntax.MethodBlockSyntax methodBlock) {
                         var methodStatement = methodBlock.BlockStatement as VBSyntax.MethodStatementSyntax;
                         methodModifiers = methodStatement.Modifiers;
@@ -120,13 +121,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     } else if (_methodNode is VBSyntax.AccessorBlockSyntax accessorBlock) {
                         var propertyBlock = accessorBlock.Parent as VBSyntax.PropertyBlockSyntax;
                         methodName = propertyBlock.PropertyStatement.Identifier.Text;
+                        parentAccessorKind = accessorBlock.IsKind(VBasic.SyntaxKind.GetAccessorBlock) ? MethodKind.PropertyGet : MethodKind.PropertySet;
                         methodModifiers = propertyBlock.PropertyStatement.Modifiers;
                     } else {
                         throw new NotImplementedException(_methodNode.GetType() + " not implemented!");
                     }
 
                     var isVbShared = methodModifiers.Any(a => a.IsKind(VBasic.SyntaxKind.SharedKeyword));
-                    _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, initializeValue, decl.Declaration.Type, isVbShared));
+                    _perScopeState.HoistToTopLevel(new HoistedFieldFromVbStaticVariable(methodName, variable.Identifier.Text, parentAccessorKind, initializeValue, decl.Declaration.Type, isVbShared));
                 }
             } else {
                 var shouldPullVariablesBeforeLoop = _perScopeState.IsInsideLoop() && declarator.Initializer is null && declarator.AsClause is not VBSyntax.AsNewClauseSyntax;
