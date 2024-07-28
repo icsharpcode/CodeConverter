@@ -4204,6 +4204,30 @@ internal partial class RefConstArgument
     }
 
     [Fact]
+    public async Task TestRefFunctionCallNoParenthesesArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class RefFunctionCallArgument
+    Sub S(ByRef o As Object)
+        S(GetI)
+    End Sub
+    Function GetI() As Integer : End Function
+End Class", @"
+internal partial class RefFunctionCallArgument
+{
+    public void S(ref object o)
+    {
+        object argo = GetI();
+        S(ref argo);
+    }
+    public int GetI()
+    {
+        return default;
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestMissingByRefArgumentWithNoExplicitDefaultValueAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
