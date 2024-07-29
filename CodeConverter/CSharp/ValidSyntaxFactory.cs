@@ -83,7 +83,6 @@ public static class ValidSyntaxFactory
     {
         var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
         var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
-        parameterList ??= SyntaxFactory.ParameterList();
 
         var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();
 
