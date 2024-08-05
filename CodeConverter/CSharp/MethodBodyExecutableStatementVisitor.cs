@@ -7,6 +7,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ICSharpCode.CodeConverter.VB;
+using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -744,7 +745,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csSwitchExpr = await vbExpr.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csSwitchExpr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbExpr, csSwitchExpr);
         var switchExprTypeInfo = _semanticModel.GetTypeInfo(vbExpr);
-        var isStringComparison = switchExprTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String || switchExprTypeInfo.ConvertedType?.IsArrayOf(SpecialType.System_Char) == true;
+        var isObjectComparison = switchExprTypeInfo.ConvertedType.SpecialType == SpecialType.System_Object;
+        var isStringComparison = !isObjectComparison && switchExprTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String || switchExprTypeInfo.ConvertedType?.IsArrayOf(SpecialType.System_Char) == true;
         var caseInsensitiveStringComparison = vbEquality.OptionCompareTextCaseInsensitive &&
                                               isStringComparison;
         if (isStringComparison) {
@@ -772,9 +774,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     var isBooleanCase = caseTypeInfo.Type?.SpecialType == SpecialType.System_Boolean;
                     bool enumRelated = IsEnumOrNullableEnum(switchExprTypeInfo.ConvertedType) || IsEnumOrNullableEnum(caseTypeInfo.Type);
                     bool convertingEnum = IsEnumOrNullableEnum(switchExprTypeInfo.ConvertedType) ^ IsEnumOrNullableEnum(caseTypeInfo.Type);
-                    var csExpressionToUse = !isBooleanCase && (convertingEnum || !enumRelated && correctTypeExpressionSyntax.IsConst) ? correctTypeExpressionSyntax.Expr : originalExpressionSyntax;
+                    var csExpressionToUse = !isObjectComparison && !isBooleanCase && (convertingEnum || !enumRelated && correctTypeExpressionSyntax.IsConst)
+                        ? correctTypeExpressionSyntax.Expr
+                        : originalExpressionSyntax;
 
-                    var caseSwitchLabelSyntax = !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
+                    var caseSwitchLabelSyntax = !isObjectComparison && !wrapForStringComparison && correctTypeExpressionSyntax.IsConst && notAlreadyUsed
                         ? (SwitchLabelSyntax)SyntaxFactory.CaseSwitchLabel(csExpressionToUse)
                         : WrapInCasePatternSwitchLabelSyntax(node, s.Value, csExpressionToUse, isBooleanCase);
                     labels.Add(caseSwitchLabelSyntax);
@@ -782,22 +786,41 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     labels.Add(SyntaxFactory.DefaultSwitchLabel());
                 } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
 
-                    var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                    ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                     var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
                     var csRelationalValue = await relational.Value.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-                    csRelationalValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(relational.Value, csRelationalValue);
-                    var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, csRelationalValue);
-                    labels.Add(VarWhen(varName, binaryExp));
+                    CasePatternSwitchLabelSyntax caseSwitchLabelSyntax;
+                    if (isObjectComparison) {
+                        caseSwitchLabelSyntax = WrapInCasePatternSwitchLabelSyntax(node, relational.Value, csRelationalValue, false, operatorKind);
+                    }
+                    else {
+                        var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
+                        ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
+                        csRelationalValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(relational.Value, csRelationalValue);
+                        var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, csRelationalValue);
+                        caseSwitchLabelSyntax = VarWhen(varName, binaryExp);
+                    }
+                    labels.Add(caseSwitchLabelSyntax);
                 } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
                     var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                    ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
+                    ExpressionSyntax csCaseVar = ValidSyntaxFactory.IdentifierName(varName);
                     var lowerBound = await range.LowerBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-                    lowerBound = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(range.LowerBound, lowerBound);
-                    var lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, lowerBound, csLeft);
+                    ExpressionSyntax lowerBoundCheck;
+                    if (isObjectComparison) {
+                        var caseTypeInfo = _semanticModel.GetTypeInfo(range.LowerBound);
+                        lowerBoundCheck = ComparisonAdjustedForStringComparison(node, range.LowerBound, caseTypeInfo, lowerBound, csCaseVar, switchExprTypeInfo, ComparisonKind.LessThanOrEqual);
+                    } else {
+                        lowerBound = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(range.LowerBound, lowerBound);
+                        lowerBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, lowerBound, csCaseVar);
+                    }
                     var upperBound = await range.UpperBound.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-                    upperBound = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(range.UpperBound, upperBound);
-                    var upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csLeft, upperBound);
+                    ExpressionSyntax upperBoundCheck;
+                    if (isObjectComparison) {
+                        var caseTypeInfo = _semanticModel.GetTypeInfo(range.UpperBound);
+                        upperBoundCheck = ComparisonAdjustedForStringComparison(node, range.UpperBound, switchExprTypeInfo, csCaseVar, upperBound, caseTypeInfo, ComparisonKind.LessThanOrEqual);
+                    } else {
+                        upperBound = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(range.UpperBound, upperBound);
+                        upperBoundCheck = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, csCaseVar, upperBound);
+                    }
                     var withinBounds = SyntaxFactory.BinaryExpression(SyntaxKind.LogicalAndExpression, lowerBoundCheck, upperBoundCheck);
                     labels.Add(VarWhen(varName, withinBounds));
                 } else {
@@ -916,7 +939,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return symbol.MatchesKind(SymbolKind.Parameter, SymbolKind.Local) && await CommonConversions.Document.Project.Solution.IsNeverWrittenAsync(symbol, allowedLocation);
     }
 
-    private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, ExpressionSyntax expression, bool treatAsBoolean = false)
+    private CasePatternSwitchLabelSyntax WrapInCasePatternSwitchLabelSyntax(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, ExpressionSyntax expression, bool treatAsBoolean = false, VBasic.SyntaxKind caseClauseKind = VBasic.SyntaxKind.CaseEqualsClause)
     {
         var typeInfo = _semanticModel.GetTypeInfo(node.SelectStatement.Expression);
 
@@ -930,27 +953,47 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             patternMatch = ValidSyntaxFactory.VarPattern(varName);
             ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName), csRight = expression;
             var caseTypeInfo = _semanticModel.GetTypeInfo(vbCase);
-            expression = EqualsAdjustedForStringComparison(node, vbCase, typeInfo, csLeft, csRight, caseTypeInfo);
+            expression = ComparisonAdjustedForStringComparison(node, vbCase, typeInfo, csLeft, csRight, caseTypeInfo, GetComparisonKind(caseClauseKind));
         }
 
         var colonToken = SyntaxFactory.Token(SyntaxKind.ColonToken);
         return SyntaxFactory.CasePatternSwitchLabel(patternMatch, SyntaxFactory.WhenClause(expression), colonToken);
     }
 
-    private ExpressionSyntax EqualsAdjustedForStringComparison(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, TypeInfo lhsTypeInfo, ExpressionSyntax csLeft, ExpressionSyntax csRight, TypeInfo rhsTypeInfo)
+    private ComparisonKind GetComparisonKind(VBasic.SyntaxKind caseClauseKind) => caseClauseKind switch {
+        VBasic.SyntaxKind.CaseLessThanClause => ComparisonKind.LessThan,
+        VBasic.SyntaxKind.CaseLessThanOrEqualClause => ComparisonKind.LessThanOrEqual,
+        VBasic.SyntaxKind.CaseEqualsClause => ComparisonKind.Equals,
+        VBasic.SyntaxKind.CaseNotEqualsClause => ComparisonKind.NotEquals,
+        VBasic.SyntaxKind.CaseGreaterThanOrEqualClause => ComparisonKind.GreaterThanOrEqual,
+        VBasic.SyntaxKind.CaseGreaterThanClause => ComparisonKind.GreaterThan,
+        _ => throw new ArgumentOutOfRangeException(nameof(caseClauseKind), caseClauseKind, null)
+    };
+
+    private ExpressionSyntax ComparisonAdjustedForStringComparison(VBSyntax.SelectBlockSyntax node, VBSyntax.ExpressionSyntax vbCase, TypeInfo lhsTypeInfo, ExpressionSyntax csLeft, ExpressionSyntax csRight, TypeInfo rhsTypeInfo, ComparisonKind comparisonKind)
     {
         var vbEquality = CommonConversions.VisualBasicEqualityComparison;
         switch (_visualBasicEqualityComparison.GetObjectEqualityType(lhsTypeInfo, rhsTypeInfo)) {
             case VisualBasicEqualityComparison.RequiredType.Object:
-                return vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight);
+                return vbEquality.GetFullExpressionForVbObjectComparison(csLeft, csRight, comparisonKind);
             case VisualBasicEqualityComparison.RequiredType.StringOnly:
                 // We know lhs isn't null, because we always coalesce it in the switch expression
                 (csLeft, csRight) = vbEquality
                     .AdjustForVbStringComparison(node.SelectStatement.Expression, csLeft, lhsTypeInfo, true, vbCase, csRight, rhsTypeInfo, false);
                 break;
         }
-        return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csLeft, csRight);
+        return SyntaxFactory.BinaryExpression(GetSyntaxKind(comparisonKind), csLeft, csRight);
     }
+
+    private CS.SyntaxKind GetSyntaxKind(ComparisonKind comparisonKind) => comparisonKind switch {
+        ComparisonKind.LessThan => CS.SyntaxKind.LessThanExpression,
+        ComparisonKind.LessThanOrEqual => CS.SyntaxKind.LessThanOrEqualExpression,
+        ComparisonKind.Equals => CS.SyntaxKind.EqualsExpression,
+        ComparisonKind.NotEquals => CS.SyntaxKind.NotEqualsExpression,
+        ComparisonKind.GreaterThanOrEqual => CS.SyntaxKind.GreaterThanOrEqualExpression,
+        ComparisonKind.GreaterThan => CS.SyntaxKind.GreaterThanExpression,
+        _ => throw new ArgumentOutOfRangeException(nameof(comparisonKind), comparisonKind, null)
+    };
 
     public override async Task<SyntaxList<StatementSyntax>> VisitWithBlock(VBSyntax.WithBlockSyntax node)
     {

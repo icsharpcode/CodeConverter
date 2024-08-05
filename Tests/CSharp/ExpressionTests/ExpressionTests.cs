@@ -2297,6 +2297,73 @@ public partial class Test
     }
 
     [Fact]
+    public async Task SelectCaseObjectCaseIntegerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class SelectObjectCaseIntegerTest
+    Sub S()
+        Dim o As Object
+        Dim j As Integer
+        o = 2.0
+        Select Case o
+            Case 1
+                j = 1
+            Case 2
+                j = 2
+            Case 3 To 4
+                j = 3
+            Case > 4
+                j = 4
+            Case Else
+                j = -1
+        End Select
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class SelectObjectCaseIntegerTest
+{
+    public void S()
+    {
+        object o;
+        int j;
+        o = 2.0d;
+        switch (o)
+        {
+            case var @case when Operators.ConditionalCompareObjectEqual(@case, 1, false):
+                {
+                    j = 1;
+                    break;
+                }
+            case var case1 when Operators.ConditionalCompareObjectEqual(case1, 2, false):
+                {
+                    j = 2;
+                    break;
+                }
+            case var case2 when Operators.ConditionalCompareObjectLessEqual(3, case2, false) && Operators.ConditionalCompareObjectLessEqual(case2, 4, false):
+                {
+                    j = 3;
+                    break;
+                }
+            case var case3 when Operators.ConditionalCompareObjectGreater(case3, 4, false):
+                {
+                    j = 4;
+                    break;
+                }
+
+            default:
+                {
+                    j = -1;
+                    break;
+                }
+        }
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+        //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
+    }
+
+    [Fact]
     public async Task TupleAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
