@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
+using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -916,7 +917,7 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
                 omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
                 break;
             case VisualBasicEqualityComparison.RequiredType.Object:
-                return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(lhs, rhs, node.IsKind(VBasic.SyntaxKind.NotEqualsExpression));
+                return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(lhs, rhs, ComparisonKind.Equals, node.IsKind(VBasic.SyntaxKind.NotEqualsExpression));
         }
 
         var lhsTypeIgnoringNullable = lhsTypeInfo.Type.GetNullableUnderlyingType() ?? lhsTypeInfo.Type;

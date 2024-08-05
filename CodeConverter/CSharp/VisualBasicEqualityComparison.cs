@@ -33,6 +33,17 @@ internal class VisualBasicEqualityComparison
         Object
     }
 
+    public enum ComparisonKind
+    {
+        Unknown,
+        LessThan,
+        LessThanOrEqual,
+        Equals,
+        NotEquals,
+        GreaterThanOrEqual,
+        GreaterThan,
+    }
+
     public bool OptionCompareTextCaseInsensitive { get; set; }
 
     public LiteralExpressionSyntax OptionCompareTextCaseInsensitiveBoolExpression {
@@ -250,11 +261,11 @@ internal class VisualBasicEqualityComparison
         return (csLeft, csRight);
     }
 
-    public ExpressionSyntax GetFullExpressionForVbObjectComparison(ExpressionSyntax lhs, ExpressionSyntax rhs, bool negate = false)
+    public ExpressionSyntax GetFullExpressionForVbObjectComparison(ExpressionSyntax lhs, ExpressionSyntax rhs, ComparisonKind comparisonKind, bool negate = false)
     {
         ExtraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
         var optionCompareTextCaseInsensitive = SyntaxFactory.Argument(OptionCompareTextCaseInsensitiveBoolExpression);
-        var compareObject = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Operators), nameof(Operators.ConditionalCompareObjectEqual)),
+        var compareObject = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Operators), GetOperationName(comparisonKind)),
             SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(new[]
                 {SyntaxFactory.Argument(lhs), SyntaxFactory.Argument(rhs), optionCompareTextCaseInsensitive})));
         return negate ? Negate(compareObject) : compareObject;
@@ -266,4 +277,14 @@ internal class VisualBasicEqualityComparison
             SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseOrExpression, ValidSyntaxFactory.MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreCase)), ValidSyntaxFactory.MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreKanaType))), ValidSyntaxFactory.MemberAccess(nameof(CompareOptions), nameof(CompareOptions.IgnoreWidth))
         );
     }
+
+    private static string GetOperationName(ComparisonKind comparisonKind) => comparisonKind switch {
+        ComparisonKind.LessThan => nameof(Operators.ConditionalCompareObjectLess),
+        ComparisonKind.LessThanOrEqual => nameof(Operators.ConditionalCompareObjectLessEqual),
+        ComparisonKind.Equals => nameof(Operators.ConditionalCompareObjectEqual),
+        ComparisonKind.NotEquals => nameof(Operators.ConditionalCompareObjectNotEqual),
+        ComparisonKind.GreaterThanOrEqual => nameof(Operators.ConditionalCompareObjectGreaterEqual),
+        ComparisonKind.GreaterThan => nameof(Operators.ConditionalCompareObjectGreater),
+        _ => throw new ArgumentOutOfRangeException(nameof(comparisonKind), comparisonKind, null)
+    };
 }
