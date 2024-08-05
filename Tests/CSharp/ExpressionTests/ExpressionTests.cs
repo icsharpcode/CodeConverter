@@ -2344,7 +2344,7 @@ public partial class SelectObjectCaseIntegerTest
                     j = 3;
                     break;
                 }
-            case var case4 when Operators.ConditionalCompareObjectGreater(case4, 4, false):
+            case var case3 when Operators.ConditionalCompareObjectGreater(case3, 4, false):
                 {
                     j = 4;
                     break;

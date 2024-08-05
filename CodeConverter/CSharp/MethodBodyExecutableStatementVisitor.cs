@@ -786,8 +786,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     labels.Add(SyntaxFactory.DefaultSwitchLabel());
                 } else if (c is VBSyntax.RelationalCaseClauseSyntax relational) {
 
-                    var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                    ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                     var operatorKind = VBasic.VisualBasicExtensions.Kind(relational);
                     var csRelationalValue = await relational.Value.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
                     CasePatternSwitchLabelSyntax caseSwitchLabelSyntax;
@@ -795,6 +793,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                         caseSwitchLabelSyntax = WrapInCasePatternSwitchLabelSyntax(node, relational.Value, csRelationalValue, false, operatorKind);
                     }
                     else {
+                        var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
+                        ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                         csRelationalValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(relational.Value, csRelationalValue);
                         var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, csRelationalValue);
                         caseSwitchLabelSyntax = VarWhen(varName, binaryExp);
