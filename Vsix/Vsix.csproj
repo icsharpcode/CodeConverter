@@ -8,6 +8,9 @@
     <VssdkCompatibleExtension>true</VssdkCompatibleExtension>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\CodeConverter\Common\DefaultReferences.cs" Link="DefaultReferences.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Extensibility.Sdk" Version="17.11.40261" />

@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using EnvDTE;
 using ICSharpCode.CodeConverter.Common;
+using ICSharpCode.CodeConverter.VsExtension.ICSharpCode.CodeConverter.VsExtension;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.VisualStudio.Extensibility;
+using Microsoft.VisualStudio.Extensibility.Settings;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
@@ -20,8 +17,7 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 
 internal class CodeConversion
 {
-    [Experimental("VSEXTPREVIEW_SETTINGS")] public Func<Task<ConverterSettings>> GetOptions { get; }
-    private readonly IAsyncServiceProvider _serviceProvider;
+    private readonly VisualStudioExtensibility _serviceProvider;
     private readonly JoinableTaskFactory _joinableTaskFactory;
     private readonly VisualStudioWorkspace _visualStudioWorkspace;
     private static readonly string Intro = Environment.NewLine + Environment.NewLine + new string(Enumerable.Repeat('-', 80).ToArray()) + Environment.NewLine;
@@ -30,21 +26,17 @@ internal class CodeConversion
 
     private string SolutionDir => Path.GetDirectoryName(_visualStudioWorkspace.CurrentSolution.FilePath);
 
-    public static async Task<CodeConversion> CreateAsync(CodeConverterPackage serviceProvider, VisualStudioWorkspace visualStudioWorkspace, Func<Task<ConverterOptionsPage>> getOptions)
+    public static async Task<CodeConversion> CreateAsync(VisualStudioExtensibility serviceProvider, VisualStudioWorkspace visualStudioWorkspace)
     {
-        var options = await getOptions();
-        AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution(options.BypassAssemblyLoadingErrors);
-
-        return new CodeConversion(serviceProvider, serviceProvider.JoinableTaskFactory, serviceProvider.PackageCancellation, visualStudioWorkspace,
-            getOptions, await OutputWindow.CreateAsync());
+        return new CodeConversion(serviceProvider, ThreadHelper.JoinableTaskFactory, serviceProvider, visualStudioWorkspace,
+            await OutputWindow.CreateAsync());
     }
 
-    public CodeConversion(IAsyncServiceProvider serviceProvider,
+    public CodeConversion(VisualStudioExtensibility serviceProvider,
         JoinableTaskFactory joinableTaskFactory, Cancellation packageCancellation, VisualStudioWorkspace visualStudioWorkspace,
-        Func<Task<ConverterOptionsPage>> getOptions, OutputWindow outputWindow)
+        Func<Task<ConverterSettingsAccessor>> getOptions, OutputWindow outputWindow)
     {
         JoinableTaskFactorySingleton.Instance = joinableTaskFactory;
-        GetOptions = getOptions;
         _serviceProvider = serviceProvider;
         _joinableTaskFactory = joinableTaskFactory;
         _visualStudioWorkspace = visualStudioWorkspace;
@@ -94,7 +86,8 @@ internal class CodeConversion
                 return result;
             });
 
-            if ((await GetOptions()).CopyResultToClipboardForSingleDocument) {
+            var readEffectiveValueAsync = await ReadSettingValueAsync(ConverterSettings.CopyResultToClipboardForSingleDocument, cancellationToken);
+            if (readEffectiveValueAsync.Value) {
                 await SetClipboardTextOnUiThreadAsync(conversionResult.ConvertedCode ?? conversionResult.GetExceptionsAsString());
                 await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Conversion result copied to clipboard.");
                 await VisualStudioInteraction.ShowMessageBoxAsync("Conversion result copied to clipboard.", $"Conversion result copied to clipboard. {conversionResult.GetExceptionsAsString()}", false);
@@ -104,6 +97,11 @@ internal class CodeConversion
                 await _outputWindow.WriteToOutputWindowAsync(Environment.NewLine + "Previous conversion cancelled", forceShow: true);
             }
         }
+    }
+
+    private async Task<SettingValue<T>> ReadSettingValueAsync<T>(Setting<T> setting, CancellationToken cancellationToken) where T: Setting<T>
+    {
+        return await _serviceProvider.Settings().ReadEffectiveValueAsync(setting.FullId, cancellationToken);
     }
 
     /// <remarks>
@@ -161,8 +159,6 @@ internal class CodeConversion
 
     private async Task FinalizeConversionAsync(List<string> files, List<string> errors, string longestFilePath, List<ConversionResult> filesToOverwrite)
     {
-        var options = await GetOptions();
-
         var pathsToOverwrite = filesToOverwrite.Select(f => PathRelativeToSolutionDir(f.SourcePathOrNull));
         var shouldOverwriteSolutionAndProjectFiles =
             filesToOverwrite.Any() &&
