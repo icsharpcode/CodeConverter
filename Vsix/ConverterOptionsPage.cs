@@ -14,7 +14,7 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 internal static class ConverterSettings
 {
     [VisualStudioContribution]
-    internal static SettingCategory ConverterSettingsCategory { get; } = new("converterSettings", "Settings") {
+    public static SettingCategory ConverterSettingsCategory { get; } = new("converterSettings", "Settings") {
         Description = "Settings for the Converter extension.",
     };
 

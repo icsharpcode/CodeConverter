@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -20,7 +21,7 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 
 internal class CodeConversion
 {
-    public Func<Task<ConverterOptionsPage>> GetOptions { get; }
+    [Experimental("VSEXTPREVIEW_SETTINGS")] public Func<Task<ConverterSettings>> GetOptions { get; }
     private readonly IAsyncServiceProvider _serviceProvider;
     private readonly JoinableTaskFactory _joinableTaskFactory;
     private readonly VisualStudioWorkspace _visualStudioWorkspace;
