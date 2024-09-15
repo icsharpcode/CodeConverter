@@ -15,6 +15,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.11.40262" />
     <!-- Build against VS 16.10 -->
     <PackageReference Include="Microsoft.VisualStudio.LanguageServices" Version="4.1.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.UI.Wpf" Version="17.11.260" />
     <!-- Avoids needing the VSSDK MSI installed. Version is the VS version used during compilation, not where the VSIX will be installed -->
     <PackageReference Include="System.Data.Common">
       <Version>4.3.0</Version>
