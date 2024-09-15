@@ -10,7 +10,6 @@ namespace ICSharpCode.CodeConverter.VsExtension;
 /// <summary>
 /// Sample https://github.com/microsoft/VSExtensibility/blob/main/New_Extensibility_Model/Samples/SettingsSample/SettingDefinitions.cs
 /// </summary>
-[Experimental("VSEXTPREVIEW_SETTINGS")]
 internal static class ConverterSettings
 {
     [VisualStudioContribution]
@@ -39,3 +38,8 @@ internal static class ConverterSettings
         Minimum = 1,
     };
 }
+
+namespace ICSharpCode.CodeConverter.VsExtension
+{
+}
+

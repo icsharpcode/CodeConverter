@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using CodeConv.Shared.Util;
 using EnvDTE;
 using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis.Text;

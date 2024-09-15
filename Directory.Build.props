@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <NoWarn>$(NoWarn);1998;NU5100;NU1900;NU1901;NU1902;NU1903;NU1904</NoWarn>
+    <NoWarn>$(NoWarn);1998;NU5100;NU1900;NU1901;NU1902;NU1903;NU1904;VSEXTPREVIEW_SETTINGS</NoWarn>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <LangVersion>10.0</LangVersion>
     <AssemblyVersion>9.2.6.0</AssemblyVersion>
