@@ -5,6 +5,9 @@ using Microsoft.VisualStudio.Shell;
 
 namespace ICSharpCode.CodeConverter.VsExtension;
 
+/// <summary>
+/// Sample https://github.com/microsoft/VSExtensibility/blob/main/New_Extensibility_Model/Samples/SettingsSample/SettingDefinitions.cs
+/// </summary>
 internal sealed class ConverterOptionsPage : DialogPage
 {
     private const string SettingsPageCategory = "Settings";
