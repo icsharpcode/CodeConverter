@@ -11,7 +11,7 @@ internal class ProjectContextMenuCommandHandler : ConvertCommandBase
         : base(package, codeConversion) { }
 
     public override CommandConfiguration CommandConfiguration => new("%ICSharpCode.CodeConverter.VsExtension.ProjectContextMenuCommandHandler.DisplayName%") {
-        Placements = [CommandPlacement.KnownPlacements.ExtensionsMenu]
+        Placements = [CommandPlacement.KnownPlacements.ExtensionsMenu, CommandPlacement.VsctParent(Guids.ContextMenu, id: 518, priority: 0)]
     };
 
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken cancellationToken)
