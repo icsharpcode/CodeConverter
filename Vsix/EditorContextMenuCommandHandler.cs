@@ -12,7 +12,7 @@ internal class EditorContextMenuCommandHandler : ConvertCommandBase
         : base(package, codeConversion) { }
 
     public override CommandConfiguration CommandConfiguration => new("%ICSharpCode.CodeConverter.VsExtension.EditorContextMenuCommandHandler.DisplayName%") {
-        Placements = [CommandPlacement.KnownPlacements.CodeEditorContext]
+        Placements = [CommandPlacement.KnownPlacements.ExtensionsMenu]
     };
 
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken cancellationToken)
