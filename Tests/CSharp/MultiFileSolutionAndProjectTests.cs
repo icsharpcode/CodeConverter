@@ -18,14 +18,14 @@ public class MultiFileSolutionAndProjectTests
         _multiFileTestFixture = multiFileTestFixture;
     }
 
-    [Fact(Skip = "CI system cannot run this at the moment due to installed SDK versions")]
+    [Fact]
     public async Task ConvertWholeSolutionAsync()
     {
 
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => true, Language.CS);
     }
 
-    [Fact(Skip= "CI system cannot run this at the moment due to installed SDK versions")]
+    [Fact]
     public async Task ConvertVbLibraryOnlyAsync()
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "VbLibrary", Language.CS);
