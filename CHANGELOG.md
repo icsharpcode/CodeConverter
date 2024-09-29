@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Escape character -> string conversions [#1135](https://github.com/icsharpcode/CodeConverter/issues/1135)
 * Convert Not(x IsNot Nothing) to x is null [#1113](https://github.com/icsharpcode/CodeConverter/issues/1113)
 * Escape parameter names [#1092](https://github.com/icsharpcode/CodeConverter/issues/1092)
 

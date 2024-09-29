@@ -30,6 +30,25 @@ World!"";
     }
 
     [Fact]
+    public async Task QuoteCharacterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub s
+        Dim x As String = Chr(34)
+        x = Chr(92)
+    End Sub
+End Class", @"
+public partial class C
+{
+    public void s()
+    {
+        string x = ""\"""";
+        x = @""\"";
+    }
+}");
+    }
+
+    [Fact]
     public async Task QuotesAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

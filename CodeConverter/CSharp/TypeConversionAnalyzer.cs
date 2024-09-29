@@ -470,7 +470,7 @@ internal class TypeConversionAnalyzer
         }
 
         if (currentType is {SpecialType: SpecialType.System_Char} && csNode is CSSyntax.LiteralExpressionSyntax {Token: {} t} l) {
-            return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Token(t.LeadingTrivia, SyntaxKind.StringLiteralToken, "\"" + t.Text.Trim('\'') + "\"", t.ValueText, t.TrailingTrivia))
+            return LiteralConversions.GetLiteralExpression(t.Value?.ToString(), convertedType: targetType)
                 .WithLeadingTrivia(csNode.GetLeadingTrivia()).WithTrailingTrivia(csNode.GetTrailingTrivia());
         }
 
