@@ -55,6 +55,7 @@
     <PackageReference Include="System.Globalization.Extensions" Version="4.3.0" />
     <PackageReference Include="System.IO.Abstractions" Version="13.2.33" />
     <PackageReference Include="System.Linq.Async" Version="4.0.0" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="8.0.0" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="5.0.0">
       <IncludeAssets>all</IncludeAssets>
     </PackageReference>
