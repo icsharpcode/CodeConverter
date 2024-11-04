@@ -149,19 +149,22 @@ internal static class LiteralConversions
             string hexValue = textForUser.Substring(2);
             textForUser = "0x" + hexValue;
 
-            int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            // ulong/long/uint hex literals have suffixes, so we just handle ints
+            if (value is int) {
+                int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
 
-            // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
-            // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `unchecked((int)0x91234567)`
-            // This way the value looks pretty close to before and remains a compile time constant
-            if (parsedHexValue < 0) {
-                var hexValueExpr = NumericLiteral(SyntaxFactory.Literal(textForUser, parsedHexValue));
-                var checkedExpr = SyntaxFactory.CheckedExpression(
-                    CSSyntaxKind.UncheckedExpression,
-                    SyntaxFactory.CastExpression(
-                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.IntKeyword)),
-                        hexValueExpr));
-                return (null, checkedExpr);
+                // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
+                // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `unchecked((int)0x91234567)`
+                // This way the value looks pretty close to before and remains a compile time constant
+                if (parsedHexValue < 0) {
+                    var hexValueExpr = NumericLiteral(SyntaxFactory.Literal(textForUser, parsedHexValue));
+                    var checkedExpr = SyntaxFactory.CheckedExpression(
+                        CSSyntaxKind.UncheckedExpression,
+                        SyntaxFactory.CastExpression(
+                            SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.IntKeyword)),
+                            hexValueExpr));
+                    return (null, checkedExpr);
+                }
             }
         } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
             textForUser = "0b" + textForUser.Substring(2);
