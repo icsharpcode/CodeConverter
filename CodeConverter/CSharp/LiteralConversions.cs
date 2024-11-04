@@ -30,7 +30,7 @@ internal static class LiteralConversions
         var (maybeTextForUser, maybeFullExpression) = ConvertNumericLiteralValueText(textForUser ?? value.ToString(), value);
         if (maybeFullExpression != null) return maybeFullExpression;
         textForUser = maybeTextForUser;
-            
+
         switch (value)
         {
             case byte b:
@@ -59,16 +59,16 @@ internal static class LiteralConversions
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal(c));
             case DateTime dt:
             {
-                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-                return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
-            }
+                    var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                    return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
+                }
             default:
                 throw new ArgumentOutOfRangeException(nameof(value), value, null);
         }
     }
 
     private static LiteralExpressionSyntax NumericLiteral(SyntaxToken literal) => SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, literal);
-        
+
     /// <summary>
     /// See LiteralConversions.GetLiteralExpression
     /// These are all the literals where the type will already be correct from the literal declaration
@@ -149,22 +149,37 @@ internal static class LiteralConversions
             string hexValue = textForUser.Substring(2);
             textForUser = "0x" + hexValue;
 
-            // ulong/long/uint hex literals have suffixes, so we just handle ints
-            if (value is int) {
-                int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            bool replaceWithUncheckedExpr = false;
+            LiteralExpressionSyntax hexValueExpr = default;
+            CSSyntaxKind csSyntaxKind = CSSyntaxKind.None;
 
-                // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
-                // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `unchecked((int)0x91234567)`
-                // This way the value looks pretty close to before and remains a compile time constant
-                if (parsedHexValue < 0) {
-                    var hexValueExpr = NumericLiteral(SyntaxFactory.Literal(textForUser, parsedHexValue));
-                    var checkedExpr = SyntaxFactory.CheckedExpression(
-                        CSSyntaxKind.UncheckedExpression,
-                        SyntaxFactory.CastExpression(
-                            SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.IntKeyword)),
-                            hexValueExpr));
-                    return (null, checkedExpr);
+            if (value is long) {
+                long parsedHexValue = long.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                if (parsedHexValue < 0L) {
+                    hexValueExpr = NumericLiteral(SyntaxFactory.Literal(textForUser, parsedHexValue));
+                    csSyntaxKind = CSSyntaxKind.LongKeyword;
+                    replaceWithUncheckedExpr = true;
                 }
+            } else if (value is int) {
+                int parsedHexValue = int.Parse(hexValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                if (parsedHexValue < 0) {
+                    hexValueExpr = NumericLiteral(SyntaxFactory.Literal(textForUser, parsedHexValue));
+                    csSyntaxKind = CSSyntaxKind.IntKeyword;
+                    replaceWithUncheckedExpr = true;
+                }
+            }
+
+            // This is a very special case where for 8 digit hex strings, C# interprets them as unsigned ints, but VB interprets them as ints
+            // This can lead to a compile error if assigned to an int in VB. So in a case like 0x91234567, we generate `unchecked((int)0x91234567)`
+            // This way the value looks pretty close to before and remains a compile time constant
+            // The same applies to 16 digit hex strings that are converted to long
+            if (replaceWithUncheckedExpr) {
+                var checkedExpr = SyntaxFactory.CheckedExpression(
+                    CSSyntaxKind.UncheckedExpression,
+                    SyntaxFactory.CastExpression(
+                        SyntaxFactory.PredefinedType(SyntaxFactory.Token(csSyntaxKind)),
+                        hexValueExpr));
+                return (null, checkedExpr);
             }
         } else if (canBeBinaryOrHex && textForUser.StartsWith("&B", StringComparison.OrdinalIgnoreCase)) {
             textForUser = "0b" + textForUser.Substring(2);
@@ -175,17 +190,17 @@ internal static class LiteralConversions
         }
 
         if (value switch {
-                ulong _ => "UL",
-                long _ => "L",
-                uint _ => "U",
-                int _ => "",
-                ushort _ => "",
-                short _ => "",
-                double _ => "d",
-                float _ => "f",
-                decimal _ => "m",
-                _ => default
-            } is {} suffix ) {
+            ulong _ => "UL",
+            long _ => "L",
+            uint _ => "U",
+            int _ => "",
+            ushort _ => "",
+            short _ => "",
+            double _ => "d",
+            float _ => "f",
+            decimal _ => "m",
+            _ => default
+        } is { } suffix) {
             textForUser += suffix;
         }
 
