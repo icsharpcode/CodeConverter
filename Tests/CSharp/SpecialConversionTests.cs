@@ -220,20 +220,22 @@ public partial class Issue483
     }
 
     [Fact]
-    public async Task Issue1147_LargeNumericHexAndBinaryLiteralsAsync()
+    public async Task Issue1147_LargeNumericHexLiteralsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
             @"
 Public Class Issue1147
     Private Const LargeUInt As UInteger = &HFFFFFFFEUI
-    Private Const LargeULong As ULong = &HFFFFFFFFFFFFFFFEUL       
+    Private Const LargeULong As ULong = &HFFFFFFFFFFFFFFFEUL
+    Private Const LargeInt As Integer = &HFFFFFFFE
     Private Const LargeLong As Long = &HFFFFFFFFFFFFFFFEL
 End Class", @"
 public partial class Issue1147
 {
     private const uint LargeUInt = 0xFFFFFFFEU;
     private const ulong LargeULong = 0xFFFFFFFFFFFFFFFEUL;
-    private const long LargeLong = 0xFFFFFFFFFFFFFFFEL;
+    private const int LargeInt = unchecked((int)0xFFFFFFFE);
+    private const long LargeLong = unchecked((long)0xFFFFFFFFFFFFFFFE);
 }");
     }
 
