@@ -220,6 +220,25 @@ public partial class Issue483
     }
 
     [Fact]
+    public async Task Issue1147_LargeNumericHexAndBinaryLiteralsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"
+Public Class Issue1147
+    Private Const LargeUInt As UInteger = &HFFFFFFFEUI
+    Private Const LargeULong As ULong = &HFFFFFFFFFFFFFFFEUL       
+    Private Const LargeLong As Long = &HFFFFFFFFFFFFFFFEL
+End Class", @"
+public partial class Issue1147
+{
+    private const uint LargeUInt = 0xFFFFFFFEU;
+    private const ulong LargeULong = 0xFFFFFFFFFFFFFFFEUL;
+    private const long LargeLong = 0xFFFFFFFFFFFFFFFEL;
+}");
+    }
+
+
+    [Fact]
     public async Task TestConstCharacterConversionsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
