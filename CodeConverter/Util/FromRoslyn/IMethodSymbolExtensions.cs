@@ -28,7 +28,7 @@ internal static class IMethodSymbolExtensions
         }
 
         for (var i = 0; i < method.Parameters.Length; i++) {
-            if (!invoke.Parameters[i].Type.InheritsFromOrEquals(method.Parameters[i].Type)) {
+            if (!invoke.Parameters[i].Type.InheritsFromOrEquals(method.Parameters[i].Type, true)) {
                 return false;
             }
         }
