@@ -23,7 +23,7 @@ internal static class IMethodSymbolExtensions
             return false;
         }
 
-        if (!method.ReturnType.InheritsFromOrEquals(invoke.ReturnType)) {
+        if (!method.ReturnType.InheritsFromOrEquals(invoke.ReturnType, true)) {
             return false;
         }
 
