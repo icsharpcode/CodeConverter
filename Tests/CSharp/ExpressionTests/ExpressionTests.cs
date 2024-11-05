@@ -1451,6 +1451,7 @@ Public Class Issue1148
     Public Shared FuncBaseClass As Func(Of TestBaseObjClass) = AddressOf FunctionReturningClass
     Public Shared FuncInterface As Func(Of ITestObj) = AddressOf FunctionReturningClass
     Public Shared FuncInterfaceParam As Func(Of ITestObj, ITestObj) = AddressOf CastObj
+    Public Shared FuncClassParam As Func(Of TestObjClass, ITestObj) = AddressOf CastObj
 
     Public Shared Function FunctionReturningClass() As TestObjClass
         Return New TestObjClass()
@@ -1481,6 +1482,7 @@ public partial class Issue1148
     public static Func<TestBaseObjClass> FuncBaseClass = FunctionReturningClass;
     public static Func<ITestObj> FuncInterface = FunctionReturningClass;
     public static Func<ITestObj, ITestObj> FuncInterfaceParam = CastObj;
+    public static Func<TestObjClass, ITestObj> FuncClassParam = CastObj;
 
     public static TestObjClass FunctionReturningClass()
     {
