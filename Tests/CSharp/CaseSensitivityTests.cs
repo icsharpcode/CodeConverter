@@ -107,25 +107,25 @@ End Namespace
 ",
             @"
 using System;
-              
+
 namespace Issue1154
 {
-    [CaseSensitive1.Casesensitive1.TestDummyAttribute]
+    [CaseSensitive1.Casesensitive1.TestDummy]
     public partial class UpperLowerCase
     {
     }
-              
-    [Casesensitive2.CaseSensitive2.TestDummyAttribute]
+
+    [Casesensitive2.CaseSensitive2.TestDummy]
     public partial class LowerUpperCase
     {
     }
-              
+
     [CaseSensitive3.CaseSensitive3.TestDummy]
     public partial class SameCase
     {
     }
 }
-              
+
 namespace CaseSensitive1
 {
     public partial class Casesensitive1
@@ -135,7 +135,7 @@ namespace CaseSensitive1
         }
     }
 }
-              
+
 namespace Casesensitive2
 {
     public partial class CaseSensitive2
@@ -145,7 +145,7 @@ namespace Casesensitive2
         }
     }
 }
-              
+
 namespace CaseSensitive3
 {
     public partial class CaseSensitive3
