@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 using Xunit.Sdk;
+using System.Globalization;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 
@@ -28,6 +29,7 @@ public class ConverterTestBase
 
     public ConverterTestBase(string rootNamespace = null)
     {
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
         _rootNamespace = rootNamespace;
         var options = new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             .WithOptionExplicit(true)
