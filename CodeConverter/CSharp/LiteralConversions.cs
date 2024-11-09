@@ -59,9 +59,9 @@ internal static class LiteralConversions
                 return SyntaxFactory.LiteralExpression(CSSyntaxKind.CharacterLiteralExpression, SyntaxFactory.Literal(c));
             case DateTime dt:
             {
-                    var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-                    return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
-                }
+                var valueToOutput = dt.Date.Equals(dt) ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                return SyntaxFactory.ParseExpression("DateTime.Parse(\"" + valueToOutput + "\")");
+            }
             default:
                 throw new ArgumentOutOfRangeException(nameof(value), value, null);
         }
