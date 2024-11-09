@@ -229,7 +229,9 @@ internal class CommonConversions
 
         return syntax.ReplaceNodes(syntax.DescendantNodes().OfType<CSSyntax.IdentifierNameSyntax>(), (oldNode, _) =>
         {
-            var originalName = originalNames.FirstOrDefault(on => string.Equals(on, oldNode.ToString(), StringComparison.OrdinalIgnoreCase));
+            string oldNodeStr = oldNode.ToString();
+            var originalName = originalNames.FirstOrDefault(on => string.Equals(on, oldNodeStr, StringComparison.Ordinal)) ??
+                               originalNames.FirstOrDefault(on => string.Equals(on, oldNodeStr, StringComparison.OrdinalIgnoreCase));
             return originalName != null ? ValidSyntaxFactory.IdentifierName(originalName) : oldNode;
         });
     }
