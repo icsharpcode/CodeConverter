@@ -1441,6 +1441,76 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task Issue1148_AddressOfSignatureCompatibilityAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Imports System
+
+Public Class Issue1148
+    Public Shared FuncClass As Func(Of TestObjClass) = AddressOf FunctionReturningClass
+    Public Shared FuncBaseClass As Func(Of TestBaseObjClass) = AddressOf FunctionReturningClass
+    Public Shared FuncInterface As Func(Of ITestObj) = AddressOf FunctionReturningClass
+    Public Shared FuncInterfaceParam As Func(Of ITestObj, ITestObj) = AddressOf CastObj
+    Public Shared FuncClassParam As Func(Of TestObjClass, ITestObj) = AddressOf CastObj
+
+    Public Shared Function FunctionReturningClass() As TestObjClass
+        Return New TestObjClass()
+    End Function
+
+    Public Shared Function CastObj(obj As ITestObj) As TestObjClass
+        Return CType(obj, TestObjClass)
+    End Function
+
+End Class
+
+Public Class TestObjClass
+    Inherits TestBaseObjClass
+    Implements ITestObj
+End Class
+
+Public Class TestBaseObjClass
+End Class
+
+Public Interface ITestObj
+End Interface
+", @"
+using System;
+
+public partial class Issue1148
+{
+    public static Func<TestObjClass> FuncClass = FunctionReturningClass;
+    public static Func<TestBaseObjClass> FuncBaseClass = FunctionReturningClass;
+    public static Func<ITestObj> FuncInterface = FunctionReturningClass;
+    public static Func<ITestObj, ITestObj> FuncInterfaceParam = CastObj;
+    public static Func<TestObjClass, ITestObj> FuncClassParam = CastObj;
+
+    public static TestObjClass FunctionReturningClass()
+    {
+        return new TestObjClass();
+    }
+
+    public static TestObjClass CastObj(ITestObj obj)
+    {
+        return (TestObjClass)obj;
+    }
+
+}
+
+public partial class TestObjClass : TestBaseObjClass, ITestObj
+{
+}
+
+public partial class TestBaseObjClass
+{
+}
+
+public partial interface ITestObj
+{
+}
+");
+    }
+
+    [Fact]
     public async Task LambdaImmediatelyExecutedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue869
