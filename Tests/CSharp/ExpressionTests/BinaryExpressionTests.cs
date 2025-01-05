@@ -123,6 +123,30 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NullableDoubleArithmeticAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+               Dim TotalRead As Long = 1
+        Dim ContentLength As Long? = 2 '(It is supposed that TotalRead < ContentLength)
+        Dim percentage1 As Integer = Convert.ToInt32((TotalRead / ContentLength) * 100.0)
+        Dim percentage2 As Integer = Convert.ToInt32(TotalRead / ContentLength * 100.0)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        long TotalRead = 1L;
+        long? ContentLength = 2; // (It is supposed that TotalRead < ContentLength)
+        int percentage1 = Convert.ToInt32(TotalRead / (double?)ContentLength * 100.0d);
+        int percentage2 = Convert.ToInt32(TotalRead / (double?)ContentLength * 100.0d);
+    }
+}");
+    }
+
+    [Fact]
     public async Task ImplicitConversionsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

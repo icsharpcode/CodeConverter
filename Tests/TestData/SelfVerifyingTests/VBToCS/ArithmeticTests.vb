@@ -11,6 +11,14 @@ Public Class ArithmeticTests
     End Sub
 
     <Fact>
+    Public Sub TestNullableFloatingPointDivision()
+        Dim TotalRead As Long = 1
+        Dim ContentLength As Long? = 2 '(It is supposed that TotalRead < ContentLength)
+        Dim percentage As Integer = Convert.ToInt32((TotalRead / ContentLength) * 100.0)
+        Assert.Equal(50, percentage)
+    End Sub
+
+    <Fact>
     Public Sub TestIntegerDivisionOfIntegers()
         Dim x = 7 \ 2
         Assert.Equal(x, 3)
