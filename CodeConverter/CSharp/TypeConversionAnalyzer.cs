@@ -99,7 +99,7 @@ internal class TypeConversionAnalyzer
                 csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, enumUnderlyingType);
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, enumUnderlyingType, vbConvertedType);
             case TypeConversionKind.LiteralSuffix:
-                if (vbNode is VBSyntax.LiteralExpressionSyntax { Token: { Value: { } val, Text: { } text } } && LiteralConversions.GetLiteralExpression(val, text, vbConvertedType) is { } csLiteral) {
+                if (csNode is CSSyntax.LiteralExpressionSyntax && vbNode is VBSyntax.LiteralExpressionSyntax { Token: { Value: { } val, Text: { } text } } && LiteralConversions.GetLiteralExpression(val, text, vbConvertedType) is { } csLiteral) {
                     return csLiteral;
                 }
                 return csNode;
