@@ -98,6 +98,11 @@ internal class TypeConversionAnalyzer
                 var enumUnderlyingType = ((INamedTypeSymbol) vbType).EnumUnderlyingType;
                 csNode = AddTypeConversion(vbNode, csNode, TypeConversionKind.NonDestructiveCast, addParenthesisIfNeeded, vbType, enumUnderlyingType);
                 return AddTypeConversion(vbNode, csNode, TypeConversionKind.Conversion, addParenthesisIfNeeded, enumUnderlyingType, vbConvertedType);
+            case TypeConversionKind.LiteralSuffix:
+                if (csNode is CSSyntax.LiteralExpressionSyntax && vbNode is VBSyntax.LiteralExpressionSyntax { Token: { Value: { } val, Text: { } text } } && LiteralConversions.GetLiteralExpression(val, text, vbConvertedType) is { } csLiteral) {
+                    return csLiteral;
+                }
+                return csNode;
             case TypeConversionKind.Unknown:
             case TypeConversionKind.Identity:
                 return addParenthesisIfNeeded ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode) : csNode;
@@ -327,7 +332,7 @@ internal class TypeConversionAnalyzer
             // e.g. When VB "&" changes to C# "+", there are lots more overloads available that implicit casts could match.
             // e.g. sbyte * ulong uses the decimal * operator in VB. In C# it's ambiguous - see ExpressionTests.vb "TestMul".
             typeConversionKind =
-                isConst && IsImplicitConstantConversion(vbNode) || csUnderlyingConversion.IsIdentity || !sourceForced && IsExactTypeNumericLiteral(vbNode, underlyingVbConvertedType) ? TypeConversionKind.Identity :
+                isConst && IsImplicitConstantConversion(vbNode) || csUnderlyingConversion.IsIdentity || !sourceForced && IsExactTypeNumericLiteral(vbNode, underlyingVbConvertedType) ? TypeConversionKind.LiteralSuffix :
                 csUnderlyingConversion.IsImplicit || underlyingVbType.IsNumericType() ? TypeConversionKind.NonDestructiveCast
                 : TypeConversionKind.Conversion;
             return true;
@@ -502,7 +507,8 @@ internal class TypeConversionAnalyzer
         NullableBool,
         StringToCharArray,
         DelegateConstructor,
-        FractionalNumberRoundThenCast
+        FractionalNumberRoundThenCast,
+        LiteralSuffix
     }
 
     public static bool ConvertStringToCharLiteral(VBSyntax.ExpressionSyntax node,
