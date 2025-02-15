@@ -22,6 +22,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Improved literal suffix handling [#1161](https://github.com/icsharpcode/CodeConverter/issues/1161)
+* Nullable value casting fixes [#1160](https://github.com/icsharpcode/CodeConverter/issues/1160)
+* AddressOf now wraps compatible signatures in lambdas [#1153](https://github.com/icsharpcode/CodeConverter/issues/1153)
+* Fixed case-sensitive namespace/type handling [#1155](https://github.com/icsharpcode/CodeConverter/issues/1155)
+* Improved conversion of large uint/ulong/long hex literals [#1147](https://github.com/icsharpcode/CodeConverter/issues/1147)
+* Convert `Select Case [object]` using `Operators.ConditionalCompareObject...` [#1128](https://github.com/icsharpcode/CodeConverter/issues/1128)
+* Small performance improvement
 
 ### C# -> VB
 
