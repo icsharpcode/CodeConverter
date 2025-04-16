@@ -54,7 +54,7 @@
         "ajv": "^8.17.1",
         "cross-env": "^7.0.3",
         "eslint-config-react-app": "^7.0.1",
-        "http-proxy-middleware": "^3.0.2",
+        "http-proxy-middleware": "^3.0.5",
         "jquery": "^3.7.1",
         "popper.js": "^1.16.1",
         "react-scripts": "^5.0.1",
