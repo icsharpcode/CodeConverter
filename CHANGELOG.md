@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Xor operator overloads now converted [#1182](htts://github.com/icsharpcode/CodeConverter/issues/1182)
 
 ### C# -> VB
 
