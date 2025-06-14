@@ -191,4 +191,31 @@ End Class");
         Assert.Contains("_failedMemberConversionMarker2", convertedCode);
         Assert.Contains("Public Shared Operator Like(s As String,", convertedCode);
     }
+
+        [Fact]
+
+    public async Task XorOperatorOverloadConversionAsync()
+
+    {
+
+        await TestConversionVisualBasicToCSharpAsync(
+
+            @"
+Public Class MyType
+    Public Shared Operator Xor(left As MyType, right As MyType) As MyType
+        Throw New Global.System.NotSupportedException(""Not supported"")
+    End Operator
+End Class",
+
+            @"using System;
+
+public partial class MyType
+{
+    public static MyType operator ^(MyType left, MyType right)
+    {
+        throw new NotSupportedException(""Not supported"");
+    }
+}");
+
+    }
 }

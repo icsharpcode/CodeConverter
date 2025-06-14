@@ -243,6 +243,8 @@ public static class SyntaxKindExtensions
                 return SyntaxKind.AmpersandToken;
             case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.OrKeyword:
                 return SyntaxKind.BarToken;
+            case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.XorKeyword:
+                return SyntaxKind.CaretToken;
             //
             case Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.AssemblyKeyword:
                 return SyntaxKind.AssemblyKeyword;
