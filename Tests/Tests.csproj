@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net472;net8.0</TargetFrameworks>
+    <TargetFramework>net472</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
@@ -42,7 +42,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.1.0" />
     <PackageReference Include="Microsoft.Build" Version="17.4.0" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.10.4" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.4.0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Web" />
