@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>net472;net8.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
     <OutputType>Library</OutputType>
     <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
