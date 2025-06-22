@@ -1,3 +1,4 @@
+using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -130,5 +131,51 @@ internal static class ExpressionSyntaxExtensions
 
             return null;
         }
+    }
+
+    public static CSSyntax.ArgumentListSyntax CreateDelegatingArgList(this CSSyntax.ParameterListSyntax parameterList)
+    {
+        var refKinds = parameterList.Parameters.Select(GetSingleModifier).ToArray<CS.SyntaxKind?>();
+        return parameterList.Parameters.Select(p => ValidSyntaxFactory.IdentifierName(p.Identifier)).CreateCsArgList(refKinds);
+    }
+
+    private static CS.SyntaxKind? GetSingleModifier(CSSyntax.ParameterSyntax p)
+    {
+        var argKinds = new CS.SyntaxKind?[] { CS.SyntaxKind.RefKeyword, CS.SyntaxKind.OutKeyword, CS.SyntaxKind.InKeyword };
+        return p.Modifiers.Select(Microsoft.CodeAnalysis.CSharp.CSharpExtensions.Kind)
+            .Select<CS.SyntaxKind, CS.SyntaxKind?>(k => k)
+            .FirstOrDefault(argKinds.Contains);
+    }
+
+    public static CSSyntax.ArrowExpressionClauseSyntax GetDelegatingClause(CSSyntax.ParameterListSyntax parameterList, SyntaxToken csIdentifier,
+        bool isSetAccessor)
+    {
+        if (parameterList != null && isSetAccessor)
+            throw new InvalidOperationException("Parameterized setters shouldn't have a delegating clause. " +
+                                                $"\r\nInvalid arguments: {nameof(isSetAccessor)} = {true}," +
+                                                $" {nameof(parameterList)} has {parameterList.Parameters.Count} parameters");
+
+        var simpleMemberAccess = GetSimpleMemberAccess(csIdentifier);
+
+        var expression = parameterList != null
+            ? (CSSyntax.ExpressionSyntax)CS.SyntaxFactory.InvocationExpression(simpleMemberAccess, parameterList.CreateDelegatingArgList())
+            : simpleMemberAccess;
+
+        var arrowClauseExpression = isSetAccessor
+            ? CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, simpleMemberAccess,
+                ValidSyntaxFactory.IdentifierName("value"))
+            : expression;
+
+        var arrowClause = CS.SyntaxFactory.ArrowExpressionClause(arrowClauseExpression);
+        return arrowClause;
+    }
+
+    public static CSSyntax.MemberAccessExpressionSyntax GetSimpleMemberAccess(this SyntaxToken csIdentifier)
+    {
+        var simpleMemberAccess = CS.SyntaxFactory.MemberAccessExpression(
+            CS.SyntaxKind.SimpleMemberAccessExpression, CS.SyntaxFactory.ThisExpression(),
+            CS.SyntaxFactory.Token(CS.SyntaxKind.DotToken), ValidSyntaxFactory.IdentifierName(csIdentifier));
+
+        return simpleMemberAccess;
     }
 }

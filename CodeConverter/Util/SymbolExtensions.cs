@@ -376,6 +376,29 @@ internal static class SymbolExtensions
     {
         return symbol is IMethodSymbol ms && (ms.IsGenericMethod || ms.IsReducedTypeParameterMethod());
     }
+    public static bool IsNonPublicInterfaceImplementation(this ISymbol declaredSymbol)
+    {
+        return declaredSymbol switch {
+            IMethodSymbol methodSymbol => methodSymbol.DeclaredAccessibility != Accessibility.Public &&
+                                          methodSymbol.ExplicitInterfaceImplementations.Any(),
+            IPropertySymbol propertySymbol => propertySymbol.DeclaredAccessibility != Accessibility.Public &&
+                                              propertySymbol.ExplicitInterfaceImplementations.Any(),
+            _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
+        };
+    }
+
+    public static bool IsRenamedInterfaceMember(this ISymbol declaredSymbol,
+        SyntaxToken directlyConvertedCsIdentifier, IEnumerable<ISymbol> explicitInterfaceImplementations)
+    {
+        bool IsRenamed(ISymbol csIdentifier) =>
+            declaredSymbol switch {
+                IMethodSymbol methodSymbol => !StringComparer.OrdinalIgnoreCase.Equals(directlyConvertedCsIdentifier.Value, csIdentifier.Name) && methodSymbol.ExplicitInterfaceImplementations.Any(),
+                IPropertySymbol propertySymbol => !StringComparer.OrdinalIgnoreCase.Equals(directlyConvertedCsIdentifier.Value, csIdentifier.Name) && propertySymbol.ExplicitInterfaceImplementations.Any(),
+                _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
+            };
+
+        return explicitInterfaceImplementations.Any(IsRenamed);
+    }
 }
 
 public enum SymbolVisibility
