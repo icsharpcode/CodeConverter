@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 using Xunit.Sdk;
 using System.Globalization;
+using VerifyXunit;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 
@@ -104,6 +105,16 @@ End Sub";
     /// and in future will be used to decide whether to check if the input/output compiles
     /// By default tests run a second time with a numbered comment added to each line (that doesn't already have a comment) and checks the comments come out in the same order. If the order significantly changes, or there are input lines where a line comment is invalid (e.g. multiline xml literal) you can use <paramref name="incompatibleWithAutomatedCommentTesting"/> to skip the check.
     /// </summary>
+    public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode)
+    {
+        {
+            await Task.WhenAll(
+                Verifier.Verify(visualBasicCode, extension: ".vb"),
+                Verifier.Verify(expectedCsharpCode, extension: ".cs")
+            );
+        }
+    }
+
     public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode,
         bool expectSurroundingBlock = false, bool missingSemanticInfo = false,
         bool incompatibleWithAutomatedCommentTesting = false)
