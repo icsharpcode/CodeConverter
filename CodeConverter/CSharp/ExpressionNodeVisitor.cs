@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
 {
     private static readonly Type ConvertType = typeof(Conversions);
-    public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
+    private CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor => CommonConversions.TriviaConvertingExpressionVisitor;
     private readonly SemanticModel _semanticModel;
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly IOperatorConverter _operatorConverter;
@@ -36,10 +36,10 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext, VisualBasicNullableExpressionsConverter visualBasicNullableTypesConverter)
     {
         _semanticModel = semanticModel;
-        CommonConversions = commonConversions;;
+        CommonConversions = commonConversions;
+        commonConversions.TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
         _lambdaConverter = new LambdaConverter(commonConversions, semanticModel);
         _visualBasicEqualityComparison = visualBasicEqualityComparison;
-        TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
         _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
