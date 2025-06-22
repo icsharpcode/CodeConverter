@@ -80,6 +80,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node) => _xmlExpressionConverter.ConvertXmlNameAsync(node);
     public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node) => await _argumentConverter.ConvertSimpleArgumentAsync(node);
     public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax entryNode) => await _binaryExpressionConverter.ConvertBinaryExpressionAsync(entryNode);
+    public override Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node) => ConvertSingleLineLambdaAsync(node);
+    public override Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node) => ConvertMultiLineLambdaAsync(node);
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
@@ -511,7 +513,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     }
 
 
-    public override async Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
+
+    private async Task<CSharpSyntaxNode> ConvertSingleLineLambdaAsync(VBSyntax.SingleLineLambdaExpressionSyntax node)
     {
         var originalIsWithinQuery = TriviaConvertingExpressionVisitor.IsWithinQuery;
         TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
@@ -539,7 +542,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         }
     }
 
-    public override async Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node)
+
+    private async Task<CSharpSyntaxNode> ConvertMultiLineLambdaAsync(VBSyntax.MultiLineLambdaExpressionSyntax node)
     {
         var originalIsWithinQuery = TriviaConvertingExpressionVisitor.IsWithinQuery;
         TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
