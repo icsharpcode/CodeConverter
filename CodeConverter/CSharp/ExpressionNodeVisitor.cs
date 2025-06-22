@@ -3,6 +3,7 @@ using System.Data;
 using System.Globalization;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
@@ -37,6 +38,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly XmlExpressionNodeVisitor _xmlExpressionNodeVisitor;
     private readonly NameExpressionNodeVisitor _nameExpressionNodeVisitor;
+    private readonly ArgumentConverter _argumentConverter;
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
@@ -50,6 +52,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
+        _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
         _xmlExpressionNodeVisitor = new XmlExpressionNodeVisitor(xmlImportContext, extraUsingDirectives, TriviaConvertingExpressionVisitor);
         _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, TriviaConvertingExpressionVisitor);
         _visualBasicNullableTypesConverter = visualBasicNullableTypesConverter;
@@ -90,6 +93,11 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public SemanticModel SemanticModel
     {
         get { return _semanticModel; }
+    }
+
+    public ArgumentConverter ArgumentConverter
+    {
+        get { return _argumentConverter; }
     }
 
     public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
@@ -227,63 +235,15 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override async Task<CSharpSyntaxNode> VisitArgumentList(VBasic.Syntax.ArgumentListSyntax node)
     {
         if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
-            return CommonConversions.CreateAttributeArgumentList(await node.Arguments.SelectAsync(ToAttributeArgumentAsync));
+            return CommonConversions.CreateAttributeArgumentList(await node.Arguments.SelectAsync(ArgumentConverter.ToAttributeArgumentAsync));
         }
-        var argumentSyntaxes = await ConvertArgumentsAsync(node);
+        var argumentSyntaxes = await ArgumentConverter.ConvertArgumentsAsync(node);
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
     }
 
     public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node)
     {
-        var argList = (VBasic.Syntax.ArgumentListSyntax)node.Parent;
-        var invocation = argList.Parent;
-        if (invocation is VBasic.Syntax.ArrayCreationExpressionSyntax)
-            return await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
-        var symbol = GetInvocationSymbol(invocation);
-        SyntaxToken token = default(SyntaxToken);
-        var convertedArgExpression = (await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).SkipIntoParens();
-        var typeConversionAnalyzer = CommonConversions.TypeConversionAnalyzer;
-        var baseSymbol = symbol?.OriginalDefinition.GetBaseSymbol();
-        var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(baseSymbol) ?? symbol)?.GetParameters();
-        if (possibleParameters.HasValue) {
-            var refType = _semanticModel.GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
-            token = CommonConversions.GetRefToken(refKind);
-            if (refType != SemanticModelExtensions.RefConversion.Inline) {
-                convertedArgExpression = HoistByRefDeclaration(node, convertedArgExpression, refType, argName, refKind);
-            } else {
-                convertedArgExpression = typeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression, defaultToCast: refKind != RefKind.None);
-            }
-        } else {
-            convertedArgExpression = typeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression);
-        }
-
-        var nameColon = node.IsNamed ? SyntaxFactory.NameColon(await node.NameColonEquals.Name.AcceptAsync<IdentifierNameSyntax>(TriviaConvertingExpressionVisitor)) : null;
-        return SyntaxFactory.Argument(nameColon, token, convertedArgExpression);
-    }
-
-    private ExpressionSyntax HoistByRefDeclaration(VBSyntax.SimpleArgumentSyntax node, ExpressionSyntax refLValue, SemanticModelExtensions.RefConversion refType, string argName, RefKind refKind)
-    {
-        string prefix = $"arg{argName}";
-        var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
-        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
-        var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
-
-        if (refLValue is ElementAccessExpressionSyntax eae) {
-            //Hoist out the container so we can assign back to the same one after (like VB does)
-            var tmpContainer = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
-            refLValue = eae.WithExpression(tmpContainer.IdentifierName);
-        }
-
-        var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, refLValue, defaultToCast: refKind != RefKind.None);
-
-        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
-
-        if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
-            var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-            _typeContext.PerScopeState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
-        }
-
-        return local.IdentifierName;
+        return await ArgumentConverter.ConvertSimpleArgument(node);
     }
 
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
@@ -323,7 +283,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var objectCreationExpressionSyntax = SyntaxFactory.ObjectCreationExpression(
             await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),
             // VB can omit empty arg lists:
-            await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList),
+            await ArgumentConverter.ConvertArgumentListOrEmptyAsync(node, node.ArgumentList),
             null
         );
         async Task<InitializerExpressionSyntax> ConvertInitializer() => await node.Initializer.AcceptAsync<InitializerExpressionSyntax>(TriviaConvertingExpressionVisitor);
@@ -988,207 +948,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             : null;
     }
 
-    private ISymbol GetInvocationSymbol(SyntaxNode invocation)
-    {
-        var symbol = invocation.TypeSwitch(
-            (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
-            (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
-            (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
-            (VBSyntax.MidExpressionSyntax _) => CommonConversions.KnownTypes.VbCompilerStringType?.GetMembers("MidStmtStr").FirstOrDefault(),
-            _ => throw new NotSupportedException());
-        return symbol;
-    }
-
     private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
     {
         return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute);
     }
-
-    private async Task<IEnumerable<ArgumentSyntax>> ConvertArgumentsAsync(VBasic.Syntax.ArgumentListSyntax node)
-    {
-        ISymbol invocationSymbol = GetInvocationSymbol(node.Parent);
-        var forceNamedParameters = false;
-        var invocationHasOverloads = invocationSymbol.HasOverloads();
-
-        var processedParameters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
-        return argumentSyntaxs.Concat(GetAdditionalRequiredArgs(node.Arguments, processedParameters, invocationSymbol, invocationHasOverloads));
-
-        async Task<ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax arg, int argIndex)
-        {
-            var argName = arg is VBSyntax.SimpleArgumentSyntax { IsNamed: true } namedArg ? namedArg.NameColonEquals.Name.Identifier.Text : null;
-            var parameterSymbol = invocationSymbol?.GetParameters().GetArgument(argName, argIndex);
-            var convertedArg = await ConvertArgForParameter(arg, parameterSymbol);
-
-            if (convertedArg is not null && parameterSymbol is not null) {
-                processedParameters.Add(parameterSymbol.Name);
-            }
-
-            return convertedArg;
-        }
-
-        async Task<ArgumentSyntax> ConvertArgForParameter(VBSyntax.ArgumentSyntax arg, IParameterSymbol parameterSymbol)
-        {
-            if (arg.IsOmitted) {
-                if (invocationSymbol != null && !invocationHasOverloads) {
-                    forceNamedParameters = true;
-                    return null; //Prefer to skip omitted and use named parameters when the symbol has only one overload
-                }
-                return ConvertOmittedArgument(parameterSymbol);
-            }
-
-            var argSyntax = await arg.AcceptAsync<ArgumentSyntax>(TriviaConvertingExpressionVisitor);
-            if (forceNamedParameters && !arg.IsNamed && parameterSymbol != null) {
-                return argSyntax.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(parameterSymbol.Name))));
-            }
-
-            return argSyntax;
-        }
-
-        ArgumentSyntax ConvertOmittedArgument(IParameterSymbol parameter)
-        {
-            if (parameter == null) {
-                return SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression));
-            }
-
-            var csRefKind = CommonConversions.GetCsRefKind(parameter);
-            return csRefKind != RefKind.None
-                ? CreateOptionalRefArg(parameter, csRefKind)
-                : SyntaxFactory.Argument(CommonConversions.Literal(parameter.ExplicitDefaultValue));
-        }
-    }
-
-    private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(
-        IEnumerable<VBSyntax.ArgumentSyntax> arguments,
-        ISymbol invocationSymbol)
-    {
-        var invocationHasOverloads = invocationSymbol.HasOverloads();
-        return GetAdditionalRequiredArgs(arguments, processedParametersNames: null, invocationSymbol, invocationHasOverloads);
-    }
-
-    private IEnumerable<ArgumentSyntax> GetAdditionalRequiredArgs(
-        IEnumerable<VBSyntax.ArgumentSyntax> arguments,
-        ICollection<string> processedParametersNames,
-        ISymbol invocationSymbol,
-        bool invocationHasOverloads)
-    {
-        if (invocationSymbol is null) {
-            yield break;
-        }
-
-        var invocationHasOmittedArgs = arguments.Any(t => t.IsOmitted);
-        var expandOptionalArgs = invocationHasOmittedArgs && invocationHasOverloads;
-        var missingArgs = invocationSymbol.GetParameters().Where(t => processedParametersNames is null || !processedParametersNames.Contains(t.Name));
-        var requiresCompareMethod = _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive && RequiresStringCompareMethodToBeAppended(invocationSymbol);
-
-        foreach (var parameterSymbol in missingArgs) {
-            var extraArg = CreateExtraArgOrNull(parameterSymbol, requiresCompareMethod, expandOptionalArgs);
-            if (extraArg != null) {
-                yield return extraArg;
-            }
-        }
-    }
-
-    private ArgumentSyntax CreateExtraArgOrNull(IParameterSymbol p, bool requiresCompareMethod, bool expandOptionalArgs)
-    {
-        var csRefKind = CommonConversions.GetCsRefKind(p);
-        if (csRefKind != RefKind.None) {
-            return CreateOptionalRefArg(p, csRefKind);
-        }
-
-        if (requiresCompareMethod && p.Type.GetFullMetadataName() == "Microsoft.VisualBasic.CompareMethod") {
-            return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, _visualBasicEqualityComparison.CompareMethodExpression);
-        }
-
-        if (expandOptionalArgs && p.HasExplicitDefaultValue) {
-            return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, RefKind.None, CommonConversions.Literal(p.ExplicitDefaultValue));
-        }
-
-        return null;
-    }
-
-    private ArgumentSyntax CreateOptionalRefArg(IParameterSymbol p, RefKind refKind)
-    {
-        string prefix = $"arg{p.Name}";
-        var type = CommonConversions.GetTypeSyntax(p.Type);
-        ExpressionSyntax initializer;
-        if (p.HasExplicitDefaultValue) {
-            initializer = CommonConversions.Literal(p.ExplicitDefaultValue);
-        } else if (HasOptionalAttribute(p)) {
-            if (TryGetDefaultParameterValueAttributeValue(p, out var defaultValue)) {
-                initializer = CommonConversions.Literal(defaultValue);
-            } else {
-                initializer = SyntaxFactory.DefaultExpression(type);
-            }
-        } else {
-            //invalid VB.NET code
-            return null;
-        }
-        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, initializer, type));
-        return (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.Name, refKind, local.IdentifierName);
-
-        bool HasOptionalAttribute(IParameterSymbol p)
-        {
-            var optionalAttribute = CommonConversions.KnownTypes.OptionalAttribute;
-            if (optionalAttribute == null) {
-                return false;
-            }
-
-            return p.GetAttributes().Any(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, optionalAttribute));
-        }
-
-        bool TryGetDefaultParameterValueAttributeValue(IParameterSymbol p, out object defaultValue)
-        {
-            defaultValue = null;
-
-            var defaultParameterValueAttribute = CommonConversions.KnownTypes.DefaultParameterValueAttribute;
-            if (defaultParameterValueAttribute == null) {
-                return false;
-            }
-
-            var attributeData = p.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.IncludeNullability.Equals(a.AttributeClass, defaultParameterValueAttribute));
-            if (attributeData == null) {
-                return false;
-            }
-
-            if (attributeData.ConstructorArguments.Length == 0) {
-                return false;
-            }
-
-            defaultValue = attributeData.ConstructorArguments.First().Value;
-            return true;
-        }
-    }
-
-    private async Task<AttributeArgumentSyntax> ToAttributeArgumentAsync(VBasic.Syntax.ArgumentSyntax arg)
-    {
-        if (!(arg is VBasic.Syntax.SimpleArgumentSyntax))
-            throw new NotSupportedException();
-        var a = (VBasic.Syntax.SimpleArgumentSyntax)arg;
-        var attr = SyntaxFactory.AttributeArgument(await a.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
-        if (a.IsNamed) {
-            attr = attr.WithNameEquals(SyntaxFactory.NameEquals(await a.NameColonEquals.Name.AcceptAsync<IdentifierNameSyntax>(TriviaConvertingExpressionVisitor)));
-        }
-        return attr;
-    }
-
-    private async Task<ArgumentListSyntax> ConvertArgumentListOrEmptyAsync(SyntaxNode node, VBSyntax.ArgumentListSyntax argumentList)
-    {
-        return await argumentList.AcceptAsync<ArgumentListSyntax>(TriviaConvertingExpressionVisitor) ?? CreateArgList(_semanticModel.GetSymbolInfo(node).Symbol);
-    }
-
-    private ArgumentListSyntax CreateArgList(ISymbol invocationSymbol)
-    {
-        return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
-            GetAdditionalRequiredArgs(Array.Empty<VBSyntax.ArgumentSyntax>(), invocationSymbol))
-        );
-    }
-
-
-
-    private static bool RequiresStringCompareMethodToBeAppended(ISymbol symbol) =>
-        symbol?.ContainingType.Name == nameof(Strings) &&
-        symbol.ContainingType.ContainingNamespace.Name == nameof(Microsoft.VisualBasic) &&
-        symbol.ContainingType.ContainingNamespace.ContainingNamespace.Name == nameof(Microsoft) &&
-        symbol.Name is "InStr" or "InStrRev" or "Replace" or "Split" or "StrComp";
 }
