@@ -33,19 +33,19 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly QueryConverter _queryConverter;
     private readonly Lazy<IReadOnlyDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
     private readonly LambdaConverter _lambdaConverter;
-    private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope = new();
     private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly XmlExpressionConverter _xmlExpressionConverter;
     private readonly NameExpressionNodeVisitor _nameExpressionNodeVisitor;
     private readonly ArgumentConverter _argumentConverter;
+    private readonly BinaryExpressionConverter _binaryExpressionConverter;
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
         HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext, VisualBasicNullableExpressionsConverter visualBasicNullableTypesConverter)
     {
-        CommonConversions = commonConversions;
         _semanticModel = semanticModel;
+        CommonConversions = commonConversions;;
         _lambdaConverter = new LambdaConverter(commonConversions, semanticModel);
         _visualBasicEqualityComparison = visualBasicEqualityComparison;
         TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
@@ -57,6 +57,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor);
         _visualBasicNullableTypesConverter = visualBasicNullableTypesConverter;
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
+        _binaryExpressionConverter = new BinaryExpressionConverter(semanticModel, _operatorConverter, visualBasicEqualityComparison, visualBasicNullableTypesConverter, commonConversions);
         // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
         _convertMethodsLookupByReturnType =
             new Lazy<IReadOnlyDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
@@ -118,6 +119,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override Task<CSharpSyntaxNode> VisitXmlBracketedName(VBSyntax.XmlBracketedNameSyntax node) => _xmlExpressionConverter.ConvertXmlBracketedNameAsync(node);
     public override Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node) => _xmlExpressionConverter.ConvertXmlNameAsync(node);
     public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node) => await _argumentConverter.ConvertSimpleArgumentAsync(node);
+    public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax entryNode) => await _binaryExpressionConverter.ConvertBinaryExpressionAsync(entryNode);
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
@@ -548,96 +550,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         return expr;
     }
 
-    public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax entryNode)
-    {
-        // Walk down the syntax tree for deeply nested binary expressions to avoid stack overflow
-        // e.g. 3 + 4 + 5 + ...
-        // Test "DeeplyNestedBinaryExpressionShouldNotStackOverflowAsync()" skipped because it's too slow
-
-        ExpressionSyntax csLhs = null;
-        int levelsToConvert = 0;
-        VBSyntax.BinaryExpressionSyntax currentNode = entryNode;
-
-        // Walk down the nested levels to count them
-        for (var nextNode = entryNode; nextNode != null; currentNode = nextNode, nextNode = currentNode.Left as VBSyntax.BinaryExpressionSyntax, levelsToConvert++) {
-            // Don't go beyond a rewritten operator because that code has many paths that can call VisitBinaryExpression. Passing csLhs through all of that would harm the code quality more than it's worth to help that edge case.
-            if (await RewriteBinaryOperatorOrNullAsync(nextNode) is { } operatorNode) {
-                csLhs = operatorNode;
-                break;
-            }
-        }
-
-        // Walk back up the same levels converting as we go.
-        for (; levelsToConvert > 0; currentNode = currentNode!.Parent as VBSyntax.BinaryExpressionSyntax, levelsToConvert--) {
-            csLhs = (ExpressionSyntax)await ConvertBinaryExpressionAsync(currentNode, csLhs);
-        }
-
-        return csLhs;
-    }
-
-    private async Task<CSharpSyntaxNode> ConvertBinaryExpressionAsync(VBasic.Syntax.BinaryExpressionSyntax node, ExpressionSyntax lhs = null, ExpressionSyntax rhs = null)
-    {
-        lhs ??= await node.Left.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        rhs ??= await node.Right.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-
-        var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
-        var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-
-        ITypeSymbol forceLhsTargetType = null;
-        bool omitRightConversion = false;
-        bool omitConversion = false;
-        if (lhsTypeInfo.Type != null && rhsTypeInfo.Type != null)
-        {
-            if (node.IsKind(VBasic.SyntaxKind.ConcatenateExpression) && 
-                !lhsTypeInfo.Type.IsEnumType() && !rhsTypeInfo.Type.IsEnumType() && 
-                !lhsTypeInfo.Type.IsDateType() && !rhsTypeInfo.Type.IsDateType())
-            {
-                omitRightConversion = true;
-                omitConversion = lhsTypeInfo.Type.SpecialType == SpecialType.System_String ||
-                                 rhsTypeInfo.Type.SpecialType == SpecialType.System_String;
-                if (lhsTypeInfo.ConvertedType.SpecialType != SpecialType.System_String) {
-                    forceLhsTargetType = CommonConversions.KnownTypes.String;
-                }
-            }
-        }
-
-        var objectEqualityType = _visualBasicEqualityComparison.GetObjectEqualityType(node, lhsTypeInfo, rhsTypeInfo);
-
-        switch (objectEqualityType) {
-            case VisualBasicEqualityComparison.RequiredType.StringOnly:
-                if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                    rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                    _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
-                    return visitBinaryExpression;
-                }
-                (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, false, node.Right, rhs, rhsTypeInfo, false);
-                omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
-                break;
-            case VisualBasicEqualityComparison.RequiredType.Object:
-                return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(lhs, rhs, ComparisonKind.Equals, node.IsKind(VBasic.SyntaxKind.NotEqualsExpression));
-        }
-
-        var lhsTypeIgnoringNullable = lhsTypeInfo.Type.GetNullableUnderlyingType() ?? lhsTypeInfo.Type;
-        var rhsTypeIgnoringNullable = rhsTypeInfo.Type.GetNullableUnderlyingType() ?? rhsTypeInfo.Type;
-        omitConversion |= lhsTypeIgnoringNullable != null && rhsTypeIgnoringNullable != null &&
-                          lhsTypeIgnoringNullable.IsEnumType() && SymbolEqualityComparer.Default.Equals(lhsTypeIgnoringNullable, rhsTypeIgnoringNullable)
-                          && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
-                          && forceLhsTargetType == null;
-        lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
-        rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
-
-        var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
-        var op = SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
-
-        var csBinExp = SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-        var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
-        return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
-    }
-
-
-
-    private async Task<ExpressionSyntax> RewriteBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node) =>
-        await _operatorConverter.ConvertRewrittenBinaryOperatorOrNullAsync(node, TriviaConvertingExpressionVisitor.IsWithinQuery);
 
     public override async Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node)
     {
@@ -939,21 +851,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     SyntaxFactory.SingletonSeparatedList(
                         SyntaxFactory.Argument(argExpression)))
             );
-    }
-
-    private ExpressionSyntax GetConvertMethodForKeywordOrNull(SyntaxNode type)
-    {
-        var targetType = _semanticModel.GetTypeInfo(type).Type;
-        return GetConvertMethodForKeywordOrNull(targetType);
-    }
-
-    private ExpressionSyntax GetConvertMethodForKeywordOrNull(ITypeSymbol targetType)
-    {
-        _extraUsingDirectives.Add(ConvertType.Namespace);
-        return targetType != null &&
-               _convertMethodsLookupByReturnType.Value.TryGetValue(targetType, out var convertMethodName)
-            ? SyntaxFactory.ParseExpression(convertMethodName)
-            : null;
     }
 
     private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
