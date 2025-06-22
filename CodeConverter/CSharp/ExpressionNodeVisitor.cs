@@ -36,7 +36,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope = new();
     private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
-    private readonly XmlExpressionNodeVisitor _xmlExpressionNodeVisitor;
+    private readonly XmlExpressionConverter _xmlExpressionConverter;
     private readonly NameExpressionNodeVisitor _nameExpressionNodeVisitor;
     private readonly ArgumentConverter _argumentConverter;
 
@@ -53,8 +53,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
         _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
-        _xmlExpressionNodeVisitor = new XmlExpressionNodeVisitor(xmlImportContext, extraUsingDirectives, TriviaConvertingExpressionVisitor);
-        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, TriviaConvertingExpressionVisitor);
+        _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, TriviaConvertingExpressionVisitor);
+        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor);
         _visualBasicNullableTypesConverter = visualBasicNullableTypesConverter;
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
@@ -90,26 +90,39 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public CommonConversions CommonConversions { get; }
 
-    public SemanticModel SemanticModel
-    {
-        get { return _semanticModel; }
-    }
-
-    public ArgumentConverter ArgumentConverter
-    {
-        get { return _argumentConverter; }
-    }
-
     public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
     {
-        return await _xmlExpressionNodeVisitor.Visit(node);
+        throw new NotImplementedException(
+                $"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+            .WithNodeInformation(node);
     }
+
+
+    public override Task<CSharpSyntaxNode> VisitMemberAccessExpression(VBSyntax.MemberAccessExpressionSyntax node) => _nameExpressionNodeVisitor.ConvertMemberAccessExpressionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitGlobalName(VBSyntax.GlobalNameSyntax node) => _nameExpressionNodeVisitor.ConvertGlobalNameAsync(node);
+    public override Task<CSharpSyntaxNode> VisitMeExpression(VBSyntax.MeExpressionSyntax node) => _nameExpressionNodeVisitor.ConvertMeExpressionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitMyBaseExpression(VBSyntax.MyBaseExpressionSyntax node) => _nameExpressionNodeVisitor.ConvertMyBaseExpressionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitGenericName(VBSyntax.GenericNameSyntax node) => _nameExpressionNodeVisitor.ConvertGenericNameAsync(node);
+    public override Task<CSharpSyntaxNode> VisitQualifiedName(VBSyntax.QualifiedNameSyntax node) => _nameExpressionNodeVisitor.ConvertQualifiedNameAsync(node);
+    public override Task<CSharpSyntaxNode> VisitIdentifierName(VBSyntax.IdentifierNameSyntax node) => _nameExpressionNodeVisitor.ConvertIdentifierNameAsync(node);
+    public override Task<CSharpSyntaxNode> VisitInvocationExpression(VBSyntax.InvocationExpressionSyntax node) => _nameExpressionNodeVisitor.ConvertInvocationExpressionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlEmbeddedExpression(VBSyntax.XmlEmbeddedExpressionSyntax node) => _xmlExpressionConverter.ConvertXmlEmbeddedExpressionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlDocument(VBasic.Syntax.XmlDocumentSyntax node) => _xmlExpressionConverter.ConvertXmlDocumentAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node) => _xmlExpressionConverter.ConvertXmlElementAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node) => _xmlExpressionConverter.ConvertXmlEmptyElementAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlAttribute(VBSyntax.XmlAttributeSyntax node) => _xmlExpressionConverter.ConvertXmlAttributeAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlString(VBSyntax.XmlStringSyntax node) => _xmlExpressionConverter.ConvertXmlStringAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlText(VBSyntax.XmlTextSyntax node) => _xmlExpressionConverter.ConvertXmlTextAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlCDataSection(VBSyntax.XmlCDataSectionSyntax node) => _xmlExpressionConverter.ConvertXmlCDataSectionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlMemberAccessExpression(VBSyntax.XmlMemberAccessExpressionSyntax node) => _xmlExpressionConverter.ConvertXmlMemberAccessExpressionAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlBracketedName(VBSyntax.XmlBracketedNameSyntax node) => _xmlExpressionConverter.ConvertXmlBracketedNameAsync(node);
+    public override Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node) => _xmlExpressionConverter.ConvertXmlNameAsync(node);
+    public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node) => await _argumentConverter.ConvertSimpleArgumentAsync(node);
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
         return SyntaxFactory.TypeOfExpression(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
     }
-
 
     public override async Task<CSharpSyntaxNode> VisitAwaitExpression(VBasic.Syntax.AwaitExpressionSyntax node)
     {
@@ -235,15 +248,10 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override async Task<CSharpSyntaxNode> VisitArgumentList(VBasic.Syntax.ArgumentListSyntax node)
     {
         if (node.Parent.IsKind(VBasic.SyntaxKind.Attribute)) {
-            return CommonConversions.CreateAttributeArgumentList(await node.Arguments.SelectAsync(ArgumentConverter.ToAttributeArgumentAsync));
+            return CommonConversions.CreateAttributeArgumentList(await node.Arguments.SelectAsync(_argumentConverter.ToAttributeArgumentAsync));
         }
-        var argumentSyntaxes = await ArgumentConverter.ConvertArgumentsAsync(node);
+        var argumentSyntaxes = await _argumentConverter.ConvertArgumentsAsync(node);
         return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node)
-    {
-        return await ArgumentConverter.ConvertSimpleArgument(node);
     }
 
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
@@ -283,7 +291,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var objectCreationExpressionSyntax = SyntaxFactory.ObjectCreationExpression(
             await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),
             // VB can omit empty arg lists:
-            await ArgumentConverter.ConvertArgumentListOrEmptyAsync(node, node.ArgumentList),
+            await _argumentConverter.ConvertArgumentListOrEmptyAsync(node, node.ArgumentList),
             null
         );
         async Task<InitializerExpressionSyntax> ConvertInitializer() => await node.Initializer.AcceptAsync<InitializerExpressionSyntax>(TriviaConvertingExpressionVisitor);

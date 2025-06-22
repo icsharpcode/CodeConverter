@@ -9,7 +9,9 @@ using Microsoft.VisualBasic.CompilerServices;
 using static ICSharpCode.CodeConverter.CSharp.SemanticModelExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp;
-internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
+
+
+internal class NameExpressionNodeVisitor
 {
     private readonly SemanticModel _semanticModel;
     private readonly HashSet<string> _generatedNames;
@@ -17,12 +19,14 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope;
     private readonly Stack<ExpressionSyntax> _withBlockLhs;
+    private readonly ArgumentConverter _argumentConverter;
 
     public CommonConversions CommonConversions { get; }
     public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
 
     public NameExpressionNodeVisitor(SemanticModel semanticModel, HashSet<string> generatedNames, ITypeContext typeContext, HashSet<string> extraUsingDirectives,
         Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> tempNameForAnonymousScope, Stack<ExpressionSyntax> withBlockLhs, CommonConversions commonConversions,
+        ArgumentConverter argumentConverter,
         CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
     {
         _semanticModel = semanticModel;
@@ -31,11 +35,12 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
         _extraUsingDirectives = extraUsingDirectives;
         _tempNameForAnonymousScope = tempNameForAnonymousScope;
         _withBlockLhs = withBlockLhs;
+        _argumentConverter = argumentConverter;
         CommonConversions = commonConversions;
         TriviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
     }
 
-    public override async Task<CSharpSyntaxNode> VisitMemberAccessExpression(VBasic.Syntax.MemberAccessExpressionSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertMemberAccessExpressionAsync(VBasic.Syntax.MemberAccessExpressionSyntax node)
     {
         var nodeSymbol = _semanticModel.GetSymbolInfoInDocument<ISymbol>(node.Name);
 
@@ -106,28 +111,28 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
         return await AdjustForImplicitInvocationAsync(node, memberAccessExpressionSyntax);
     }
 
-    public override async Task<CSharpSyntaxNode> VisitGlobalName(VBasic.Syntax.GlobalNameSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertGlobalNameAsync(VBasic.Syntax.GlobalNameSyntax node)
     {
         return ValidSyntaxFactory.IdentifierName(SyntaxFactory.Token(SyntaxKind.GlobalKeyword));
     }
 
-    public override async Task<CSharpSyntaxNode> VisitMeExpression(VBasic.Syntax.MeExpressionSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertMeExpressionAsync(VBasic.Syntax.MeExpressionSyntax node)
     {
         return SyntaxFactory.ThisExpression();
     }
 
-    public override async Task<CSharpSyntaxNode> VisitMyBaseExpression(VBasic.Syntax.MyBaseExpressionSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertMyBaseExpressionAsync(VBasic.Syntax.MyBaseExpressionSyntax node)
     {
         return SyntaxFactory.BaseExpression();
     }
 
-    public override async Task<CSharpSyntaxNode> VisitGenericName(VBasic.Syntax.GenericNameSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertGenericNameAsync(VBasic.Syntax.GenericNameSyntax node)
     {
         var symbol = _semanticModel.GetSymbolInfoInDocument<ISymbol>(node);
         var genericNameSyntax = await GenericNameAccountingForReducedParametersAsync(node, symbol);
         return await AdjustForImplicitInvocationAsync(node, genericNameSyntax);
     }
-    public override async Task<CSharpSyntaxNode> VisitQualifiedName(VBasic.Syntax.QualifiedNameSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertQualifiedNameAsync(VBasic.Syntax.QualifiedNameSyntax node)
     {
         var symbol = _semanticModel.GetSymbolInfoInDocument<ITypeSymbol>(node);
         if (symbol != null) {
@@ -155,7 +160,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
     }
 
     /// <remarks>PERF: This is a hot code path, try to avoid using things like GetOperation except where needed.</remarks>
-    public override async Task<CSharpSyntaxNode> VisitIdentifierName(VBasic.Syntax.IdentifierNameSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertIdentifierNameAsync(VBasic.Syntax.IdentifierNameSyntax node)
     {
         var identifier = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Identifier, node.GetAncestor<VBasic.Syntax.AttributeSyntax>() != null));
 
@@ -189,7 +194,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
 
 
 
-    public override async Task<CSharpSyntaxNode> VisitInvocationExpression(
+    public async Task<CSharpSyntaxNode> ConvertInvocationExpressionAsync(
         VBasic.Syntax.InvocationExpressionSyntax node)
     {
         var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<ISymbol>();
@@ -201,7 +206,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
         try {
 
             if (node.Expression is null) {
-                var convertArgumentListOrEmptyAsync = await ConvertArgumentsAsync(node.ArgumentList);
+                var convertArgumentListOrEmptyAsync = await _argumentConverter.ConvertArgumentsAsync(node.ArgumentList);
                 return SyntaxFactory.ElementBindingExpression(SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(convertArgumentListOrEmptyAsync)));
             }
 
@@ -273,7 +278,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
             return convertedExpression; //Parameterless property access
         }
 
-        var convertedArgumentList = await ConvertArgumentListOrEmptyAsync(node, node.ArgumentList);
+        var convertedArgumentList = await _argumentConverter.ConvertArgumentListOrEmptyAsync(node, node.ArgumentList);
 
         if (IsElementAtOrDefaultInvocation(invocationSymbol, expressionSymbol)) {
             convertedExpression = GetElementAtOrDefaultExpression(expressionType, convertedExpression);
@@ -315,7 +320,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
         var bracketedArgumentListSyntax = SyntaxFactory.BracketedArgumentList(args);
         if (expression is ElementBindingExpressionSyntax binding &&
             !binding.ArgumentList.Arguments.Any()) {
-            // Special case where structure changes due to conditional access (See VisitMemberAccessExpression)
+            // Special case where structure changes due to conditional access (See ConvertMemberAccessExpression)
             return binding.WithArgumentList(bracketedArgumentListSyntax);
         }
 
@@ -360,7 +365,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
             var idToken = expr.DescendantTokens().Last(t => t.IsKind(SyntaxKind.IdentifierToken));
             expr = ReplaceRightmostIdentifierText(expr, idToken, overrideIdentifier);
 
-            var args = await ConvertArgumentListOrEmptyAsync(node, optionalArgumentList);
+            var args = await _argumentConverter.ConvertArgumentListOrEmptyAsync(node, optionalArgumentList);
             if (extraArg != null) {
                 var extraArgSyntax = SyntaxFactory.Argument(extraArg);
                 var propertySymbol = ((IPropertyReferenceOperation)operation).Property;
@@ -620,8 +625,8 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
     {
         if (_semanticModel.SyntaxTree != node.SyntaxTree) return id;
         return _semanticModel.GetOperation(node) switch {
-            IInvocationOperation invocation => SyntaxFactory.InvocationExpression(id, CreateArgList(invocation.TargetMethod)),
-            IPropertyReferenceOperation propReference when propReference.Property.Parameters.Any() => SyntaxFactory.InvocationExpression(id, CreateArgList(propReference.Property)),
+            IInvocationOperation invocation => SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(invocation.TargetMethod)),
+            IPropertyReferenceOperation propReference when propReference.Property.Parameters.Any() => SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(propReference.Property)),
             _ => id
         };
     }
@@ -645,7 +650,7 @@ internal class NameExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<
         }
 
         if (SimpleMethodReplacement.TryGet(symbol, out var methodReplacement) &&
-            methodReplacement.ReplaceIfMatches(symbol, await ConvertArgumentsAsync(node.ArgumentList), false) is { } csExpression) {
+            methodReplacement.ReplaceIfMatches(symbol, await _argumentConverter.ConvertArgumentsAsync(node.ArgumentList), false) is { } csExpression) {
             cSharpSyntaxNode = csExpression;
         }
 

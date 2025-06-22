@@ -19,7 +19,7 @@ internal class ArgumentConverter
         TriviaConvertingExpressionVisitor = commonConversions.TriviaConvertingExpressionVisitor;
     }
 
-    public async Task<CSharpSyntaxNode> ConvertSimpleArgument(VBSyntax.SimpleArgumentSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertSimpleArgumentAsync(VBSyntax.SimpleArgumentSyntax node)
     {
         var argList = (VBasic.Syntax.ArgumentListSyntax)node.Parent;
         var invocation = argList.Parent;
@@ -264,7 +264,7 @@ internal class ArgumentConverter
         }
     }
 
-    private CSSyntax.ArgumentListSyntax CreateArgList(ISymbol invocationSymbol)
+    public CSSyntax.ArgumentListSyntax CreateArgList(ISymbol invocationSymbol)
     {
         return CS.SyntaxFactory.ArgumentList(CS.SyntaxFactory.SeparatedList(
             GetAdditionalRequiredArgs(Array.Empty<VBSyntax.ArgumentSyntax>(), invocationSymbol))

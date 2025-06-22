@@ -4,31 +4,24 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
-internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
+
+internal class XmlExpressionConverter
 {
     private readonly XmlImportContext _xmlImportContext;
     private readonly HashSet<string> _extraUsingDirectives;
 
-    public XmlExpressionNodeVisitor(XmlImportContext xmlImportContext, HashSet<string> extraUsingDirectives, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
+    public XmlExpressionConverter(XmlImportContext xmlImportContext, HashSet<string> extraUsingDirectives, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
     {
         _xmlImportContext = xmlImportContext;
         _extraUsingDirectives = extraUsingDirectives;
         TriviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
     }
-    public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
-    {
-        throw new NotImplementedException(
-                $"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
-            .WithNodeInformation(node);
-    }
-
-
-    public override async Task<CSharpSyntaxNode> VisitXmlEmbeddedExpression(VBSyntax.XmlEmbeddedExpressionSyntax node) =>
+    public async Task<CSharpSyntaxNode> ConvertXmlEmbeddedExpressionAsync(VBSyntax.XmlEmbeddedExpressionSyntax node) =>
         await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
     public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
 
-    public override async Task<CSharpSyntaxNode> VisitXmlDocument(VBasic.Syntax.XmlDocumentSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertXmlDocumentAsync(VBasic.Syntax.XmlDocumentSyntax node)
     {
         _extraUsingDirectives.Add("System.Xml.Linq");
         var arguments = SyntaxFactory.SeparatedList(
@@ -39,7 +32,7 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
         return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(ValidSyntaxFactory.IdentifierName("XDocument")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
     }
 
-    public override async Task<CSharpSyntaxNode> VisitXmlElement(VBasic.Syntax.XmlElementSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertXmlElementAsync(VBasic.Syntax.XmlElementSyntax node)
     {
         _extraUsingDirectives.Add("System.Xml.Linq");
         var arguments = SyntaxFactory.SeparatedList(
@@ -50,7 +43,7 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
         return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(ValidSyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
     }
 
-    public override async Task<CSharpSyntaxNode> VisitXmlEmptyElement(VBSyntax.XmlEmptyElementSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertXmlEmptyElementAsync(VBSyntax.XmlEmptyElementSyntax node)
     {
         _extraUsingDirectives.Add("System.Xml.Linq");
         var arguments = SyntaxFactory.SeparatedList(
@@ -60,15 +53,8 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
         return ApplyXmlImportsIfNecessary(node, SyntaxFactory.ObjectCreationExpression(ValidSyntaxFactory.IdentifierName("XElement")).WithArgumentList(SyntaxFactory.ArgumentList(arguments)));
     }
 
-    private CSharpSyntaxNode ApplyXmlImportsIfNecessary(VBSyntax.XmlNodeSyntax vbNode, ObjectCreationExpressionSyntax creation)
-    {
-        if (!_xmlImportContext.HasImports || vbNode.Parent is VBSyntax.XmlNodeSyntax) return creation;
-        return SyntaxFactory.InvocationExpression(
-            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, XmlImportContext.HelperClassShortIdentifierName, ValidSyntaxFactory.IdentifierName("Apply")),
-            SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(creation))));
-    }
 
-    public override async Task<CSharpSyntaxNode> VisitXmlAttribute(VBasic.Syntax.XmlAttributeSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertXmlAttributeAsync(VBasic.Syntax.XmlAttributeSyntax node)
     {
         var arguments = SyntaxFactory.SeparatedList(
             SyntaxFactory.Argument(await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)).Yield()
@@ -77,13 +63,13 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
         return SyntaxFactory.ObjectCreationExpression(ValidSyntaxFactory.IdentifierName("XAttribute")).WithArgumentList(SyntaxFactory.ArgumentList(arguments));
     }
 
-    public override async Task<CSharpSyntaxNode> VisitXmlString(VBasic.Syntax.XmlStringSyntax node) =>
+    public async Task<CSharpSyntaxNode> ConvertXmlStringAsync(VBasic.Syntax.XmlStringSyntax node) =>
         CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text)));
 
-    public override async Task<CSharpSyntaxNode> VisitXmlText(VBSyntax.XmlTextSyntax node) =>
+    public async Task<CSharpSyntaxNode> ConvertXmlTextAsync(VBSyntax.XmlTextSyntax node) =>
         CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text)));
 
-    public override async Task<CSharpSyntaxNode> VisitXmlCDataSection(VBSyntax.XmlCDataSectionSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertXmlCDataSectionAsync(VBSyntax.XmlCDataSectionSyntax node)
     {
         var xcDataTypeSyntax = SyntaxFactory.ParseTypeName(nameof(XCData));
         var argumentListSyntax = CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text))).Yield().CreateCsArgList();
@@ -93,7 +79,7 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
     /// <summary>
     /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/xml/accessing-xml
     /// </summary>
-    public override async Task<CSharpSyntaxNode> VisitXmlMemberAccessExpression(
+    public async Task<CSharpSyntaxNode> ConvertXmlMemberAccessExpressionAsync(
         VBasic.Syntax.XmlMemberAccessExpressionSyntax node)
     {
         _extraUsingDirectives.Add("System.Xml.Linq");
@@ -115,30 +101,12 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
                 await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor))
         );
     }
-
-    private static string GetXElementMethodName(VBSyntax.XmlMemberAccessExpressionSyntax node)
-    {
-        if (node.Token2 == default(SyntaxToken)) {
-            return "Elements";
-        }
-
-        if (node.Token2.Text == "@") {
-            return "Attributes";
-        }
-
-        if (node.Token2.Text == ".") {
-            return "Descendants";
-        }
-
-        throw new NotImplementedException($"Xml member access operator: '{node.Token1}{node.Token2}{node.Token3}'");
-    }
-
-    public override Task<CSharpSyntaxNode> VisitXmlBracketedName(VBSyntax.XmlBracketedNameSyntax node)
+    public Task<CSharpSyntaxNode> ConvertXmlBracketedNameAsync(VBSyntax.XmlBracketedNameSyntax node)
     {
         return node.Name.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
     }
 
-    public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)
+    public async Task<CSharpSyntaxNode> ConvertXmlNameAsync(VBSyntax.XmlNameSyntax node)
     {
         if (node.Prefix != null) {
             switch (node.Prefix.Name.ValueText) {
@@ -180,4 +148,32 @@ internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CS
 
         return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(node.LocalName.Text));
     }
+
+
+    private CSharpSyntaxNode ApplyXmlImportsIfNecessary(VBSyntax.XmlNodeSyntax vbNode, ObjectCreationExpressionSyntax creation)
+    {
+        if (!_xmlImportContext.HasImports || vbNode.Parent is VBSyntax.XmlNodeSyntax) return creation;
+        return SyntaxFactory.InvocationExpression(
+            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, XmlImportContext.HelperClassShortIdentifierName, ValidSyntaxFactory.IdentifierName("Apply")),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(creation))));
+    }
+
+
+    private static string GetXElementMethodName(VBSyntax.XmlMemberAccessExpressionSyntax node)
+    {
+        if (node.Token2 == default(SyntaxToken)) {
+            return "Elements";
+        }
+
+        if (node.Token2.Text == "@") {
+            return "Attributes";
+        }
+
+        if (node.Token2.Text == ".") {
+            return "Descendants";
+        }
+
+        throw new NotImplementedException($"Xml member access operator: '{node.Token1}{node.Token2}{node.Token3}'");
+    }
+
 }
