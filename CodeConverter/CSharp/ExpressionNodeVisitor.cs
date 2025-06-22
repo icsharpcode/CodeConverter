@@ -1,16 +1,8 @@
-﻿using System.Collections.Immutable;
-using System.Data;
-using System.Globalization;
-using ICSharpCode.CodeConverter.CSharp.Replacements;
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.CodeAnalysis;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.CodeAnalysis.Simplification;
-using Microsoft.VisualBasic;
 using Microsoft.VisualBasic.CompilerServices;
-using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -31,7 +23,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly Stack<ExpressionSyntax> _withBlockLhs = new();
     private readonly ITypeContext _typeContext;
     private readonly QueryConverter _queryConverter;
-    private readonly Lazy<IReadOnlyDictionary<ITypeSymbol, string>> _convertMethodsLookupByReturnType;
     private readonly LambdaConverter _lambdaConverter;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope = new();
     private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
@@ -55,40 +46,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
         _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, TriviaConvertingExpressionVisitor);
         _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor);
-        _visualBasicNullableTypesConverter = visualBasicNullableTypesConverter;
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         _binaryExpressionConverter = new BinaryExpressionConverter(semanticModel, _operatorConverter, visualBasicEqualityComparison, visualBasicNullableTypesConverter, commonConversions);
-        // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
-        _convertMethodsLookupByReturnType =
-            new Lazy<IReadOnlyDictionary<ITypeSymbol, string>>(() => CreateConvertMethodsLookupByReturnType(semanticModel));
     }
-
-    private static IReadOnlyDictionary<ITypeSymbol, string> CreateConvertMethodsLookupByReturnType(
-        SemanticModel semanticModel)
-    {
-        // In some projects there's a source declaration as well as the referenced one, which causes the first of these methods to fail
-        var symbolsWithName = semanticModel.Compilation
-            .GetSymbolsWithName(n => n.Equals(ConvertType.Name, StringComparison.Ordinal), SymbolFilter.Type).ToList();
-        
-        var convertType =
-            semanticModel.Compilation.GetTypeByMetadataName(ConvertType.FullName) ??
-            (ITypeSymbol)symbolsWithName.FirstOrDefault(s =>
-                    s.ContainingNamespace.ToDisplayString().Equals(ConvertType.Namespace, StringComparison.Ordinal));
-
-        if (convertType is null) return ImmutableDictionary<ITypeSymbol, string>.Empty;
-
-        var convertMethods = convertType.GetMembers().Where(m =>
-            m.Name.StartsWith("To", StringComparison.Ordinal) && m.GetParameters().Length == 1);
-
-#pragma warning disable RS1024 // Compare symbols correctly - GroupBy and ToDictionary use the same logic to dedupe as to lookup, so it doesn't matter which equality is used
-        var methodsByType = convertMethods
-            .GroupBy(m => new { ReturnType = m.GetReturnType(), Name = $"{ConvertType.FullName}.{m.Name}" })
-            .ToDictionary(m => m.Key.ReturnType, m => m.Key.Name);
-#pragma warning restore RS1024 // Compare symbols correctly
-
-        return methodsByType;
-    }
-
     public CommonConversions CommonConversions { get; }
 
     public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
