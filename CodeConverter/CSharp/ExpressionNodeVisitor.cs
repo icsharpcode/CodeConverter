@@ -15,7 +15,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
 {
     private static readonly Type ConvertType = typeof(Conversions);
-    private CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor => CommonConversions.TriviaConvertingExpressionVisitor;
+    public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor => CommonConversions.TriviaConvertingExpressionVisitor;
     private readonly SemanticModel _semanticModel;
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly IOperatorConverter _operatorConverter;
@@ -38,7 +38,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _semanticModel = semanticModel;
         CommonConversions = commonConversions;
         commonConversions.TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
-        _lambdaConverter = new LambdaConverter(commonConversions, semanticModel);
+        _lambdaConverter = new LambdaConverter(commonConversions, semanticModel, _withBlockLhs, extraUsingDirectives, typeContext);
         _visualBasicEqualityComparison = visualBasicEqualityComparison;
         _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
         _typeContext = typeContext;
@@ -80,8 +80,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node) => _xmlExpressionConverter.ConvertXmlNameAsync(node);
     public override async Task<CSharpSyntaxNode> VisitSimpleArgument(VBasic.Syntax.SimpleArgumentSyntax node) => await _argumentConverter.ConvertSimpleArgumentAsync(node);
     public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax entryNode) => await _binaryExpressionConverter.ConvertBinaryExpressionAsync(entryNode);
-    public override Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node) => ConvertSingleLineLambdaAsync(node);
-    public override Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node) => ConvertMultiLineLambdaAsync(node);
+    public override Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node) => _lambdaConverter.ConvertSingleLineLambdaAsync(node);
+    public override Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node) => _lambdaConverter.ConvertMultiLineLambdaAsync(node);
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
@@ -513,101 +513,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     }
 
 
-
-    private async Task<CSharpSyntaxNode> ConvertSingleLineLambdaAsync(VBSyntax.SingleLineLambdaExpressionSyntax node)
-    {
-        var originalIsWithinQuery = TriviaConvertingExpressionVisitor.IsWithinQuery;
-        TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
-        try {
-            return await ConvertInnerAsync();
-        } finally {
-            TriviaConvertingExpressionVisitor.IsWithinQuery = originalIsWithinQuery;
-        }
-
-        async Task<CSharpSyntaxNode> ConvertInnerAsync()
-        {
-            IReadOnlyCollection<StatementSyntax> convertedStatements;
-            if (node.Body is VBasic.Syntax.StatementSyntax statement)
-            {
-                convertedStatements = await ConvertMethodBodyStatementsAsync(statement, statement.Yield().ToArray());
-            }
-            else
-            {
-                var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-                convertedStatements = new[] {SyntaxFactory.ExpressionStatement(csNode)};
-            }
-
-            var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
-            return await _lambdaConverter.ConvertAsync(node, param, convertedStatements);
-        }
-    }
-
-
-    private async Task<CSharpSyntaxNode> ConvertMultiLineLambdaAsync(VBSyntax.MultiLineLambdaExpressionSyntax node)
-    {
-        var originalIsWithinQuery = TriviaConvertingExpressionVisitor.IsWithinQuery;
-        TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
-        try {
-            return await ConvertInnerAsync();
-        } finally {
-            TriviaConvertingExpressionVisitor.IsWithinQuery = originalIsWithinQuery;
-        }
-
-        async Task<CSharpSyntaxNode> ConvertInnerAsync()
-        {
-            var body = await ConvertMethodBodyStatementsAsync(node, node.Statements);
-            var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(TriviaConvertingExpressionVisitor);
-            return await _lambdaConverter.ConvertAsync(node, param, body.ToList());
-        }
-    }
-
-    public async Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VBasic.VisualBasicSyntaxNode node, IReadOnlyCollection<VBSyntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null)
-    {
-
-        var innerMethodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, TriviaConvertingExpressionVisitor, CommonConversions, _visualBasicEqualityComparison, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
-        return await GetWithConvertedGotosOrNull(statements) ?? await ConvertStatements(statements);
-
-        async Task<List<StatementSyntax>> ConvertStatements(IEnumerable<VBSyntax.StatementSyntax> readOnlyCollection)
-        {
-            return (await readOnlyCollection.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(innerMethodBodyVisitor.CommentConvertingVisitor))).ToList();
-        }
-
-        async Task<IReadOnlyCollection<StatementSyntax>> GetWithConvertedGotosOrNull(IReadOnlyCollection<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> statements)
-        {
-            var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
-            var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
-
-            // See https://learn.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/on-error-statement
-            if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
-                var statementsList = statements.ToList();
-                var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
-                var onlyOnErrorGotoStatementIndex = statementsList.IndexOf(onlyOnErrorGotoStatement);
-
-                // Even this very simple case can generate compile errors if the error handling uses statements declared in the scope of the try block
-                // For now, the user will have to fix these manually, in future it'd be possible to hoist any used declarations out of the try block
-                if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
-                    var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
-                    var tryBlockStatements = await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1));
-                    var tryBlock = SyntaxFactory.Block(tryBlockStatements);
-                    var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
-                    
-                    var catchClauseSyntax = SyntaxFactory.CatchClause();
-
-                    // Default to putting the statements after the catch block in case logic falls through, but if the last statement is a return, put them inside the catch block for neatness.
-                    if (tryBlockStatements.LastOrDefault().IsKind(SyntaxKind.ReturnStatement)) {
-                        catchClauseSyntax = catchClauseSyntax.WithBlock(SyntaxFactory.Block(afterStatements));
-                        afterStatements = new List<StatementSyntax>();
-                    }
-
-                    var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
-                    return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
-                }
-            }
-
-            return null;
-        }
-    }
-
     public override async Task<CSharpSyntaxNode> VisitParameterList(VBSyntax.ParameterListSyntax node)
     {
         var parameters = await node.Parameters.SelectAsync(async p => await p.AcceptAsync<ParameterSyntax>(TriviaConvertingExpressionVisitor));
@@ -817,8 +722,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             );
     }
 
-    private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false)
-    {
-        return CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute);
-    }
+    private SyntaxToken ConvertIdentifier(SyntaxToken identifierIdentifier, bool isAttribute = false) =>
+        CommonConversions.ConvertIdentifier(identifierIdentifier, isAttribute);
+
+    public Task<IReadOnlyCollection<StatementSyntax>> ConvertMethodBodyStatementsAsync(VBasic.VisualBasicSyntaxNode node, IReadOnlyCollection<VBSyntax.StatementSyntax> statements, bool isIterator = false, IdentifierNameSyntax csReturnVariable = null) =>
+        _lambdaConverter.ConvertMethodBodyStatementsAsync(node, statements, isIterator, csReturnVariable);
 }
