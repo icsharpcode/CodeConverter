@@ -14,12 +14,10 @@ namespace ICSharpCode.CodeConverter.CSharp;
 /// </summary>
 internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
 {
-    private static readonly Type ConvertType = typeof(Conversions);
     public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor => CommonConversions.TriviaConvertingExpressionVisitor;
     private readonly SemanticModel _semanticModel;
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly IOperatorConverter _operatorConverter;
-    private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
     private readonly Stack<ExpressionSyntax> _withBlockLhs = new();
     private readonly ITypeContext _typeContext;
     private readonly QueryConverter _queryConverter;
@@ -30,6 +28,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly NameExpressionNodeVisitor _nameExpressionNodeVisitor;
     private readonly ArgumentConverter _argumentConverter;
     private readonly BinaryExpressionConverter _binaryExpressionConverter;
+    private readonly InitializerConverter _initializerConverter;
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
@@ -38,8 +37,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _semanticModel = semanticModel;
         CommonConversions = commonConversions;
         commonConversions.TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
+        _initializerConverter = new InitializerConverter(semanticModel, commonConversions, _generatedNames, _tempNameForAnonymousScope);
         _lambdaConverter = new LambdaConverter(commonConversions, semanticModel, _withBlockLhs, extraUsingDirectives, typeContext);
-        _visualBasicEqualityComparison = visualBasicEqualityComparison;
         _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
@@ -82,6 +81,12 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override async Task<CSharpSyntaxNode> VisitBinaryExpression(VBasic.Syntax.BinaryExpressionSyntax entryNode) => await _binaryExpressionConverter.ConvertBinaryExpressionAsync(entryNode);
     public override Task<CSharpSyntaxNode> VisitSingleLineLambdaExpression(VBasic.Syntax.SingleLineLambdaExpressionSyntax node) => _lambdaConverter.ConvertSingleLineLambdaAsync(node);
     public override Task<CSharpSyntaxNode> VisitMultiLineLambdaExpression(VBasic.Syntax.MultiLineLambdaExpressionSyntax node) => _lambdaConverter.ConvertMultiLineLambdaAsync(node);
+    public override Task<CSharpSyntaxNode> VisitInferredFieldInitializer(VBasic.Syntax.InferredFieldInitializerSyntax node) => _initializerConverter.ConvertInferredFieldInitializerAsync(node);
+    /// <remarks>Collection initialization has many variants in both VB and C#. Please add especially many test cases when touching this.</remarks>
+    public override Task<CSharpSyntaxNode> VisitCollectionInitializer(VBasic.Syntax.CollectionInitializerSyntax node) => _initializerConverter.ConvertCollectionInitializerAsync(node);
+    public override Task<CSharpSyntaxNode> VisitObjectMemberInitializer(VBasic.Syntax.ObjectMemberInitializerSyntax node) => _initializerConverter.ConvertObjectMemberInitializerAsync(node);
+    public override Task<CSharpSyntaxNode> VisitNamedFieldInitializer(VBasic.Syntax.NamedFieldInitializerSyntax node) => _initializerConverter.ConvertNamedFieldInitializerAsync(node);
+    public override Task<CSharpSyntaxNode> VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node) => _initializerConverter.ConvertObjectCollectionInitializerAsync(node);
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
@@ -244,11 +249,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         
     }
 
-    public override async Task<CSharpSyntaxNode> VisitInferredFieldInitializer(VBasic.Syntax.InferredFieldInitializerSyntax node)
-    {
-        return SyntaxFactory.AnonymousObjectMemberDeclarator(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
-    }
-
     public override async Task<CSharpSyntaxNode> VisitObjectCreationExpression(VBasic.Syntax.ObjectCreationExpressionSyntax node)
     {
 
@@ -295,52 +295,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         );
     }
 
-    /// <remarks>Collection initialization has many variants in both VB and C#. Please add especially many test cases when touching this.</remarks>
-    public override async Task<CSharpSyntaxNode> VisitCollectionInitializer(VBasic.Syntax.CollectionInitializerSyntax node)
-    {
-        var isExplicitCollectionInitializer = node.Parent is VBasic.Syntax.ObjectCollectionInitializerSyntax
-                                              || node.Parent is VBasic.Syntax.CollectionInitializerSyntax
-                                              || node.Parent is VBasic.Syntax.ArrayCreationExpressionSyntax;
-        var initializerKind = node.IsParentKind(VBasic.SyntaxKind.ObjectCollectionInitializer) || node.IsParentKind(VBasic.SyntaxKind.ObjectCreationExpression) ?
-            SyntaxKind.CollectionInitializerExpression :
-            node.IsParentKind(VBasic.SyntaxKind.CollectionInitializer) && IsComplexInitializer(node) ? SyntaxKind.ComplexElementInitializerExpression :
-                SyntaxKind.ArrayInitializerExpression;
-        var initializers = (await node.Initializers.SelectAsync(async i => {
-            var convertedInitializer = await i.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(i, convertedInitializer, false);
-        }));
-        var initializer = SyntaxFactory.InitializerExpression(initializerKind, SyntaxFactory.SeparatedList(initializers));
-        if (isExplicitCollectionInitializer) return initializer;
-
-        var convertedType = _semanticModel.GetTypeInfo(node).ConvertedType;
-        var dimensions = convertedType is IArrayTypeSymbol ats ? ats.Rank : 1; // For multidimensional array [,] note these are different from nested arrays [][]
-        if (!(convertedType.GetEnumerableElementTypeOrDefault() is {} elementType)) return SyntaxFactory.ImplicitArrayCreationExpression(initializer);
-            
-        if (!initializers.Any() && dimensions == 1) {
-            var arrayTypeArgs = SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(CommonConversions.GetTypeSyntax(elementType)));
-            var arrayEmpty = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                ValidSyntaxFactory.IdentifierName(nameof(Array)), SyntaxFactory.GenericName(nameof(Array.Empty)).WithTypeArgumentList(arrayTypeArgs));
-            return SyntaxFactory.InvocationExpression(arrayEmpty);
-        }
-
-        bool hasExpressionToInferTypeFrom = node.Initializers.SelectMany(n => n.DescendantNodesAndSelf()).Any(n => n is not VBasic.Syntax.CollectionInitializerSyntax);
-        if (hasExpressionToInferTypeFrom) {
-            var commas = Enumerable.Repeat(SyntaxFactory.Token(SyntaxKind.CommaToken), dimensions - 1);
-            return SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.TokenList(commas), initializer);
-        }
-
-        var arrayType = (ArrayTypeSyntax)CommonConversions.CsSyntaxGenerator.ArrayTypeExpression(CommonConversions.GetTypeSyntax(elementType));
-        var sizes = Enumerable.Repeat<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression(), dimensions);
-        var arrayRankSpecifierSyntax = SyntaxFactory.SingletonList(SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(sizes)));
-        arrayType = arrayType.WithRankSpecifiers(arrayRankSpecifierSyntax);
-        return SyntaxFactory.ArrayCreationExpression(arrayType, initializer);
-    }
-
-    private bool IsComplexInitializer(VBSyntax.CollectionInitializerSyntax node)
-    {
-        return _semanticModel.GetOperation(node.Parent.Parent) is IObjectOrCollectionInitializerOperation initializer &&
-               initializer.Initializers.OfType<IInvocationOperation>().Any();
-    }
 
     public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)
     {
@@ -354,69 +308,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var ascendingOrDescendingKeyword = node.AscendingOrDescendingKeyword.ConvertToken();
         return SyntaxFactory.Ordering(convertToken, expressionSyntax, ascendingOrDescendingKeyword);
     }
-
-    public override async Task<CSharpSyntaxNode> VisitObjectMemberInitializer(VBasic.Syntax.ObjectMemberInitializerSyntax node)
-    {
-        var initializers = await node.Initializers.AcceptSeparatedListAsync<VBSyntax.FieldInitializerSyntax, ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        return SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression, initializers);
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitNamedFieldInitializer(VBasic.Syntax.NamedFieldInitializerSyntax node)
-    {
-        var csExpressionSyntax = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        csExpressionSyntax =
-            CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpressionSyntax);
-        if (node.Parent?.Parent is VBasic.Syntax.AnonymousObjectCreationExpressionSyntax {Initializer: {Initializers: var initializers}} anonymousObjectCreationExpression) {
-            string nameIdentifierText = node.Name.Identifier.Text;
-            var isAnonymouslyReused = initializers.OfType<VBasic.Syntax.NamedFieldInitializerSyntax>()
-                .Select(i => i.Expression).OfType<VBasic.Syntax.MemberAccessExpressionSyntax>()
-                .Any(maes => maes.Expression is null && maes.Name.Identifier.Text.Equals(nameIdentifierText, StringComparison.OrdinalIgnoreCase));
-            if (isAnonymouslyReused) {
-                string tempNameForAnonymousSelfReference = GenerateUniqueVariableName(node.Name, "temp" + ((VBSyntax.SimpleNameSyntax) node.Name).Identifier.Text.UppercaseFirstLetter());
-                csExpressionSyntax = DeclareVariableInline(csExpressionSyntax, tempNameForAnonymousSelfReference);
-                if (!_tempNameForAnonymousScope.TryGetValue(nameIdentifierText, out var stack)) {
-                    stack = _tempNameForAnonymousScope[nameIdentifierText] = new Stack<(SyntaxNode Scope, string TempName)>();
-                }
-                stack.Push((anonymousObjectCreationExpression, tempNameForAnonymousSelfReference));
-            }
-
-            var anonymousObjectMemberDeclaratorSyntax = SyntaxFactory.AnonymousObjectMemberDeclarator(
-                SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Name.Identifier))),
-                csExpressionSyntax);
-            return anonymousObjectMemberDeclaratorSyntax;
-        }
-
-        return SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-            await node.Name.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
-            csExpressionSyntax
-        );
-    }
-
-    private string GenerateUniqueVariableName(VisualBasicSyntaxNode existingNode, string varNameBase) => NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, existingNode, varNameBase);
-
-    private static ExpressionSyntax DeclareVariableInline(ExpressionSyntax csExpressionSyntax, string temporaryName)
-    {
-        var temporaryNameId = SyntaxFactory.Identifier(temporaryName);
-        var temporaryNameExpression = ValidSyntaxFactory.IdentifierName(temporaryNameId);
-        csExpressionSyntax = SyntaxFactory.ConditionalExpression(
-            SyntaxFactory.IsPatternExpression(
-                csExpressionSyntax,
-                SyntaxFactory.VarPattern(
-                    SyntaxFactory.SingleVariableDesignation(temporaryNameId))),
-            temporaryNameExpression,
-            SyntaxFactory.LiteralExpression(
-                SyntaxKind.DefaultLiteralExpression,
-                SyntaxFactory.Token(SyntaxKind.DefaultKeyword)));
-        return csExpressionSyntax;
-    }
-
     public override async Task<CSharpSyntaxNode> VisitVariableNameEquals(VBSyntax.VariableNameEqualsSyntax node) =>
         SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier.Identifier)));
 
-    public override async Task<CSharpSyntaxNode> VisitObjectCollectionInitializer(VBasic.Syntax.ObjectCollectionInitializerSyntax node)
-    {
-        return await node.Initializer.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor); //Dictionary initializer comes through here despite the FROM keyword not being in the source code
-    }
 
     public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
     {
