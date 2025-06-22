@@ -4,12 +4,29 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
-internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
+internal class XmlExpressionNodeVisitor: VBasic.VisualBasicSyntaxVisitor<Task<CSharpSyntaxNode>>
 {
     private readonly XmlImportContext _xmlImportContext;
+    private readonly HashSet<string> _extraUsingDirectives;
+
+    public XmlExpressionNodeVisitor(XmlImportContext xmlImportContext, HashSet<string> extraUsingDirectives, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
+    {
+        _xmlImportContext = xmlImportContext;
+        _extraUsingDirectives = extraUsingDirectives;
+        TriviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
+    }
+    public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
+    {
+        throw new NotImplementedException(
+                $"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
+            .WithNodeInformation(node);
+    }
+
 
     public override async Task<CSharpSyntaxNode> VisitXmlEmbeddedExpression(VBSyntax.XmlEmbeddedExpressionSyntax node) =>
         await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+
+    public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
 
     public override async Task<CSharpSyntaxNode> VisitXmlDocument(VBasic.Syntax.XmlDocumentSyntax node)
     {

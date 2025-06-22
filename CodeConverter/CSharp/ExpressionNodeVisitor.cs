@@ -35,6 +35,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly VisualBasicNullableExpressionsConverter _visualBasicNullableTypesConverter;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope = new();
     private readonly HashSet<string> _generatedNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly XmlExpressionNodeVisitor _xmlExpressionNodeVisitor;
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
@@ -48,7 +49,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
-        _xmlImportContext = xmlImportContext;
+        _xmlExpressionNodeVisitor = new XmlExpressionNodeVisitor(xmlImportContext, extraUsingDirectives, TriviaConvertingExpressionVisitor);
         _visualBasicNullableTypesConverter = visualBasicNullableTypesConverter;
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         // If this isn't needed, the assembly with Conversions may not be referenced, so this must be done lazily
@@ -84,12 +85,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public CommonConversions CommonConversions { get; }
 
-    public override async Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node)
-    {
-        throw new NotImplementedException(
-                $"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
-            .WithNodeInformation(node);
-    }
+    public override Task<CSharpSyntaxNode> DefaultVisit(SyntaxNode node) => _xmlExpressionNodeVisitor.Visit(node);
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
