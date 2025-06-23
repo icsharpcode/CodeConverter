@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
@@ -10,9 +9,18 @@ public class MethodStatementTests : ConverterTestBase
     [Fact]
     public async Task EmptyStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        If True Then
+        End If
+
+        While True
+        End While
+
+        Do
+        Loop While True
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -30,17 +38,18 @@ internal partial class TestClass
         }
         while (true);
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task AssignmentStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer
+        b = 0
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -48,17 +57,22 @@ internal partial class TestClass
         int b;
         b = 0;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task EnumAssignmentStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Enum MyEnum
+    AMember
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(v as String)
+        Dim b As MyEnum = MyEnum.Parse(GetType(MyEnum), v)
+        b = MyEnum.Parse(GetType(MyEnum), v)
+    End Sub
+End Class", @"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum MyEnum
@@ -73,43 +87,41 @@ internal partial class TestClass
         MyEnum b = (MyEnum)Conversions.ToInteger(Enum.Parse(typeof(MyEnum), v));
         b = (MyEnum)Conversions.ToInteger(Enum.Parse(typeof(MyEnum), v));
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task AssignmentStatementInDeclarationAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Integer = 0
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int b = 0;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task AssignmentStatementInVarDeclarationAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b = 0
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int b = 0;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     /// <summary>
@@ -122,9 +134,25 @@ internal partial class TestClass
     {
         // BUG: pubWrite's body is missing a return statement
         // pubWrite is an example of when the LambdaConverter could analyze ConvertedType at usages, realize the return type is never used, and convert it to an Action.
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestFunc
+    Public pubIdent = Function(row As Integer) row
+    Public pubWrite = Function(row As Integer) Console.WriteLine(row)
+    Dim isFalse = Function(row As Integer) False
+    Dim write0 = Sub()
+        Console.WriteLine(0)
+    End Sub
+
+    Private Sub TestMethod()
+        Dim index = (Function(pList As List(Of String)) pList.All(Function(x) True)),
+            index2 = (Function(pList As List(Of String)) pList.All(Function(x) False)),
+            index3 = (Function(pList As List(Of Integer)) pList.All(Function(x) True))
+        Dim isTrue = Function(pList As List(Of String))
+                            Return pList.All(Function(x) True)
+                     End Function
+        Dim isTrueWithNoStatement = (Function(pList As List(Of String)) pList.All(Function(x) True))
+        Dim write = Sub() Console.WriteLine(1)
+    End Sub
+End Class", @"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -149,9 +177,7 @@ public partial class TestFunc
 BC30491: Expression does not produce a value.
 2 target compilation errors:
 CS0029: Cannot implicitly convert type 'void' to 'object'
-CS1662: Cannot convert lambda expression to intended delegate type because some of the return types in the block are not implicitly convertible to the delegate return type", extension: "cs")
-            );
-        }
+CS1662: Cannot convert lambda expression to intended delegate type because some of the return types in the block are not implicitly convertible to the delegate return type");
     }
 
     /// <summary>
@@ -162,9 +188,41 @@ CS1662: Cannot convert lambda expression to intended delegate type because some 
     [Fact]
     public async Task ContrivedFuncInferenceExampleAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Friend Class ContrivedFuncInferenceExample
+    Private Sub TestMethod()
+        For index = (Function(pList As List(Of String)) pList.All(Function(x) True)) To New Blah() Step New Blah()
+            Dim buffer = index.Check(New List(Of String))
+            Console.WriteLine($""{buffer}"")
+        Next
+    End Sub
+
+    Class Blah
+        Public ReadOnly Check As Func(Of List(Of String), Boolean)
+
+        Public Sub New(Optional check As Func(Of List(Of String), Boolean) = Nothing)
+            check = check
+        End Sub
+
+        Public Shared Widening Operator CType(ByVal p1 As Func(Of List(Of String), Boolean)) As Blah
+            Return New Blah(p1)
+        End Operator
+        Public Shared Widening Operator CType(ByVal p1 As Blah) As Func(Of List(Of String), Boolean)
+            Return p1.Check
+        End Operator
+        Public Shared Operator -(ByVal p1 As Blah, ByVal p2 As Blah) As Blah
+            Return New Blah()
+        End Operator
+        Public Shared Operator +(ByVal p1 As Blah, ByVal p2 As Blah) As Blah
+            Return New Blah()
+        End Operator
+        Public Shared Operator <=(ByVal p1 As Blah, ByVal p2 As Blah) As Boolean
+            Return p1.Check(New List(Of String))
+        End Operator
+        Public Shared Operator >=(ByVal p1 As Blah, ByVal p2 As Blah) As Boolean
+            Return p2.Check(New List(Of String))
+        End Operator
+    End Class
+End Class", @"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -216,17 +274,18 @@ internal partial class ContrivedFuncInferenceExample
 }
 2 target compilation errors:
 CS1660: Cannot convert lambda expression to type 'ContrivedFuncInferenceExample.Blah' because it is not a delegate type
-CS0019: Operator '>=' cannot be applied to operands of type 'ContrivedFuncInferenceExample.Blah' and 'int'", extension: "cs")
-            );
-        }
+CS0019: Operator '>=' cannot be applied to operands of type 'ContrivedFuncInferenceExample.Blah' and 'int'");
     }
 
     [Fact]
     public async Task ObjectInitializationStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As String
+        b = New String(""test"")
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -234,68 +293,68 @@ internal partial class TestClass
         string b;
         b = new string(""test"".ToCharArray());
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TupleInitializationStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim totales As (fics As Integer, dirs As Integer) = (0, 0)
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         (int fics, int dirs) totales = (0, 0);
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task ObjectInitializationStatementInDeclarationAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As String = New String(""test"")
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         string b = new string(""test"".ToCharArray());
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task ObjectInitializationStatementInVarDeclarationAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b = New String(""test"")
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         string b = new string(""test"".ToCharArray());
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task EndStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        End
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -305,17 +364,17 @@ internal partial class TestClass
     }
 }
 1 source compilation errors:
-BC30615: 'End' statement cannot be used in class library projects.", extension: "cs")
-            );
-        }
+BC30615: 'End' statement cannot be used in class library projects.");
     }
 
     [Fact]
     public async Task StopStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Diagnostics;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Stop
+    End Sub
+End Class", @"using System.Diagnostics;
 
 internal partial class TestClass
 {
@@ -323,17 +382,20 @@ internal partial class TestClass
     {
         Debugger.Break();
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlockAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Text;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        With New System.Text.StringBuilder
+            .Capacity = 20
+            ?.Append(0)
+        End With
+    End Sub
+End Class", @"using System.Text;
 
 internal partial class TestClass
 {
@@ -345,17 +407,34 @@ internal partial class TestClass
             withBlock?.Append(0);
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlockStruct634Async()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Structure SomeStruct
+    Public FieldA As Integer
+    Public FieldB As Integer
+End Structure
+
+Module Module1
+   Sub Main()
+      Dim myArray(0) As SomeStruct
+
+      With myArray(0)
+         .FieldA = 3
+         .FieldB = 4
+      End With
+
+      'Outputs: FieldA was changed to New FieldA value 
+      Console.WriteLine($""FieldA was changed to {myArray(0).FieldA}"")
+      Console.WriteLine($""FieldB was changed to {myArray(0).FieldB}"")
+      Console.ReadLine
+   End Sub
+End Module", @"using System;
 
 public partial struct SomeStruct
 {
@@ -380,17 +459,26 @@ internal static partial class Module1
         Console.WriteLine($""FieldB was changed to {myArray[0].FieldB}"");
         Console.ReadLine();
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlock2Async()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Data.SqlClient;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data.SqlClient
+
+Class TestClass
+    Private Sub Save()
+        Using cmd As SqlCommand = new SqlCommand()
+            With cmd
+            .ExecuteNonQuery()
+            ?.ExecuteNonQuery()
+            .ExecuteNonQuery
+            ?.ExecuteNonQuery
+            End With
+        End Using
+    End Sub
+End Class", @"using System.Data.SqlClient;
 
 internal partial class TestClass
 {
@@ -404,18 +492,27 @@ internal partial class TestClass
             cmd?.ExecuteNonQuery();
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlockValueAsync()
     {
         //Whitespace trivia bug on first statement in with block
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+    Public Sub Stuff()
+        Dim str As SomeStruct
+        With Str
+            ReDim .ArrField(1)
+            ReDim .ArrProp(2)
+        End With
+    End Sub
+End Class
+
+Public Structure SomeStruct
+    Public ArrField As String()
+    Public Property ArrProp As String()
+End Structure", @"
 public partial class VisualBasicClass
 {
     public void Stuff()
@@ -430,17 +527,21 @@ public partial struct SomeStruct
 {
     public string[] ArrField;
     public string[] ArrProp { get; set; }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlockMeClassAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestWithMe
+    Private _x As Integer
+    Sub S()
+        With Me
+            ._x = 1
+            ._x = 2
+        End With
+    End Sub
+End Class", @"
 public partial class TestWithMe
 {
     private int _x;
@@ -449,17 +550,21 @@ public partial class TestWithMe
         _x = 1;
         _x = 2;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlockMeStructAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure TestWithMe
+    Private _x As Integer
+    Sub S()
+        With Me
+            ._x = 1
+            ._x = 2
+        End With
+    End Sub
+End Structure", @"
 public partial struct TestWithMe
 {
     private int _x;
@@ -468,17 +573,28 @@ public partial struct TestWithMe
         _x = 1;
         _x = 2;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task WithBlockForEachAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+
+Public Class TestWithForEachClass
+    Private _x As Integer
+
+    Public Shared Sub Main()
+        Dim x = New List(Of TestWithForEachClass)()
+        For Each y In x
+            With y
+                ._x = 1
+                System.Console.Write(._x)
+            End With
+            y = Nothing
+        Next
+    End Sub
+End Class", @"using System;
 using System.Collections.Generic;
 
 public partial class TestWithForEachClass
@@ -497,17 +613,25 @@ public partial class TestWithForEachClass
     }
 }
 1 target compilation errors:
-CS1656: Cannot assign to 'y' because it is a 'foreach iteration variable'", extension: "cs")
-            );
-        }
+CS1656: Cannot assign to 'y' because it is a 'foreach iteration variable'");
     }
 
     [Fact]
     public async Task NestedWithBlockAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Text;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        With New System.Text.StringBuilder
+            Dim withBlock as Integer = 3
+            With New System.Text.StringBuilder
+                Dim withBlock1 as Integer = 4
+                .Capacity = withBlock1
+            End With
+
+            .Length = withBlock
+        End With
+    End Sub
+End Class", @"using System.Text;
 
 internal partial class TestClass
 {
@@ -525,17 +649,22 @@ internal partial class TestClass
             withBlock2.Length = withBlock;
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task DeclarationStatementsAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Test
+    Private Sub TestMethod()
+the_beginning:
+        Dim value As Integer = 1
+        Const myPIe As Double = 2 * System.Math.PI
+        Dim text = ""This is my text!""
+        GoTo the_beginning
+    End Sub
+End Class", @"using System;
 
 internal partial class Test
 {
@@ -549,16 +678,19 @@ internal partial class Test
         string text = ""This is my text!"";
         goto the_beginning;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
     [Fact]
     public async Task DeclarationStatementTwoVariablesAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class Test
+    Private Sub TestMethod()
+        Dim x, y As Date
+        Console.WriteLine(x)
+        Console.WriteLine(y)
+    End Sub
+End Class", @"using System;
 
 internal partial class Test
 {
@@ -568,18 +700,27 @@ internal partial class Test
         Console.WriteLine(x);
         Console.WriteLine(y);
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task DeclareStatementLongAsync()
     {
         // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Diagnostics;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Diagnostics
+Imports System.Threading
+
+Public Class AcmeClass
+    Private Declare Sub SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32)
+
+    Public Shared Sub Main()
+        For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32())
+            Thread.Sleep(1000)
+        Next
+    End Sub
+End Class"
+            , @"using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -597,18 +738,27 @@ public partial class AcmeClass
             Thread.Sleep(1000);
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task DeclareStatementVoidAsync()
     {
         // Intentionally uses a type name with a different casing as the loop variable, i.e. "process" to test name resolution
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Diagnostics;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Diagnostics
+Imports System.Threading
+
+Public Class AcmeClass
+    Private Declare Function SetForegroundWindow Lib ""user32"" (ByVal hwnd As Int32) As Long
+
+    Public Shared Sub Main()
+        For Each proc In Process.GetProcesses().Where(Function(p) Not String.IsNullOrEmpty(p.MainWindowTitle))
+            SetForegroundWindow(proc.MainWindowHandle.ToInt32())
+            Thread.Sleep(1000)
+        Next
+    End Sub
+End Class"
+            , @"using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -626,33 +776,42 @@ public partial class AcmeClass
             Thread.Sleep(1000);
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task DeclareStatementWithAttributesAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Runtime.InteropServices;
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class AcmeClass
+    Friend Declare Ansi Function GetNumDevices Lib ""CP210xManufacturing.dll"" Alias ""CP210x_GetNumDevices"" (ByRef NumDevices As String) As Integer
+End Class"
+            , @"using System.Runtime.InteropServices;
 
 public partial class AcmeClass
 {
     [DllImport(""CP210xManufacturing.dll"", EntryPoint = ""CP210x_GetNumDevices"", CharSet = CharSet.Ansi)]
     internal static extern int GetNumDevices(ref string NumDevices);
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task IfStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal a As Integer)
+        Dim b As Integer
+
+        If a = 0 Then
+            b = 0
+        ElseIf a = 1 Then
+            b = 1
+        ElseIf a = 2 OrElse a = 3 Then
+            b = 2
+        Else
+            b = 3
+        End If
+    End Sub
+End Class", @"
 internal partial class TestClass
 {
     private void TestMethod(int a)
@@ -676,17 +835,18 @@ internal partial class TestClass
             b = 3;
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task IfStatementWithMultiStatementLineAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public Shared Sub MultiStatement(a As Integer)
+        If a = 0 Then Console.WriteLine(1) : Console.WriteLine(2) : Return
+        Console.WriteLine(3)
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -700,17 +860,29 @@ internal partial class TestClass
         }
         Console.WriteLine(3);
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task NestedBlockStatementsKeepSameNestingAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Shared Function FindTextInCol(w As String, pTitleRow As Integer, startCol As Integer, needle As String) As Integer
+
+        For c As Integer = startCol To w.Length
+            If needle = """" Then
+                If String.IsNullOrWhiteSpace(w(c).ToString) Then
+                    Return c
+                End If
+            Else
+                If w(c).ToString = needle Then
+                    Return c
+                End If
+            End If
+        Next
+        Return -1
+    End Function
+End Class", @"
 internal partial class TestClass
 {
     public static int FindTextInCol(string w, int pTitleRow, int startCol, string needle)
@@ -732,17 +904,21 @@ internal partial class TestClass
         }
         return -1;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task SyncLockStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal nullObject As Object)
+        If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
+
+        SyncLock nullObject
+            Console.WriteLine(nullObject)
+        End SyncLock
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -754,17 +930,17 @@ internal partial class TestClass
         lock (nullObject)
             Console.WriteLine(nullObject);
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task ThrowStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal nullObject As Object)
+        If nullObject Is Nothing Then Throw New ArgumentNullException(NameOf(nullObject))
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -773,17 +949,20 @@ internal partial class TestClass
         if (nullObject is null)
             throw new ArgumentNullException(nameof(nullObject));
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task CallStatementAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Call (Sub() Console.Write(""Hello""))
+        Call (Sub() Console.Write(""Hello""))()
+        Call TestMethod
+        Call TestMethod()
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -796,18 +975,29 @@ internal partial class TestClass
     }
 }
 1 target compilation errors:
-CS0149: Method name expected", extension: "cs")
-            );
-        }
+CS0149: Method name expected");
         //BUG: Requires new Action wrapper
     }
 
     [Fact]
     public async Task AddRemoveHandlerAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public Event MyEvent As EventHandler
+
+    Private Sub TestMethod(ByVal e As EventHandler)
+        AddHandler Me.MyEvent, e
+        AddHandler Me.MyEvent, AddressOf MyHandler
+    End Sub
+
+    Private Sub TestMethod2(ByVal e As EventHandler)
+        RemoveHandler Me.MyEvent, e
+        RemoveHandler Me.MyEvent, AddressOf MyHandler
+    End Sub
+
+    Private Sub MyHandler(ByVal sender As Object, ByVal e As EventArgs)
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -828,17 +1018,24 @@ internal partial class TestClass
     private void MyHandler(object sender, EventArgs e)
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task SelectCase1Async()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal number As Integer)
+        Select Case number
+            Case 0, 1, 2
+                Console.Write(""number is 0, 1, 2"")
+            Case 5
+                Console.Write(""section 5"")
+            Case Else
+                Console.Write(""default section"")
+        End Select
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -866,17 +1063,24 @@ internal partial class TestClass
                 }
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task SelectCaseWithExpressionAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
+    Shared Function TimeAgo(daysAgo As Integer) As String
+        Select Case daysAgo
+            Case 0 To 3, 4, Is >= 5, Is < 6, Is <= 7
+                Return ""this week""
+            Case Is > 0
+                Return daysAgo \ 7 & "" weeks ago""
+            Case Else
+                Return ""in the future""
+        End Select
+    End Function
+End Class", @"
 public partial class TestClass
 {
     public static string TimeAgo(int daysAgo)
@@ -904,17 +1108,26 @@ public partial class TestClass
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
-            );
-        }
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
     }
 
     [Fact]
     public async Task SelectCaseWithStringAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
+    Shared Function TimeAgo(x As String) As String
+        Select Case UCase(x)
+            Case UCase(""a""), UCase(""b"")
+                Return ""ab""
+            Case UCase(""c"")
+                Return ""c""
+            Case ""d""
+                Return ""d""
+            Case Else
+                Return ""e""
+        End Select
+    End Function
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class TestClass
 {
@@ -944,18 +1157,36 @@ public partial class TestClass
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
-            );
-        }
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
         //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
     }
 
     [Fact]
     public async Task SelectCaseWithExpression2Async()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass2
+    Function CanDoWork(Something As Object) As Boolean
+        Select Case True
+            Case Today.DayOfWeek = DayOfWeek.Saturday Or Today.DayOfWeek = DayOfWeek.Sunday
+                ' we do not work on weekends
+                Return False
+            Case Not IsSqlAlive()
+                ' Database unavailable
+                Return False
+            Case TypeOf Something Is Integer
+                ' Do something with the Integer
+                Return True
+            Case Else
+                ' Do something else
+                Return False
+        End Select
+    End Function
+
+    Private Function IsSqlAlive() As Boolean
+        ' Do something to test SQL Server
+        Return True
+    End Function
+End Class", @"using System;
 
 public partial class TestClass2
 {
@@ -992,17 +1223,24 @@ public partial class TestClass2
         // Do something to test SQL Server
         return true;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task SelectCaseWithNonDeterministicExpressionAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass2
+    Sub DoesNotThrow()
+        Dim rand As New Random
+        Select Case rand.Next(8)
+            Case Is < 4
+            Case 4
+            Case Is > 4
+            Case Else
+                Throw New Exception
+        End Select
+    End Sub
+End Class", @"using System;
 
 public partial class TestClass2
 {
@@ -1032,17 +1270,27 @@ public partial class TestClass2
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
-            );
-        }
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
     }
 
     [Fact]
     public async Task Issue579SelectCaseWithCaseInsensitiveTextCompareAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Globalization;
+        await TestConversionVisualBasicToCSharpAsync(@"
+Option Compare Text ' Comments lost
+
+Class Issue579SelectCaseWithCaseInsensitiveTextCompare
+Private Function Test(astr_Temp As String) As Nullable(Of Boolean)
+    Select Case astr_Temp
+        Case ""Test""
+            Return True
+        Case astr_Temp
+            Return False
+        Case Else
+            Return Nothing
+    End Select
+End Function
+End Class", @"using System.Globalization;
 
 internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
 {
@@ -1067,17 +1315,23 @@ internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
-            );
-        }
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
     }
 
     [Fact]
     public async Task Issue707SelectCaseAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+        await TestConversionVisualBasicToCSharpAsync(@"
+Class Issue707SelectCaseAsyncClass
+    Private Function Exists(sort As Char?) As Boolean?
+        Select Case Microsoft.VisualBasic.LCase(sort + """")
+            Case """", Nothing
+                Return False
+            Case Else
+                Return True
+        End Select
+    End Function
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Issue707SelectCaseAsyncClass
@@ -1100,17 +1354,44 @@ internal partial class Issue707SelectCaseAsyncClass
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
-            );
-        }
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
     }
 
     [Fact]
     public async Task TryCatchAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Shared Function Log(ByVal message As String) As Boolean
+        Console.WriteLine(message)
+        Return False
+    End Function
+
+    Private Sub TestMethod(ByVal number As Integer)
+        Try
+            Console.WriteLine(""try"")
+        Catch e As Exception
+            Console.WriteLine(""catch1"")
+        Catch
+            Console.WriteLine(""catch all"")
+        Finally
+            Console.WriteLine(""finally"")
+        End Try
+
+        Try
+            Console.WriteLine(""try"")
+        Catch e2 As NotImplementedException
+            Console.WriteLine(""catch1"")
+        Catch e As Exception When Log(e.Message)
+            Console.WriteLine(""catch2"")
+        End Try
+
+        Try
+            Console.WriteLine(""try"")
+        Finally
+            Console.WriteLine(""finally"")
+        End Try
+    End Sub
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -1161,17 +1442,28 @@ internal partial class TestClass
             Console.WriteLine(""finally"");
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task SwitchIntToEnumAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Module Main
+    Public Enum EWhere As Short
+        None = 0
+        Bottom = 1
+    End Enum
+
+    Friend Function prtWhere(ByVal aWhere As EWhere) As String
+        Select Case aWhere
+            Case EWhere.None
+                Return "" ""
+            Case EWhere.Bottom
+                Return ""_ ""
+        End Select
+
+    End Function
+End Module", @"
 internal static partial class Main
 {
     public enum EWhere : short
@@ -1197,17 +1489,26 @@ internal static partial class Main
         return default;
 
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact] //https://github.com/icsharpcode/CodeConverter/issues/585
     public async Task Issue585_SwitchNonStringAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Data;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+
+Public Class NonStringSelect
+    Private Function Test3(CurRow As DataRow)
+        For Each CurCol As DataColumn In CurRow.GetColumnsInError
+            Select Case CurCol.DataType
+                Case GetType(String)
+                    Return False
+                Case Else
+                    Return True
+            End Select
+        Next
+    End Function
+End Class", @"using System.Data;
 
 public partial class NonStringSelect
 {
@@ -1233,18 +1534,36 @@ public partial class NonStringSelect
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
-            );
-        }
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
     }
 
 
     [Fact]
     public async Task ExitMethodBlockStatementsAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function FuncReturningNull() As Object
+        Dim zeroLambda = Function(y) As Integer
+                            Exit Function
+                         End Function
+        Exit Function
+    End Function
+
+    Private Function FuncReturningZero() As Integer
+        Dim nullLambda = Function(y) As Object
+                            Exit Function
+                         End Function
+        Exit Function
+    End Function
+
+    Private Function FuncReturningAssignedValue() As Integer
+        Dim aSub = Sub(y)
+                            Exit Sub
+                         End Sub
+        FuncReturningAssignedValue = 3
+        Exit Function
+    End Function
+End Class", @"
 internal partial class TestClass
 {
     private object FuncReturningNull()
@@ -1266,17 +1585,22 @@ internal partial class TestClass
         FuncReturningAssignedValueRet = 3;
         return FuncReturningAssignedValueRet;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task YieldAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Collections.Generic;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Iterator Function TestMethod(ByVal number As Integer) As IEnumerable(Of Integer)
+        If number < 0 Then Return
+        If number < 1 Then Exit Function
+        For i As Integer = 0 To number - 1
+            Yield i
+        Next
+        Return
+    End Function
+End Class", @"using System.Collections.Generic;
 
 internal partial class TestClass
 {
@@ -1290,17 +1614,29 @@ internal partial class TestClass
             yield return i;
         yield break;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task SetterReturnAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Public ReadOnly Property Prop() As Object
+    Get
+        Try
+            Prop = New Object
+            Exit Property
+        Catch ex As Exception
+        End Try
+    End Get
+End Property
+
+Public Function Func() As Object
+    Try
+        Func = New Object
+        Exit Function
+    Catch ex As Exception
+    End Try
+End Function", @"
 internal partial class SurroundingClass
 {
     public object Prop
@@ -1335,8 +1671,6 @@ internal partial class SurroundingClass
 
         return FuncRet;
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 }

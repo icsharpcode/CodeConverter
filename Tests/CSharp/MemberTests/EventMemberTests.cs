@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -11,40 +10,43 @@ public class EventMemberTests : ConverterTestBase
     [Fact]
     public async Task TestEventAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Public Event MyEvent As EventHandler
+End Class", @"using System;
 
 internal partial class TestClass
 {
     public event EventHandler MyEvent;
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestSharedEventAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Public Shared Event TestEvent(a As String)
+End Class", @"
 internal partial class TestClass
 {
     public static event TestEventEventHandler TestEvent;
 
     public delegate void TestEventEventHandler(string a);
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestEventWithNoDeclaredTypeOrHandlersAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class TestEventWithNoType
+    Public Event OnCakeChange
+
+    Public Sub RaisingFlour()
+        RaiseEvent OnCakeChange
+    End Sub
+End Class", @"
 public partial class TestEventWithNoType
 {
     public event OnCakeChangeEventHandler OnCakeChange;
@@ -55,17 +57,33 @@ public partial class TestEventWithNoType
     {
         OnCakeChange?.Invoke();
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestEventsOnInterfaceAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.IO;
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Interface IFileSystem
+
+    Event FileChanged(FileData As String)
+    Event FileCreated(FileData As String)
+    Event FileDeleted(FileData As String)
+    Event FileRenamed(e As RenamedEventArgs)
+    Event WatcherError(e As ErrorEventArgs)
+
+End Interface
+
+Public Class FileSystemWin
+    Implements IFileSystem
+
+    Public Event FileChanged(FileData As String) Implements IFileSystem.FileChanged
+    Public Event FileCreated(FileData As String) Implements IFileSystem.FileCreated
+    Public Event FileDeleted(FileData As String) Implements IFileSystem.FileDeleted
+    Public Event FileRenamed(e As RenamedEventArgs) Implements IFileSystem.FileRenamed
+    Public Event WatcherError(e As ErrorEventArgs) Implements IFileSystem.WatcherError
+
+End Class", @"using System.IO;
 
 public partial interface IFileSystem
 {
@@ -97,17 +115,30 @@ public partial class FileSystemWin : IFileSystem
     public event IFileSystem.FileRenamedEventHandler FileRenamed;
     public event IFileSystem.WatcherErrorEventHandler WatcherError;
 
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestModuleHandlesWithEventsAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
+    Public Event TestEvent()
+
+    Sub RaiseEvents()
+        RaiseEvent TestEvent()
+    End Sub
+End Class
+
+Module Module1
+    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass
+
+    Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
+    End Sub
+
+    Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
+    End Sub
+End Module", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -140,17 +171,21 @@ internal static partial class Module1
     public static void PrintTestMessage3()
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestWithEventsWithoutInitializerAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
+    Public Event TestEvent()
+End Class
+Class Class1
+    WithEvents MyEventClassInstance As MyEventClass
+    Sub EventClassInstance_TestEvent() Handles MyEventClassInstance.TestEvent
+    End Sub
+End Class", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -170,17 +205,44 @@ internal partial class Class1
     {
     }
 }
-", extension: "cs")
-            );
-        }
+");
     }
 
     [Fact]
     public async Task TestClassHandlesWithEventsAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
+    Public Event TestEvent()
+
+    Sub RaiseEvents()
+        RaiseEvent TestEvent()
+    End Sub
+End Class
+
+Class Class1
+    Shared WithEvents SharedEventClassInstance As New MyEventClass
+    WithEvents NonSharedEventClassInstance As New MyEventClass 'Comment moves to initialization in c# constructor
+
+    Public Sub New(num As Integer)
+    End Sub
+
+    Public Sub New(obj As Object)
+        MyClass.New(7)
+    End Sub
+
+    Shared Sub PrintTestMessage2() Handles SharedEventClassInstance.TestEvent, NonSharedEventClassInstance.TestEvent
+    End Sub
+
+    Sub PrintTestMessage3() Handles NonSharedEventClassInstance.TestEvent
+    End Sub
+
+    Public Class NestedShouldNotGainConstructor
+    End Class
+End Class
+
+Public Class ShouldNotGainConstructor
+End Class", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -230,17 +292,42 @@ internal partial class Class1
 
 public partial class ShouldNotGainConstructor
 {
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestPartialClassHandlesWithEventsAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class MyEventClass
+    Public Event TestEvent()
+
+    Sub RaiseEvents()
+        RaiseEvent TestEvent()
+    End Sub
+End Class
+
+Partial Class Class1
+    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass 'Comment moves to initialization in c# constructor
+
+    Public Sub New()
+    End Sub
+
+    Public Sub New(num As Integer)
+    End Sub
+
+    Public Sub New(obj As Object)
+        MyClass.New()
+    End Sub
+End Class
+
+Public Partial Class Class1
+    Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
+    End Sub
+
+    Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
+    End Sub
+End Class", @"
 internal partial class MyEventClass
 {
     public event TestEventEventHandler TestEvent;
@@ -289,17 +376,39 @@ public partial class Class1
     public void PrintTestMessage3()
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestInitializeComponentAddsEventHandlersAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+        await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic.CompilerServices
+
+<DesignerGenerated>
+Partial Public Class TestHandlesAdded
+
+    Sub InitializeComponent()
+        Me.POW_btnV2DBM = New System.Windows.Forms.Button()
+        '
+        'POW_btnV2DBM
+        '
+        Me.POW_btnV2DBM.Location = New System.Drawing.Point(207, 15)
+        Me.POW_btnV2DBM.Name = ""POW_btnV2DBM""
+        Me.POW_btnV2DBM.Size = New System.Drawing.Size(42, 23)
+        Me.POW_btnV2DBM.TabIndex = 3
+        Me.POW_btnV2DBM.Text = "">>""
+        Me.POW_btnV2DBM.UseVisualStyleBackColor = True
+    End Sub
+
+End Class
+
+Partial Public Class TestHandlesAdded
+    Dim WithEvents POW_btnV2DBM As Button
+
+    Public Sub POW_btnV2DBM_Click() Handles POW_btnV2DBM.Click
+
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 [DesignerGenerated]
 public partial class TestHandlesAdded
@@ -339,17 +448,44 @@ public partial class TestHandlesAdded
 BC30002: Type 'Button' is not defined.
 BC30590: Event 'Click' cannot be found.
 1 target compilation errors:
-CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)", extension: "cs")
-            );
-        }
+CS0246: The type or namespace name 'Button' could not be found (are you missing a using directive or an assembly reference?)");
     }
 
     [Fact]
     public async Task Issue774_HandlerForBasePropertyAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Imports System.Windows.Forms
+Imports Microsoft.VisualBasic.CompilerServices
+
+Partial Class BaseForm
+    Inherits Form
+    Friend WithEvents BaseButton As Button
+End Class
+
+<DesignerGenerated>
+Partial Class BaseForm
+    Inherits System.Windows.Forms.Form
+
+    Private Sub InitializeComponent()
+        Me.BaseButton = New Button()
+    End Sub
+End Class
+
+<DesignerGenerated>
+Partial Class Form1
+    Inherits BaseForm
+    Private Sub InitializeComponent()
+        Me.Button1 = New Button()
+    End Sub
+    Friend WithEvents Button1 As Button
+End Class
+
+Partial Class Form1
+    Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
+                                                                            BaseButton.Click
+    End Sub
+End Class", @"using System;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
@@ -435,17 +571,21 @@ internal partial class Form1
     {
     }
 }
-", extension: "cs")
-            );
-        }
+");
     }
 
     [Fact]
     public async Task Issue584_EventWithByRefAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue584RaiseEventByRefDemo
+    Public Event ConversionNeeded(ai_OrigID As Integer, ByRef NewID As Integer)
+
+    Public Function TestConversion(ai_ID) As Integer
+        Dim i_NewValue As Integer
+        RaiseEvent ConversionNeeded(ai_ID, i_NewValue)
+        Return i_NewValue
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue584RaiseEventByRefDemo
 {
@@ -460,17 +600,30 @@ public partial class Issue584RaiseEventByRefDemo
         return i_NewValue;
     }
 }
-", extension: "cs")
-            );
-        }
+");
     }
 
     [Fact]
     public async Task Issue967_HandlerAssignmentShouldComeLastInConstructorAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System.Windows.Forms;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Windows.Forms
+
+Public Partial Class MainWindow
+    Inherits Form
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+
+    Private Sub MainWindow_Loaded() Handles MyBase.Load
+        Interaction.MsgBox(""Window, loaded"")
+    End Sub
+End Class
+
+Public Partial Class MainWindow
+    Public Sub InitializeComponent()
+    End Sub
+End Class
+", @"using System.Windows.Forms;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class MainWindow : Form
@@ -493,17 +646,37 @@ public partial class MainWindow
     {
     }
 }
-", extension: "cs")
-            );
-        }
+");
     }
 
     [Fact]
     public async Task Issue991_EventAssignmentRuntimeNullRefAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Public Module Program
+    Public Sub Main(args As String())
+        Dim c As New SomeClass(New SomeDependency())
+        Console.WriteLine(""Done"")
+    End Sub
+End Module
+
+Public Class SomeDependency
+    Public Event SomeEvent As EventHandler
+End Class
+
+Public Class SomeClass
+    Private WithEvents _dep As SomeDependency
+
+    Public Sub New(dep)
+        _dep = dep
+    End Sub
+
+    Private Sub _dep_SomeEvent(sender As Object, e As EventArgs) Handles _dep.SomeEvent
+        ' Do Something
+    End Sub
+End Class
+", @"using System;
 using System.Runtime.CompilerServices;
 
 public static partial class Program
@@ -558,17 +731,30 @@ public partial class SomeClass
         // Do Something
     }
 }
-", extension: "cs")
-            );
-        }
+");
     }
 
     [Fact]
     public async Task Test_Issue701_MultiLineHandlesSyntaxAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Form1
+    Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
+                                                                            Button2.Click
+    End Sub
+End Class
+
+Partial Class Form1
+    Inherits System.Windows.Forms.Form
+
+    Private Sub InitializeComponent()
+        Me.Button1 = New System.Windows.Forms.Button()
+        Me.Button2 = New System.Windows.Forms.Button()
+    End Sub
+
+    Friend WithEvents Button1 As System.Windows.Forms.Button
+    Friend WithEvents Button2 As System.Windows.Forms.Button
+End Class",
+            @"using System;
 using System.Runtime.CompilerServices;
 
 public partial class Form1
@@ -639,8 +825,6 @@ public partial class Form1 : System.Windows.Forms.Form
             }
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 }

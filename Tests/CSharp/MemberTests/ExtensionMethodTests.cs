@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -10,9 +9,16 @@ public class ExtensionMethodTests : ConverterTestBase
     [Fact]
     public async Task TestExtensionMethodAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module TestClass
+    <System.Runtime.CompilerServices.Extension()>
+    Sub TestMethod(ByVal str As String)
+    End Sub
+
+    <System.Runtime.CompilerServices.Extension()>
+    Sub TestMethod2Parameters(ByVal str As String, other As String)
+    End Sub
+End Module", @"
 internal static partial class TestClass
 {
     public static void TestMethod(this string str)
@@ -22,33 +28,50 @@ internal static partial class TestClass
     public static void TestMethod2Parameters(this string str, string other)
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestExtensionMethodWithExistingImportAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Runtime.CompilerServices ' Removed by simplifier
+
+Module TestClass
+    <Extension()>
+    Sub TestMethod(ByVal str As String)
+    End Sub
+End Module", @"
 internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestRefExtensionMethodAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System
+Imports System.Runtime.CompilerServices ' Removed since the extension attribute is removed
+
+Public Module MyExtensions
+    <Extension()>
+    Public Sub Add(Of T)(ByRef arr As T(), item As T)
+        Array.Resize(arr, arr.Length + 1)
+        arr(arr.Length - 1) = item
+    End Sub
+End Module
+
+Public Module UsagePoint
+    Public Sub Main()
+        Dim arr = New Integer() {1, 2, 3}
+        arr.Add(4)
+        System.Console.WriteLine(arr(3))
+    End Sub
+End Module", @"using System;
 
 public static partial class MyExtensions
 {
@@ -67,17 +90,24 @@ public static partial class UsagePoint
         MyExtensions.Add(ref arr, 4);
         Console.WriteLine(arr[3]);
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestExtensionWithinExtendedTypeAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As ExtendedClass)
+    End Sub
+End Module
+
+Class ExtendedClass
+  Sub TestExtensionConsumer()
+    TestExtension()
+  End Sub
+End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
@@ -91,17 +121,29 @@ internal partial class ExtendedClass
     {
         this.TestExtension();
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestExtensionWithinTypeDerivedFromExtendedTypeAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As ExtendedClass)
+    End Sub
+End Module
+
+Class ExtendedClass
+End Class
+
+Class DerivedClass
+    Inherits ExtendedClass
+
+  Sub TestExtensionConsumer()
+    TestExtension()
+  End Sub
+End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
@@ -120,17 +162,26 @@ internal partial class DerivedClass : ExtendedClass
     {
         this.TestExtension();
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestExtensionWithinNestedExtendedTypeAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As NestingClass.ExtendedClass)
+    End Sub
+End Module
+
+Class NestingClass
+    Class ExtendedClass
+      Sub TestExtensionConsumer()
+        TestExtension()
+      End Sub        
+    End Class
+End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this NestingClass.ExtendedClass extendedClass)
@@ -147,17 +198,24 @@ internal partial class NestingClass
             this.TestExtension();
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task TestExtensionWithMeWithinExtendedTypeAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module Extensions
+    <Extension()>
+    Sub TestExtension(extendedClass As ExtendedClass)
+    End Sub
+End Module
+
+Class ExtendedClass
+  Sub TestExtensionConsumer()
+    Me.TestExtension()
+  End Sub
+End Class", @"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
@@ -171,8 +229,6 @@ internal partial class ExtendedClass
     {
         this.TestExtension();
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 }

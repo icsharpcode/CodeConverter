@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Common;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.IO;
+using NuGet.Configuration;
+using VerifyTests;
+using VerifyXunit;
 using Xunit;
 using Xunit.Sdk;
-using System.Globalization;
-using VerifyXunit;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 
@@ -100,6 +104,32 @@ End Sub";
         return expectedVisualBasicCode;
     }
 
+    public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode, [CallerFilePath] string sourceFile = "")
+    {
+        var method = UseVerifyAttribute.GetMethod();
+        var inputFilename = Path.ChangeExtension(sourceFile, method + ".vb");
+        var outputFilename = Path.ChangeExtension(sourceFile, method + ".verified.cs");
+        var input = await File.ReadAllTextAsync(inputFilename);
+
+        var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) {
+            RootNamespaceOverride = _rootNamespace,
+            ShowCompilationErrors = true
+        };
+
+        string convertedTextFollowedByExceptions = await ConvertAsync<VBToCSConversion>(visualBasicCode, conversionOptions);
+        Verifier.Verify(convertedTextFollowedByExceptions.TrimEnd(), extension: "cs", sourceFile: sourceFile);
+
+        if (_testVbtoCsCommentsByDefault) {
+            await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
+                "'", LineCanHaveVisualBasicComment);
+        }
+    }
+
+    /// <summary>
+    /// <paramref name="missingSemanticInfo"/> is currently unused but acts as documentation,
+    /// and in future will be used to decide whether to check if the input/output compiles
+    /// By default tests run a second time with a numbered comment added to each line (that doesn't already have a comment) and checks the comments come out in the same order. If the order significantly changes, or there are input lines where a line comment is invalid (e.g. multiline xml literal) you can use <paramref name="incompatibleWithAutomatedCommentTesting"/> to skip the check.
+    /// </summary>
     public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode,
         bool expectSurroundingBlock = false, bool missingSemanticInfo = false,
         bool incompatibleWithAutomatedCommentTesting = false)
@@ -147,10 +177,10 @@ End Sub";
     protected async Task AssertConvertedCodeResultEqualsAsync<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
     {
         string convertedTextFollowedByExceptions = await ConvertAsync<TLanguageConversion>(inputCode, conversionOptions);
-        AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
+        return AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
     }
 
-    private static void AssertConvertedCodeResultEquals(string convertedCodeFollowedByExceptions,
+    private static string AssertConvertedCodeResultEquals(string convertedCodeFollowedByExceptions,
         string expectedConversionResultText, string originalSource)
     {
         var txt = convertedCodeFollowedByExceptions.TrimEnd();

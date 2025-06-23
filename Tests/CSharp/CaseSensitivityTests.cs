@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -10,9 +9,18 @@ public class CaseSensitivityTests : ConverterTestBase
     [Fact]
     public async Task HandlesWithDifferingCaseTestAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class VBIsCaseInsensitive
+    Inherits System.Web.UI.Page
+
+    Private Sub btnOK_Click(sender As Object, e As System.EventArgs) Handles btnOK.Click
+    End Sub
+End Class
+
+Partial Public Class VBIsCaseInsensitive
+    Protected WithEvents btnOk As Global.System.Web.UI.WebControls.Button
+End Class
+",
+            @"using System;
 using System.Runtime.CompilerServices;
 
 public partial class VBIsCaseInsensitive : System.Web.UI.Page
@@ -50,17 +58,54 @@ public partial class VBIsCaseInsensitive
             }
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task Issue1154_NamespaceAndClassSameNameDifferentCaseAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"
+Imports System
+
+Namespace Issue1154
+    <CaseSensitive1.Casesensitive1.TestDummy>
+    Public Class UpperLowerCase
+    End Class
+
+    <Casesensitive2.CaseSensitive2.TestDummy>
+    Public Class LowerUpperCase
+    End Class
+
+    <CaseSensitive3.CaseSensitive3.TestDummy>
+    Public Class SameCase
+    End Class
+End Namespace
+
+Namespace CaseSensitive1
+    Public Class Casesensitive1
+        Public Class TestDummyAttribute
+            Inherits Attribute
+        End Class
+    End Class
+End Namespace
+
+Namespace Casesensitive2
+    Public Class CaseSensitive2
+        Public Class TestDummyAttribute
+            Inherits Attribute
+        End Class
+    End Class
+End Namespace
+
+Namespace CaseSensitive3
+    Public Class CaseSensitive3
+        Public Class TestDummyAttribute
+            Inherits Attribute
+        End Class
+    End Class
+End Namespace
+",
+            @"
 using System;
 
 namespace Issue1154
@@ -110,9 +155,7 @@ namespace CaseSensitive3
         }
     }
 }
-", extension: "cs")
-            );
-        }
+");
     }
 
 

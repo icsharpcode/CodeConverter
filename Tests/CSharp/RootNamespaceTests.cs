@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -14,9 +13,14 @@ public class RootNamespaceTests : ConverterTestBase
     [Fact]
     public async Task RootNamespaceIsExplicitAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class AClassInRootNamespace
+End Class
+
+Namespace NestedWithinRoot
+    Class AClassInANamespace
+    End Class
+End Namespace",
+            @"
 namespace TheRootNamespace
 {
     internal partial class AClassInRootNamespace
@@ -29,49 +33,52 @@ namespace TheRootNamespace
         {
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceIsExplicitWithSingleClassAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Class AClassInRootNamespace
+End Class",
+            @"
 namespace TheRootNamespace
 {
     internal partial class AClassInRootNamespace
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceIsAddedToExistingNamespaceAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace A.B
+    Public Class Class1
+    End Class
+End Namespace",
+            @"
 namespace TheRootNamespace.A.B
 {
     public partial class Class1
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceIsAddedToExistingNamespaceWithDeclarationCasingAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace AAA.AAaB.AaA
+    Public Class Class1
+    End Class
+End Namespace
+
+Namespace Aaa.aAAb.aAa
+    Public Class Class2
+    End Class
+End Namespace",
+            @"
 namespace TheRootNamespace.AAA.AAaB.AaA
 {
     public partial class Class1
@@ -84,17 +91,19 @@ namespace TheRootNamespace.Aaa.aAAb.aAa
     public partial class Class2
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task NestedNamespacesRemainRelativeAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace A.B
+    Namespace C
+        Public Class Class1
+        End Class
+    End Namespace
+End Namespace",
+            @"
 namespace TheRootNamespace.A.B
 {
     namespace C
@@ -103,17 +112,22 @@ namespace TheRootNamespace.A.B
         {
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task NestedNamespaceWithRootClassRemainRelativeAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace A.B
+    Namespace C
+        Public Class Class1
+        End Class
+    End Namespace
+End Namespace
+
+Public Class RootClass
+End Class",
+            @"
 namespace TheRootNamespace
 {
     namespace A.B
@@ -129,65 +143,76 @@ namespace TheRootNamespace
     public partial class RootClass
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceIsNotAddedToExistingGlobalNamespaceAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"Namespace Global.A.B
+    Public Class Class1
+    End Class
+End Namespace",
+            @"
 namespace A.B
 {
     public partial class Class1
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceIsExplicitForSingleNamespaceAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"
+Namespace NestedWithinRoot
+    Class AClassInANamespace
+    End Class
+End Namespace",
+            @"
 namespace TheRootNamespace.NestedWithinRoot
 {
     internal partial class AClassInANamespace
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceNotAppliedToFullyQualifiedNamespaceAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@"
+Namespace Global.NotNestedWithinRoot
+    Class AClassInANamespace
+    End Class
+End Namespace",
+            @"
 namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
     {
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RootNamespaceOnlyAppliedToUnqualifiedMembersAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"
+        await TestConversionVisualBasicToCSharpAsync(@" 'Comment from start of file moves within the namespace
+Class AClassInRootNamespace ' Becomes nested - 1
+End Class ' Becomes nested - 2
+
+Namespace Global.NotNestedWithinRoot
+    Class AClassInANamespace
+    End Class
+End Namespace
+
+Namespace NestedWithinRoot
+    Class AClassInANamespace
+    End Class
+End Namespace",
+            @"
 namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
@@ -208,8 +233,6 @@ namespace TheRootNamespace
         {
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
-using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
@@ -10,9 +9,15 @@ public class OnErrorStatementTests : ConverterTestBase
     [Fact]
     public async Task BasicGotoAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+Public Function SelfDivisionPossible(x as Integer) As Boolean
+    On Error GoTo ErrorHandler
+        Dim i as Integer = x / x
+        Return True
+ErrorHandler:
+    Return Err.Number = 6
+End Function
+End Class", @"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
@@ -30,17 +35,20 @@ internal partial class TestClass
             return Information.Err().Number == 6;
         }
     }
-}", extension: "cs")
-            );
-        }
+}");
     }
 
     [Fact]
     public async Task RemainingScopeIssueCharacterizationAsync()
     {
-        {
-            await Task.WhenAll(
-                Verifier.Verify(@"using System;
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+Public Function SelfDivisionPossible(x as Integer) As Boolean
+    On Error GoTo ErrorHandler
+        Dim i as Integer = x / x
+ErrorHandler:
+    Return i <> 0
+End Function
+End Class", @"using System;
 
 internal partial class TestClass
 {
@@ -58,8 +66,6 @@ internal partial class TestClass
     }
 }
 1 target compilation errors:
-CS0103: The name 'i' does not exist in the current context", extension: "cs")
-            );
-        }
+CS0103: The name 'i' does not exist in the current context");
     }
 }
