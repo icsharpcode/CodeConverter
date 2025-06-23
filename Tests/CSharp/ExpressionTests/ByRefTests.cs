@@ -13,16 +13,6 @@ public class ByRefTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue213
-    Const x As Date = #1990-1-1#
-
-    Private Sub Y(Optional ByRef opt As Date = x)
-    End Sub
-
-    Private Sub CallsY()
-        Y
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -50,14 +40,6 @@ public partial class Issue213
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-  Public Sub UseStuff()
-    Stuff(Nothing)
-  End Sub
-
-  Public Sub Stuff(ByRef strs As String())
-  End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class VisualBasicClass
 {
@@ -80,24 +62,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Private Property C1 As Class1
-    Private _c2 As Class1
-    Private _o1 As Object
-
-    Sub Foo()
-        Bar(New Class1)
-        Bar(C1)
-        Bar(Me.C1)
-        Bar(_c2)
-        Bar(Me._c2)
-        Bar(_o1)
-        Bar(Me._o1)
-    End Sub
-
-    Sub Bar(ByRef class1)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -138,20 +102,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue876
-    Property SomeProperty As Integer
-    Property SomeProperty2 As Integer
-    Property SomeProperty3 As Integer
-
-    Public Function InlineAssignHelper(Of T)(ByRef lhs As T, ByVal rhs As T) As T
-        lhs = rhs
-        Return lhs
-    End Function
-
-    Public Sub Main()
-        Dim result = InlineAssignHelper(SomeProperty, InlineAssignHelper(SomeProperty2, InlineAssignHelper(SomeProperty3, 1)))
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Issue876
 {
@@ -185,50 +135,6 @@ public partial class Issue876
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        Dim x = True
-        Bar(x = True)
-    End Sub
-
-    Function Foo2()
-        Return Bar(True = False)
-    End Function
-
-    Sub Foo3()
-        If Bar(True = False) Then Bar(True = False)
-    End Sub
-
-    Sub Foo4()
-        If Bar(True = False) Then
-            Bar(True = False)
-        ElseIf Bar(True = False) Then
-            Bar(True = False)
-        Else
-            Bar(True = False)
-        End If
-    End Sub
-
-    Sub Foo5()
-        Bar(Nothing)
-    End Sub
-
-    Function Bar(ByRef b As Boolean) As Boolean
-            Return True
-    End Function
-
-    Function Bar2(ByRef c1 As Class1) As Integer
-        If c1 IsNot Nothing AndAlso Len(Bar3(Me)) <> 0 Then
-            Return 1
-        End If
-        Return 0
-    End Function
-
-    Function Bar3(ByRef c1 As Class1) As String
-        Return """"
-    End Function
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
@@ -313,18 +219,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Data.SqlClient
-
-Public Class Class1
-    Sub Foo()
-        Using x = New SqlConnection
-            Bar(x)
-        End Using
-    End Sub
-    Sub Bar(ByRef x As SqlConnection)
-
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Data.SqlClient;
 
 public partial class Class1
@@ -351,14 +245,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class OptionalRefIssue91
-    Public Shared Function TestSub(Optional ByRef IsDefault As Boolean = False) As Boolean
-    End Function
-
-    Public Shared Function CallingFunc() As Boolean
-        Return TestSub() AndAlso TestSub(True)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 public partial class OptionalRefIssue91
@@ -385,11 +271,6 @@ public partial class OptionalRefIssue91
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Sub S(Optional a As Integer = 0, Optional ByRef b As Integer = 0)
-    S()
-End Sub
-", extension: "vb"),
-                Verifier.Verify(@"
 public void S([Optional, DefaultParameterValue(0)] int a, [Optional, DefaultParameterValue(0)] ref int b)
 {
     int argb = 0;
@@ -405,10 +286,6 @@ public void S([Optional, DefaultParameterValue(0)] int a, [Optional, DefaultPara
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Sub S(Optional ByRef dt As Date = Nothing)
-End Sub
-", extension: "vb"),
-                Verifier.Verify(@"
 public void S([Optional] ref DateTime dt)
 {
 }", extension: "cs")
@@ -421,21 +298,6 @@ public void S([Optional] ref DateTime dt)
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class C
-    Public Sub S()
-        Dim i As Integer = 0
-        Modify(i)
-        System.Diagnostics.Debug.Assert(i = 1)
-        Modify((i))
-        System.Diagnostics.Debug.Assert(i = 1)
-    End Sub
-
-    Sub Modify(ByRef i As Integer)
-        i = i + 1
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 public partial class C
@@ -464,20 +326,6 @@ public partial class C
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class OptionalOutIssue882
-    Private Sub TestSub(<Out> ByRef a As Integer, <Out> Optional ByRef b As Integer = Nothing)
-        a = 42
-        b = 23
-    End Sub
-
-    Public Sub CallingFunc()
-        Dim a As Integer
-        Dim b As Integer
-        TestSub(a:=a, b:=b)
-        TestSub(a:=a)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 public partial class OptionalOutIssue882
@@ -506,17 +354,6 @@ public partial class OptionalOutIssue882
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-  Function ExplicitFunc(Optional ByRef str2 As String = """") As Integer
-End Interface
-
-Public Class Foo
-  Implements IFoo
-
-  Private Function ExplicitFunc(Optional ByRef str As String = """") As Integer Implements IFoo.ExplicitFunc
-    Return 5
-  End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 public partial interface IFoo
@@ -543,12 +380,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Private _p1 As Class1 = Foo(New Class1)
-    Public Shared Function Foo(ByRef c1 As Class1) As Class1
-        Return c1
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -573,30 +404,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-
-    Public Class TestClass
-        Public ReadOnly Property Foo As String
-
-        Public Sub New()
-            Foo = ""abc""
-        End Sub
-    End Class
-
-    Sub Main()
-        Test02()
-    End Sub
-
-    Private Sub Test02()
-        Dim t As New TestClass
-        Test02Sub(t.Foo)
-    End Sub
-
-    Private Sub Test02Sub(ByRef value As String)
-        Console.WriteLine(value)
-    End Sub
-
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal static partial class Module1
@@ -639,42 +446,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class MyTestClass
-
-    Private Property Prop As Integer
-    Private Property Prop2 As Integer
-        
-    Private Function TakesRef(ByRef vrbTst As Integer) As Boolean
-        vrbTst = Prop + 1
-            Return vrbTst > 3
-    End Function
-        
-    Private Sub TakesRefVoid(ByRef vrbTst As Integer)
-        vrbTst = vrbTst + 1
-    End Sub
-
-    Public Sub UsesRef(someBool As Boolean, someInt As Integer)
-
-        TakesRefVoid(someInt) ' Convert directly
-        TakesRefVoid(1) 'Requires variable before
-        TakesRefVoid(Prop2) ' Requires variable before, and to assign back after
-                
-        Dim a = TakesRef(someInt) ' Convert directly
-        Dim b = TakesRef(2) 'Requires variable before
-        Dim c = TakesRef(Prop) ' Requires variable before, and to assign back after
-
-        If 16 > someInt OrElse TakesRef(someInt) ' Convert directly
-            Console.WriteLine(1)    
-        Else If someBool AndAlso TakesRef(3 * a) 'Requires variable before (in local function)
-            someInt += 1
-        Else If TakesRef(Prop) ' Requires variable before, and to assign back after (in local function)
-            someInt -=2
-        End If
-        Console.WriteLine(someInt)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -739,22 +510,6 @@ public partial class MyTestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue567
-    Dim arr() As String
-    Dim arr2(,) As String
-
-    Sub DoSomething(ByRef str As String)
-        str = ""test""
-    End Sub
-
-    Sub Main()
-        DoSomething(arr(1))
-        Debug.Assert(arr(1) = ""test"")
-        DoSomething(arr2(2, 2))
-        Debug.Assert(arr2(2, 2) = ""test"")
-    End Sub
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 public partial class Issue567
@@ -785,26 +540,6 @@ public partial class Issue567
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue567
-    Sub DoSomething(ByRef str As String)
-        lst = New List(Of String)({4.ToString(), 5.ToString(), 6.ToString()})
-        lst2 = New List(Of Object)({4.ToString(), 5.ToString(), 6.ToString()})
-        str = 999.ToString()
-    End Sub
-
-    Sub Main()
-        DoSomething(lst(1))
-        Debug.Assert(lst(1) = 4.ToString())
-        DoSomething(lst2(1))
-        Debug.Assert(lst2(1) = 5.ToString())
-    End Sub
-
-End Class
-
-Friend Module Other
-    Public lst As List(Of String) = New List(Of String)({ 1.ToString(), 2.ToString(), 3.ToString()})
-    Public lst2 As List(Of Object) = New List(Of Object)({ 1.ToString(), 2.ToString(), 3.ToString()})
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
@@ -848,19 +583,6 @@ internal static partial class Other
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue856
-    Sub Main()
-        Dim decimalTarget As Decimal
-        Double.TryParse(""123"", decimalTarget)
-        
-        Dim longTarget As Long
-        Integer.TryParse(""123"", longTarget)
-        
-        Dim intTarget As Integer
-        Long.TryParse(""123"", intTarget)
-    End Sub
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Issue856
 {
@@ -892,13 +614,6 @@ public partial class Issue856
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Runtime.InteropServices ' Statement removed so comment removed too
-
-Public Class OutParameterIsEnforcedByCSharpCompileError
-    Shared Sub LogAndReset(<Out> ByRef arg As Integer)
-        System.Console.WriteLine(arg)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class OutParameterIsEnforcedByCSharpCompileError
@@ -921,21 +636,6 @@ CS0177: The out parameter 'arg' must be assigned to before control leaves the cu
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Runtime.InteropServices ' BUG: Comment lost because overwritten
-
-Public Class BinaryExpressionOutParameter
-    Shared Sub Main()
-        Dim wide As Object = 7
-        Zero(wide)
-        Dim narrow As Short = 3
-        Zero(narrow)
-        Zero(7 + 3)
-    End Sub
-
-    Shared Sub Zero(<Out> ByRef arg As Integer)
-        arg = 0
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class BinaryExpressionOutParameter
@@ -968,22 +668,6 @@ public partial class BinaryExpressionOutParameter
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class BinaryExpressionRefParameter
-    Shared Sub Main()
-        Dim wide As Object = 7
-        LogAndReset(wide)
-        Dim wideArray() As Object = {3,4,4}
-        LogAndReset(wideArray(1))
-        Dim narrow As Short = 3
-        LogAndReset(narrow)
-        LogAndReset(7 + 3)
-    End Sub
-
-    Shared Sub LogAndReset(ByRef arg As Integer)
-        System.Console.WriteLine(arg)
-        arg = 0
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 

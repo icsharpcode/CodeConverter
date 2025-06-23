@@ -12,10 +12,6 @@ public class ConstructorTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Class1
-    Sub New(x As Boolean)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class Class1
 {
@@ -32,11 +28,6 @@ internal partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-    Sub New()
-        Dim someValue As Integer = 0
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Module1
 {
@@ -54,20 +45,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class ClassWithProperties
-   Public Property Property1 As String
-End Class
-
-Public Class VisualBasicClass
-   Public Sub New()
-       Dim x As New Dictionary(Of String, String)()
-       Dim y As New ClassWithProperties()
-       
-       If (x.TryGetValue(""x"", y.Property1)) Then
-          Debug.Print(y.Property1)
-       End If
-   End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -100,19 +77,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class SomeClass
-    Sub S(Optional ByRef x As Integer = -1)
-        Dim i As Integer = 0
-        If F1(x, i) Then
-        ElseIf F2(x, i) Then
-        ElseIf F3(x, i) Then
-        End If
-    End Sub
-
-    Function F1(x As Integer, ByRef o As Object) As Boolean : End Function
-    Function F2(ByRef x As Integer, ByRef o As Object) As Boolean : End Function
-    Function F3(ByRef x As Object, ByRef o As Object) As Boolean : End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -158,10 +122,6 @@ public partial class SomeClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
-    Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass<T, T2, T3>
     where T : class, new()
@@ -182,8 +142,6 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Sub New()
-End Sub", extension: "vb"),
                 Verifier.Verify(@"public SurroundingClass()
 {
 }", extension: "cs")
@@ -196,8 +154,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Shared Sub New()
-End Sub", extension: "vb"),
                 Verifier.Verify(@"static SurroundingClass()
 {
 }", extension: "cs")
@@ -210,16 +166,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class StaticLocalConvertedToField
-    Sub New(x As Boolean)
-        Static sPrevPosition As Integer = 7 ' Comment moves with declaration
-        Console.WriteLine(sPrevPosition)
-    End Sub
-    Sub New(x As Integer)
-        Static sPrevPosition As Integer
-        Console.WriteLine(sPrevPosition)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class StaticLocalConvertedToField

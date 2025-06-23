@@ -79,7 +79,6 @@ obj = null;",
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private x As Integer = 3", extension: "vb"),
                 Verifier.Verify(@"private int x = 3;", extension: "cs")
             );
         }
@@ -90,8 +89,6 @@ obj = null;",
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Test
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Test
 {
@@ -105,7 +102,6 @@ public partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Protected MustOverride Sub abs()", extension: "vb"),
                 Verifier.Verify(@"protected abstract void abs();", extension: "cs")
             );
         }
@@ -116,8 +112,6 @@ public partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace nam
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace nam
 {
@@ -131,7 +125,6 @@ namespace nam
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports tr = System.IO.TextReader ' Removed by simplifier", extension: "vb"),
                 Verifier.Verify("", extension: "cs")
             );
         }
@@ -142,16 +135,6 @@ namespace nam
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Dim cmccIds As New List(Of Integer)
-For Each scr In _sponsorPayment.SponsorClaimRevisions
-    For Each claim In scr.Claims
-        If TypeOf claim.ClaimSummary Is ClaimSummary Then
-            With DirectCast(claim.ClaimSummary, ClaimSummary)
-                cmccIds.AddRange(.UnpaidClaimMealCountCalculationsIds)
-            End With
-        End If
-    Next
-Next", extension: "vb"),
                 Verifier.Verify(@"{
     var cmccIds = new List<int>();
     foreach (var scr in _sponsorPayment.SponsorClaimRevisions)

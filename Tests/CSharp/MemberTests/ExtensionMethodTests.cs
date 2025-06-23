@@ -12,15 +12,6 @@ public class ExtensionMethodTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module TestClass
-    <System.Runtime.CompilerServices.Extension()>
-    Sub TestMethod(ByVal str As String)
-    End Sub
-
-    <System.Runtime.CompilerServices.Extension()>
-    Sub TestMethod2Parameters(ByVal str As String, other As String)
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class TestClass
 {
@@ -41,13 +32,6 @@ internal static partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
-
-Module TestClass
-    <Extension()>
-    Sub TestMethod(ByVal str As String)
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class TestClass
 {
@@ -64,24 +48,6 @@ internal static partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-Imports System.Runtime.CompilerServices ' Removed since the extension attribute is removed
-
-Public Module MyExtensions
-    <Extension()>
-    Public Sub Add(Of T)(ByRef arr As T(), item As T)
-        Array.Resize(arr, arr.Length + 1)
-        arr(arr.Length - 1) = item
-    End Sub
-End Module
-
-Public Module UsagePoint
-    Public Sub Main()
-        Dim arr = New Integer() {1, 2, 3}
-        arr.Add(4)
-        System.Console.WriteLine(arr(3))
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public static partial class MyExtensions
@@ -111,17 +77,6 @@ public static partial class UsagePoint
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Extensions
-    <Extension()>
-    Sub TestExtension(extendedClass As ExtendedClass)
-    End Sub
-End Module
-
-Class ExtendedClass
-  Sub TestExtensionConsumer()
-    TestExtension()
-  End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Extensions
 {
@@ -146,22 +101,6 @@ internal partial class ExtendedClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Extensions
-    <Extension()>
-    Sub TestExtension(extendedClass As ExtendedClass)
-    End Sub
-End Module
-
-Class ExtendedClass
-End Class
-
-Class DerivedClass
-    Inherits ExtendedClass
-
-  Sub TestExtensionConsumer()
-    TestExtension()
-  End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Extensions
 {
@@ -191,19 +130,6 @@ internal partial class DerivedClass : ExtendedClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Extensions
-    <Extension()>
-    Sub TestExtension(extendedClass As NestingClass.ExtendedClass)
-    End Sub
-End Module
-
-Class NestingClass
-    Class ExtendedClass
-      Sub TestExtensionConsumer()
-        TestExtension()
-      End Sub        
-    End Class
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Extensions
 {
@@ -231,17 +157,6 @@ internal partial class NestingClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Extensions
-    <Extension()>
-    Sub TestExtension(extendedClass As ExtendedClass)
-    End Sub
-End Module
-
-Class ExtendedClass
-  Sub TestExtensionConsumer()
-    Me.TestExtension()
-  End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Extensions
 {

@@ -12,19 +12,6 @@ public class ParameterTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class MyTestAttribute
-    Inherits Attribute
-End Class
-
-Public Class MyController
-    Public Function GetNothing(
-        <MyTest()> Optional indexer As Integer? = 0
-    ) As String
-        Return Nothing
-    End Function
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class MyTestAttribute : Attribute
@@ -47,18 +34,6 @@ public partial class MyController
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class TestClass
-    Public Sub M(a As String)
-    End Sub
-    Public Sub M(a As String, Optional b as String = ""smth"")
-    End Sub
-    
-    Public Sub Test()
-        M(""x"",)
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"
 public partial class TestClass
 {
@@ -84,18 +59,6 @@ public partial class TestClass
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Class TestClass
-    Public Sub M(a As String)
-    End Sub
-    Public Sub M(Optional a As String = ""ss"", Optional b as String = ""smth"")
-    End Sub
-    
-    Public Sub Test()
-        M(,""x"")
-    End Sub
-End Class
-", extension: "vb"),
-                Verifier.Verify(@"
 public partial class TestClass
 {
     public void M(string a)
@@ -119,18 +82,6 @@ public partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class TestClass
-    Public Sub M(a As String, b as string)
-    End Sub
-    Public Sub M(Optional a As String = ""1"", Optional b as string = ""2"", Optional c as string = ""3"")
-    End Sub
-
-    Public Sub Test()
-        M(a:=""4"", )
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"
 public partial class TestClass
 {

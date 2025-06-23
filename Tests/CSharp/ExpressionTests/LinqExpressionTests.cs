@@ -12,19 +12,6 @@ public class LinqExpressionTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Imports System.Collections.Generic
-Imports System.Linq
-
-Public Class Issue895
-    Private Shared Sub LinqWithGroup()
-        Dim numbers = New List(Of Integer) From {1, 2, 3, 4, 4}
-        Dim duplicates = From x In numbers
-                         Group By x Into Group
-                         Where Group.Count > 1
-        System.Console.WriteLine(duplicates.Count)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,21 +37,6 @@ public partial class Issue895
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Collections.Generic
-Imports System.Linq
-
-Class C
-    Public Property MyString As String
-End Class
-
-Public Module Module1
-    Public Sub Main()
-        Dim list As New List(Of C)()
-        Dim result = From f In list
-                     Group f By f.MyString Into Group
-                     Order By MyString
-	End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -97,17 +69,6 @@ CS0103: The name 'MyString' does not exist in the current context", extension: "
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Imports System.Collections.Generic
-Imports System.Linq
-
-Public Class Issue635
-    Dim foo As Object
-    Dim l As List(Of Issue635)
-    Dim listSelectWhere = From t in l
-            Select t.foo
-            Where 1 = 2
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 using System.Collections.Generic;
 using System.Linq;
 
@@ -136,14 +97,6 @@ public partial class Issue635
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Imports System.Collections.Generic
-Imports System.Linq
-
-Public Class Issue635
-    Dim l As List(Of Integer)
-    Dim listSortedDistinct = From x In l Order By x Distinct
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 using System.Collections.Generic;
 using System.Linq;
 
@@ -168,13 +121,6 @@ public partial class Issue635
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private Shared Sub SimpleQuery()
-    Dim numbers = {7, 9, 5, 3, 6}
-    Dim res = From n In numbers Where n > 5 Select n
-    For Each n In res
-        Console.WriteLine(n)
-    Next
-End Sub", extension: "vb"),
                 Verifier.Verify(@"private static void SimpleQuery()
 {
     int[] numbers = new[] { 7, 9, 5, 3, 6 };
@@ -193,18 +139,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Shared Sub Linq40()
-    Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
-    Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {Key .Remainder = __groupByKey1__, Key .Numbers = g}
-    
-    For Each g In numberGroups
-        Console.WriteLine($""Numbers with a remainder of { g.Remainder} when divided by 5:"")
-
-        For Each n In g.Numbers
-            Console.WriteLine(n)
-        Next
-    Next
-End Sub", extension: "vb"),
                 Verifier.Verify(@"public static void Linq40()
 {
     int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
@@ -230,27 +164,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Product
-    Public Category As String
-    Public ProductName As String
-End Class
-
-Class Test
-
-    Public Function GetProductList As Product()
-        Return Nothing
-    End Function
-
-    Public Sub Linq102()
-        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-        Dim products As Product() = GetProductList()
-        Dim q = From c In categories Join p In products On c Equals p.Category Select New With {Key .Category = c, p.ProductName}
-
-        For Each v In q
-            Console.WriteLine($""{v.ProductName}: {v.Category}"")
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Linq;
 
@@ -289,30 +202,6 @@ internal partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Product
-    Public Category As String
-    Public ProductName As String
-End Class
-
-Class Test
-    Public Function GetProductList As Product()
-        Return Nothing
-    End Function
-
-    Public Sub Linq103()
-        Dim categories As String() = New String() {""Beverages"", ""Condiments"", ""Vegetables"", ""Dairy Products"", ""Seafood""}
-        Dim products = GetProductList()
-        Dim q = From c In categories Group Join p In products On c Equals p.Category Into ps = Group Select New With {Key .Category = c, Key .Products = ps}
-
-        For Each v In q
-            Console.WriteLine(v.Category & "":"")
-
-            For Each p In v.Products
-                Console.WriteLine(""   "" & p.ProductName)
-            Next
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Linq;
 
@@ -355,12 +244,6 @@ internal partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
-    For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
-        Return FileInfo.FullName
-    Next
-    Return String.Empty
-End Function", extension: "vb"),
                 Verifier.Verify(@"private static string FindPicFilePath(List<FileInfo> AList, string picId)
 {
     foreach (FileInfo FileInfo in from FileInfo1 in AList
@@ -378,16 +261,6 @@ End Function", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Data
-
-Public Class AsEnumerableTest
-    Public Sub FillImgColor()
-        Dim dtsMain As New DataSet
-        For Each i_ColCode As Integer In 
-            From CurRow In dtsMain.Tables(""tb_Color"") Select CInt(CurRow.Item(""i_ColCode""))
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Data;
 using System.Linq;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
@@ -412,12 +285,6 @@ public partial class AsEnumerableTest
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private Shared Sub LinqSub()
-    Dim _result = From _claimProgramSummary In New List(Of List(Of List(Of List(Of String))))()
-                  From _claimComponentSummary In _claimProgramSummary.First()
-                  From _lineItemCalculation In _claimComponentSummary.Last()
-                  Select _lineItemCalculation
-End Sub", extension: "vb"),
                 Verifier.Verify(@"private static void LinqSub()
 {
     var _result = from _claimProgramSummary in new List<List<List<List<string>>>>()
@@ -434,12 +301,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-    Public Shared Sub X(objs As List(Of Object))
-        Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
-        Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -462,16 +323,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
-    Dim words = {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""}
-
-    Return From word In words
-            Skip 1
-            Skip While word.Length >= 1
-            Take While word.Length < 5
-            Take 2
-            Distinct
-End Function", extension: "vb"),
                 Verifier.Verify(@"private static IEnumerable<string> FindPicFilePath()
 {
     string[] words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
@@ -487,10 +338,6 @@ End Function", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private Shared Sub ASub()
-    Dim expenses() As Double = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0}
-    Dim totalExpense = Aggregate expense In expenses Into Sum()
-End Sub", extension: "vb"),
                 Verifier.Verify(@"private static void ASub()
 {
     double[] expenses = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0};
@@ -505,15 +352,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Private Shared Sub ASub()
-    Dim customerList = From cust In customers
-                       Group Join ord In orders On
-                       cust.CustomerID Equals ord.CustomerID
-                       Into CustomerOrders = Group,
-                            OrderTotal = Sum(ord.Total)
-                       Select cust.CompanyName, cust.CustomerID,
-                              CustomerOrders, OrderTotal
-End Sub", extension: "vb"),
                 Verifier.Verify(@"private static void ASub()
 {
     var customerList = from cust in customers
@@ -530,25 +368,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Customer
-    Public CustomerID As String
-    Public CompanyName As String
-End Class
-
-Class Order
-    Public CustomerID As String
-    Public Total As String
-End Class
-
-Class Test
-Private Shared Sub ASub()
-    Dim customers = New List(Of Customer)
-    Dim orders = New List(Of Order)
-    Dim customerList = From cust In customers
-                       Join ord In orders On ord.CustomerID Equals cust.CustomerID
-                       Select cust.CompanyName, ord.Total
-End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -584,25 +403,6 @@ internal partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Customer
-    Public CustomerID As String
-    Public CompanyName As String
-End Class
-
-Class Order
-    Public CustomerID As String
-    Public Total As String
-End Class
-
-Class Test
-Private Shared Sub ASub()
-    Dim customers = New List(Of Customer)
-    Dim orders = New List(Of Order)
-    Dim customerList = From cust In customers
-                       Join ord In orders On ord.CustomerID Equals cust.CustomerID And cust.CompanyName Equals ord.Total
-                       Select cust.CompanyName, ord.Total
-End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -638,25 +438,6 @@ internal partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Customer
-    Public CustomerID As String
-    Public CompanyName As String
-End Class
-
-Class Order
-    Public Customer As Customer
-    Public Total As String
-End Class
-
-Class Test
-Private Shared Sub ASub()
-    Dim customers = New List(Of Customer)
-    Dim orders = New List(Of Order)
-    Dim customerList = From cust In customers
-                       Join ord In orders On ord.Customer Equals cust And cust.CompanyName Equals ord.Total
-                       Select cust.CompanyName, ord.Total
-End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -692,12 +473,6 @@ internal partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        Dim xs As New List(Of String)
-        Dim y = From x In xs Group By x.Length, x.Count() Into Group
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -720,25 +495,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-Imports System.Linq
-
-Public Class Class717
-        Sub Main()
-        Dim arr(1) as Integer
-        arr(0) = 0
-        arr(1) = 1
-
-        Dim r = From e In arr
-                Select p = $""value: {e}""
-                Select l = p.Substring(1)
-                Select x = l
-
-        For each m In r
-            Console.WriteLine(m)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Linq;
 
@@ -768,61 +524,6 @@ public partial class Class717
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
-
-Public Class AccountEntry
-    Public Property LookupAccountEntryTypeId As Object
-    Public Property LookupAccountEntrySourceId As Object
-    Public Property SponsorId As Object
-    Public Property LookupFundTypeId As Object
-    Public Property StartDate As Object
-    Public Property SatisfiedDate As Object
-    Public Property InterestStartDate As Object
-    Public Property ComputeInterestFlag As Object
-    Public Property SponsorClaimRevision As Object
-    Public Property Amount As Decimal
-    Public Property AccountTransactions As List(Of Object)
-    Public Property AccountEntryClaimDetails As List(Of AccountEntry)
-End Class
-
-Module Ext
-    <Extension>
-    Public Function Reduce(ByVal accountEntries As IEnumerable(Of AccountEntry)) As IEnumerable(Of AccountEntry)
-        Return (
-            From _accountEntry In accountEntries
-                Where _accountEntry.Amount > 0D
-                Group By _keys = New With
-                    {
-                    Key .LookupAccountEntryTypeId = _accountEntry.LookupAccountEntryTypeId,
-                    Key .LookupAccountEntrySourceId = _accountEntry.LookupAccountEntrySourceId,
-                    Key .SponsorId = _accountEntry.SponsorId,
-                    Key .LookupFundTypeId = _accountEntry.LookupFundTypeId,
-                    Key .StartDate = _accountEntry.StartDate,
-                    Key .SatisfiedDate = _accountEntry.SatisfiedDate,
-                    Key .InterestStartDate = _accountEntry.InterestStartDate,
-                    Key .ComputeInterestFlag = _accountEntry.ComputeInterestFlag,
-                    Key .SponsorClaimRevision = _accountEntry.SponsorClaimRevision
-                    } Into Group
-                Select New AccountEntry() With
-                    {
-                    .LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
-                    .LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
-                    .SponsorId = _keys.SponsorId,
-                    .LookupFundTypeId = _keys.LookupFundTypeId,
-                    .StartDate = _keys.StartDate,
-                    .SatisfiedDate = _keys.SatisfiedDate,
-                    .ComputeInterestFlag = _keys.ComputeInterestFlag,
-                    .InterestStartDate = _keys.InterestStartDate,
-                    .SponsorClaimRevision = _keys.SponsorClaimRevision,
-                    .Amount = Group.Sum(Function(accountEntry) accountEntry.Amount),
-                    .AccountTransactions = New List(Of Object)(),
-                    .AccountEntryClaimDetails =
-                        (From _accountEntry In Group From _claimDetail In _accountEntry.AccountEntryClaimDetails
-                            Select _claimDetail).Reduce().ToList
-                    }
-            )
-    End Function
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -890,20 +591,6 @@ internal static partial class Ext
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Collections.Generic
-Imports System.Linq
-
-Public Class VisualBasicClass
-    Sub Main
-	    Dim list1 As New List(Of Integer)() From {1,2,3}
-	    Dim list2 As New List(Of Integer) From {2, 4,5}
-	
-	    Dim qs = From n In list1, x In list2
-			     Where x = n 
-			     Select New With {x, n}
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -930,22 +617,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class ConversionTest2
-    Private Class MyEntity
-        Property FavoriteNumber As Integer?
-        Property Name As String
-    End Class
-    Private Sub BugRepro()
-
-        Dim entities As New List(Of MyEntity)
-
-        Dim result As String = (From e In entities
-                                Where e.FavoriteNumber = 123
-                                Select e.Name).Single
-
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -977,21 +648,6 @@ public partial class ConversionTest2
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class ConversionTest6
-    Private Class MyEntity
-        Property Name As String
-        Property FavoriteString As String
-    End Class
-    Public Sub BugRepro()
-
-        Dim entities = New List(Of MyEntity) ' If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
-
-        Dim data = (From e In entities
-                    Where e.Name Is Nothing OrElse e.FavoriteString IsNot Nothing
-                    Select e).ToList
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 

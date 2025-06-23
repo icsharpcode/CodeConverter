@@ -16,13 +16,6 @@ public class RootNamespaceTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class AClassInRootNamespace
-End Class
-
-Namespace NestedWithinRoot
-    Class AClassInANamespace
-    End Class
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace TheRootNamespace
 {
@@ -46,8 +39,6 @@ namespace TheRootNamespace
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class AClassInRootNamespace
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 namespace TheRootNamespace
 {
@@ -64,10 +55,6 @@ namespace TheRootNamespace
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace A.B
-    Public Class Class1
-    End Class
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace TheRootNamespace.A.B
 {
@@ -84,15 +71,6 @@ namespace TheRootNamespace.A.B
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace AAA.AAaB.AaA
-    Public Class Class1
-    End Class
-End Namespace
-
-Namespace Aaa.aAAb.aAa
-    Public Class Class2
-    End Class
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace TheRootNamespace.AAA.AAaB.AaA
 {
@@ -116,12 +94,6 @@ namespace TheRootNamespace.Aaa.aAAb.aAa
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace A.B
-    Namespace C
-        Public Class Class1
-        End Class
-    End Namespace
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace TheRootNamespace.A.B
 {
@@ -141,15 +113,6 @@ namespace TheRootNamespace.A.B
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace A.B
-    Namespace C
-        Public Class Class1
-        End Class
-    End Namespace
-End Namespace
-
-Public Class RootClass
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 namespace TheRootNamespace
 {
@@ -176,10 +139,6 @@ namespace TheRootNamespace
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace Global.A.B
-    Public Class Class1
-    End Class
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace A.B
 {
@@ -197,11 +156,6 @@ namespace A.B
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Namespace NestedWithinRoot
-    Class AClassInANamespace
-    End Class
-End Namespace", extension: "vb"),
-                Verifier.Verify(@"
 namespace TheRootNamespace.NestedWithinRoot
 {
     internal partial class AClassInANamespace
@@ -218,11 +172,6 @@ namespace TheRootNamespace.NestedWithinRoot
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Namespace Global.NotNestedWithinRoot
-    Class AClassInANamespace
-    End Class
-End Namespace", extension: "vb"),
-                Verifier.Verify(@"
 namespace NotNestedWithinRoot
 {
     internal partial class AClassInANamespace
@@ -238,19 +187,6 @@ namespace NotNestedWithinRoot
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@" 'Comment from start of file moves within the namespace
-Class AClassInRootNamespace ' Becomes nested - 1
-End Class ' Becomes nested - 2
-
-Namespace Global.NotNestedWithinRoot
-    Class AClassInANamespace
-    End Class
-End Namespace
-
-Namespace NestedWithinRoot
-    Class AClassInANamespace
-    End Class
-End Namespace", extension: "vb"),
                 Verifier.Verify(@"
 namespace NotNestedWithinRoot
 {

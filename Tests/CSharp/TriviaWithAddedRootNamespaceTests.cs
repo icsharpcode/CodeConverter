@@ -17,11 +17,6 @@ public class TriviaWithAddedRootNamespaceTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"''' <summary> Form for viewing the my. </summary>
-''' <remarks> David, 10/1/2020. </remarks>
-Public Class MyForm
-    Inherits isr.Automata.Finite.Forms.BimanualToggleForm
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 namespace ANamespace
 {

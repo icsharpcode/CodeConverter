@@ -13,11 +13,6 @@ public class MemberTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Const answer As Integer = 42
-    Private value As Integer = 10
-    ReadOnly v As Integer = 15
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -34,9 +29,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Dim Parts(), Taxes(), Deposits()(), Prepaid()(), FromDate, ToDate As String
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -53,9 +45,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module TestModule
-    Const answer As Integer = 42
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class TestModule
 {
@@ -70,9 +59,6 @@ internal static partial class TestModule
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-    Declare Sub External Lib ""lib.dll"" ()
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 internal static partial class Module1
@@ -89,9 +75,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Class1
-    Declare Sub External Lib ""lib.dll"" ()
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 internal partial class Class1
@@ -108,12 +91,6 @@ internal partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Const someConstField = 42
-    Sub TestMethod()
-        Const someConst = System.DateTimeKind.Local
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -135,16 +112,6 @@ internal partial class TestClass
         // VB compiler uses Conversions rather than any plainer casting
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Enum TestEnum As Integer
-        Test1
-    End Enum
-
-    Dim EnumVariable = TestEnum.Test1
-    Public Sub AMethod()
-        Dim t1 As Integer = EnumVariable
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
@@ -169,14 +136,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-        argument = Nothing
-        argument2 = Nothing
-        argument3 = Nothing
-        Console.WriteLine(Enumerable.Empty(Of String))
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Linq;
 
@@ -201,18 +160,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Class1
-    Function TestMethod(x As Integer) As Integer
-        If x = 1 Then
-            TestMethod = 1
-        ElseIf x = 2 Then
-            TestMethod = 2
-            Exit Function
-        ElseIf x = 3 Then
-            TestMethod = TestMethod(1)
-        End If
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class Class1
 {
@@ -245,14 +192,6 @@ internal partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Public Event MyEvent As EventHandler
-    Protected Overrides Function Foo() As String
-        AddHandler MyEvent, AddressOf Foo
-        Foo = Foo & """"
-        Foo += NameOf(Foo)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Class1
@@ -280,18 +219,6 @@ CS0115: 'Class1.Foo()': no suitable method found to override", extension: "cs")
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Class1
-    Function TestMethod(x As Integer) As Integer
-        If x = 1 Then
-            TestMethod += 1
-        ElseIf x = 2 Then
-            TestMethod -= 2
-            Exit Function
-        ElseIf x = 3 Then
-            TestMethod *= TestMethod(1)
-        End If
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class Class1
 {
@@ -324,11 +251,6 @@ internal partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Class1
-    Function TestMethod() As Integer
-
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class Class1
 {
@@ -347,12 +269,6 @@ internal partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Function TryGet(<System.Runtime.InteropServices.Out> ByRef strs As List(Of String)) As Boolean
-        strs = New List(Of String)
-        Return False
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
@@ -372,11 +288,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Function TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3) As Integer
-        Return 0
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -400,12 +311,6 @@ CS0177: The out parameter 'argument' must be assigned to before control leaves t
         // https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/variables/local-type-inference
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Function TurnFirstToUp(ByVal Text As String)
-        Dim firstCharacter = Text.Substring(0, 1).ToUpper()
-        Return firstCharacter + Text.Substring(1)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -424,11 +329,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Function Four() As String
-        Return 4
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -446,13 +346,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Shared Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-        argument = Nothing
-        argument2 = Nothing
-        argument3 = Nothing
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -474,10 +367,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"MustInherit Class TestClass
-    Public MustOverride Sub TestMethod()
-    Public MustOverride ReadOnly Property AbstractProperty As String
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal abstract partial class TestClass
 {
@@ -493,21 +382,6 @@ internal abstract partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"MustInherit Class TestClass
-        Public MustOverride ReadOnly Property ReadOnlyProp As String
-        Public MustOverride WriteOnly Property WriteOnlyProp As String
-End Class
-
-Class ChildClass
-    Inherits TestClass
-
-    Public Overrides ReadOnly Property ReadOnlyProp As String
-    Public Overrides WriteOnly Property WriteOnlyProp As String
-        Set
-        End Set
-    End Property
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"
 internal abstract partial class TestClass
 {
@@ -536,19 +410,6 @@ internal partial class ChildClass : TestClass
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Property Prop(ByVal i As Integer) As String
-    Get
-        Static bGet As Boolean
-        bGet = False
-    End Get
-
-    Set(ByVal s As String)
-        Static bSet As Boolean
-        bSet = False
-    End Set
-End Property
-", extension: "vb"),
-                Verifier.Verify(@"
 internal partial class SurroundingClass
 {
     private bool _Prop_bGet;
@@ -575,19 +436,6 @@ internal partial class SurroundingClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Property Prop As String
-    Get
-        Static b As Boolean
-        b = True
-    End Get
-
-    Set(ByVal s As String)
-        Static b As Boolean
-        b = False
-    End Set
-End Property
-", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class SurroundingClass
 {
@@ -618,13 +466,6 @@ internal partial class SurroundingClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public NotOverridable Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-        argument = Nothing
-        argument2 = Nothing
-        argument3 = Nothing
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -650,22 +491,6 @@ CS0238: 'TestClass.TestMethod<T, T2, T3>(out T, ref T2, T3)' cannot be sealed be
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Sub TestMethod()
-    End Sub
-
-    Public Sub TestMethod(i as Integer)
-    End Sub
-End Class
-
-Class TestSubclass
-    Inherits TestClass
-
-    Public Shadows Sub TestMethod()
-        ' Not possible: TestMethod(3)
-        System.Console.WriteLine(""New implementation"")
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -698,10 +523,6 @@ internal partial class TestSubclass : TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Protected Overrides Sub Finalize()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -718,23 +539,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class C 
-    Inherits B
-
-    Public ReadOnly Overloads Overrides Property X()
-        Get
-            Return Nothing
-        End Get
-    End Property
-End Class
-
-Public Class B
-    Public ReadOnly Overridable Property X()
-        Get
-            Return Nothing
-        End Get
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"public partial class C : B
 {
 
@@ -766,36 +570,6 @@ public partial class B
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Partial Friend MustInherit Class TestClass1
-    Public Shared Sub CreateStatic()
-    End Sub
-
-    Public Overloads Sub CreateInstance()
-    End Sub
-
-    Public Overloads Sub CreateInstance(o As Object)
-    End Sub
-
-    Public MustOverride Sub CreateAbstractInstance()
-
-    Public Overridable Sub CreateVirtualInstance()
-    End Sub
-End Class
-
-Friend Class TestClass2
-    Inherits TestClass1
-    Public Overloads Shared Sub CreateStatic()
-    End Sub
-
-    Public Overloads Sub CreateInstance()
-    End Sub
-
-    Public Overrides Sub CreateAbstractInstance()
-    End Sub
-    
-    Public Overloads Sub CreateVirtualInstance(o As Object)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal abstract partial class TestClass1
 {
@@ -845,9 +619,6 @@ internal partial class TestClass2 : TestClass1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"<Global.System.Diagnostics.DebuggerDisplay(""Hello World"")>
-Class TestClass
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 [DebuggerDisplay(""Hello World"")]
@@ -863,10 +634,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    <ThreadStatic>
-    Private Shared First As Integer
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -883,10 +650,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class A
-    Private x As Integer = 2
-    Private y(x) As Integer
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class A
 {
@@ -907,9 +670,6 @@ public partial class A
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class DoesNotNeedConstructor
-    Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = 5}
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Threading.Tasks;
 
 public partial class DoesNotNeedConstructor
@@ -925,15 +685,6 @@ public partial class DoesNotNeedConstructor
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.IO
-
-Public Class Issue281
-    Private lambda As System.Delegate = New ErrorEventHandler(Sub(a, b) Len(0))
-    Private nonShared As System.Delegate = New ErrorEventHandler(AddressOf OnError)
-
-    Sub OnError(s As Object, e As ErrorEventArgs)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.IO;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
@@ -961,10 +712,6 @@ public partial class Issue281
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub SomeBools(ParamArray anyName As Boolean())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -981,10 +728,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub SomeBools(ParamArray bool As Boolean())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1001,11 +744,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Sub DoNothing(ByVal strs() As String)
-        Dim moreStrs() As String
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1023,10 +761,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Sub DoNothing(obj, objs())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1043,16 +777,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Partial Class TestClass
-    Private Sub DoNothing()
-        Console.WriteLine(""Hello"")
-    End Sub
-End Class
-
-Class TestClass ' VB doesn't require partial here (when just a single class omits it)
-    Partial Private Sub DoNothing()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class TestClass
@@ -1076,27 +800,6 @@ public partial class TestClass // VB doesn't require partial here (when just a s
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class ClA
-    Public Shared Sub MA()
-        ClA.ClassB.MB()
-        MyClassC.MC()
-    End Sub
-
-    Public Class ClassB
-        Public Shared Function MB() as ClassB
-            ClA.MA()
-            MyClassC.MC()
-            Return ClA.ClassB.MB()
-        End Function
-    End Class
-End Class
-
-Class MyClassC
-    Public Shared Sub MC()
-        ClA.MA()
-        ClA.ClassB.MB()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class ClA
 {
@@ -1134,27 +837,6 @@ internal partial class MyClassC
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class ClA
-    Public Shared Sub MA()
-        ClassB.MB()
-        MyClassC.MC()
-    End Sub
-
-    Public Class ClassB
-        Public Shared Function MB() as ClassB
-            MA()
-            MyClassC.MC()
-            Return MB()
-        End Function
-    End Class
-End Class
-
-Class MyClassC
-    Public Shared Sub MC()
-        ClA.MA()
-        ClA.ClassB.MB()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class ClA
 {
@@ -1192,25 +874,6 @@ internal partial class MyClassC
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"    Class AsyncCode
-        Public Sub NotAsync()
-            Dim a1 = Async Function() 3
-            Dim a2 = Async Function()
-                         Return Await Task (Of Integer).FromResult(3)
-                     End Function
-            Dim a3 = Async Sub() Await Task.CompletedTask
-            Dim a4 = Async Sub()
-                        Await Task.CompletedTask
-                    End Sub
-        End Sub
-
-        Public Async Function AsyncFunc() As Task(Of Integer)
-            Return Await Task (Of Integer).FromResult(3)
-        End Function
-        Public Async Sub AsyncSub()
-            Await Task.CompletedTask
-        End Sub
-    End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Threading.Tasks;
 
 internal partial class AsyncCode
@@ -1242,35 +905,6 @@ internal partial class AsyncCode
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Partial Module TaskExtensions
-    <Extension()>
-    Async Function [Then](Of T)(ByVal task As Task, ByVal f As Func(Of Task(Of T))) As Task(Of T)
-        Await task
-        Return Await f()
-    End Function
-
-    <Extension()>
-    Async Function [Then](ByVal task As Task, ByVal f As Func(Of Task)) As Task
-        Await task
-        Await f()
-    End Function
-
-    <Extension()>
-    Async Function [Then](Of T, U)(ByVal task As Task(Of T), ByVal f As Func(Of T, Task(Of U))) As Task(Of U)
-        Return Await f(Await task)
-    End Function
-
-    <Extension()>
-    Async Function [Then](Of T)(ByVal task As Task(Of T), ByVal f As Func(Of T, Task)) As Task
-        Await f(Await task)
-    End Function
-
-    <Extension()>
-    Async Function [ThenExit](Of T)(ByVal task As Task(Of T), ByVal f As Func(Of T, Task)) As Task
-        Await f(Await task)
-        Exit Function
-    End Function
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
@@ -1313,9 +947,6 @@ internal static partial class TaskExtensions
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"<DllImport(""kernel32.dll"", SetLastError:=True)>
-Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
-End Function", extension: "vb"),
                 Verifier.Verify(@"[DllImport(""kernel32.dll"", SetLastError = true)]
 private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
 
@@ -1332,10 +963,6 @@ CS0246: The type or namespace name 'AccessMask' could not be found (are you miss
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Main
-    Sub Main()
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class MainType
 {
@@ -1353,10 +980,6 @@ internal static partial class MainType
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Enum MyEnum
-    MyEnumFirst
-    MyEnum
-End Enum", extension: "vb"),
                 Verifier.Verify(@"
 internal enum MyEnum
 {
@@ -1373,10 +996,6 @@ internal enum MyEnum
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Enum MyEnum
-    MyEnumFirst
-    MyEnum
-End Enum", extension: "vb"),
                 Verifier.Verify(@"
 public enum MyEnum
 {
@@ -1393,22 +1012,6 @@ public enum MyEnum
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class StaticLocalConvertedToField
-    Readonly Property OtherName() As Integer
-        Get
-            Static sPrevPosition As Integer = 3 ' Comment moves with declaration
-            Console.WriteLine(sPrevPosition)
-            Return sPrevPosition
-        End Get
-    End Property
-    Readonly Property OtherName(x As Integer) as Integer
-        Get
-            Static sPrevPosition As Integer
-            sPrevPosition += 1
-            Return sPrevPosition
-        End Get
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class StaticLocalConvertedToField
@@ -1439,16 +1042,6 @@ internal partial class StaticLocalConvertedToField
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class StaticLocalConvertedToField
-    Sub OtherName(x As Boolean)
-        Static sPrevPosition As Integer = 3 ' Comment moves with declaration
-        Console.WriteLine(sPrevPosition)
-    End Sub
-    Function OtherName(x As Integer) as Integer
-        Static sPrevPosition As Integer
-        Return sPrevPosition
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class StaticLocalConvertedToField
@@ -1474,14 +1067,6 @@ internal partial class StaticLocalConvertedToField
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class StaticLocalConvertedToField
-    Function OtherName() as Integer
-        Static sPrevPosition As Integer
-        sPrevPosition = 23
-        Console.WriteLine(sPrevPosition)
-        Return sPrevPosition
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class StaticLocalConvertedToField
@@ -1503,16 +1088,6 @@ internal partial class StaticLocalConvertedToField
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module StaticLocalConvertedToField
-    Sub OtherName(x As Boolean)
-        Static sPrevPosition As Integer = 3 ' Comment moves with declaration
-        Console.WriteLine(sPrevPosition)
-    End Sub
-    Function OtherName(x As Integer) as Integer
-        Static sPrevPosition As Integer ' Comment also moves with declaration
-        Return sPrevPosition
-    End Function
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal static partial class StaticLocalConvertedToField
@@ -1538,22 +1113,6 @@ internal static partial class StaticLocalConvertedToField
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class StaticLocalConvertedToField
-    Shared Sub OtherName(x As Boolean)
-        Static sPrevPosition As Integer ' Comment moves with declaration
-        Console.WriteLine(sPrevPosition)
-    End Sub
-    Sub OtherName(x As Integer)
-        Static sPrevPosition As Integer = 5 ' Comment also moves with declaration
-        Console.WriteLine(sPrevPosition)
-    End Sub
-    Shared ReadOnly Property StaticTestProperty() As Integer
-        Get
-            Static sPrevPosition As Integer = 5 ' Comment also moves with declaration
-            Return sPrevPosition + 1
-        End Get
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class StaticLocalConvertedToField
@@ -1586,20 +1145,6 @@ internal partial class StaticLocalConvertedToField
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class OmittedArguments
-    Sub M(Optional a As String = ""a"", ByRef Optional b As String = ""b"")
-        Dim s As String = """"
-
-        M() 'omitted implicitly
-        M(,) 'omitted explicitly
-
-        M(s) 'omitted implicitly
-        M(s,) 'omitted explicitly
-
-        M(a:=s) 'omitted implicitly
-        M(a:=s, ) 'omitted explicitly
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 internal partial class OmittedArguments
@@ -1633,16 +1178,6 @@ internal partial class OmittedArguments
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class RefConstArgument
-    Const a As String = ""a""
-    Sub S()
-        Const b As String = ""b""
-        MO(a)
-        MS(b)
-    End Sub
-    Sub MO(ByRef s As Object) : End Sub
-    Sub MS(ByRef s As String) : End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class RefConstArgument
 {
@@ -1671,12 +1206,6 @@ internal partial class RefConstArgument
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class RefFunctionCallArgument
-    Sub S(ByRef o As Object)
-        S(GetI)
-    End Sub
-    Function GetI() As Integer : End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class RefFunctionCallArgument
 {
@@ -1699,19 +1228,6 @@ internal partial class RefFunctionCallArgument
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Runtime.InteropServices
-
-Class MissingByRefArgumentWithNoExplicitDefaultValue
-    Sub S()
-        ByRefNoDefault()
-        OptionalByRefNoDefault()
-        OptionalByRefWithDefault()
-    End Sub
-
-    Private Sub ByRefNoDefault(ByRef str1 As String) : End Sub
-    Private Sub OptionalByRefNoDefault(<[Optional]> ByRef str2 As String) : End Sub
-    Private Sub OptionalByRefWithDefault(<[Optional], DefaultParameterValue(""a"")> ByRef str3 As String) : End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Runtime.InteropServices;
 
 internal partial class MissingByRefArgumentWithNoExplicitDefaultValue

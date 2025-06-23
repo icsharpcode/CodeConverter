@@ -18,15 +18,6 @@ public class LoopStatementTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(rand As Random)
-        Dim charIndex As Integer
-        ' allow only digits and letters
-        Do
-            charIndex = rand.Next(48, 123)
-        Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -49,15 +40,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Class Program
-    Public Shared Sub Main(ByVal args As String())
-        For idx = 0 To 10
-        Next
-
-        For idx = 0 To 10
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class Program
 {
@@ -81,12 +63,6 @@ internal partial class Program
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"    Sub DummyMethod()
-        Dim someArray = New Integer() { 1, 2, 3}
-        For index As Int16 = 0 To someArray.Length - 1
-            Console.WriteLine(index)
-        Next
-    End Sub", extension: "vb"),
                 Verifier.Verify(@"public void DummyMethod()
 {
     int[] someArray = new int[] { 1, 2, 3 };
@@ -102,13 +78,6 @@ internal partial class Program
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Sub Main()
-    Dim foo As Single = 3.5
-    Dim index As Integer
-    For index = Int(foo) To Int(foo * 3)
-        Console.WriteLine(index)
-    Next
-End Sub", extension: "vb"),
                 Verifier.Verify(@"public void Main()
 {
     float foo = 3.5f;
@@ -126,13 +95,6 @@ End Sub", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Class Issue453
-    Sub PrintLoop(startIndex As Integer, endIndex As Integer)
-      For i As Integer = startIndex To endIndex Step -0
-        Debug.WriteLine(i)
-  Next
-End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 internal partial class Issue453
@@ -152,13 +114,6 @@ internal partial class Issue453
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Class Issue453
-    Sub PrintLoop(startIndex As Integer, endIndex As Integer)
-      For i As Integer = startIndex To endIndex Step -5
-        Debug.WriteLine(i)
-  Next
-End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 internal partial class Issue453
@@ -178,13 +133,6 @@ internal partial class Issue453
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Class Issue453
-    Sub PrintLoop(startIndex As Integer, endIndex As Integer, [step] As Integer)
-      For i As Integer = startIndex To endIndex Step [step]
-        Debug.WriteLine(i)
-  Next
-End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 internal partial class Issue453
@@ -204,27 +152,6 @@ internal partial class Issue453
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Enum MyEnum
-    Zero
-    One
-End Enum
-
-Friend Class ForEnumAsync
-    Sub PrintLoop(startIndex As MyEnum, endIndex As MyEnum, [step] As MyEnum)
-      For i = startIndex To endIndex Step [step]
-        Debug.WriteLine(i)
-      Next
-      For i2 As MyEnum = startIndex To endIndex Step [step]
-        Debug.WriteLine(i2)
-      Next
-      For i3 As MyEnum = startIndex To endIndex Step 3
-        Debug.WriteLine(i3)
-      Next
-      For i4 As MyEnum = startIndex To 4
-        Debug.WriteLine(i4)
-      Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Diagnostics;
 
 internal enum MyEnum
@@ -256,14 +183,6 @@ internal partial class ForEnumAsync
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Friend Class Program
-    Public Shared Sub Main(ByVal args As String())
-        Dim zs As Object = { 1, 2, 3 }
-        For Each z in zs
-            Console.WriteLine(z)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections;
 
@@ -286,14 +205,6 @@ internal partial class Program
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(end As Integer)
-        Dim b, s As Integer()
-        For i = 0 To [end]
-            b(i) = s(i)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -315,15 +226,6 @@ BC30183: Keyword is not valid as an identifier.", extension: "cs")
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Private Index As Integer
-
-    Sub Foo()
-        For Me.Index = 0 To 10
-
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -346,15 +248,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim stringValue AS string = ""42""
-        For i As Integer = 1 To 10 - stringValue.Length
-           stringValue = stringValue & "" "" + Cstr(i)
-           Console.WriteLine(stringValue)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -378,14 +271,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod([end] As Integer)
-        Dim b, s As Integer()
-        For i = 0 To [end] - 1
-            b(i) = s(i)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -405,59 +290,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-Private Shared Sub ProblemsWithPullingVariablesOut()
-      ' example 1
-      For Each a In New List(Of String)
-          Dim b As Long
-          If a = """" Then
-              b = 1
-          End If
-          DoSomeImportantStuff(b)
-      Next
-
-      ' example 2
-      Dim c As String
-      Do While True
-          Dim d As Long
-          If c = """" Then
-              d = 1
-          End If
-
-         DoSomeImportantStuff(d)
-         Exit Do
-     Loop
- End Sub
-
-Private Shared Sub ProblemsWithPullingVariablesOut_AlwaysWriteBeforeRead()
-      ' example 1
-      For Each a In New List(Of String)
-          Dim b As Long
-          If a = """" Then
-              b = 1
-          End If
-          DoSomeImportantStuff()
-      Next
-
-      ' example 2
-      Dim c As String
-      Do While True
-          Dim d As Long
-          If c = """" Then
-              d = 1
-          End If
-
-         DoSomeImportantStuff()
-         Exit Do
-     Loop
- End Sub
- Private Shared Sub DoSomeImportantStuff()
-     Debug.Print(""very important"")
- End Sub
- Private Shared Sub DoSomeImportantStuff(b as Long)
-     Debug.Print(""very important"")
- End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -536,42 +368,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class GotoTest1
-    Private Shared Sub Main()
-        Dim x As Integer = 200, y As Integer = 4
-        Dim count As Integer = 0
-        Dim array As String(,) = New String(x - 1, y - 1) {}
-
-        For i As Integer = 0 To x - 1
-
-            For j As Integer = 0 To y - 1
-                array(i, j) = (System.Threading.Interlocked.Increment(count)).ToString()
-            Next
-        Next
-
-        Console.Write(""Enter the number to search for: "")
-        Dim myNumber As String = Console.ReadLine()
-
-        For i As Integer = 0 To x - 1
-
-            For j As Integer = 0 To y - 1
-
-                If array(i, j).Equals(myNumber) Then
-                    GoTo Found
-                End If
-            Next
-        Next
-
-        Console.WriteLine(""The number {0} was not found."", myNumber)
-        GoTo Finish
-Found:
-        Console.WriteLine(""The number {0} is found."", myNumber)
-Finish:
-        Console.WriteLine(""End of search."")
-        Console.WriteLine(""Press any key to exit."")
-        Console.ReadKey()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class GotoTest1
@@ -629,14 +425,6 @@ internal partial class GotoTest1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        For i = 1 To 2
-            Dim a As Boolean? = Nothing
-            Console.WriteLine(a)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -659,23 +447,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        For i = 1 To 2
-            Dim a, b as Integer, c, d as Integer, e, f as Long, g = Sub() System.Console.WriteLine(1)
-            a = 1
-            b += 1
-            
-            c += 1
-            d = 1
-
-            e += 1
-            f = 1
-
-            g()
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -713,14 +484,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        For i = 1 To 2
-            Dim a As New Integer()
-            Console.WriteLine(a)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -743,15 +506,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        For i = 1 To 2
-            Dim b As Boolean
-            Console.WriteLine(b)
-            b = True
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -775,34 +529,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim i=1
-        Do
-            Dim b As Integer
-            b  +=1
-            Console.WriteLine(""b={0}"", b)
-            For j = 1 To 3
-                Dim c As Integer
-                c  +=1
-                Console.WriteLine(""c={0}"", c)
-            Next
-            For j = 1 To 3
-                Dim c As Integer
-                c +=1
-                Console.WriteLine(""c1={0}"", c)
-            Next
-            Dim k=1
-            Do while k <= 3
-                Dim c As Integer
-                c +=1
-                Console.WriteLine(""c2={0}"", c)
-                k+=1
-            Loop
-        i += 1
-        Loop Until i > 3
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -849,20 +575,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        For i = 1 To 2
-            Dim b As Boolean
-            Console.WriteLine(b)
-            b = True
-        Next
-        For i = 1 To 2
-            Dim b As Boolean
-            Console.WriteLine(b)
-            b = True
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -892,17 +604,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(someCondition As Boolean)
-        For j = 1 To 2
-            If someCondition Then
-                Dim b As Boolean
-                Console.WriteLine(b)
-                b = True
-            End If
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass

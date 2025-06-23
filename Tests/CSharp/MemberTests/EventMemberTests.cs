@@ -13,9 +13,6 @@ public class EventMemberTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Event MyEvent As EventHandler
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -31,9 +28,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Shared Event TestEvent(a As String)
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -50,13 +44,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class TestEventWithNoType
-    Public Event OnCakeChange
-
-    Public Sub RaisingFlour()
-        RaiseEvent OnCakeChange
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class TestEventWithNoType
 {
@@ -78,26 +65,6 @@ public partial class TestEventWithNoType
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFileSystem
-
-    Event FileChanged(FileData As String)
-    Event FileCreated(FileData As String)
-    Event FileDeleted(FileData As String)
-    Event FileRenamed(e As RenamedEventArgs)
-    Event WatcherError(e As ErrorEventArgs)
-
-End Interface
-
-Public Class FileSystemWin
-    Implements IFileSystem
-
-    Public Event FileChanged(FileData As String) Implements IFileSystem.FileChanged
-    Public Event FileCreated(FileData As String) Implements IFileSystem.FileCreated
-    Public Event FileDeleted(FileData As String) Implements IFileSystem.FileDeleted
-    Public Event FileRenamed(e As RenamedEventArgs) Implements IFileSystem.FileRenamed
-    Public Event WatcherError(e As ErrorEventArgs) Implements IFileSystem.WatcherError
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.IO;
 
 public partial interface IFileSystem
@@ -140,23 +107,6 @@ public partial class FileSystemWin : IFileSystem
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class MyEventClass
-    Public Event TestEvent()
-
-    Sub RaiseEvents()
-        RaiseEvent TestEvent()
-    End Sub
-End Class
-
-Module Module1
-    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass
-
-    Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
-    End Sub
-
-    Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class MyEventClass
 {
@@ -200,14 +150,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class MyEventClass
-    Public Event TestEvent()
-End Class
-Class Class1
-    WithEvents MyEventClassInstance As MyEventClass
-    Sub EventClassInstance_TestEvent() Handles MyEventClassInstance.TestEvent
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class MyEventClass
 {
@@ -238,37 +180,6 @@ internal partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class MyEventClass
-    Public Event TestEvent()
-
-    Sub RaiseEvents()
-        RaiseEvent TestEvent()
-    End Sub
-End Class
-
-Class Class1
-    Shared WithEvents SharedEventClassInstance As New MyEventClass
-    WithEvents NonSharedEventClassInstance As New MyEventClass 'Comment moves to initialization in c# constructor
-
-    Public Sub New(num As Integer)
-    End Sub
-
-    Public Sub New(obj As Object)
-        MyClass.New(7)
-    End Sub
-
-    Shared Sub PrintTestMessage2() Handles SharedEventClassInstance.TestEvent, NonSharedEventClassInstance.TestEvent
-    End Sub
-
-    Sub PrintTestMessage3() Handles NonSharedEventClassInstance.TestEvent
-    End Sub
-
-    Public Class NestedShouldNotGainConstructor
-    End Class
-End Class
-
-Public Class ShouldNotGainConstructor
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class MyEventClass
 {
@@ -329,35 +240,6 @@ public partial class ShouldNotGainConstructor
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class MyEventClass
-    Public Event TestEvent()
-
-    Sub RaiseEvents()
-        RaiseEvent TestEvent()
-    End Sub
-End Class
-
-Partial Class Class1
-    WithEvents EventClassInstance, EventClassInstance2 As New MyEventClass 'Comment moves to initialization in c# constructor
-
-    Public Sub New()
-    End Sub
-
-    Public Sub New(num As Integer)
-    End Sub
-
-    Public Sub New(obj As Object)
-        MyClass.New()
-    End Sub
-End Class
-
-Public Partial Class Class1
-    Sub PrintTestMessage2() Handles EventClassInstance.TestEvent, EventClassInstance2.TestEvent
-    End Sub
-
-    Sub PrintTestMessage3() Handles EventClassInstance.TestEvent
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class MyEventClass
 {
@@ -417,33 +299,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports Microsoft.VisualBasic.CompilerServices
-
-<DesignerGenerated>
-Partial Public Class TestHandlesAdded
-
-    Sub InitializeComponent()
-        Me.POW_btnV2DBM = New System.Windows.Forms.Button()
-        '
-        'POW_btnV2DBM
-        '
-        Me.POW_btnV2DBM.Location = New System.Drawing.Point(207, 15)
-        Me.POW_btnV2DBM.Name = ""POW_btnV2DBM""
-        Me.POW_btnV2DBM.Size = New System.Drawing.Size(42, 23)
-        Me.POW_btnV2DBM.TabIndex = 3
-        Me.POW_btnV2DBM.Text = "">>""
-        Me.POW_btnV2DBM.UseVisualStyleBackColor = True
-    End Sub
-
-End Class
-
-Partial Public Class TestHandlesAdded
-    Dim WithEvents POW_btnV2DBM As Button
-
-    Public Sub POW_btnV2DBM_Click() Handles POW_btnV2DBM.Click
-
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 [DesignerGenerated]
@@ -494,38 +349,6 @@ CS0246: The type or namespace name 'Button' could not be found (are you missing 
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-Imports System.Windows.Forms
-Imports Microsoft.VisualBasic.CompilerServices
-
-Partial Class BaseForm
-    Inherits Form
-    Friend WithEvents BaseButton As Button
-End Class
-
-<DesignerGenerated>
-Partial Class BaseForm
-    Inherits System.Windows.Forms.Form
-
-    Private Sub InitializeComponent()
-        Me.BaseButton = New Button()
-    End Sub
-End Class
-
-<DesignerGenerated>
-Partial Class Form1
-    Inherits BaseForm
-    Private Sub InitializeComponent()
-        Me.Button1 = New Button()
-    End Sub
-    Friend WithEvents Button1 As Button
-End Class
-
-Partial Class Form1
-    Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
-                                                                            BaseButton.Click
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 using System.Windows.Forms;
@@ -622,15 +445,6 @@ internal partial class Form1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue584RaiseEventByRefDemo
-    Public Event ConversionNeeded(ai_OrigID As Integer, ByRef NewID As Integer)
-
-    Public Function TestConversion(ai_ID) As Integer
-        Dim i_NewValue As Integer
-        RaiseEvent ConversionNeeded(ai_ID, i_NewValue)
-        Return i_NewValue
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue584RaiseEventByRefDemo
@@ -656,24 +470,6 @@ public partial class Issue584RaiseEventByRefDemo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Windows.Forms
-
-Public Partial Class MainWindow
-    Inherits Form
-    Public Sub New()
-        InitializeComponent()
-    End Sub
-
-    Private Sub MainWindow_Loaded() Handles MyBase.Load
-        Interaction.MsgBox(""Window, loaded"")
-    End Sub
-End Class
-
-Public Partial Class MainWindow
-    Public Sub InitializeComponent()
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System.Windows.Forms;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
@@ -707,31 +503,6 @@ public partial class MainWindow
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Module Program
-    Public Sub Main(args As String())
-        Dim c As New SomeClass(New SomeDependency())
-        Console.WriteLine(""Done"")
-    End Sub
-End Module
-
-Public Class SomeDependency
-    Public Event SomeEvent As EventHandler
-End Class
-
-Public Class SomeClass
-    Private WithEvents _dep As SomeDependency
-
-    Public Sub New(dep)
-        _dep = dep
-    End Sub
-
-    Private Sub _dep_SomeEvent(sender As Object, e As EventArgs) Handles _dep.SomeEvent
-        ' Do Something
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 
@@ -797,23 +568,6 @@ public partial class SomeClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Form1
-    Private Sub MultiClickHandler(sender As Object, e As EventArgs) Handles Button1.Click,
-                                                                            Button2.Click
-    End Sub
-End Class
-
-Partial Class Form1
-    Inherits System.Windows.Forms.Form
-
-    Private Sub InitializeComponent()
-        Me.Button1 = New System.Windows.Forms.Button()
-        Me.Button2 = New System.Windows.Forms.Button()
-    End Sub
-
-    Friend WithEvents Button1 As System.Windows.Forms.Button
-    Friend WithEvents Button2 As System.Windows.Forms.Button
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 

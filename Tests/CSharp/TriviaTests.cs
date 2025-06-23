@@ -15,24 +15,6 @@ public class TriviaTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class TestClass506
-    Public Sub Deposit(Item As Integer, ColaOnly As Boolean, MonteCarloLogActive As Boolean, InDevEnv As Func(Of Boolean))
-
-        If ColaOnly Then 'just log the Cola value
-            Console.WriteLine(1)
-        ElseIf (Item = 8 Or Item = 9) Then 'this is an indexing rate for inflation adjustment
-            Console.WriteLine(2)
-        Else 'this for a Roi rate from an assets parameters
-            Console.WriteLine(3)
-        End If
-        If MonteCarloLogActive AndAlso InDevEnv() Then 'Special logging for dev debugging
-            Console.WriteLine(4)
-            'WriteErrorLog() 'write a blank line
-        End If
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class TestClass506
@@ -68,24 +50,6 @@ public partial class TestClass506
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"#Region ""Whole File""
-#Region ""Nested""
-Imports System
-
-#Region ""Class""
-Module Program
-#Region ""Inside Class""
-    Sub Main(args As String())
-#Region ""Inside Method""
-        Console.WriteLine(""Hello World!"")
-#End Region
-    End Sub
-#End Region
-End Module
-#End Region
-#End Region
-#End Region
-", extension: "vb"),
                 Verifier.Verify(@"#region Whole File
 #region Nested
 using System;
@@ -114,32 +78,6 @@ internal static partial class Program
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-    Inherits System.Windows.Forms.Form
-
-    #Region "" Members ""
-
-        Private _Member As String = String.Empty
-
-    #End Region
-
-    #Region "" Construction ""
-
-        Public Sub New()
-        
-        End Sub
-
-    #End Region
-
-    #Region "" Methods ""
-
-        Public Sub Eventhandler_Load(sender As Object, e As EventArgs) Handles Me.Load
-            'Do something
-        End Sub
-
-    #End Region
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass : System.Windows.Forms.Form
@@ -180,12 +118,6 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class AClass
-    #If TRUE
-    Private Sub AMethod()
-    End Sub
-    #End If
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class AClass
 {
@@ -209,12 +141,6 @@ public partial class AClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class AClass
-    #If FALSE
-    Private Sub AMethod()
-    End Sub
-    #End If
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class AClass
 {
@@ -237,11 +163,6 @@ public partial class AClass
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-'>> Thomas  16.03.2021
-'                       bei BearbeitungsTyp = ""SP__unten""
-Public Class AClass
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 
 // >> Thomas  16.03.2021
 // bei BearbeitungsTyp = ""SP__unten""
@@ -258,11 +179,6 @@ public partial class AClass
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-''' >> Thomas  16.03.2021
-'''                       bei BearbeitungsTyp = ""SP__unten""
-Public Class AClass
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 
 /// >> Thomas  16.03.2021
 ///                       bei BearbeitungsTyp = ""SP__unten""
@@ -278,14 +194,6 @@ public partial class AClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    ''' <summary>Xml doc</summary>
-    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-        argument = Nothing
-        argument2 = Nothing
-        argument3 = Nothing
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -308,16 +216,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    '''<summary>
-    '''  Returns the cached ResourceManager instance used by this class.
-    '''</summary>
-    Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
-        argument = Nothing
-        argument2 = Nothing
-        argument3 = Nothing
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -342,26 +240,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class X
-    <Display(Name:=""Reinsurance Year"")> _
-    Public SelectedReinsuranceYear As Int16
-
-    
-    <Display(Name:=""Record Type"")> _
-    Public SelectedRecordType As String
-
-    <Display(Name:=""Release Date"")> _
-    Public ReleaseDate As Nullable(Of Date)
-
-End Class
-
-Friend Class DisplayAttribute
-    Inherits Attribute
-    Property Name As String
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class X
@@ -391,29 +269,6 @@ internal partial class DisplayAttribute : Attribute
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class ConversionTest8
-    Private x As Integer = 5
-
-    Public Sub New()
-
-        'Constructor Comment 1
-        Dim constructorVar1 As Boolean = True
-
-        'Constructor Comment 2
-        Dim constructorVar2 As Boolean = True
-
-    End Sub
-
-#Region ""Region1""
-    Private Sub Method1()
-    End Sub
-#End Region
-#Region ""Region2""
-    'Class Comment 3
-    Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = x}
-#End Region
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System.Threading.Tasks;
 
 public partial class ConversionTest8

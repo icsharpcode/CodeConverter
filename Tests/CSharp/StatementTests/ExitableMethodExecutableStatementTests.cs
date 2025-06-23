@@ -20,18 +20,6 @@ public class ExitableMethodExecutableStatementTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
-
-        While b = 0
-            If b = 2 Then Continue While
-            If b = 3 Then Exit While
-            b = 1
-        End While
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -59,18 +47,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
-
-        Do
-            If b = 2 Then Continue Do
-            If b = 3 Then Exit Do
-            b = 1
-        Loop
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -99,18 +75,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b As Integer
-        b = 0
-
-        Do
-            If b = 2 Then Continue Do
-            If b = 3 Then Exit Do
-            b = 1
-        Loop While b = 0
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -139,14 +103,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each v As Integer In values
-            If v = 2 Then Continue For
-            If v = 3 Then Exit For
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -170,14 +126,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each v In values
-            If v = 2 Then Continue For
-            If v = 3 Then Exit For
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -201,17 +149,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        Dim val As Integer
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-
-        Console.WriteLine(val)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -240,18 +177,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Dim val As Integer
-
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-
-        Console.WriteLine(val)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -281,15 +206,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        Dim val As Integer
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -313,15 +229,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Dim val As Integer
-    Private Sub TestMethod(ByVal values As Integer())
-        For Each val In values
-            If val = 2 Then Continue For
-            If val = 3 Then Exit For
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -347,20 +254,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal values As Integer())
-        Dim inline1, inline2, keep1, keep2 As Integer
-        For Each inline1 In values
-            For Each keep1 In values
-                For Each inline2 In values
-                    If inline2 = 2 Then Continue For
-                    If inline2 = 3 Then Exit For
-                Next
-            Next
-            Console.WriteLine(keep1)
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -394,15 +287,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class A
-    Public Function Add(ByVal x As Integer) As Integer
-        Select Case x
-            Case 1
-                Exit Select
-        End Select
-        Return 3
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class A
 {
@@ -427,25 +311,6 @@ internal partial class A
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Collections.Generic
-
-Public Class VisualBasicClass
-    Public Sub Test
-        Dim LstTmp As New List(Of Integer)
-        LstTmp.Add(5)
-        LstTmp.Add(6)
-        LstTmp.Add(7)
-        Dim i_Total As Integer
-        For Each CurVal As Integer In LstTmp
-            i_Total += CurVal
-            Select Case CurVal
-                Case 6
-                    Exit For
-            End Select
-        Next
-    system.Console.WriteLine(i_Total.ToString())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -488,28 +353,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Collections.Generic
-
-Public Class VisualBasicClass
-    Public Sub Test
-        Dim LstTmp As New List(Of Integer)
-        LstTmp.Add(5)
-        LstTmp.Add(6)
-        LstTmp.Add(7)
-        Dim i_Total As Integer
-        For Each CurVal As Integer In LstTmp
-            i_Total += CurVal
-            Select Case CurVal
-                Case 6
-                    Exit For
-                Case 7
-                    Exit For
-            End Select
-            Console.WriteLine()
-        Next
-    system.Console.WriteLine(i_Total.ToString())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -558,36 +401,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class VisualBasicClass
-    Public Function Test(applicationRoles)
-        For Each appRole In applicationRoles
-            Dim objectUnit = appRole
-            While objectUnit IsNot Nothing
-                If appRole < 10 Then
-                    If appRole < 3 Then
-                        Return True
-                    Else If appRole < 4 Then
-                        Continue While ' Continue While
-                    Else If appRole < 5 Then
-                        Exit For ' Exit For
-                    Else If appRole < 6 Then
-                        Continue For ' Continue For
-                    Else If appRole < 7 Then
-                        Exit For ' Exit For
-                    Else If appRole < 8 Then
-                        Exit While ' Exit While
-                    Else If appRole < 9 Then
-                        Continue While ' Continue While
-                    Else
-                        Continue For ' Continue For
-                    End If
-                End IF
-                objectUnit = objectUnit.ToString
-            End While
-        Next
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -667,26 +480,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Collections.Generic
-
-Public Class VisualBasicClass
-    Public Sub Test
-        Dim LstTmp As New List(Of Integer)
-        LstTmp.Add(5)
-        LstTmp.Add(6)
-        LstTmp.Add(7)
-        Dim i_Total As Integer
-        For Each CurVal As Integer In LstTmp
-            i_Total += CurVal
-            Select Case CurVal
-                Case 6
-                    Continue For
-            End Select
-            Console.WriteLine()
-        Next
-    system.Console.WriteLine(i_Total.ToString())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -723,37 +516,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-Imports System.Collections.Generic
-
-Public Class VisualBasicClass
-    Public Sub Test
-        Dim LstTmp As New List(Of Integer)
-        LstTmp.Add(5)
-        LstTmp.Add(6)
-        LstTmp.Add(7)
-        Dim i_Total As Integer
-        For Each CurVal As Integer In LstTmp
-            i_Total += CurVal
-            While CurVal < 3
-                Select Case CurVal
-                    Case 6
-                        Continue For
-                End Select
-            End While
-            While CurVal < 4
-                Select Case CurVal
-                    Case 7
-                        Continue For
-                    Case 8
-                        Exit For
-                End Select
-            End While
-            Console.WriteLine()
-        Next
-        System.Console.WriteLine(i_Total.ToString())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -846,40 +608,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class VisualBasicClass779
-    Public Property SomeCase As Integer = 1
-    Public Property ComboBox_CostCenter As Object()
-    Public Property The_Cost_Center As Object
-
-    Public Sub Test
-        Try
-            If Not To_Show_Cost() Then
-                SomeCase *= 2
-            End If
-
-            SomeCase *= 3
-                
-            If The_Cost_Center = 0 Then
-                    SomeCase *=5
-                Exit Try
-            End If
-
-            For i = 0 To ComboBox_CostCenter.Length - 1
-                If 7 = The_Cost_Center Then
-                    SomeCase *=7
-                    Exit Try
-                End If
-            Next
-        Finally
-        End Try
-    End Sub
-
-    Private Function To_Show_Cost() As Boolean
-        Throw New NotImplementedException()
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -945,29 +673,6 @@ public partial class VisualBasicClass779
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class VisualBasicClass779
-    Public Property SomeCase As Integer = 1
-    Public Property ComboBox_CostCenter As Object()
-    Public Property The_Cost_Center As Object
-
-    Public Sub Test
-        Try
-            For i = 0 To ComboBox_CostCenter.Length - 1
-                If 7 = The_Cost_Center Then
-                    SomeCase *=7
-                    Exit For
-                End If
-            Next
-        Finally
-        End Try
-    End Sub
-
-    Private Function To_Show_Cost() As Boolean
-        Throw New NotImplementedException()
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -1009,29 +714,6 @@ public partial class VisualBasicClass779
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class VisualBasicClass779
-    Public Property SomeCase As Integer = 1
-    Public Property ComboBox_CostCenter As Object()
-    Public Property The_Cost_Center As Object
-
-    Public Sub Test
-        For i = 0 To ComboBox_CostCenter.Length - 1
-            Try
-                If 7 = The_Cost_Center Then
-                    SomeCase *=7
-                    Exit For
-                End If
-            Finally
-            End Try
-        Next
-    End Sub
-
-    Private Function To_Show_Cost() As Boolean
-        Throw New NotImplementedException()
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -1073,31 +755,6 @@ public partial class VisualBasicClass779
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class VisualBasicClass779
-    Public Property SomeCase As Integer = 1
-    Public Property ComboBox_CostCenter As Object()
-    Public Property The_Cost_Center As Object
-
-    Public Sub Test
-        For i = 0 To ComboBox_CostCenter.Length - 1
-            Try
-                If 7 = The_Cost_Center Then
-                    SomeCase *=7
-                    Exit For
-                Else
-                    Exit Try
-                End If
-            Finally
-            End Try
-        Next
-    End Sub
-
-    Private Function To_Show_Cost() As Boolean
-        Throw New NotImplementedException()
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 

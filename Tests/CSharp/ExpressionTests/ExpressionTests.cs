@@ -12,22 +12,6 @@ public class ExpressionTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(a as String)
-        Dim result = a = ("""")
-        result = """" = a
-        result = a = (String.Empty)
-        result = String.Empty = a
-        result = a = (Nothing)
-        result = Nothing = a
-        result = a Is Nothing
-        result = a IsNot Nothing
-        result = Not(a IsNot Nothing)
-        result = a = a
-        result = a = (""test"")
-        result = ""test"" = a
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -56,20 +40,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class C
-    Public Function IsPointWithinBoundaryBox(ByVal dblLat As Double, dblLon As Double, ByVal boundbox As Object) As Boolean
-        If boundbox IsNot Nothing Then
-            Dim boolInLatBounds As Boolean = (dblLat <= boundbox.north) And (dblLat >= boundbox.south) 'Less then highest (northmost) lat, AND more than lowest (southmost) lat
-            Dim boolInLonBounds As Boolean = (dblLon >= boundbox.west) And (dblLon <= boundbox.east) 'More than lowest (westmost) lat, AND less than highest (eastmost) lon
-            Return boolInLatBounds And boolInLonBounds
-        Else
-            'Throw New Exception(""boundbox is null."")
-        End If
-        Return False
-    End Function
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class C
@@ -98,17 +68,6 @@ public partial class C
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Option Strict Off ' Directive gets removed
-
-Public Class TestDynamicUsage
-    Property Prop As Integer
-
-    Sub S()
-        Dim o As Object
-        o = New TestDynamicUsage
-        o.Prop = 1 'Must not cast to object here
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class TestDynamicUsage
 {
@@ -130,12 +89,6 @@ public partial class TestDynamicUsage
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class C
-    Public Function IsHybridApp() As Boolean
-        Return New Object().Session(""hybrid"") IsNot Nothing AndAlso New Object().Session(""hybrid"") = 1
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class C
@@ -154,13 +107,6 @@ public partial class C
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim rslt = Not 1 = 2
-        Dim rslt2 = Not True
-        Dim rslt3 = TypeOf New Object() IsNot Boolean
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -180,12 +126,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(Optional ByVal pDate As Date = #1/1/1900#)
-        Dim rslt = #1/1/1900#
-        Dim rslt2 = #8/13/2002 12:14 PM#
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -207,11 +147,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class DoubleLiteral
-    Private Function Test(myDouble As Double) As Double
-        Return Test(2.37D) + Test(&HFFUL) 'VB: D means decimal, C#: D means double
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class DoubleLiteral
 {
@@ -229,12 +164,6 @@ internal partial class DoubleLiteral
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue213
-    Const x As Date = #1990-1-1#
-
-    Private Sub Y(Optional ByVal opt As Date = x)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -256,17 +185,6 @@ public partial class Issue213
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        Bar(True)
-        Me.Bar(""4"")
-        Dim ss(1) As String
-        Dim y = ss(""0"")
-    End Sub
-
-    Sub Bar(x as Integer)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
@@ -292,17 +210,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class EnumToString
-    Enum Tes As Short
-        None = 0
-        TEST2 = 2
-    End Enum
-    Private Sub TEest2(aEnum As Tes)
-        Dim sxtr_Tmp As String = ""Use"" & CShort(aEnum).ToString
-        Dim si_Txt As Short = CShort(2 ^ Tes.TEST2)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class EnumToString
@@ -327,14 +234,6 @@ public partial class EnumToString
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo(ByVal arg As TriState)
-    End Sub
-
-    Sub Main()
-        Foo(0)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
@@ -357,12 +256,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-    Public Sub Rounding()
-        Dim o as Object = 3.0f
-        Dim x = Math.Round(o, 2)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass
@@ -384,17 +277,6 @@ CS1503: Argument 1: cannot convert from 'object' to 'double'", extension: "cs")
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class MyTest
-    Public Enum TestEnum As Integer
-        Test1 = 0
-        Test2 = 1
-    End Enum
-
-    Sub Main()
-        Dim EnumVariable = TestEnum.Test1
-        Dim t1 As Integer = EnumVariable
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class MyTest
 {
@@ -420,16 +302,6 @@ public partial class MyTest
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"<Flags()> Public Enum FilePermissions As Integer
-    None = 0
-    Create = 1
-    Read = 2
-    Update = 4
-    Delete = 8
-End Enum
-Public Class MyTest
-    Public MyEnum As FilePermissions = FilePermissions.None + FilePermissions.Create
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 [Flags()]
@@ -455,24 +327,6 @@ public partial class MyTest
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Enum E
-        A
-    End Enum
-
-    Sub Main()
-        Dim e1 = E.A
-        Dim e2 As Integer
-        Select Case e1
-            Case 0
-        End Select
-
-        Select Case e2
-            Case E.A
-        End Select
-
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -512,20 +366,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-    Friend Module Module1
-    Sub Main()
-        Select Case 1
-            Case 1
-                Console.WriteLine(""a"")
-
-            Case 1
-                Console.WriteLine(""b"")
-
-        End Select
-
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal static partial class Module1
@@ -562,19 +402,6 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        Dim w = Bar
-        Dim x = Me.Bar
-        Dim y = Baz()
-        Dim z = Me.Baz()
-    End Sub
-
-    Function Bar() As Integer
-        Return 1
-    End Function
-    Property Baz As Integer
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -601,12 +428,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim rslt = Ctype(true, Object).ToString()
-        Dim rslt2 = Ctype(true, Object)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -625,9 +446,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private DefaultDate as Date = Nothing
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -643,14 +461,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class VisualBasicClass
-        Dim SomeDate = """"
-        Dim SomeDateDateNothing As Date? = If(String.IsNullOrEmpty(SomeDate), Nothing, DateTime.Parse(SomeDate))
-        Dim isNotNothing = SomeDateDateNothing IsNot Nothing
-        Dim isSomething = SomeDateDateNothing = New Date()
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -677,12 +487,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class VisualBasicClass
-    Dim SomeDate As String = ""2022-01-01""
-    Dim SomeDateDateParsed As Date? = If(String.IsNullOrEmpty(SomeDate), CType(Nothing, Date?), DateTime.Parse(SomeDate))
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass
@@ -704,13 +508,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-
-    Private Function TestMethod(testArray As Object()) As Boolean
-        Return Not String.IsNullOrWhiteSpace(testArray?(0)?.ToString())
-    End Function
-    
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class VisualBasicClass
 {
@@ -730,11 +527,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class GenericComparison
-    Public Sub m(Of T)(p As T)
-        If p Is Nothing Then Return
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class GenericComparison
 {
@@ -753,14 +545,6 @@ public partial class GenericComparison
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class A
-    Public Shared x As Integer = 2
-    Public Sub Test()
-        Dim tmp = Me
-        Dim y = Me.x
-        Dim z = tmp.x
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class A
 {
@@ -781,18 +565,6 @@ public partial class A
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class Issue495AndIssue713
-    Public Function Empty() As Integer()
-        Dim emptySingle As IEnumerable(Of Integer) = {}
-        Dim initializedSingle As IEnumerable(Of Integer) = {1}
-        Dim emptyNested As Integer()() = {}
-        Dim initializedNested(1)() As Integer
-        Dim empty2d As Integer(,) = {{}}
-        Dim initialized2d As Integer(,) = {{1}}
-        Return {}
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -818,14 +590,6 @@ public partial class Issue495AndIssue713
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class Issue713
-    Public Function Empty() As Integer()
-        Dim initializedSingle As IEnumerable(Of Integer) = {1}
-        Dim initialized2d As Integer(,) = {{1}}
-        Return {}
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -847,15 +611,6 @@ public partial class Issue713
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-    Public Sub s()
-        If Validate({}) Then
-        End If
-    End Sub
-    Private Function Validate(w As IEnumerable(Of Int16)) As Boolean
-        Return True
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -882,10 +637,6 @@ public partial class VisualBasicClass
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Class Empty2DArray
-    Dim data(,) As Double = {}
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial class Empty2DArray
 {
     private double[,] data = new double[,] { };
@@ -899,13 +650,6 @@ public partial class Empty2DArray
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Linq
-
-Public Class Class1
-    Sub Foo()
-        Dim y = """".Split("",""c).Select(Of String)(Function(x) x)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Linq;
 
 public partial class Class1
@@ -924,13 +668,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Linq
-
-Public Class Class1
-    Sub Foo()
-        Dim y = """".Split("",""c).Select(Of Object)(Function(x) x)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Linq;
 
 public partial class Class1
@@ -949,16 +686,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Main()
-        Dim x = DayOfWeek.Monday
-        Foo(x)
-    End Sub
-
-    Sub Foo(x As DayOfWeek?)
-
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Class1
@@ -983,49 +710,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub New()
-        Dim needsInitialization As Integer
-        Dim notUsed As Integer
-        Dim y = needsInitialization
-    End Sub
-
-    Sub Foo()
-        Dim needsInitialization As Integer
-        Dim notUsed As Integer
-        Dim y = needsInitialization
-    End Sub
-
-    Sub Bar()
-        Dim i As Integer, temp As String = String.Empty
-        i += 1
-    End Sub
-
-    Sub Bar2()
-        Dim i As Integer, temp As String = String.Empty
-        i = i + 1
-    End Sub
-
-    Sub Bar3()
-        Dim i As Integer, temp As String = String.Empty
-        Dim k As Integer = i + 1
-    End Sub
-
-    Sub Bar4()
-        Dim i As Integer, temp As String = String.Empty
-        Dim k As Integer = i + 1
-        i = 1
-    End Sub
-
-    Public ReadOnly Property State As Integer
-        Get
-            Dim needsInitialization As Integer
-            Dim notUsed As Integer
-            Dim y = needsInitialization
-            Return y
-        End Get
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -1092,11 +776,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim strings = { ""1"", ""2"" }
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1114,11 +793,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim typ = GetType(String)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1136,16 +810,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Function Bar(value As String) As Integer?
-        Dim result As Integer
-        If Integer.TryParse(value, result) Then
-            Return result
-        Else
-            Return Nothing
-        End If
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1171,14 +835,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Sub Bar()
-        Dim number As Integer
-        number = Nothing
-        Dim dat As Date
-        dat = Nothing
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -1200,11 +856,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = If((str = """"), True, False)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1222,12 +873,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class ConditionalExpressionInStringConcat
-    Private Sub TestMethod(ByVal str As String)
-        Dim appleCount as integer = 42
-        Console.WriteLine(""I have "" & appleCount & If(appleCount = 1, "" apple"", "" apples""))
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class ConditionalExpressionInStringConcat
@@ -1247,11 +892,6 @@ internal partial class ConditionalExpressionInStringConcat
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim result As Boolean = Not If((str = """"), True, False)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1269,11 +909,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Console.WriteLine(If(str, ""<null>""))
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -1292,19 +927,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Module MyExtensions
-    public sub NewColumn(type As Type , Optional strV1 As String = nothing, Optional code As String = ""code"", Optional argInt as Integer = 1)
-    End sub
-
-    public Sub CallNewColumn()
-        NewColumn(GetType(MyExtensions))
-        NewColumn(Nothing, , ""otherCode"")
-        NewColumn(Nothing, ""fred"")
-        NewColumn(Nothing, , argInt:=2)
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public static partial class MyExtensions
@@ -1330,15 +952,6 @@ public static partial class MyExtensions
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue445MissingParameter
-    Public Sub First(a As String, b As String, c As Integer)
-        Call mySuperFunction(7, , New Object())
-    End Sub
-
-    Private Sub mySuperFunction(intSomething As Integer, Optional p As Object = Nothing, Optional optionalSomething As Object = Nothing)
-        Throw New NotImplementedException()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Issue445MissingParameter
@@ -1362,13 +975,6 @@ public partial class Issue445MissingParameter
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim d = New Dictionary(Of string, string)
-        Dim s As String
-        d.TryGetValue(""a"", s)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
@@ -1390,26 +996,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-MustInherit Class TestClass
-    Implements IReadOnlyDictionary(Of Integer, Integer)
-    Public Function TryGetValue(key as Integer, ByRef value As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).TryGetValue
-        value = key
-    End Function
-
-    Private Sub TestMethod()
-        Dim value As Integer
-        Me.TryGetValue(5, value)
-    End Sub
-
-    Public MustOverride Function ContainsKey(key As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).ContainsKey
-    Public MustOverride Function GetEnumerator() As IEnumerator(Of KeyValuePair(Of Integer, Integer)) Implements IEnumerable(Of KeyValuePair(Of Integer, Integer)).GetEnumerator
-    Public MustOverride Function IEnumerable_GetEnumerator() As IEnumerator Implements IEnumerable.GetEnumerator
-    Default Public MustOverride ReadOnly Property Item(key As Integer) As Integer Implements IReadOnlyDictionary(Of Integer, Integer).Item
-    Public MustOverride ReadOnly Property Keys As IEnumerable(Of Integer) Implements IReadOnlyDictionary(Of Integer, Integer).Keys
-    Public MustOverride ReadOnly Property Values As IEnumerable(Of Integer) Implements IReadOnlyDictionary(Of Integer, Integer).Values
-    Public MustOverride ReadOnly Property Count As Integer Implements IReadOnlyCollection(Of KeyValuePair(Of Integer, Integer)).Count
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections;
 using System.Collections.Generic;
 
@@ -1445,17 +1031,6 @@ internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass3
-    Private Class Rec
-        Public ReadOnly Property Prop As New Rec
-    End Class
-    Private Function TestMethod(ByVal str As String) As Rec
-        Dim length As Integer = If(str?.Length, -1)
-        Console.WriteLine(length)
-        Console.ReadKey()
-        Return New Rec()?.Prop?.Prop?.Prop
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass3
@@ -1481,15 +1056,6 @@ internal partial class TestClass3
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class StudentName
-    Public LastName, FirstName As String
-End Class
-
-Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class StudentName
 {
@@ -1512,14 +1078,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class Issue480
-    Public Foo As Integer
-
-    Sub Test()
-        Dim x = New With {Foo}
-    End Sub
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class Issue480
 {
@@ -1540,14 +1098,6 @@ internal partial class Issue480
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Dim anonymousType1 = New With {
-    Key .A = 1,
-    Key .B = .A
-}
-Dim anonymousType2 = New With {
-    Key .A = 2,
-    Key .B = .A
-}", extension: "vb"),
                 Verifier.Verify(@"{
     var anonymousType1 = new
     {
@@ -1569,13 +1119,6 @@ Dim anonymousType2 = New With {
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Dim anonymousType = New With {
-Key .A = 1, 'Comment gets duplicated
-Key .B = New With {
-        Key .A = 2,
-        Key .B = .A
-    }
-}", extension: "vb"),
                 Verifier.Verify(@"{
     var anonymousType = new
     {
@@ -1597,11 +1140,6 @@ Key .B = New With {
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -1619,12 +1157,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class SomeClass
-    Public SomeProperty As String
-    Public Shared Instance As SomeClass = New SomeClass() With { ' First line gets moved
-             .SomeProperty = .SomeProperty + NameOf(.SomeProperty) ' Second line gets moved
-        } ' Third line gets moved
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class SomeClass
 {
@@ -1646,15 +1178,6 @@ public partial class SomeClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub DoStuff(a As Object)
-    End Sub
-    Private Sub TestMethod()
-        DoStuff({1, 2})
-        Dim intList As New List(Of Integer) From {1}
-        Dim dict As New Dictionary(Of Integer, Integer) From {{1, 2}, {3, 4}}
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
@@ -1678,12 +1201,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
-        test(3)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -1703,37 +1220,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Imports System
-
-Public Class Issue1148
-    Public Shared FuncClass As Func(Of TestObjClass) = AddressOf FunctionReturningClass
-    Public Shared FuncBaseClass As Func(Of TestBaseObjClass) = AddressOf FunctionReturningClass
-    Public Shared FuncInterface As Func(Of ITestObj) = AddressOf FunctionReturningClass
-    Public Shared FuncInterfaceParam As Func(Of ITestObj, ITestObj) = AddressOf CastObj
-    Public Shared FuncClassParam As Func(Of TestObjClass, ITestObj) = AddressOf CastObj
-
-    Public Shared Function FunctionReturningClass() As TestObjClass
-        Return New TestObjClass()
-    End Function
-
-    Public Shared Function CastObj(obj As ITestObj) As TestObjClass
-        Return CType(obj, TestObjClass)
-    End Function
-
-End Class
-
-Public Class TestObjClass
-    Inherits TestBaseObjClass
-    Implements ITestObj
-End Class
-
-Public Class TestBaseObjClass
-End Class
-
-Public Interface ITestObj
-End Interface
-", extension: "vb"),
                 Verifier.Verify(@"
 using System;
 
@@ -1778,14 +1264,6 @@ public partial interface ITestObj
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue869
-    Sub Main
-        Dim i As Integer = Function() 
-                                Return 2 
-                        End Function() 
-        Console.WriteLine(i)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Issue869
@@ -1807,18 +1285,6 @@ public partial class Issue869
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim test As Func(Of Integer, Integer) = Function(a) a * 2
-        Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
-            If b > 0 Then Return a / b
-            Return 0
-        End Function
-
-        Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
-        test(3)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -1846,25 +1312,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Async Sub TestMethod()
-        Dim test0 As Func(Of Task(Of Integer)) = Async Function()  2
-        Dim test1 As Func(Of Integer, Task(Of Integer)) = Async Function(a) a * 2
-        Dim test2 As Func(Of Integer, Integer, Task(Of Double)) = Async Function(a, b)
-            If b > 0 Then Return a / b
-            Return 0
-        End Function
-
-        Dim test3 As Func(Of Integer, Integer, Task(Of Integer)) = Async Function(a, b) a Mod b
-        Dim test4 As Func(Of Task(Of Integer)) = Async Function()  
-            dim i as Integer = 2
-            dim x as Integer = 3
-            return 3
-        End Function
-        
-Await test1(3)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
@@ -1901,20 +1348,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-        public Async Function mySub() As Task(Of Boolean)
-            Return Await Me.ExecuteAuthenticatedAsync(Async Function() As Task(Of Boolean)
-                Return Await DoSomethingAsync()
-            End Function)
-
-        End Function
-        Private Async Function ExecuteAuthenticatedAsync(myFunc As Func(Of Task(Of Boolean))) As Task(Of Boolean)
-            Return Await myFunc()
-        End Function
-        Private  Async Function DoSomethingAsync() As Task(Of Boolean)
-            Return True
-        End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
@@ -1943,18 +1376,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim test = Function(a) a * 2
-        Dim test2 = Function(a, b)
-            If b > 0 Then Return a / b
-            Return 0
-        End Function
-
-        Dim test3 = Function(a, b) a Mod b
-        test(3)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
@@ -1982,15 +1403,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Option Compare Text
-Imports System.Linq.Expressions
-
-Class TestClass
-    Private Sub TestMethod(a as String, b as String)
-        Dim test As Expression(Of Func(Of Boolean)) = Function() a = b
-        test.Compile()()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Linq.Expressions;
 
@@ -2011,15 +1423,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Option Compare Text
-Imports System.Linq.Expressions
-
-Class TestClass
-    Private Sub TestMethod(a as Object)
-        Dim test As Expression(Of Func(Of Boolean)) = Function() a = Nothing
-        test.Compile()()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Linq.Expressions;
 
@@ -2040,14 +1443,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim x = 1
-        Dim simpleAssignmentAction As System.Action = Sub() x = 1
-        Dim nonBlockAction As System.Action = Sub() Console.WriteLine(""Statement"")
-        Dim ifAction As Action = Sub() If True Then Exit Sub
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -2069,16 +1464,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-Imports System.Diagnostics
-
-Public Class TargetTypeTestClass
-
-    Private Shared Sub Main()
-        Dim actions As Action() = {Sub() Debug.Print(1), Sub() Debug.Print(2)}
-        Dim objects = New List(Of Object) From {Sub() Debug.Print(3), Sub() Debug.Print(4)}
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -2101,25 +1486,6 @@ public partial class TargetTypeTestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class AnonymousLambdaTypeConversionTest
-    Public Sub CallThing(thingToCall As [Delegate])
-    End Sub
-
-    Public Sub SomeMethod()
-    End Sub
-
-    Public Sub Foo()
-        CallThing(Sub()
-                    SomeMethod()
-                  End Sub)
-        CallThing(Sub(a) SomeMethod())
-        CallThing(Function()
-                    SomeMethod()
-                    Return False
-                  End Function)
-        CallThing(Function(a) False)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class AnonymousLambdaTypeConversionTest
@@ -2153,16 +1519,6 @@ public partial class AnonymousLambdaTypeConversionTest
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Function SomeAsyncMethod() As Task(Of Integer)
-        Return Task.FromResult(0)
-    End Function
-
-    Private Async Sub TestMethod()
-        Dim result As Integer = Await SomeAsyncMethod()
-        Console.WriteLine(result)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
@@ -2188,16 +1544,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClassBase
-    Sub DoStuff()
-    End Sub
-End Class
-Class TestClass
-    Inherits TestClassBase
-    Private Sub TestMethod()
-        DoStuff()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClassBase
 {
@@ -2221,11 +1567,6 @@ internal partial class TestClass : TestClassBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Function TestMethod() As String
-         Return vbCrLf
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
@@ -2244,23 +1585,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"public Enum TestState
-one
-two
-end enum
-public class test
-private _state as TestState
-    Public Property State As TestState
-        Get
-            Return _state
-        End Get
-        Set
-            If Not _state.Equals(Value) Then
-                _state = Value
-            End If
-        End Set
-    End Property
-end class", extension: "vb"),
                 Verifier.Verify(@"
 public enum TestState
 {
@@ -2295,26 +1619,6 @@ public partial class test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-    Const a As Boolean = 1
-    Const b As Char = ChrW(1)
-    Const c As Single = 1
-    Const d As Double = 1
-    Const e As Decimal = 1
-    Const f As SByte = 1
-    Const g As Short = 1
-    Const h As Integer = 1
-    Const i As Long = 1
-    Const j As Byte = 1
-    Const k As UInteger = 1
-    Const l As UShort = 1
-    Const m As ULong = 1
-    Const Nl As String = ChrW(13) + ChrW(10)
-
-    Sub Main()
-        Const x As SByte = 4
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Module1
 {
@@ -2348,19 +1652,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-    Enum E
-        A = 1
-    End Enum
-
-    Sub Main()
-        Dim x = 1
-        Select Case x
-            Case E.A
-                Console.WriteLine(""z"")
-        End Select
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal static partial class Module1
@@ -2392,27 +1683,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class EnumTest
-    Public Enum UserInterface
-        Unknown
-        Spectrum
-        Wisdom
-    End Enum
-
-    Public Sub OnLoad(ui As UserInterface?)
-        Dim activity = 0
-            Select Case ui
-                Case ui Is Nothing
-                    activity = 1
-                Case UserInterface.Spectrum
-                    activity = 2
-                Case UserInterface.Wisdom
-                    activity = 3
-                Case Else
-                    activity = 4
-            End Select
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class EnumTest
 {
@@ -2461,84 +1731,6 @@ public partial class EnumTest
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Test
-    Public Function OnLoad() As Integer
-        Dim x = 5
-        While True
-            Select Case x
-                Case 0
-                    Continue While
-                Case 1
-                    x = 1
-                Case 2
-                    Return 2
-                Case 3
-                    Throw New Exception()
-                Case 4
-                    If True Then
-                        x = 4
-                    Else
-                        Return x
-                    End If
-                Case 5
-                    If True Then
-                        Return x
-                    Else
-                        x = 5
-                    End If
-                Case 6
-                    If True Then
-                        Return x
-                    Else If False Then
-                        x = 6
-                    Else
-                        Return x
-                    End If
-                Case 7
-                    If True Then
-                        Return x
-                    End If
-                Case 8
-                    If True Then Return x
-                Case 9
-                    If True Then x = 9
-                Case 10
-                    If True Then Return x Else x = 10
-                Case 11
-                    If True Then x = 11 Else Return x
-                Case 12
-                    If True Then Return x Else Return x
-                Case 13
-                    If True Then
-                        Return x
-                    Else If False Then
-                        Continue While
-                    Else If False Then
-                        Throw New Exception()
-                    Else If False Then
-                        Exit Select
-                    Else
-                        Return x
-                    End If
-                Case 14
-                    If True Then
-                        Return x
-                    Else If False Then
-                        Return x
-                    Else If False Then
-                        Exit Select
-                    End If
-                Case Else
-                    If True Then
-                        Return x
-                    Else
-                        Return x
-                    End If
-            End Select
-        End While
-        Return x
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Test
@@ -2720,25 +1912,6 @@ public partial class Test
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class SelectObjectCaseIntegerTest
-    Sub S()
-        Dim o As Object
-        Dim j As Integer
-        o = 2.0
-        Select Case o
-            Case 1
-                j = 1
-            Case 2
-                j = 2
-            Case 3 To 4
-                j = 3
-            Case > 4
-                j = 4
-            Case Else
-                j = -1
-        End Select
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class SelectObjectCaseIntegerTest
@@ -2791,9 +1964,6 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Function GetString(yourBoolean as Boolean) As Boolean
-    Return 1 <> 1 OrElse if (yourBoolean, True, False)
-End Function", extension: "vb"),
                 Verifier.Verify(@"public bool GetString(bool yourBoolean)
 {
     return 1 != 1 || (yourBoolean ? true : false);
@@ -2807,17 +1977,6 @@ End Function", extension: "vb"),
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Foo
-    Public Event Bar As EventHandler(Of EventArgs)
-
-    Protected Sub OnBar(e As EventArgs)
-        If BarEvent Is Nothing Then
-            System.Diagnostics.Debug.WriteLine(""No subscriber"")
-        Else
-            RaiseEvent Bar(Me, e)
-        End If
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Diagnostics;
 
@@ -2846,11 +2005,6 @@ public partial class Foo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        Dim x = DateAdd(""m"", 5, Now)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
@@ -2870,11 +2024,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Protected Overrides Sub Finalize()
-        MyBase.Finalize()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -2891,11 +2040,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-    Sub Main()
-        Dim x = Microsoft.VisualBasic.Timer
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal static partial class Module1
@@ -2914,11 +2058,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module Module1
-    Sub Main()
-        Dim x As Short = If(True, CShort(50), 100S)
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class Module1
 {
@@ -2937,19 +2076,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class MoreParsing
-    Sub DoGet()
-        Dim anon = New With {
-            .ANumber = 5
-        }
-        Dim sameAnon = Identity(anon)
-        Dim repeated = Enumerable.Repeat(anon, 5).ToList()
-    End Sub
-
-    Private Function Identity(Of TType)(tInstance As TType) As TType
-        Return tInstance
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Linq;
 
 public partial class MoreParsing
@@ -2975,17 +2101,6 @@ public partial class MoreParsing
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Compound
-    Public Sub Operators()
-        Dim anInt As Integer = 123
-        Dim aDec As Decimal = 12.3
-        anInt *= aDec
-        anInt \= aDec
-        anInt /= aDec
-        anInt -= aDec
-        anInt += aDec
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Compound
@@ -3010,17 +2125,6 @@ public partial class Compound
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Compound
-    Public Sub Operators()
-        Dim aShort As Short = 123
-        Dim aDec As Decimal = 12.3
-        aShort *= aDec
-        aShort \= aDec
-        aShort /= aDec
-        aShort -= aDec
-        aShort += aDec
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Compound
@@ -3045,17 +2149,6 @@ public partial class Compound
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Compound
-    Public Sub Operators()
-        Dim aShort As Short = 123
-        Dim anInt As Integer= 12
-        aShort *= anInt
-        aShort \= anInt
-        aShort /= anInt
-        aShort -= anInt
-        aShort += anInt
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Compound
@@ -3080,15 +2173,6 @@ public partial class Compound
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Compound
-    Public Sub Operators()
-        Dim aShort As Short = 123
-        Dim anotherShort As Short = 234
-        Dim x As Short = aShort * anotherShort
-        x *= aShort ' Implicit cast in C# due to compound operator
-        x = aShort * x
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Compound
 {
@@ -3111,13 +2195,6 @@ public partial class Compound
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Sub S()
-    GoTo [finally]
-[finally]:
-    GoTo [Step]
-[Step]:
-End Sub", extension: "vb"),
-                Verifier.Verify(@"
 public void S()
 {
     goto @finally;
@@ -3139,10 +2216,6 @@ Step:
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-    Sub [Step]()
-        Static i As Integer
-    End Sub", extension: "vb"),
-                Verifier.Verify(@"
 internal partial class SurroundingClass
 {
     private int _Step_i;
@@ -3160,12 +2233,6 @@ internal partial class SurroundingClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Compound
-    Public Sub Operators()
-        Dim do_Tmp As Double = 9999 / 100
-        Dim i_Tmp as Integer = CInt(do_Tmp)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class Compound
@@ -3185,14 +2252,6 @@ public partial class Compound
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Drawing
-
-Public Class Compound
-    Public Sub TypeCast(someInt As Integer)
-        Dim col = Color.FromArgb(someInt * 255.0F, someInt * 255.0F, someInt * 255.0F)
-        Dim arry = New Single(7/someInt) {}
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Drawing;
 
@@ -3213,16 +2272,6 @@ public partial class Compound
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class VisualBasicClass
-    Public Sub TestMethod(ByVal x As String, ByVal y As Func(Of Integer))
-        Dim a As String = If(x, ""x"")
-        Dim b As String = If(x, ""x"").ToUpper()
-        Dim c As String = $""{If(x, ""x"")}""
-        Dim d As String = $""{If(x, ""x"").ToUpper()}""
-        Dim e =  If(y, Function() 5)
-        Dim f =  If(y, (Function() 6))
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass
@@ -3246,21 +2295,6 @@ public partial class VisualBasicClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-Public Class AClass
-        Public Shared Sub Identify(ByVal talker As ITraceMessageTalker)
-            talker?.IdentifyTalker(IdentityTraceMessage())
-        End Sub
-
-    Private Shared Function IdentityTraceMessage() As Object
-        Throw New NotImplementedException()
-    End Function
-End Class
-
-Public Interface ITraceMessageTalker
-    Function IdentifyTalker(v As Object) As Object
-End Interface", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class AClass
@@ -3289,31 +2323,6 @@ public partial interface ITraceMessageTalker
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Enum CrashEnum
-    None = 0
-    One = 1
-    Two = 2
-End Enum
-Public Class CrashClass
-    Public Property CrashEnum As CrashEnum?
-    Public Property IsSet As Boolean
-End Class
-Public Class CrashTest
-    Public Function Edit(Optional flag2 As Boolean = False, Optional crashEnum As CrashEnum? = Nothing) As Object
-        Dim CrashClass As CrashClass = Nothing
-        Dim Flag0 As Boolean = True
-        Dim Flag1 As Boolean = True
-        If Flag0 Then
-            If Flag1 AndAlso flag2 Then
-                If crashEnum.GetValueOrDefault() > 0 AndAlso (Not CrashClass.CrashEnum.HasValue OrElse crashEnum <> CrashClass.CrashEnum) Then
-                    CrashClass.CrashEnum = crashEnum
-                    CrashClass.IsSet = True
-                End If
-            End If
-        End If
-        Return Nothing
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public enum CrashEnum
 {

@@ -16,13 +16,6 @@ public class AccessExpressionTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class TestClass
-    Sub TestMethod()
-        MyClass.Val = 6
-    End Sub
-
-    Shared Val As Integer
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class TestClass
 {
@@ -42,15 +35,6 @@ public partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Classinator769
-  Private _dictionary As New Dictionary(Of Integer, String)
-
-  Private Sub AccessDictionary()
-    If ( _dictionary(2) = ""StringyMcStringface"")
-      Console.WriteLine(""It is true"")
-   End If
-  End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
@@ -75,17 +59,6 @@ public partial class Classinator769
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System ' Removed by simplifier
-Imports System.Collections.Generic
-Imports System.Linq
-
-Module Module1
-    Dim Dict As New Dictionary(Of Integer, String)
-
-    Sub Main()
-        Dim x = Dict.Values(0).Length
-    End Sub
-End Module", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
@@ -107,12 +80,6 @@ internal static partial class Module1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class A
-    Public Sub Test()
-        Dim dict = New Dictionary(Of String, String) From {{""a"", ""AAA""}, {""b"", ""bbb""}}
-        Dim v = dict?.Item(""a"")
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 
 public partial class A
@@ -132,15 +99,6 @@ public partial class A
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Data
-
-Public Class A
-    Public Function ReadDataSet(myData As DataSet) As String
-        With myData.Tables(0).Rows(0)
-            Return .Item(""MY_COLUMN_NAME"").ToString()
-        End With
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Data;
 
 public partial class A
@@ -162,39 +120,6 @@ public partial class A
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class A
-    Public Sub Test()
-        Dim str1 = Me.GetStringFromNone(0)
-        str1 = GetStringFromNone(0)
-        Dim str2 = GetStringFromNone()(1)
-        Dim str3 = Me.GetStringsFromString(""abc"")
-        str3 = GetStringsFromString(""abc"")
-        Dim str4 = GetStringsFromString(""abc"")(1)
-        Dim fromStr3 = GetMoreStringsFromString(""bc"")(1)(0)
-        Dim explicitNoParameter = GetStringsFromAmbiguous()(0)(1)
-        Dim usesParameter1 = GetStringsFromAmbiguous(0)(1)(2)
-    End Sub
-
-    Function GetStringFromNone() As String()
-        Return New String() { ""A"", ""B"", ""C""}
-    End Function
-
-    Function GetStringsFromString(parm As String) As String()
-        Return New String() { ""1"", ""2"", ""3""}
-    End Function
-
-    Function GetMoreStringsFromString(parm As String) As String()()
-        Return New String()() { New String() { ""1"" }}
-    End Function
-
-    Function GetStringsFromAmbiguous() As String()()
-        Return New String()() { New String() { ""1"" }}
-    End Function
-
-    Function GetStringsFromAmbiguous(amb As Integer) As String()()
-        Return New String()() { New String() { ""1"" }}
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class A
 {
@@ -245,14 +170,6 @@ public partial class A
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Linq
-
-Public Class Class1
-    Sub Foo()
-        Dim y = """".Split("",""c).Select(Function(x) x)
-        Dim z = y(0)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Linq;
 
 public partial class Class1
@@ -272,15 +189,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Data
-
-Class TestClass
-    Private ReadOnly _myTable As DataTable
-
-    Sub TestMethod()
-      Dim dataRow = _myTable(0)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Data;
 using System.Linq;
 
@@ -302,14 +210,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Linq
-
-Public Class Class1
-    Sub Foo()
-        Dim y = """".Split("",""c).Select(Function(x) x)
-        Dim z = y.ElementAtOrDefault(0)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Linq;
 
 public partial class Class1
@@ -329,11 +229,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod()
-        Dim str = (New ThreadStaticAttribute).ToString
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -352,12 +247,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Function TestMethod() As String()
-        Dim s = ""1,2""
-        Return s.Split(s(1))
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -376,11 +265,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim result = str?.GetType
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -398,14 +282,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        Dim length As Integer
-        length = str.Length
-        Console.WriteLine(""Test"" & length)
-        Console.ReadKey()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -427,18 +303,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Module AppBuilderUseExtensions
-    <System.Runtime.CompilerServices.Extension>
-    Function Use(Of T)(ByVal app As String, ParamArray args As Object()) As Object
-        Return Nothing
-    End Function
-End Module
-
-Class TestClass
-    Private Sub TestMethod(ByVal str As String)
-        str.Use(Of object)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal static partial class AppBuilderUseExtensions
 {
@@ -464,13 +328,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private member As Integer
-
-    Private Sub TestMethod()
-        Me.member = 0
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -490,17 +347,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class BaseTestClass
-    Public member As Integer
-End Class
-
-Class TestClass
-    Inherits BaseTestClass
-
-    Private Sub TestMethod()
-        MyBase.member = 0
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class BaseTestClass
 {
@@ -524,17 +370,6 @@ internal partial class TestClass : BaseTestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class BaseController
-    Protected Request As HttpRequest
-End Class
-
-Public Class ActualController
-    Inherits BaseController
-
-    Public Sub Do()
-        Request.StatusCode = 200
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class BaseController
 {
@@ -563,13 +398,6 @@ CS0246: The type or namespace name 'HttpRequest' could not be found (are you mis
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Collections ' Removed by simplifier
-Class TestClass
-    Public Sub TestMethod(dir As String)
-        IO.Path.Combine(dir, ""file.txt"")
-        Dim c As New ObjectModel.ObservableCollection(Of String)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.IO;
 
 internal partial class TestClass
@@ -589,18 +417,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace TestNamespace
-    Public Module TestModule
-        Public Sub ModuleFunction()
-        End Sub
-    End Module
-End Namespace
-
-Class TestClass
-    Public Sub TestMethod(dir As String)
-        TestNamespace.ModuleFunction()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 namespace TestNamespace
 {
@@ -628,16 +444,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Bar()
-
-    End Sub
-
-    Sub Foo()
-        bar()
-        me.bar()
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -661,12 +467,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Private Sub LoadValues(ByVal strPlainKey As String)
-        Dim xmlFile As XDocument = XDocument.Parse(strPlainKey)
-        Dim objActivationInfo As XElement = xmlFile.<ActivationKey>.First
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Linq;
 using System.Xml.Linq;
 
@@ -687,22 +487,6 @@ public partial class Class1
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Issue479
-  Default Public ReadOnly Property index(ByVal s As String) As Integer
-    Get
-      Return 32768 + AscW(s)
-    End Get
-  End Property
-End Class
-
-Public Class TestIssue479
-  Public Sub compareAccess()
-    Dim hD As Issue479 = New Issue479()
-    System.Console.WriteLine(""Traditional access returns "" & hD.index(""X"") & vbCrLf & 
-      ""Default property access returns "" & hD(""X"") & vbCrLf &
-      ""Dictionary access returns "" & hD!X)
-  End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
@@ -734,14 +518,6 @@ public partial class TestIssue479
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Data
-
-Public Class Issue765
-    Public Sub GetByName(dataReader As IDataReader)
-        Dim foo As Object
-        foo = dataReader!foo
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Data;
 
 public partial class Issue765
@@ -777,26 +553,6 @@ public partial class Issue765
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.IO
-Imports SIO = System.IO
-Imports Microsoft.VisualBasic
-Imports VB = Microsoft.VisualBasic
-
-Public Class Test
-    Private aliased As String = VB.Left(""SomeText"", 1)
-    Private aliasedAgain As String = VB.Left(""SomeText"", 1)
-    Private aliased2 As System.Delegate = New SIO.ErrorEventHandler(AddressOf OnError)
-
-    ' Make use of the non-aliased imports, but ensure there's a name clash that requires the aliases in the above case
-    Private Tr As String = NameOf(TextReader)
-    Private Strings As String = NameOf(AppWinStyle)
-
-    Class ErrorEventHandler
-    End Class
-
-    Shared Sub OnError(s As Object, e As ErrorEventArgs)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.IO;
 using SIO = System.IO;
@@ -832,23 +588,6 @@ CS8082: Sub-expression cannot be used in an argument to nameof.", extension: "cs
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Enum TheType
-    Tree
-End Enum
-
-Public Class MoreParsing
-    Sub DoGet()
-        Dim anon = New With {
-            .TheType = GetEnumValues(Of TheType)
-        }
-    End Sub
-
-    Private Function GetEnumValues(Of TEnum)() As IDictionary(Of Integer, String)
-        Return System.Enum.GetValues(GetType(TEnum)).Cast(Of TEnum).
-            ToDictionary(Function(enumValue) DirectCast(DirectCast(enumValue, Object), Integer),
-                         Function(enumValue) enumValue.ToString())
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -879,13 +618,6 @@ public partial class MoreParsing
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System.Data
-
-Class TestClass
-    Function GetItem(dr As DataRow) As Object
-        Return dr.Item(""col1"")
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Data;
 
 internal partial class TestClass

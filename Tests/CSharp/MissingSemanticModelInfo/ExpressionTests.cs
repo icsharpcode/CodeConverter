@@ -14,14 +14,6 @@ public class ExpressionTests : ConverterTestBase
         // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Property SomeProperty As System.Some.UnknownType
-    Private Sub TestMethod()
-        Dim num = 0
-        Dim value = SomeProperty(num)
-        value = SomeProperty(0)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -48,12 +40,6 @@ CS0234: The type or namespace name 'Some' does not exist in the namespace 'Syste
         // type with an indexer stored, so for a standalone identifier err on the side of assuming it's an indexer
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Public Property SomeProperty As System.Some.UnknownType
-    Private Sub TestMethod()
-        Dim value = SomeProperty(New Object())
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -78,16 +64,6 @@ CS1955: Non-invocable member 'TestClass.SomeProperty' cannot be used like a meth
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        Bar(Nothing)
-    End Sub
-
-    Private Function Bar(x As SomeClass) As SomeClass
-        Return x
-    End Function
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -115,13 +91,6 @@ CS0246: The type or namespace name 'SomeClass' could not be found (are you missi
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class Class1
-    Sub Foo()
-        For Me.Index = 0 To 10
-
-        Next
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class Class1
 {
@@ -146,25 +115,6 @@ CS1061: 'Class1' does not contain a definition for 'Index' and no accessible ext
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class OutParameterWithMissingType
-    Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of Integer, MissingType), ByVal pKey As Integer)
-        Dim anInstance As MissingType = Nothing
-        If Not pDict.TryGetValue(pKey, anInstance) Then
-            anInstance = New MissingType
-            pDict.Add(pKey, anInstance)
-        End If
-    End Sub
-End Class
-
-Public Class OutParameterWithNonCompilingType
-    Private Shared Sub AddToDict(ByVal pDict As Dictionary(Of OutParameterWithMissingType, MissingType), ByVal pKey As OutParameterWithMissingType)
-        Dim anInstance As MissingType = Nothing
-        If Not pDict.TryGetValue(pKey, anInstance) Then
-            anInstance = New MissingType
-            pDict.Add(pKey, anInstance)
-        End If
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System.Collections.Generic;
 
 public partial class OutParameterWithMissingType
@@ -204,41 +154,6 @@ CS0246: The type or namespace name 'MissingType' could not be found (are you mis
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class EnumAndValTest
-    Public Enum PositionEnum As Integer
-        None = 0
-        LeftTop = 1
-    End Enum
-
-    Public TitlePosition As PositionEnum = PositionEnum.LeftTop
-    Public TitleAlign As PositionEnum = 2
-    Public Ratio As Single = 0
-
-    Function PositionEnumFromString(ByVal pS As String, missing As MissingType) As PositionEnum
-        Dim tPos As PositionEnum
-        Select Case pS.ToUpper
-            Case ""NONE"", ""0""
-                tPos = 0
-            Case ""LEFTTOP"", ""1""
-                tPos = 1
-            Case Else
-                Ratio = Val(pS)
-        End Select
-        Return tPos
-    End Function
-    Function PositionEnumStringFromConstant(ByVal pS As PositionEnum) As String
-        Dim tS As String
-        Select Case pS
-            Case 0
-                tS = ""NONE""
-            Case 1
-                tS = ""LEFTTOP""
-            Case Else
-                tS = pS
-        End Select
-        Return tS
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class EnumAndValTest
@@ -317,17 +232,6 @@ CS0246: The type or namespace name 'MissingType' could not be found (are you mis
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class CastToSameTypeTest
-
-    Sub PositionEnumFromString(ByVal c As Char)
-        Select Case c
-            Case CChar(""."")
-                Console.WriteLine(1)
-            Case CChar("","")
-                Console.WriteLine(2)
-        End Select
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class CastToSameTypeTest
@@ -360,12 +264,6 @@ public partial class CastToSameTypeTest
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-    Private property DefaultDate as System.SomeUnknownType
-    private sub TestMethod()
-        Dim a = DefaultDate(1, 2, 3).Blawer(1, 2, 3)
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class TestClass
 {
@@ -390,13 +288,6 @@ CS1955: Non-invocable member 'TestClass.DefaultDate' cannot be used like a metho
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Imports System
-
-    Friend Class TestClass
-        Private Sub TestMethod()
-            If MyEvent IsNot Nothing Then MyEvent(Me, EventArgs.Empty)
-        End Sub
-    End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
@@ -420,15 +311,6 @@ CS0103: The name 'MyEvent' does not exist in the current context", extension: "c
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class A
-    Public Sub Test()
-        Dim x As SomeUnknownType = Nothing
-        Dim y As Integer = 3
-        If IsNothing(x) OrElse IsNothing(y) Then
-
-        End If
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 internal partial class A
 {

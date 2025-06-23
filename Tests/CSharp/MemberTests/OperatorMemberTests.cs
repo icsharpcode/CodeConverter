@@ -13,14 +13,6 @@ public class OperatorMemberTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class MyInt
-    Public Shared Narrowing Operator CType(i As Integer) As MyInt
-        Return New MyInt()
-    End Operator
-    Public Shared Widening Operator CType(myInt As MyInt) As Integer
-        Return 1
-    End Operator
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class MyInt
 {
@@ -43,62 +35,6 @@ public partial class MyInt
         // Note a couple map to the same thing in C# so occasionally the result won't compile. The user can manually decide what to do in such scenarios.
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Class AcmeClass
-    Public Shared Operator +(i As Integer, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator &(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator -(i As Integer, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator Not(ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator *(i As Integer, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator /(i As Integer, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator \(i As Integer, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator Mod(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator <<(ac As AcmeClass, i As Integer) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator >>(ac As AcmeClass, i As Integer) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator =(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator <>(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator <(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator >(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator <=(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator >=(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator And(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-    Public Shared Operator Or(s As String, ac As AcmeClass) As AcmeClass
-        Return ac
-    End Operator
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial class AcmeClass
 {
@@ -209,12 +145,6 @@ End Class");
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Class MyType
-    Public Shared Operator Xor(left As MyType, right As MyType) As MyType
-        Throw New Global.System.NotSupportedException(""Not supported"")
-    End Operator
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial class MyType

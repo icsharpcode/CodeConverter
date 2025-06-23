@@ -13,17 +13,6 @@ public class InterfaceTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Function FooDifferentCase(<Out> ByRef str2 As String) As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo
-    Function fooDifferentCase(<Out> ByRef str2 As String) As Integer Implements IFoo.FOODIFFERENTCASE
-        str2 = 2.ToString()
-        Return 3
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -48,17 +37,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Function FooDifferentName(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Function BarDifferentName(ByRef str As String, i As Integer) As Integer Implements IFoo.FooDifferentName
-        Return 4
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -85,26 +63,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Function DoFooBar(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Interface IBar
-    Function DoFooBar(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Class FooBar
-    Implements IFoo, IBar
-
-    Function Foo(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFooBar
-        Return 4
-    End Function
-
-    Function Bar(ByRef str As String, i As Integer) As Integer Implements IBar.DoFooBar
-        Return 2
-    End Function
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -145,31 +103,6 @@ public partial class FooBar : IFoo, IBar
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Interface IFoo
-    Function DoFoo() As Integer
-    Property Prop As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Private Function doFoo() As Integer Implements IFoo.DoFoo
-        Return 4
-    End Function
-
-    Private Property prop As Integer Implements IFoo.Prop
-
-    Private Function Consumer() As Integer
-        Dim foo As New Foo()
-        Dim interfaceInstance As IFoo = foo
-        Return foo.doFoo() + foo.DoFoo() +
-               interfaceInstance.doFoo() + interfaceInstance.DoFoo() +
-               foo.prop + foo.Prop +
-               interfaceInstance.prop + interfaceInstance.Prop
-    End Function
-
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo();
@@ -207,44 +140,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Interface IFoo
-    Function DoFoo() As Integer
-    Property Prop As Integer
-End Interface
-
-Public MustInherit Class BaseFoo
-    Implements IFoo
-
-    Protected Friend Overridable Function doFoo() As Integer Implements IFoo.DoFoo
-        Return 4
-    End Function
-
-    Protected Friend Overridable Property prop As Integer Implements IFoo.Prop
-
-End Class
-
-Public Class Foo
-    Inherits BaseFoo
-
-    Protected Friend Overrides Function DoFoo() As Integer
-        Return 5
-    End Function
-
-    Protected Friend Overrides Property Prop As Integer
-
-    Private Function Consumer() As Integer
-        Dim foo As New Foo()
-        Dim interfaceInstance As IFoo = foo
-        Dim baseClass As BaseFoo = foo
-        Return foo.doFoo() +  foo.DoFoo() +
-               interfaceInstance.doFoo() + interfaceInstance.DoFoo() + 
-               baseClass.doFoo() + baseClass.DoFoo() +
-               foo.prop + foo.Prop +
-               interfaceInstance.prop + interfaceInstance.Prop +
-               baseClass.prop + baseClass.Prop
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -295,44 +190,6 @@ public partial class Foo : BaseFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Interface IUserContext
-    ReadOnly Property GroupID As String
-End Interface
-
-Public Interface IFoo
-    ReadOnly Property ConnectedGroupId As String
-End Interface
-
-Public MustInherit Class BaseFoo
-    Implements IUserContext
-
-    Protected Friend ReadOnly Property ConnectedGroupID() As String Implements IUserContext.GroupID
-
-End Class
-
-Public Class Foo
-    Inherits BaseFoo
-    Implements IFoo
-
-    Protected Friend Overloads ReadOnly Property ConnectedGroupID As String Implements IFoo.ConnectedGroupId ' Comment moves because this line gets split
-        Get
-            Return If("""", MyBase.ConnectedGroupID())
-        End Get
-    End Property
-
-    Private Function Consumer() As String
-        Dim foo As New Foo()
-        Dim ifoo As IFoo = foo
-        Dim baseFoo As BaseFoo = foo
-        Dim iUserContext As IUserContext = foo
-        Return foo.ConnectedGroupID & foo.ConnectedGroupId & 
-               iFoo.ConnectedGroupID & iFoo.ConnectedGroupId &
-               baseFoo.ConnectedGroupID & baseFoo.ConnectedGroupId &
-               iUserContext.GroupId & iUserContext.GroupID
-    End Function
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IUserContext
 {
@@ -385,22 +242,6 @@ public partial class Foo : BaseFoo, IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Function DoFooBar(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Interface IBar
-    Function DoFooBar(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Class FooBar
-    Implements IFoo, IBar
-
-    Function Foo(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFooBar, IBar.DoFooBar
-        Return 4
-    End Function
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -433,22 +274,6 @@ public partial class FooBar : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Property FooBarProp As Integer
-    End Interface
-
-Public Interface IBar
-    Property FooBarProp As Integer
-End Interface
-
-Public Class FooBar
-    Implements IFoo, IBar
-
-    Property Foo As Integer Implements IFoo.FooBarProp
-
-    Property Bar As Integer Implements IBar.FooBarProp
-    
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -479,27 +304,6 @@ public partial class FooBar : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Interface IFoo
-  Function DoFooBar(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Interface IBar
-  Function DoFooBar(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Public Class FooBar
-  Implements IFoo, IBar
-
-  Function Foo(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFooBar
-    Return 4
-  End Function
-
-  Function Bar(ByRef str As String, i As Integer) As Integer Implements IBar.DoFooBar
-    Return 2
-  End Function
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -540,15 +344,6 @@ public partial class FooBar : IFoo, IBar
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Interface InterfaceWithOptionalParameters
-    Sub S(Optional i As Integer = 0)
-End Interface
-
-Public Class ImplInterfaceWithOptionalParameters : Implements InterfaceWithOptionalParameters
-    Public Sub InterfaceWithOptionalParameters_S(Optional i As Integer = 0) Implements InterfaceWithOptionalParameters.S
-    End Sub
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial interface InterfaceWithOptionalParameters
 {
     void S(int i = 0);
@@ -573,15 +368,6 @@ public partial class ImplInterfaceWithOptionalParameters : InterfaceWithOptional
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Class WithOptionalParameters
-    Sub S1(Optional a As Object = Nothing, Optional [default] As String = """")
-    End Sub
-
-    Sub S()
-        S1(, ""a"")
-    End Sub
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial class WithOptionalParameters
 {
     public void S1(object a = null, string @default = """")
@@ -604,26 +390,6 @@ public partial class WithOptionalParameters
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-  Property ExplicitProp(Optional str As String = """") As Integer
-  Function ExplicitFunc(Optional str2 As String = """", Optional i2 As Integer = 1) As Integer
-End Interface
-
-Public Class Foo
-  Implements IFoo
-
-  Private Function ExplicitFunc(Optional str As String = """", Optional i2 As Integer = 1) As Integer Implements IFoo.ExplicitFunc
-    Return 5
-  End Function
-    
-  Private Property ExplicitProp(Optional str As String = """") As Integer Implements IFoo.ExplicitProp
-    Get
-      Return 5
-    End Get
-    Set(value As Integer)
-    End Set
-  End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -665,27 +431,6 @@ public partial class Foo : IFoo
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Interface IFoo
-  Function DoFooBar(ByRef str As String, Optional i As Integer = 4) As Integer
-End Interface
-
-Public Interface IBar
-  Function DoFooBar(ByRef str As String, Optional i As Integer = 8) As Integer
-End Interface
-
-Public Class FooBar
-  Implements IFoo, IBar
-
-  Function Foo(ByRef str As String, Optional i As Integer = 4) As Integer Implements IFoo.DoFooBar
-    Return 4
-  End Function
-
-  Function Bar(ByRef str As String, Optional i As Integer = 8) As Integer Implements IBar.DoFooBar
-    Return 2
-  End Function
-
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFooBar(ref string str, int i = 4);
@@ -724,19 +469,6 @@ public partial class FooBar : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace TestNamespace
-    Public Interface IFoo
-        Function DoFoo(ByRef str As String, i As Integer) As Integer
-    End Interface
-End Namespace
-
-Public Class Foo
-    Implements TestNamespace.IFoo
-
-    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements TestNamespace.IFoo.DoFoo
-        Return 4
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 namespace TestNamespace
 {
@@ -765,18 +497,6 @@ public partial class Foo : TestNamespace.IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Namespace TestNamespace
-    Public Interface IFoo
-        Property FooProp As Integer
-    End Interface
-End Namespace
-
-Public Class Foo
-    Implements TestNamespace.IFoo
-
-    Property FooPropRenamed As Integer Implements TestNamespace.IFoo.FooProp
-    
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 namespace TestNamespace
 {
@@ -802,25 +522,6 @@ public partial class Foo : TestNamespace.IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Function DoFoo(ByRef str As String, i As Integer) As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo
-        Return 4
-    End Function
-End Class
-
-Public Class FooConsumer
-    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.DOFOORENAMED(str, i) + bar.DoFoo(str, i)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -856,24 +557,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Property FooProp As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Property FooPropRenamed As Integer Implements IFoo.FooProp
-    
-End Class
-
-Public Class FooConsumer
-    Function GetFooRenamed() As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.FOOPROPRENAMED + bar.FooProp
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -906,25 +589,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Function DoFoo(str As String, i As Integer) As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Function dofoo(str As String, i As Integer) As Integer Implements IFoo.DoFoo
-        Return 4
-    End Function
-End Class
-
-Public Class FooConsumer
-    Function DoFooRenamedConsumer(str As String, i As Integer) As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.dofoo(str, i) + bar.DoFoo(str, i)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -958,24 +622,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Property FooProp As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Property fooprop As Integer Implements IFoo.FooProp
-    
-End Class
-
-Public Class FooConsumer
-    Function GetFooRenamed() As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.fooprop + bar.FooProp
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1007,25 +653,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Function DoFoo(ByRef str As String, i As Integer) As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo
-        Return 4
-    End Function
-End Class
-
-Public Class FooConsumer
-    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.DoFooRenamed(str, i) + bar.DoFoo(str, i)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1061,24 +688,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Property FooProp As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Property FooPropRenamed As Integer Implements IFoo.FooProp
-    
-End Class
-
-Public Class FooConsumer
-    Function GetFooRenamed() As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.FooPropRenamed + bar.FooProp
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1111,25 +720,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Partial Interface IFoo
-        Function DoFoo(ByRef str As String, i As Integer) As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo
-        Return 4
-    End Function
-End Class
-
-Public Class FooConsumer
-    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.DoFooRenamed(str, i) + bar.DoFoo(str, i)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1165,24 +755,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Partial Interface IFoo
-        Property FooProp As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Property FooPropRenamed As Integer Implements IFoo.FooProp
-    
-End Class
-
-Public Class FooConsumer
-    Function GetFooRenamed() As Integer
-        Dim foo As New Foo
-        Dim bar As IFoo = foo
-        Return foo.FooPropRenamed + bar.FooProp
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1215,21 +787,6 @@ public partial class FooConsumer
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        Function DoFoo(ByRef str As String, i As Integer) As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Overridable Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements IFoo.DoFoo ' Comment ends up out of order, but attached to correct method
-        Return 4
-    End Function
-
-    Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
-        Return MyClass.DoFooRenamed(str, i)
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1261,30 +818,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-        ReadOnly Property DoFoo As Integer
-        WriteOnly Property DoBar As Integer
-    End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Overridable ReadOnly Property DoFooRenamed As Integer Implements IFoo.DoFoo  ' Comment ends up out of order, but attached to correct method
-        Get
-            Return 4
-        End Get
-    End Property
-
-    Overridable WriteOnly Property DoBarRenamed As Integer Implements IFoo.DoBar  ' Comment ends up out of order, but attached to correct method
-        Set
-            Throw New Exception()
-        End Set
-    End Property
-
-    Sub DoFooRenamedConsumer()
-        MyClass.DoBarRenamed = MyClass.DoFooRenamed
-    End Sub
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 public partial interface IFoo
@@ -1346,26 +879,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Property ExplicitProp(str As String) As Integer
-    Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Private Function ExplicitFunc(ByRef str As String, i As Integer) As Integer Implements IFoo.ExplicitFunc
-        Return 5
-    End Function
-    
-    Private Property ExplicitProp(str As String) As Integer Implements IFoo.ExplicitProp
-        Get
-            Return 5
-        End Get
-        Set(value As Integer)
-        End Set
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1405,30 +918,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Property PropParams(str As String) As Integer
-    Property Prop() As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo
-
-    Public Overridable Property PropParams(str As String) As Integer Implements IFoo.PropParams
-        Get
-            Return 5
-        End Get
-        Set(value As Integer)
-        End Set
-    End Property
-
-    Public Overridable Property Prop As Integer Implements IFoo.Prop
-        Get
-            Return 5
-        End Get
-        Set(value As Integer)
-        End Set
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1469,19 +958,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Property ExplicitProp As Integer
-End Interface
-
-Public Interface IBar
-    Property ExplicitProp As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo, IBar
-    
-    Private Property ExplicitProp As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1511,19 +987,6 @@ public partial class Foo : IFoo, IBar
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Interface IFoo
-    Property ExplicitProp As Integer
-End Interface
-Public Interface IBar
-    Property ExplicitProp As Integer
-End Interface
-Public MustInherit Class Foo
-    Implements IFoo, IBar
-
-    Protected MustOverride Property ExplicitPropRenamed1 As Integer Implements IFoo.ExplicitProp
-    Protected MustOverride Property ExplicitPropRenamed2 As Integer Implements IBar.ExplicitProp
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; set; }
@@ -1550,29 +1013,6 @@ public abstract partial class Foo : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Interface IFoo
-    Sub Save()
-    Property Prop As Integer
-End Interface
-
-Public MustInherit Class BaseFoo
-    Protected Overridable Sub OnSave()
-    End Sub
-
-    Protected Overridable Property MyProp As Integer = 5
-End Class
-
-Public Class Foo
-    Inherits BaseFoo
-    Implements IFoo
-
-    Protected Overrides Sub OnSave() Implements IFoo.Save
-    End Sub
-
-    Protected Overrides Property MyProp As Integer = 6 Implements IFoo.Prop
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1612,26 +1052,6 @@ public partial class Foo : BaseFoo, IFoo
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Interface IFoo
-    Sub Save()
-    Property A As Integer
-End Interface
-
-Public Interface IBar
-    Sub OnSave()
-    Property B As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo, IBar
-
-    Public Overridable Sub Save() Implements IFoo.Save, IBar.OnSave
-    End Sub
-
-    Public Overridable Property A As Integer Implements IFoo.A, IBar.B
-
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial interface IFoo
 {
     void Save();
@@ -1668,29 +1088,6 @@ public partial class Foo : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Public Interface IFoo
-    Sub Save()
-    Property Prop As Integer
-End Interface
-
-Public MustInherit Class BaseFoo
-    Public Overridable Sub OnSave()
-    End Sub
-
-    Public Overridable Property MyProp As Integer = 5
-End Class
-
-Public Class Foo
-    Inherits BaseFoo
-    Implements IFoo
-
-    Public Shadows Sub OnSave() Implements IFoo.Save
-    End Sub
-
-    Public Shadows Property MyProp As Integer = 6 Implements IFoo.Prop
-
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1729,25 +1126,6 @@ public partial class Foo : BaseFoo, IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Property ExplicitProp As Integer
-End Interface
-
-Public Interface IBar
-    Property ExplicitProp As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo, IBar
-    
-    Private Property ExplicitProp As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment moves because this line gets split
-        Get
-          Return 5
-        End Get
-        Set
-        End Set
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1785,55 +1163,6 @@ public partial class Foo : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Property FriendProp As Integer
-    Sub ProtectedSub()
-    Function PrivateFunc() As Integer
-    Sub ProtectedInternalSub()
-    Sub AbstractSub()
-End Interface
-
-Public Interface IBar
-    Property FriendProp As Integer
-    Sub ProtectedSub()
-    Function PrivateFunc() As Integer
-    Sub ProtectedInternalSub()
-    Sub AbstractSub()
-End Interface
-
-Public MustInherit Class BaseFoo
-    Implements IFoo, IBar
-    
-    Friend Overridable Property FriendProp As Integer Implements IFoo.FriendProp, IBar.FriendProp ' Comment moves because this line gets split
-        Get
-          Return 5
-        End Get
-        Set
-        End Set
-    End Property
-
-    Protected Sub ProtectedSub() Implements IFoo.ProtectedSub, IBar.ProtectedSub
-    End Sub
-
-    Private Function PrivateFunc() As Integer Implements IFoo.PrivateFunc, IBar.PrivateFunc
-    End Function
-
-    Protected Friend Overridable Sub ProtectedInternalSub() Implements IFoo.ProtectedInternalSub, IBar.ProtectedInternalSub
-    End Sub
-
-    Protected MustOverride Sub AbstractSubRenamed() Implements IFoo.AbstractSub, IBar.AbstractSub
-End Class
-
-Public Class Foo
-    Inherits BaseFoo
-
-    Protected Friend Overrides Sub ProtectedInternalSub()
-    End Sub
-
-    Protected Overrides Sub AbstractSubRenamed()
-    End Sub
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -1918,24 +1247,6 @@ public partial class Foo : BaseFoo
         {
             await Task.WhenAll(
                 Verifier.Verify(@"
-Public Interface IFoo
-    Property ExplicitProp As Integer
-    ReadOnly Property ExplicitReadOnlyProp As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo
-    
-    Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp
-    ReadOnly Property ExplicitRenamedReadOnlyProp As Integer Implements IFoo.ExplicitReadOnlyProp
-
-    Private Sub Consumer()
-        _ExplicitPropRenamed = 5
-        _ExplicitRenamedReadOnlyProp = 10
-    End Sub
-
-End Class", extension: "vb"),
-                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; set; }
@@ -1966,19 +1277,6 @@ public partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    ReadOnly Property ExplicitProp As Integer
-End Interface
-
-Public Interface IBar
-    ReadOnly Property ExplicitProp As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo, IBar
-    
-    ReadOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -2006,22 +1304,6 @@ public partial class Foo : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    WriteOnly Property ExplicitProp As Integer
-End Interface
-
-Public Interface IBar
-    WriteOnly Property ExplicitProp As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo, IBar
-    
-    WriteOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp ' Comment moves because this line gets split
-        Set
-        End Set        
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -2055,31 +1337,6 @@ public partial class Foo : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Property ExplicitProp(str As String) As Integer
-    Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
-End Interface
-
-Public Interface IBar
-    Property ExplicitProp(str As String) As Integer
-    Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
-End Interface
-
-Public Class Foo
-    Implements IFoo, IBar
-
-    Private Function ExplicitFunc(ByRef str As String, i As Integer) As Integer Implements IFoo.ExplicitFunc, IBar.ExplicitFunc
-        Return 5
-    End Function
-    
-    Private Property ExplicitProp(str As String) As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp
-        Get
-            Return 5
-        End Get
-        Set(value As Integer)
-        End Set
-    End Property
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -2132,17 +1389,6 @@ public partial class Foo : IFoo, IBar
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Public Interface IFoo
-    Function FooDifferentName(ByRef str As String, i As Integer) As Integer
-End Interface
-
-Friend Class Foo
-    Implements IFoo
-
-    Function BarDifferentName(ByRef str As String, i As Integer) As Integer Implements IFoo.FooDifferentName
-        Return 4
-    End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"
 public partial interface IFoo
 {
@@ -2171,51 +1417,6 @@ internal partial class Foo : IFoo
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"
-Interface IClass
-    ReadOnly Property ReadOnlyPropParam(i as Integer) As Integer
-    ReadOnly Property ReadOnlyProp As Integer
-
-    WriteOnly Property WriteOnlyPropParam(i as Integer) As Integer
-    WriteOnly Property WriteOnlyProp As Integer
-End Interface
-
-Class ChildClass
-    Implements IClass
-
-    Public Overridable Property RenamedPropertyParam(i As Integer) As Integer Implements IClass.ReadOnlyPropParam
-        Get
-            Return 1
-        End Get
-        Set
-        End Set
-    End Property
-
-    Public Overridable Property RenamedReadOnlyProperty As Integer Implements IClass.ReadOnlyProp ' Comment moves because this line gets split
-        Get
-            Return 2
-        End Get
-        Set
-        End Set
-    End Property
-
-    Public Overridable Property RenamedWriteOnlyPropParam(i As Integer) As Integer Implements IClass.WriteOnlyPropParam
-        Get
-            Return 1
-        End Get
-        Set
-        End Set
-    End Property
-
-    Public Overridable Property RenamedWriteOnlyProperty As Integer Implements IClass.WriteOnlyProp ' Comment moves because this line gets split
-        Get
-            Return 2
-        End Get
-        Set
-        End Set
-    End Property
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"
 internal partial interface IClass
 {
@@ -2282,27 +1483,6 @@ internal partial class ChildClass : IClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Interface IClass
-    ReadOnly Property ReadOnlyProp(i as Integer) As String
-    WriteOnly Property WriteOnlyProp(i as Integer) As String
-End Interface
-
-Class ChildClass
-    Implements IClass
-
-    Public Overridable ReadOnly Property ReadOnlyProp(i As Integer) As String Implements IClass.ReadOnlyProp
-        Get
-            Throw New NotImplementedException
-        End Get
-    End Property
-
-    Public Overridable WriteOnly Property WriteOnlyProp(i As Integer) As String Implements IClass.WriteOnlyProp
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial interface IClass
@@ -2333,88 +1513,6 @@ internal partial class ChildClass : IClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Interface IClass
-    ReadOnly Property ReadOnlyPropToRename(i as Integer) As String
-    WriteOnly Property WriteOnlyPropToRename(i as Integer) As String
-    Property PropToRename(i as Integer) As String
-
-    ReadOnly Property ReadOnlyPropNonPublic(i as Integer) As String
-    WriteOnly Property WriteOnlyPropNonPublic(i as Integer) As String
-    Property PropNonPublic(i as Integer) As String
-
-    ReadOnly Property ReadOnlyPropToRenameNonPublic(i as Integer) As String
-    WriteOnly Property WriteOnlyPropToRenameNonPublic(i as Integer) As String
-    Property PropToRenameNonPublic(i as Integer) As String
-
-End Interface
-
-Class ChildClass
-    Implements IClass
-
-    Public ReadOnly Property ReadOnlyPropRenamed(i As Integer) As String Implements IClass.ReadOnlyPropToRename
-        Get
-            Throw New NotImplementedException
-        End Get
-    End Property
-
-    Public Overridable WriteOnly Property WriteOnlyPropRenamed(i As Integer) As String Implements IClass.WriteOnlyPropToRename
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-
-    Public Overridable Property PropRenamed(i As Integer) As String Implements IClass.PropToRename
-        Get
-            Throw New NotImplementedException
-        End Get
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-
-    Private ReadOnly Property ReadOnlyPropNonPublic(i As Integer) As String Implements IClass.ReadOnlyPropNonPublic
-        Get
-            Throw New NotImplementedException
-        End Get
-    End Property
-
-    Protected Friend Overridable WriteOnly Property WriteOnlyPropNonPublic(i As Integer) As String Implements IClass.WriteOnlyPropNonPublic
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-
-    Friend Overridable Property PropNonPublic(i As Integer) As String Implements IClass.PropNonPublic
-        Get
-            Throw New NotImplementedException
-        End Get
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-
-    Protected Friend Overridable ReadOnly Property ReadOnlyPropRenamedNonPublic(i As Integer) As String Implements IClass.ReadOnlyPropToRenameNonPublic
-        Get
-            Throw New NotImplementedException
-        End Get
-    End Property
-
-    Private WriteOnly Property WriteOnlyPropRenamedNonPublic(i As Integer) As String Implements IClass.WriteOnlyPropToRenameNonPublic
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-
-    Friend Overridable Property PropToRenameNonPublic(i As Integer) As String Implements IClass.PropToRenameNonPublic
-        Get
-            Throw New NotImplementedException
-        End Get
-        Set
-            Throw New NotImplementedException
-        End Set
-    End Property
-End Class
-", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial interface IClass

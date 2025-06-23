@@ -12,15 +12,6 @@ public class OnErrorStatementTests : ConverterTestBase
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-Public Function SelfDivisionPossible(x as Integer) As Boolean
-    On Error GoTo ErrorHandler
-        Dim i as Integer = x / x
-        Return True
-ErrorHandler:
-    Return Err.Number = 6
-End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
@@ -49,14 +40,6 @@ internal partial class TestClass
     {
         {
             await Task.WhenAll(
-                Verifier.Verify(@"Class TestClass
-Public Function SelfDivisionPossible(x as Integer) As Boolean
-    On Error GoTo ErrorHandler
-        Dim i as Integer = x / x
-ErrorHandler:
-    Return i <> 0
-End Function
-End Class", extension: "vb"),
                 Verifier.Verify(@"using System;
 
 internal partial class TestClass
