@@ -1,0 +1,1 @@
+﻿Public Delegate Function Operation(Of T)() As T

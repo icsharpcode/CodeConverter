@@ -1,0 +1,2 @@
+﻿Class AClassInRootNamespace
+End Class

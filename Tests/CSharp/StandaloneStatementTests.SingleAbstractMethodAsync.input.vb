@@ -1,0 +1,1 @@
+﻿Protected MustOverride Sub abs()

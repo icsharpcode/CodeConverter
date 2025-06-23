@@ -1,0 +1,1 @@
+﻿Dim o As Object() = {"a"}
