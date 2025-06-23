@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -14,13 +15,14 @@ public class TriviaWithAddedRootNamespaceTests : ConverterTestBase
     [Fact]
     public async Task CommentAtStartOfFile663Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"''' <summary> Form for viewing the my. </summary>
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"''' <summary> Form for viewing the my. </summary>
 ''' <remarks> David, 10/1/2020. </remarks>
 Public Class MyForm
     Inherits isr.Automata.Finite.Forms.BimanualToggleForm
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 namespace ANamespace
 {
     /// <summary> Form for viewing the my. </summary>
@@ -33,6 +35,8 @@ namespace ANamespace
 BC30002: Type 'isr.Automata.Finite.Forms.BimanualToggleForm' is not defined.
 1 target compilation errors:
 CS0246: The type or namespace name 'isr' could not be found (are you missing a using directive or an assembly reference?)
-");
+", extension: "cs")
+            );
+        }
     }
 }

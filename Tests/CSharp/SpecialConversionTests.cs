@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -9,14 +10,16 @@ public class SpecialConversionTests : ConverterTestBase
     [Fact]
     public async Task RaiseEventAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Event MyEvent As EventHandler
 
     Private Sub TestMethod()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -26,14 +29,17 @@ internal partial class TestClass
     {
         MyEvent?.Invoke(this, EventArgs.Empty);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestCustomEventAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass45
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass45
     Private Event backingField As EventHandler
 
     Public Custom Event MyEvent As EventHandler
@@ -51,7 +57,8 @@ internal partial class TestClass
     Public Sub RaiseCustomEvent()
         RaiseEvent MyEvent(Me, EventArgs.Empty)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass45
 {
@@ -77,14 +84,17 @@ internal partial class TestClass45
     {
         OnMyEvent(this, EventArgs.Empty);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestFullWidthCharacterCustomEventAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Ｃｌａｓｓ　ＴｅｓｔＣｌａｓｓ４５
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Ｃｌａｓｓ　ＴｅｓｔＣｌａｓｓ４５
 　　　　Ｐｒｉｖａｔｅ　Ｅｖｅｎｔ　ｂａｃｋｉｎｇＦｉｅｌｄ　Ａｓ　EventHandler
 
 　　　　Ｐｕｂｌｉｃ　Ｃｕｓｔｏｍ　Ｅｖｅｎｔ　ＭｙＥｖｅｎｔ　Ａｓ　EventHandler
@@ -102,7 +112,8 @@ internal partial class TestClass45
 　　　　Ｐｕｂｌｉｃ　Ｓｕｂ　ＲａｉｓｅＣｕｓｔｏｍＥｖｅｎｔ（）
 　　　　　　　　ＲａｉｓｅＥｖｅｎｔ　ＭｙＥｖｅｎｔ（Ｍｅ，　EventArgs.Empty）
 　　　　Ｅｎｄ　Ｓｕｂ
-Ｅｎｄ　Ｃｌａｓｓ", @"using System;
+Ｅｎｄ　Ｃｌａｓｓ", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class ＴｅｓｔＣｌａｓｓ４５
 {
@@ -128,49 +139,61 @@ internal partial class ＴｅｓｔＣｌａｓｓ４５
     {
         OnＭｙＥｖｅｎｔ(this, EventArgs.Empty);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task HexAndBinaryLiteralsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Test
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Test
     Public CR As Integer = &HD * &B1
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Test
 {
     public int CR = 0xD * 0b1;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task HexAndBinaryLiterals754Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Test754
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Test754
     Private value As Integer = &H80000000
     Private value2 As Integer = &HF1234567
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Test754
 {
     private int value = unchecked((int)0x80000000);
     private int value2 = unchecked((int)0xF1234567);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue483_HexAndBinaryLiteralsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Issue483
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue483
     Public Test1 as Integer = &H7A
     Public Test2 as Integer = &H7B
     Public Test3 as Integer = &H7C
     Public Test4 as Integer = &H7D
     Public Test5 as Integer = &H7E
     Public Test6 as Integer = &H7F
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Issue483
 {
     public int Test1 = 0x7A;
@@ -179,14 +202,17 @@ public partial class Issue483
     public int Test4 = 0x7D;
     public int Test5 = 0x7E;
     public int Test6 = 0x7F;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue544_AssignUsingMidAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Issue483
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue483
     Private Function numstr(ByVal aDouble As Double) As String
         Dim str_Txt As String = Format(aDouble, ""0.000000"")
         Mid(str_Txt, Len(str_Txt) - 6, 1) = "".""
@@ -196,7 +222,8 @@ public partial class Issue483
         If aDouble > 5.0 Then Mid(str_Txt, Len(str_Txt) - 6) = numstr(aDouble - 1.0)
         Return str_Txt
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -216,34 +243,42 @@ public partial class Issue483
         }
         return str_Txt;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue1147_LargeNumericHexLiteralsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class Issue1147
     Private Const LargeUInt As UInteger = &HFFFFFFFEUI
     Private Const LargeULong As ULong = &HFFFFFFFFFFFFFFFEUL
     Private Const LargeInt As Integer = &HFFFFFFFE
     Private Const LargeLong As Long = &HFFFFFFFFFFFFFFFEL
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Issue1147
 {
     private const uint LargeUInt = 0xFFFFFFFEU;
     private const ulong LargeULong = 0xFFFFFFFFFFFFFFFEUL;
     private const int LargeInt = unchecked((int)0xFFFFFFFE);
     private const long LargeLong = unchecked((long)0xFFFFFFFFFFFFFFFE);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task TestConstCharacterConversionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Data
 
 Class TestConstCharacterConversions
     Function GetItem(dr As DataRow) As Object
@@ -257,7 +292,8 @@ Class TestConstCharacterConversions
         Const x As String = Chr(14)
         Const 字 As String = ChrW(&H5B57)
    End Function
-End Class", @"using System.Data;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Data;
 
 internal partial class TestConstCharacterConversions
 {
@@ -274,19 +310,24 @@ internal partial class TestConstCharacterConversions
         const string 字 = ""字"";
         return default;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestNonConstCharacterConversionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Class TestConversions
     Sub Test(b as Byte)
         Dim x = Chr(b)
         Dim y = ChrW(b)
    End Sub
-End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestConversions
 {
@@ -295,13 +336,17 @@ internal partial class TestConversions
         char x = Strings.Chr(b);
         char y = Strings.ChrW(b);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestNonVisualBasicChrMethodConversionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Class TestConversions
     Sub Test()
         Dim a As String
@@ -328,7 +373,8 @@ Class TestConversions
     Function ChrW(o As Object) As Char
         Return Microsoft.VisualBasic.ChrW(o)
     End Function
-End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestConversions
@@ -362,20 +408,25 @@ internal partial class TestConversions
     {
         return Strings.ChrW(Conversions.ToInteger(o));
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task UsingBoolInToExpressionAsync()
     {
         // Beware, this will never enter the loop, it's buggy input due to the "i <", but it compiles and runs, so the output should too (and do the same thing)
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class C
     Public Sub M(OldWords As String(), NewWords As String(), HTMLCode As String)
         For i As Integer = 0 To i < OldWords.Length - 1
             HTMLCode = HTMLCode.Replace(OldWords(i), NewWords(i))
         Next i
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class C
 {
@@ -384,22 +435,29 @@ public partial class C
         for (int i = 0, loopTo = Conversions.ToInteger(i < OldWords.Length - 1); i <= loopTo; i++)
             HTMLCode = HTMLCode.Replace(OldWords[i], NewWords[i]);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringOperatorsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"     Sub DummyMethod(target As String)
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"     Sub DummyMethod(target As String)
         If target < ""Z""c OrElse New Char(){} <= target OrElse target = """" OrElse target <> """" OrElse target >= New Char(){} OrElse target > """" Then
             Console.WriteLine(""It must be one of those"")
         End If
-    End Sub", @"public void DummyMethod(string target)
+    End Sub", extension: "vb"),
+                Verifier.Verify(@"public void DummyMethod(string target)
 {
     if (Operators.CompareString(target, 'Z'.ToString(), false) < 0 || Operators.CompareString(new string(new char[] { }), target, false) <= 0 || string.IsNullOrEmpty(target) || !string.IsNullOrEmpty(target) || Operators.CompareString(target, new string(new char[] { }), false) >= 0 || Operators.CompareString(target, """", false) > 0)
     {
         Console.WriteLine(""It must be one of those"");
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

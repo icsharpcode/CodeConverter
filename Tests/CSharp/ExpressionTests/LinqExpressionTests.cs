@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
@@ -9,7 +10,9 @@ public class LinqExpressionTests : ConverterTestBase
     [Fact]
     public async Task Issue895_LinqWhereAfterGroupAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -21,8 +24,8 @@ Public Class Issue895
                          Where Group.Count > 1
         System.Console.WriteLine(duplicates.Count)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -37,13 +40,17 @@ public partial class Issue895
                          select Group;
         Console.WriteLine(duplicates.Count());
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Characterize_Issue948_GroupByMember_Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 Imports System.Linq
 
 Class C
@@ -57,8 +64,8 @@ Public Module Module1
                      Group f By f.MyString Into Group
                      Order By MyString
 	End Sub
-End Module",
-            @"using System.Collections.Generic;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 internal partial class C
@@ -78,14 +85,18 @@ public static partial class Module1
     }
 }
 1 target compilation errors:
-CS0103: The name 'MyString' does not exist in the current context");
+CS0103: The name 'MyString' does not exist in the current context", extension: "cs")
+            );
+        }
         // BUG: Order by should be on @group.Key
     }
 
     [Fact]
     public async Task Issue736_LinqEarlySelectAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System.Collections.Generic
 Imports System.Linq
 
@@ -95,8 +106,8 @@ Public Class Issue635
     Dim listSelectWhere = From t in l
             Select t.foo
             Where 1 = 2
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 using System.Collections.Generic;
 using System.Linq;
 
@@ -114,21 +125,25 @@ public partial class Issue635
                           where 1 == 2
                           select t;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue635_LinqDistinctOrderByAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System.Collections.Generic
 Imports System.Linq
 
 Public Class Issue635
     Dim l As List(Of Integer)
     Dim listSortedDistinct = From x In l Order By x Distinct
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 using System.Collections.Generic;
 using System.Linq;
 
@@ -143,20 +158,24 @@ public partial class Issue635
                               orderby x
                               select x).Distinct();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Linq1Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub SimpleQuery()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Shared Sub SimpleQuery()
     Dim numbers = {7, 9, 5, 3, 6}
     Dim res = From n In numbers Where n > 5 Select n
     For Each n In res
         Console.WriteLine(n)
     Next
-End Sub",
-            @"private static void SimpleQuery()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"private static void SimpleQuery()
 {
     int[] numbers = new[] { 7, 9, 5, 3, 6 };
     var res = from n in numbers
@@ -164,13 +183,17 @@ End Sub",
               select n;
     foreach (var n in res)
         Console.WriteLine(n);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Linq2Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Shared Sub Linq40()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Shared Sub Linq40()
     Dim numbers As Integer() = {5, 4, 1, 3, 9, 8, 6, 7, 2, 0}
     Dim numberGroups = From n In numbers Group n By __groupByKey1__ = n Mod 5 Into g = Group Select New With {Key .Remainder = __groupByKey1__, Key .Numbers = g}
     
@@ -181,8 +204,8 @@ End Sub",
             Console.WriteLine(n)
         Next
     Next
-End Sub",
-            @"public static void Linq40()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"public static void Linq40()
 {
     int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
@@ -197,13 +220,17 @@ End Sub",
         foreach (var n in g.Numbers)
             Console.WriteLine(n);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Linq3Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Product
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -223,8 +250,8 @@ Class Test
             Console.WriteLine($""{v.ProductName}: {v.Category}"")
         Next
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Linq;
 
 internal partial class Product
@@ -252,13 +279,17 @@ internal partial class Test
         foreach (var v in q)
             Console.WriteLine($""{v.ProductName}: {v.Category}"");
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Linq4Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Product
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Product
     Public Category As String
     Public ProductName As String
 End Class
@@ -281,7 +312,8 @@ Class Test
             Next
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Linq;
 
 internal partial class Product
@@ -313,31 +345,40 @@ internal partial class Test
                 Console.WriteLine(""   "" + p.ProductName);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Linq5Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Shared Function FindPicFilePath(AList As List(Of FileInfo), picId As String) As String
     For Each FileInfo As FileInfo In From FileInfo1 In AList Where FileInfo1.Name.Substring(0, 6) = picId
         Return FileInfo.FullName
     Next
     Return String.Empty
-End Function", @"private static string FindPicFilePath(List<FileInfo> AList, string picId)
+End Function", extension: "vb"),
+                Verifier.Verify(@"private static string FindPicFilePath(List<FileInfo> AList, string picId)
 {
     foreach (FileInfo FileInfo in from FileInfo1 in AList
                                   where FileInfo1.Name.Substring(0, 6) == picId
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqAsEnumerableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Data
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Data
 
 Public Class AsEnumerableTest
     Public Sub FillImgColor()
@@ -346,7 +387,8 @@ Public Class AsEnumerableTest
             From CurRow In dtsMain.Tables(""tb_Color"") Select CInt(CurRow.Item(""i_ColCode""))
         Next
     End Sub
-End Class", @"using System.Data;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Data;
 using System.Linq;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -360,35 +402,45 @@ public partial class AsEnumerableTest
         {
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqMultipleFromsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub LinqSub()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Shared Sub LinqSub()
     Dim _result = From _claimProgramSummary In New List(Of List(Of List(Of List(Of String))))()
                   From _claimComponentSummary In _claimProgramSummary.First()
                   From _lineItemCalculation In _claimComponentSummary.Last()
                   Select _lineItemCalculation
-End Sub", @"private static void LinqSub()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"private static void LinqSub()
 {
     var _result = from _claimProgramSummary in new List<List<List<List<string>>>>()
                   from _claimComponentSummary in _claimProgramSummary.First()
                   from _lineItemCalculation in _claimComponentSummary.Last()
                   select _lineItemCalculation;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqNoFromsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
     Public Shared Sub X(objs As List(Of Object))
         Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
         Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class VisualBasicClass
@@ -400,13 +452,17 @@ public partial class VisualBasicClass
                              where o.GetHashCode() > 3
                              select o).Count();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqPartitionDistinctAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Shared Function FindPicFilePath() As IEnumerable(Of String)
     Dim words = {""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away""}
 
     Return From word In words
@@ -415,31 +471,41 @@ public partial class VisualBasicClass
             Take While word.Length < 5
             Take 2
             Distinct
-End Function", @"private static IEnumerable<string> FindPicFilePath()
+End Function", extension: "vb"),
+                Verifier.Verify(@"private static IEnumerable<string> FindPicFilePath()
 {
     string[] words = new[] { ""an"", ""apple"", ""a"", ""day"", ""keeps"", ""the"", ""doctor"", ""away"" };
 
     return words.Skip(1).SkipWhile(word => word.Length >= 1).TakeWhile(word => word.Length < 5).Take(2).Distinct();
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact(Skip = "Issue #29 - Aggregate not supported")]
     public async Task LinqAggregateSumAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Shared Sub ASub()
     Dim expenses() As Double = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0}
     Dim totalExpense = Aggregate expense In expenses Into Sum()
-End Sub", @"private static void ASub()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"private static void ASub()
 {
     double[] expenses = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0};
     var totalExpense = expenses.Sum();
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact(Skip = "Issue #29 - Group join not supported")]
     public async Task LinqGroupJoinAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Shared Sub ASub()
     Dim customerList = From cust In customers
                        Group Join ord In orders On
                        cust.CustomerID Equals ord.CustomerID
@@ -447,19 +513,24 @@ End Sub", @"private static void ASub()
                             OrderTotal = Sum(ord.Total)
                        Select cust.CompanyName, cust.CustomerID,
                               CustomerOrders, OrderTotal
-End Sub", @"private static void ASub()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"private static void ASub()
 {
     var customerList = from cust in customers
                        join ord in orders on cust.CustomerID equals ord.CustomerID into CustomerOrders
                        let OrderTotal = Sum(ord.Total) //TODO Figure out exact C# syntax for this query
                        select new { cust.CompanyName, cust.CustomerID, CustomerOrders, OrderTotal };
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqJoinReorderExpressionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Customer
     Public CustomerID As String
     Public CompanyName As String
 End Class
@@ -477,7 +548,8 @@ Private Shared Sub ASub()
                        Join ord In orders On ord.CustomerID Equals cust.CustomerID
                        Select cust.CompanyName, ord.Total
 End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 internal partial class Customer
@@ -502,13 +574,17 @@ internal partial class Test
                            join ord in orders on cust.CustomerID equals ord.CustomerID
                            select new { cust.CompanyName, ord.Total };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqMultipleJoinConditionsReorderExpressionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Customer
     Public CustomerID As String
     Public CompanyName As String
 End Class
@@ -526,7 +602,8 @@ Private Shared Sub ASub()
                        Join ord In orders On ord.CustomerID Equals cust.CustomerID And cust.CompanyName Equals ord.Total
                        Select cust.CompanyName, ord.Total
 End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 internal partial class Customer
@@ -551,13 +628,17 @@ internal partial class Test
                            join ord in orders on new { key0 = cust.CustomerID, key1 = cust.CompanyName } equals new { key0 = ord.CustomerID, key1 = ord.Total }
                            select new { cust.CompanyName, ord.Total };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqMultipleIdentifierOnlyJoinConditionsReorderExpressionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Customer
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Customer
     Public CustomerID As String
     Public CompanyName As String
 End Class
@@ -575,7 +656,8 @@ Private Shared Sub ASub()
                        Join ord In orders On ord.Customer Equals cust And cust.CompanyName Equals ord.Total
                        Select cust.CompanyName, ord.Total
 End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 internal partial class Customer
@@ -600,18 +682,23 @@ internal partial class Test
                            join ord in orders on new { key0 = cust, key1 = cust.CompanyName } equals new { key0 = ord.Customer, key1 = ord.Total }
                            select new { cust.CompanyName, ord.Total };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqGroupByTwoThingsAnonymouslyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Dim xs As New List(Of String)
         Dim y = From x In xs Group By x.Length, x.Count() Into Group
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class Class1
@@ -622,14 +709,18 @@ public partial class Class1
         var y = from x in xs
                 group x by new { x.Length, Count = x.Count() };
     }
-}");
+}", extension: "cs")
+            );
+        }
         // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
     }
 
     [Fact]
     public async Task LinqSelectVariableDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 Imports System.Linq
 
 Public Class Class717
@@ -647,7 +738,8 @@ Public Class Class717
             Console.WriteLine(m)
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Linq;
 
 public partial class Class717
@@ -666,13 +758,17 @@ public partial class Class717
         foreach (var m in r)
             Console.WriteLine(m);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LinqGroupByAnonymousAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Public Class AccountEntry
     Public Property LookupAccountEntryTypeId As Object
@@ -726,7 +822,8 @@ Module Ext
                     }
             )
     End Function
-End Module", @"using System.Collections.Generic;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class AccountEntry
@@ -782,14 +879,18 @@ internal static partial class Ext
                                                select _claimDetail).Reduce().ToList()
                };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task LinqCommasToFromAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 Imports System.Linq
 
 Public Class VisualBasicClass
@@ -802,8 +903,8 @@ Public Class VisualBasicClass
 			     Select New With {x, n}
     End Sub
 End Class
-",
-            @"using System.Collections.Generic;
+", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class VisualBasicClass
@@ -818,14 +919,18 @@ public partial class VisualBasicClass
                  where x == n
                  select new { x, n };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task Issue1011_LinqExpressionWithNullableCharacterizationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionTest2
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class ConversionTest2
     Private Class MyEntity
         Property FavoriteNumber As Integer?
         Property Name As String
@@ -840,8 +945,8 @@ public partial class VisualBasicClass
 
     End Sub
 End Class
-",
-            @"using System.Collections.Generic;
+", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class ConversionTest2
@@ -861,14 +966,18 @@ public partial class ConversionTest2
                          select e.Name).Single();
 
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task AnExpressionTreeMayNotContainIsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class ConversionTest6
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class ConversionTest6
     Private Class MyEntity
         Property Name As String
         Property FavoriteString As String
@@ -882,8 +991,8 @@ public partial class ConversionTest2
                     Select e).ToList
     End Sub
 End Class
-",
-            @"using System.Collections.Generic;
+", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class ConversionTest6
@@ -902,6 +1011,8 @@ public partial class ConversionTest6
                     where e.Name == null || e.FavoriteString != null
                     select e).ToList();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

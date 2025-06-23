@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
@@ -9,14 +10,17 @@ public class StringExpressionTests : ConverterTestBase
     [Fact]
     public async Task MultilineStringAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim x = ""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
         Dim y = $""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!""
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -26,18 +30,23 @@ World!"";
         string y = $@""Hello\ All strings in VB are verbatim """" < that's just a single escaped quote
 World!"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task QuoteCharacterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class C
     Public Sub s
         Dim x As String = Chr(34)
         x = Chr(92)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class C
 {
     public void s()
@@ -45,13 +54,17 @@ public partial class C
         string x = ""\"""";
         x = @""\"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task QuotesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Shared Function GetTextFeedInput(pStream As String, pTitle As String, pText As String) As String
         Return ""{"" & AccessKey() & "",""""streamName"""": """""" & pStream & """""",""""point"""": ["" & GetTitleTextPair(pTitle, pText) & ""]}""
     End Function
@@ -74,7 +87,8 @@ public partial class C
     Shared Function GetDeltaPoint(pDelta As Integer) As String
         Return (""{""""delta"""": """""" & pDelta & """"""}"")
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     public static string GetTextFeedInput(string pStream, string pTitle, string pText)
@@ -105,13 +119,17 @@ internal partial class TestClass
     {
         return ""{\""delta\"": \"""" + pDelta + ""\""}"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringCompareAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
         Dim s2 As String = """"
@@ -131,7 +149,8 @@ internal partial class TestClass
             '
         End If
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Class1
 {
@@ -160,13 +179,17 @@ public partial class Class1
             // 
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringCompareTextAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Option Compare Text
 Public Class Class1
     Sub Foo()
         Dim s1 As String = Nothing
@@ -187,7 +210,8 @@ Public Class Class1
             '
         End If
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Globalization;
 
 public partial class Class1
@@ -217,13 +241,17 @@ public partial class Class1
             // 
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringCompareDefaultInstrAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports Microsoft.VisualBasic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports Microsoft.VisualBasic
 
 Class Issue655
     Dim s1 = InStr(1, ""obj"", ""object '"")
@@ -237,8 +265,8 @@ Class Issue655
     Function OtherFunction(Optional c As CompareMethod = CompareMethod.Binary) As Boolean
         Return c = CompareMethod.Binary
     End Function
-End Class", 
-            @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Issue655
@@ -260,13 +288,17 @@ internal partial class Issue655
     {
         return c == CompareMethod.Binary;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringCompareTextInstrAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text ' Comment omitted since line has no conversion
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Option Compare Text ' Comment omitted since line has no conversion
 Imports Microsoft.VisualBasic
 
 Class Issue655
@@ -281,8 +313,8 @@ Class Issue655
     Function OtherFunction(Optional c As CompareMethod = CompareMethod.Binary) As Boolean
         Return c = CompareMethod.Binary
     End Function
-End Class", 
-            @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Issue655
@@ -304,35 +336,45 @@ internal partial class Issue655
     {
         return c == CompareMethod.Binary;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringConcatPrecedenceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Dim x = ""x "" & 5 - 4 & "" y""
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     public void Foo()
     {
         string x = ""x "" + (5 - 4) + "" y"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringConcatenationAssignmentAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim str = ""Hello, ""
         str &= ""World""
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -340,27 +382,33 @@ internal partial class TestClass
         string str = ""Hello, "";
         str += ""World"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringInterpolationWithConditionalOperatorAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Function GetString(yourBoolean as Boolean) As String
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Function GetString(yourBoolean as Boolean) As String
     Return $""You {if (yourBoolean, ""do"", ""do not"")} have a true value""
-End Function",
-            @"public string GetString(bool yourBoolean)
+End Function", extension: "vb"),
+                Verifier.Verify(@"public string GetString(bool yourBoolean)
 {
     return $""You {(yourBoolean ? ""do"" : ""do not"")} have a true value"";
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringInterpolationWithDoubleQuotesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Namespace Global.InnerNamespace
     Public Class Test
@@ -374,8 +422,8 @@ Namespace Global.InnerNamespace
             Return a & b & c & d & e & f
         End Function
     End Class
-End Namespace",
-            @"using System;
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 namespace InnerNamespace
 {
@@ -392,14 +440,17 @@ namespace InnerNamespace
             return a + b + c + d + e + f;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StringInterpolationWithDateFormatAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Namespace Global.InnerNamespace
     Public Class Test
@@ -408,8 +459,8 @@ Namespace Global.InnerNamespace
             return a 
             End function
     End Class
-End Namespace",
-            @"using System;
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 namespace InnerNamespace
 {
@@ -421,40 +472,46 @@ namespace InnerNamespace
             return a;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
     [Fact]
     public async Task NoConversionRequiredWithinConcatenationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Issue508
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue508
     Sub Foo()
         Dim x = ""x"" & 4 & ""y""
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Issue508
 {
     public void Foo()
     {
         string x = ""x"" + 4 + ""y"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task EmptyStringCoalesceSkippedForLiteralComparisonAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
 
     Sub Foo()
         Dim x = """"
         Dim y = x = ""something""
     End Sub
 
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class VisualBasicClass
 {
 
@@ -464,18 +521,21 @@ public partial class VisualBasicClass
         bool y = x == ""something"";
     }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue396ComparisonOperatorForStringsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Issue396ComparisonOperatorForStringsAsync
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue396ComparisonOperatorForStringsAsync
     Private str = 1.ToString()
     Private b = str > """"
-End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue396ComparisonOperatorForStringsAsync
 {
@@ -486,14 +546,17 @@ public partial class Issue396ComparisonOperatorForStringsAsync
     {
         b = Operators.ConditionalCompareObjectGreater(str, """", false);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue590EnumConvertsToNumericStringAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class EnumTests
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class EnumTests
     Private Enum RankEnum As SByte
         First = 1
         Second = 2
@@ -502,8 +565,8 @@ public partial class Issue396ComparisonOperatorForStringsAsync
     Public Sub TestEnumConcat()
         Console.Write(RankEnum.First & RankEnum.Second)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class EnumTests
 {
@@ -519,19 +582,22 @@ public partial class EnumTests
     }
 }
 1 target compilation errors:
-CS0019: Operator '+' cannot be applied to operands of type 'EnumTests.RankEnum' and 'EnumTests.RankEnum'");
+CS0019: Operator '+' cannot be applied to operands of type 'EnumTests.RankEnum' and 'EnumTests.RankEnum'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue806DateTimeConvertsToStringWithinConcatenationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Issue806
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue806
     Sub Foo()
         Dim x = #2022-01-01# & "" 15:00""
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Issue806
@@ -540,6 +606,8 @@ public partial class Issue806
     {
         string x = Conversions.ToString(DateTime.Parse(""2022-01-01"")) + "" 15:00"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

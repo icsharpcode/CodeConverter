@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -9,41 +10,51 @@ public class ConstructorTests : ConverterTestBase
     [Fact]
     public async Task TestConstructorVisibilityAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Sub New(x As Boolean)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Class1
 {
     public Class1(bool x)
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestModuleConstructorAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Module1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Module1
     Sub New()
         Dim someValue As Integer = 0
     End Sub
-End Module", @"
+End Module", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Module1
 {
     static Module1()
     {
         int someValue = 0;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestHoistedOutParameterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class ClassWithProperties
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class ClassWithProperties
    Public Property Property1 As String
 End Class
 
@@ -56,7 +67,8 @@ Public Class VisualBasicClass
           Debug.Print(y.Property1)
        End If
    End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Diagnostics;
 
 public partial class ClassWithProperties
@@ -78,14 +90,17 @@ public partial class VisualBasicClass
             Debug.Print(y.Property1);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestHoistedOutParameterLambdaUsingByRefParameterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class SomeClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class SomeClass
     Sub S(Optional ByRef x As Integer = -1)
         Dim i As Integer = 0
         If F1(x, i) Then
@@ -97,7 +112,8 @@ public partial class VisualBasicClass
     Function F1(x As Integer, ByRef o As Object) As Boolean : End Function
     Function F2(ByRef x As Integer, ByRef o As Object) As Boolean : End Function
     Function F3(ByRef x As Object, ByRef o As Object) As Boolean : End Function
-End Class", @"using System.Runtime.InteropServices;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Runtime.InteropServices;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class SomeClass
@@ -132,17 +148,21 @@ public partial class SomeClass
     {
         return default;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestConstructorAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass(Of T As {Class, New}, T2 As Structure, T3)
     Public Sub New(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass<T, T2, T3>
     where T : class, new()
     where T2 : struct
@@ -152,34 +172,45 @@ internal partial class TestClass<T, T2, T3>
     }
 }
 1 target compilation errors:
-CS0177: The out parameter 'argument' must be assigned to before control leaves the current method");
+CS0177: The out parameter 'argument' must be assigned to before control leaves the current method", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestConstructorWithImplicitPublicAccessibilityAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Sub New()
-End Sub", @"public SurroundingClass()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Sub New()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"public SurroundingClass()
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestStaticConstructorAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Shared Sub New()
-End Sub", @"static SurroundingClass()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Shared Sub New()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"static SurroundingClass()
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestConstructorStaticLocalConvertedToFieldAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class StaticLocalConvertedToField
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class StaticLocalConvertedToField
     Sub New(x As Boolean)
         Static sPrevPosition As Integer = 7 ' Comment moves with declaration
         Console.WriteLine(sPrevPosition)
@@ -188,7 +219,8 @@ End Sub", @"static SurroundingClass()
         Static sPrevPosition As Integer
         Console.WriteLine(sPrevPosition)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class StaticLocalConvertedToField
 {
@@ -203,6 +235,8 @@ internal partial class StaticLocalConvertedToField
     {
         Console.WriteLine(_sPrevPosition1);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

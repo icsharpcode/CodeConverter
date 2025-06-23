@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -9,110 +10,146 @@ public class NamespaceLevelTests : ConverterTestBase
     [Fact]
     public async Task TestNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Test
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Test
 
-End Namespace", @"
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test
 {
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestLongNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Test1.Test2.Test3
-End Namespace", @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Test1.Test2.Test3
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test1.Test2.Test3
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestGlobalNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Global.Test
-End Namespace", @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Global.Test
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestGenericInheritanceInGlobalNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class A(Of T)
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class A(Of T)
 End Class
 Class B
     Inherits A(Of String)
 End Class
-", @"
+", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class A<T>
 {
 }
 internal partial class B : A<string>
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestTopLevelAttributeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"<Assembly: CLSCompliant(True)>",
-            @"using System;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"<Assembly: CLSCompliant(True)>", extension: "vb"),
+                Verifier.Verify(@"using System;
 
-[assembly: CLSCompliant(true)]");
+[assembly: CLSCompliant(true)]", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AliasedImportsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports tr = System.IO.TextReader
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports tr = System.IO.TextReader
 
 Public Class Test
     Private aliased As tr
-End Class",
-            @"using tr = System.IO.TextReader;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using tr = System.IO.TextReader;
 
 public partial class Test
 {
     private tr aliased;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task UnaliasedImportsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports UnrecognizedNamespace",
-            @"using UnrecognizedNamespace;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports UnrecognizedNamespace", extension: "vb"),
+                Verifier.Verify(@"using UnrecognizedNamespace;
 
 
 1 target compilation errors:
-CS0246: The type or namespace name 'UnrecognizedNamespace' could not be found (are you missing a using directive or an assembly reference?)");
+CS0246: The type or namespace name 'UnrecognizedNamespace' could not be found (are you missing a using directive or an assembly reference?)", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Test.[class]
     Class TestClass(Of T)
     End Class
-End Namespace", @"
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test.@class
 {
     internal partial class TestClass<T>
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestMixedCaseNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace [Aaa]
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace [Aaa]
     Friend Class A
         Shared Sub Foo()
         End Sub
@@ -160,7 +197,8 @@ Friend Module C
         aaa.b.bar()
         Aaa.B.Bar()
     End Sub
-End Module", @"
+End Module", extension: "vb"),
+                Verifier.Verify(@"
 namespace Aaa
 {
     internal partial class A
@@ -221,13 +259,17 @@ internal static partial class C
         aaa.B.Bar();
         aaa.B.Bar();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestInternalStaticClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Test.[class]
     Friend Module TestClass
         Sub Test()
         End Sub
@@ -235,7 +277,8 @@ internal static partial class C
         Private Sub Test2()
         End Sub
     End Module
-End Namespace", @"
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test.@class
 {
     internal static partial class TestClass
@@ -248,124 +291,154 @@ namespace Test.@class
         {
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestAbstractClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Test.[class]
     MustInherit Class TestClass
     End Class
-End Namespace", @"
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test.@class
 {
     internal abstract partial class TestClass
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestSealedClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace Test.[class]
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace Test.[class]
     NotInheritable Class TestClass
     End Class
-End Namespace", @"
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace Test.@class
 {
     internal sealed partial class TestClass
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestInterfaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Interface ITest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Interface ITest
     Inherits System.IDisposable
 
     Sub Test()
-End Interface", @"using System;
+End Interface", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial interface ITest : IDisposable
 {
 
     void Test();
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestEnumAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Friend Enum ExceptionResource
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Enum ExceptionResource
     Argument_ImplementIComparable
     ArgumentOutOfRange_NeedNonNegNum
     ArgumentOutOfRange_NeedNonNegNumRequired
     Arg_ArrayPlusOffTooSmall
-End Enum", @"
+End Enum", extension: "vb"),
+                Verifier.Verify(@"
 internal enum ExceptionResource
 {
     Argument_ImplementIComparable,
     ArgumentOutOfRange_NeedNonNegNum,
     ArgumentOutOfRange_NeedNonNegNumRequired,
     Arg_ArrayPlusOffTooSmall
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestClassInheritanceList1Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"MustInherit Class ClassA
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"MustInherit Class ClassA
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
     Public MustOverride Sub Dispose() Implements IDisposable.Dispose
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal abstract partial class ClassA : IDisposable
 {
 
     protected abstract void Test();
     public abstract void Dispose();
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestClassInheritanceList2Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"MustInherit Class ClassA
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"MustInherit Class ClassA
     Inherits System.EventArgs
     Implements System.IDisposable
 
     Protected MustOverride Sub Test()
     Public MustOverride Sub Dispose() Implements IDisposable.Dispose
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal abstract partial class ClassA : EventArgs, IDisposable
 {
 
     protected abstract void Test();
     public abstract void Dispose();
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestStructAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Structure MyType
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Structure MyType
     Implements System.IComparable(Of MyType)
 
     Private Sub Test()
     End Sub
-End Structure", @"using System;
+End Structure", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial struct MyType : IComparable<MyType>
 {
@@ -377,49 +450,71 @@ internal partial struct MyType : IComparable<MyType>
 1 source compilation errors:
 BC30149: Structure 'MyType' must implement 'Function CompareTo(other As MyType) As Integer' for interface 'IComparable(Of MyType)'.
 1 target compilation errors:
-CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.CompareTo(MyType)'");
+CS0535: 'MyType' does not implement interface member 'IComparable<MyType>.CompareTo(MyType)'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestDelegateAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Delegate Sub Test()",
-            @"public delegate void Test();");
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Delegate Function Test() As Integer",
-            @"public delegate int Test();");
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Delegate Sub Test(ByVal x As Integer)",
-            @"public delegate void Test(int x);");
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Delegate Sub Test(ByRef x As Integer)",
-            @"public delegate void Test(ref int x);");
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Delegate Sub Test()", extension: "vb"),
+                Verifier.Verify(@"public delegate void Test();", extension: "cs")
+            );
+        }
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Delegate Function Test() As Integer", extension: "vb"),
+                Verifier.Verify(@"public delegate int Test();", extension: "cs")
+            );
+        }
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Delegate Sub Test(ByVal x As Integer)", extension: "vb"),
+                Verifier.Verify(@"public delegate void Test(int x);", extension: "cs")
+            );
+        }
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Delegate Sub Test(ByRef x As Integer)", extension: "vb"),
+                Verifier.Verify(@"public delegate void Test(ref int x);", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestGenericDelegate771Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Delegate Function Operation(Of T)() As T",
-            @"public delegate T Operation<T>();");
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Delegate Function Operation(Of T)() As T", extension: "vb"),
+                Verifier.Verify(@"public delegate T Operation<T>();", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestDelegateWithOmittedParameterTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Delegate Sub Test(x)",
-            @"public delegate void Test(object x);");
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Delegate Sub Test(x)", extension: "vb"),
+                Verifier.Verify(@"public delegate void Test(object x);", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ClassImplementsInterfaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class test
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class test
     Implements IComparable
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class test : IComparable
 {
@@ -427,16 +522,20 @@ internal partial class test : IComparable
 1 source compilation errors:
 BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
 1 target compilation errors:
-CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'");
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ClassImplementsInterface2Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class ClassImplementsInterface2
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class ClassImplementsInterface2
     Implements System.IComparable
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class ClassImplementsInterface2 : IComparable
 {
@@ -444,18 +543,22 @@ internal partial class ClassImplementsInterface2 : IComparable
 1 source compilation errors:
 BC30149: Class 'ClassImplementsInterface2' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.
 1 target compilation errors:
-CS0535: 'ClassImplementsInterface2' does not implement interface member 'IComparable.CompareTo(object)'");
+CS0535: 'ClassImplementsInterface2' does not implement interface member 'IComparable.CompareTo(object)'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ClassInheritsClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.IO
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.IO
 
 Class ClassInheritsClass
     Inherits InvalidDataException
-End Class",
-            @"using System.IO;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.IO;
 
 internal partial class ClassInheritsClass : InvalidDataException
 {
@@ -463,16 +566,20 @@ internal partial class ClassInheritsClass : InvalidDataException
 1 source compilation errors:
 BC30299: 'ClassInheritsClass' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
 1 target compilation errors:
-CS0509: 'ClassInheritsClass': cannot derive from sealed type 'InvalidDataException'");
+CS0509: 'ClassInheritsClass': cannot derive from sealed type 'InvalidDataException'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ClassInheritsClass2Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class ClassInheritsClass2
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class ClassInheritsClass2
     Inherits System.IO.InvalidDataException
-End Class",
-            @"using System.IO;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.IO;
 
 internal partial class ClassInheritsClass2 : InvalidDataException
 {
@@ -480,39 +587,47 @@ internal partial class ClassInheritsClass2 : InvalidDataException
 1 source compilation errors:
 BC30299: 'ClassInheritsClass2' cannot inherit from class 'InvalidDataException' because 'InvalidDataException' is declared 'NotInheritable'.
 1 target compilation errors:
-CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataException'");
+CS0509: 'ClassInheritsClass2': cannot derive from sealed type 'InvalidDataException'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ClassInheritsClassWithNoParenthesesOnBaseCallAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class DataSet1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class DataSet1
     Inherits Global.System.Data.DataSet
     Public Sub New()
         MyBase.New
     End Sub
-End Class",
-            @"public partial class DataSet1 : System.Data.DataSet
+End Class", extension: "vb"),
+                Verifier.Verify(@"public partial class DataSet1 : System.Data.DataSet
 {
     public DataSet1() : base()
     {
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultilineDocCommentAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class MyTestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class MyTestClass
     ''' <summary>
     ''' Returns empty
     ''' </summary>
     Private Function MyFunc3() As String
         Return """"
     End Function
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class MyTestClass
 {
     /// <summary>
@@ -522,13 +637,17 @@ public partial class MyTestClass
     {
         return """";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultilineCommentRootOfFileAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"''' <summary>
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"''' <summary>
 ''' Class xml doc
 ''' </summary>
 Public Class MyTestClass
@@ -541,8 +660,8 @@ End Class
 ''' Issue334
 ''' </summary>
 Friend Class Program
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 /// <summary>
 /// Class xml doc
 /// </summary>
@@ -559,21 +678,25 @@ public partial class MyTestClass
 /// </summary>
 internal partial class Program
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact (Skip ="This test currently fails.  The initial line is trimmed. Not sure of importance")]
     public async Task MultilineCommentRootOfFileLeadingSpacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"    ''' <summary>
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"    ''' <summary>
     ''' Class xml doc with leading spaces
     ''' </summary>
 Public Class MyTestClass
     Private Function MyFunc5() As String
         Return """"
     End Function
-End Class",
-            @"    /// <summary>
+End Class", extension: "vb"),
+                Verifier.Verify(@"    /// <summary>
     /// Class xml doc with leading spaces
     /// </summary>
 public partial class MyTestClass
@@ -582,12 +705,16 @@ public partial class MyTestClass
     {
         return """";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
     [Fact]
     public async Task EnumConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Enum ESByte As SByte
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Enum ESByte As SByte
     M1 = 0
 End Enum
 Enum EByte As Byte
@@ -728,7 +855,8 @@ Module Module1
         Dim vObjectULong As Object = EULong.M1
     End Sub
 
-End Module", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Module", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum ESByte : sbyte
 {
@@ -888,19 +1016,23 @@ internal static partial class Module1
         object vObjectULong = EULong.M1;
     }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NewTypeConstraintLastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface Foo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface Foo
 End Interface
 
 Public Class Bar(Of x As {New, Foo})
 
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface Foo
 {
 }
@@ -908,13 +1040,17 @@ public partial interface Foo
 public partial class Bar<x> where x : Foo, new()
 {
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MyClassVirtualCallMethodAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public MustInherit Class A
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public MustInherit Class A
     Overridable Function F1(x As Integer) As Integer ' Comment ends up out of order, but attached to correct method
         Return 1
     End Function
@@ -925,8 +1061,8 @@ public partial class Bar<x> where x : Foo, new()
         Dim y = MyClass.F2()
         Dim z = Me.F2()
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public abstract partial class A
 {
     public int MyClassF1(int x)
@@ -945,13 +1081,17 @@ public abstract partial class A
     }
 }
 1 source compilation errors:
-BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' cannot be called with 'MyClass'.");
+BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' cannot be called with 'MyClass'.", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MyClassVirtualCallPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public MustInherit Class A
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public MustInherit Class A
     Overridable Property P1() As Integer = 1
     MustOverride Property P2() As Integer
     Public Sub TestMethod()
@@ -960,8 +1100,8 @@ BC30614: 'MustOverride' method 'Public MustOverride Function F2() As Integer' ca
         Dim y = MyClass.P2
         Dim z = Me.P2
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public abstract partial class A
 {
     public int MyClassP1 { get; set; } = 1;
@@ -988,13 +1128,17 @@ public abstract partial class A
     }
 }
 1 source compilation errors:
-BC30614: 'MustOverride' method 'Public MustOverride Property P2 As Integer' cannot be called with 'MyClass'.");
+BC30614: 'MustOverride' method 'Public MustOverride Property P2 As Integer' cannot be called with 'MyClass'.", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task OverridenMemberCallAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Module Module1
     Public Class BaseImpl
         Protected Overridable Function GetImplName() As String
@@ -1024,8 +1168,8 @@ Module Module1
         Dim c As New OverrideImpl
         Console.WriteLine(c.PublicGetImplName())
     End Sub
-End Module",
-            @"using System;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal static partial class Module1
 {
@@ -1062,24 +1206,29 @@ internal static partial class Module1
         var c = new OverrideImpl();
         Console.WriteLine(c.PublicGetImplName());
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue1019_ImportsClassUsingStaticAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System.[String]
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.[String]
 
 Public Class Class1
     Dim x = IsNullOrEmpty(""test"")
-End Class",
-            @"using static System.String;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using static System.String;
 
 public partial class Class1
 {
     private object x = IsNullOrEmpty(""test"");
 }
-");
+", extension: "cs")
+            );
+        }
     }
 }

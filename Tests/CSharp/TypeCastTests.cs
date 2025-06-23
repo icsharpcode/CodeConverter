@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -10,12 +11,7 @@ public class TypeCastTests : ConverterTestBase
     [Fact]
     public async Task NumericStringToEnumAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class NumericStringToEnum
-    Public Shared Sub Main()
-        MsgBox(NameOf(Main), ""1"", True)
-    End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+        string expectedCsharpCode = @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class NumericStringToEnum
@@ -24,19 +20,23 @@ public partial class NumericStringToEnum
     {
         Interaction.MsgBox(nameof(Main), (MsgBoxStyle)Conversions.ToInteger(""1""), true);
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class NumericStringToEnum
+    Public Shared Sub Main()
+        MsgBox(NameOf(Main), ""1"", True)
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CIntObjectToIntegerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim o As Object = 5
-        Dim i As Integer = CInt(o)
-    End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+        string expectedCsharpCode = @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -45,18 +45,31 @@ internal partial class Class1
         object o = 5;
         int i = Conversions.ToInteger(o);
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
+    Private Sub Test()
+        Dim o As Object = 5
+        Dim i As Integer = CInt(o)
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CDateAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Dim x = CDate(""2019-09-04"")
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
@@ -65,19 +78,15 @@ public partial class Class1
     {
         DateTime x = Conversions.ToDate(""2019-09-04"");
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastObjectToStringAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim o As Object = ""Test""
-        Dim s As String = CStr(o)
-    End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+        string expectedCsharpCode = @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -86,19 +95,24 @@ internal partial class Class1
         object o = ""Test"";
         string s = Conversions.ToString(o);
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
+    Private Sub Test()
+        Dim o As Object = ""Test""
+        Dim s As String = CStr(o)
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ImplicitCastObjectToStringAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim o As Object = ""Test""
-        Dim s As String = o
-    End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+        string expectedCsharpCode = @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -107,23 +121,24 @@ internal partial class Class1
         object o = ""Test"";
         string s = Conversions.ToString(o);
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
+    Private Sub Test()
+        Dim o As Object = ""Test""
+        Dim s As String = o
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastArrayListAssignmentToStringAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim x As New ArrayList
-        x.Add(""a"")
-
-        Dim xs(1) As String
-
-        xs(0) = x(0)
-    End Sub
-End Class" + Environment.NewLine, @"using System.Collections;
+        string expectedCsharpCode = @"using System.Collections;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
@@ -137,19 +152,28 @@ internal partial class Class1
 
         xs[0] = Conversions.ToString(x[0]);
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
+    Private Sub Test()
+        Dim x As New ArrayList
+        x.Add(""a"")
+
+        Dim xs(1) As String
+
+        xs(0) = x(0)
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ImplicitCastObjecStringToStringAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim o As Object = ""Test""
-        Dim s As String = o
-    End Sub
-End Class" + Environment.NewLine, @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+        string expectedCsharpCode = @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -158,14 +182,26 @@ internal partial class Class1
         object o = ""Test"";
         string s = Conversions.ToString(o);
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
+    Private Sub Test()
+        Dim o As Object = ""Test""
+        Dim s As String = o
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitOperatorInvocation_Issue678Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System.Drawing
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Drawing
 
 Public Class AShape
     Private PaneArea As RectangleF
@@ -175,7 +211,8 @@ Public Class AShape
         area.Inflate(-Me._OuterGap, -Me._OuterGap)
         Me.PaneArea = area
     End Sub
-End Class", @"using System.Drawing;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Drawing;
 
 public partial class AShape
 {
@@ -187,14 +224,17 @@ public partial class AShape
         area.Inflate(-_OuterGap, -_OuterGap);
         PaneArea = area;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CTypeFractionalAndBooleanToIntegralsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Enum TestEnum
     None = 1
 End Enum
@@ -263,8 +303,8 @@ Class Class1
         e = CType(d, TestEnum)
         e = CType(m, TestEnum)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum TestEnum
@@ -340,14 +380,17 @@ internal partial class Class1
         e = (TestEnum)Math.Round(m.Value);
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CTypeFractionalAndBooleanToNullableIntegralsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Enum TestEnum
     None = 1
 End Enum
@@ -416,8 +459,8 @@ Class Class1
         e = CType(d, TestEnum?)
         e = CType(m, TestEnum?)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum TestEnum
@@ -493,20 +536,23 @@ internal partial class Class1
         e = m.HasValue ? (TestEnum?)Math.Round(m.Value) : null;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
     
     [Fact]
     public async Task CastObjectToGenericListAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
         Dim l As System.Collections.Generic.List(Of Integer) = CType(o, System.Collections.Generic.List(Of Integer))
     End Sub
-End Class",
-            @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class Class1
 {
@@ -515,14 +561,17 @@ internal partial class Class1
         object o = new List<int>();
         List<int> l = (List<int>)o;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastingToEnumRightSideShouldBeForcedToBeIntegralAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class C
     Public Enum OrderStatus
         Pending = 0
@@ -561,8 +610,8 @@ Public Class C
         Dim null1 = CType(val, OrderStatus?)
         Dim null2 As OrderStatus? = val
     End Sub
-End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class C
 {
@@ -608,21 +657,24 @@ public partial class C
         OrderStatus? null1 = (OrderStatus?)val;
         OrderStatus? null2 = (OrderStatus?)val;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CTypeObjectToIntegerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Private Sub Test()
         Dim o As Object = 5
         Dim i As System.Nullable(Of Integer) = CInt(o)
         Dim s As String = CType(o, Integer).ToString()
     End Sub
-End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -632,13 +684,17 @@ internal partial class Class1
         int? i = Conversions.ToInteger(o);
         string s = Conversions.ToInteger(o).ToString();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastingStringToEnumShouldUseConversionsToIntegerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Enum TestEnum
     None = 0
 End Enum
@@ -647,8 +703,8 @@ Class Class1
     Sub TestEnumCast(str as String)
         Dim enm  As TestEnum = str
     End Sub
-End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum TestEnum
 {
@@ -662,13 +718,17 @@ internal partial class Class1
         TestEnum enm = (TestEnum)Conversions.ToInteger(str);
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastingIntegralTypeToEnumShouldUseExplicitCastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Enum TestEnum
     None = 0
 End Enum
@@ -705,8 +765,8 @@ Class Class1
         res = CType(i, TestEnum)
         res = CType(l, TestEnum)
     End Sub
-End Class",
-                @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal enum TestEnum
 {
     None = 0
@@ -753,13 +813,17 @@ internal partial class Class1
         res = (TestEnum)l;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastingIntegralTypeToNullableEnumShouldUseExplicitCastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Enum TestEnum
     None = 0
 End Enum
@@ -796,8 +860,8 @@ Class Class1
         res = CType(i, TestEnum?)
         res = CType(l, TestEnum?)
     End Sub
-End Class",
-                @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal enum TestEnum
 {
     None = 0
@@ -844,20 +908,23 @@ internal partial class Class1
         res = (TestEnum?)l;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TryCastObjectToGenericListAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Private Sub Test()
         Dim o As Object = New System.Collections.Generic.List(Of Integer)()
         Dim l As System.Collections.Generic.List(Of Integer) = TryCast(o, System.Collections.Generic.List(Of Integer))
     End Sub
-End Class",
-            @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class Class1
 {
@@ -866,33 +933,39 @@ internal partial class Class1
         object o = new List<int>();
         List<int> l = o as List<int>;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RetainNullableBoolWhenNeededAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Function F(a As Net.IPAddress) As Boolean
         Return If(a?.ScopeId = 0, True)
 End Function
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Class1
 {
     public bool F(System.Net.IPAddress a)
     {
         return ((a?.ScopeId) is { } arg1 ? arg1 == 0 : (bool?)null) ?? true;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestNullableBoolConversionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Private Function Test1(a as Boolean?) As Boolean
         Return a
     End Function
@@ -936,8 +1009,8 @@ internal partial class Class1
     Private Function Test10(a as String) As Boolean
         Return a
     End Function
-End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
 {
@@ -997,14 +1070,17 @@ internal partial class Class1
     {
         return Conversions.ToBoolean(a);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestNullableEnumConversionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Enum TestEnum
     None = 1
 End Enum
@@ -1045,8 +1121,8 @@ Class Class1
     Private Function Test11(a as String) As TestEnum
         Return a
     End Function
-End Class",
-            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal enum TestEnum
 {
@@ -1102,14 +1178,17 @@ internal partial class Class1
     {
         return (TestEnum)Conversions.ToInteger(a);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestNumbersNullableConversionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Class Class1
     Private Function Test1(a as Integer) As Integer?
         Return a
@@ -1156,8 +1235,8 @@ Class Class1
     Private Function Test14(a as String) As Integer
         Return a
     End Function
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class Class1
@@ -1221,99 +1300,121 @@ internal partial class Class1
     {
         return Conversions.ToInteger(a);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastConstantNumberToLongAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Private Sub Test()
         Dim o As Object = 5L
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Class1
 {
     private void Test()
     {
         object o = 5L;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastConstantNumberToFloatAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
     Private Sub Test()
         Dim o As Object = 5F
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Class1
 {
     private void Test()
     {
         object o = 5f;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastConstantNumberToDecimalAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class Class1
-    Private Sub Test()
-        Dim o As Object = 5.0D
-    End Sub
-End Class" + Environment.NewLine, @"
+        string expectedCsharpCode = @"
 internal partial class Class1
 {
     private void Test()
     {
         object o = 5.0m;
     }
-}" + Environment.NewLine);
+}" + Environment.NewLine;
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Class1
+    Private Sub Test()
+        Dim o As Object = 5.0D
+    End Sub
+End Class" + Environment.NewLine, extension: "vb"),
+                Verifier.Verify(expectedCsharpCode, extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastConstantNumberToCharacterWAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Private Sub Test()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Sub Test()
     Dim CR = ChrW(&HF)
 End Sub
-", @"private void Test()
+", extension: "vb"),
+                Verifier.Verify(@"private void Test()
 {
     char CR = '\u000f';
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CastConstantNumberToCharacterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Private Sub Test()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private Sub Test()
     Dim CR As Char = Chr(&HF)
 End Sub
-", @"private void Test()
+", extension: "vb"),
+                Verifier.Verify(@"private void Test()
 {
     char CR = '\u000f';
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     
     [Fact]
     public async Task CastObjectToNullableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class CastTest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class CastTest
     Private Function Test(input as Object) As Integer?
             Return CType(input, Integer?)
     End Function
@@ -1323,7 +1424,8 @@ End Sub
     Private Function Test2(input as Integer) As Decimal?
         Return CType(input, Nullable(Of Double))
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class CastTest
 {
     private int? Test(object input)
@@ -1338,34 +1440,41 @@ internal partial class CastTest
     {
         return (decimal?)(double?)input;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task TestSingleCharacterStringLiteralBecomesCharWhenNeededAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class CharTestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class CharTestClass
     Private Function QuoteSplit(ByVal text As String) As String()
         Return text.Split("""""""")
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {
         return text.Split('""');
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task TestSelectCaseComparesCharsAndStringsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Class CharTestClass
     Private Sub Q()
         Select Case ""a""
@@ -1373,7 +1482,8 @@ Class CharTestClass
             Case ""b""c
         End Select
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class CharTestClass
 {
     private void Q()
@@ -1393,31 +1503,39 @@ internal partial class CharTestClass
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestSingleCharacterStringLiteralBecomesChar_WhenExplictCastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class ExplicitCastClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class ExplicitCastClass
     Dim wordArray As String() = 1.ToString().Split(CChar("",""))
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class ExplicitCastClass
 {
     private string[] wordArray = 1.ToString().Split(',');
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestCastHasBracketsWhenElementAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestCastHasBracketsWhenElementAccess
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestCastHasBracketsWhenElementAccess
     Private Function Casting(ByVal sender As Object) As Integer
         Return CInt(DirectCast(sender, Object())(0))
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestCastHasBracketsWhenElementAccess
 {
@@ -1425,14 +1543,17 @@ internal partial class TestCastHasBracketsWhenElementAccess
     {
         return Conversions.ToInteger(((object[])sender)[0]);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultipleNestedCastsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class MultipleCasts
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class MultipleCasts
     Public Shared Function ToGenericParameter(Of T)(Value As Object) As T
         If Value Is Nothing Then
             Return Nothing
@@ -1446,7 +1567,8 @@ internal partial class TestCastHasBracketsWhenElementAccess
             Return DirectCast(Value, T)
         End If
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class MultipleCasts
 {
@@ -1470,7 +1592,9 @@ public partial class MultipleCasts
             return (T)Value;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     /// <summary>
@@ -1483,8 +1607,9 @@ public partial class MultipleCasts
     [Fact]
     public async Task ObjectComparisonIsConvertedToBoolRatherThanLateBoundAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class CopiedFromTheSelfVerifyingBooleanTests
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class CopiedFromTheSelfVerifyingBooleanTests
     Public Sub VisualBasicEqualityOfNormalObjectsNotSubjectToSpecialStringConversionRules()
         Dim a1 As Object = 3
         Dim a2 As Object = 3
@@ -1496,7 +1621,8 @@ public partial class MultipleCasts
 
     Private Sub AssertTrue(v1 As Boolean, v2 As String)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class CopiedFromTheSelfVerifyingBooleanTests
 {
@@ -1514,14 +1640,17 @@ public partial class CopiedFromTheSelfVerifyingBooleanTests
     private void AssertTrue(bool v1, string v2)
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestGenericCastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestGenericCast
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestGenericCast
     Private Shared Function GenericFunctionWithCTypeCast(Of T)() As T
         Const result = 1
         Dim resultObj As Object = result
@@ -1535,7 +1664,8 @@ public partial class CopiedFromTheSelfVerifyingBooleanTests
     Private Shared Function GenericFunctionWithCastThatExistsInCsharp(Of T As {TestGenericCast})() As T
         Return New TestGenericCast
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestGenericCast
 {
@@ -1555,13 +1685,17 @@ internal partial class TestGenericCast
     {
         return (T)new TestGenericCast();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestInferringImplicitGenericTypesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System
 Imports System.Linq
 
@@ -1595,7 +1729,8 @@ Public Class TestClass
         Dim objArr2 = Enumerable.Repeat(CType(""a"", object), 5).ToArray()
     End Sub
 End Class
-", @"
+", extension: "vb"),
+                Verifier.Verify(@"
 using System;
 using System.Linq;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
@@ -1632,15 +1767,18 @@ public partial class TestClass
         object[] objArr1 = Enumerable.Repeat((object)""a"", 5).ToArray();
         object[] objArr2 = Enumerable.Repeat((object)""a"", 5).ToArray();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
         [Fact]
     public async Task TestCTypeStringToEnumAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Enum TestEnum
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Enum TestEnum
     A
     B
 End Enum
@@ -1654,7 +1792,8 @@ Public Class VisualBasicClass
     Public Function TestCast(s as System.Enum) As String
         Return s.ToString()
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public enum TestEnum
@@ -1675,14 +1814,17 @@ public partial class VisualBasicClass
     {
         return s.ToString();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue894_LinqQueryWhereClauseIsAlwaysBooleanAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 Imports System.Linq
 
 Public Class C
@@ -1690,7 +1832,8 @@ Public Class C
         Dim a = New List(Of Integer?) From {1, 2, 3, Nothing}
         Dim result = From x In a Where x = 1
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Linq;
 
 public partial class C
@@ -1702,6 +1845,8 @@ public partial class C
                      where x == 1
                      select x;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

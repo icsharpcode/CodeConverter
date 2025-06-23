@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -9,8 +10,9 @@ public class IndexerTests : ConverterTestBase
     [Fact]
     public async Task InterfaceImplementationOfIndexerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Default Property Item(str As String) As Integer
 End Interface
@@ -25,7 +27,8 @@ Public Class Foo
         Set
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int this[string str] { get; set; }
@@ -45,14 +48,17 @@ public partial class Foo : IFoo
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InterfaceImplementationOfIndexerAsAbstractAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Default Property Item(str As String) As Integer
 End Interface
@@ -73,7 +79,8 @@ Public Class FooChild
         Set
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int this[string str] { get; set; }
@@ -99,14 +106,17 @@ public partial class FooChild : Foo
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedImplementationOfIndexerWithAbstractAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Default Property Item(str As String) As Integer
 End Interface
@@ -127,7 +137,8 @@ Public Class FooChild
         Set
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int this[string str] { get; set; }
@@ -153,14 +164,17 @@ public partial class FooChild : Foo
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ReadOnlyImplementationOfIndexerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Default ReadOnly Property Item(str As String) As Integer
 End Interface
@@ -173,7 +187,8 @@ Public Class Foo
         Return 2
     End Get
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int this[string str] { get; }
@@ -190,14 +205,17 @@ public partial class Foo : IFoo
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task WriteOnlyImplementationOfIndexerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Default WriteOnly Property Item(str As String) As Integer
 End Interface
@@ -209,7 +227,8 @@ Public Class Foo
     Set
     End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int this[string str] { set; }
@@ -225,6 +244,8 @@ public partial class Foo : IFoo
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 }

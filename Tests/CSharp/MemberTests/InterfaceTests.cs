@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -10,8 +11,9 @@ public class InterfaceTests : ConverterTestBase
     [Fact]
     public async Task Issue443_FixCaseForInterfaceMembersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Function FooDifferentCase(<Out> ByRef str2 As String) As Integer
 End Interface
 
@@ -21,7 +23,8 @@ Public Class Foo
         str2 = 2.ToString()
         Return 3
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooDifferentCase(out string str2);
@@ -35,14 +38,17 @@ public partial class Foo : IFoo
         return 3;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue444_FixNameForRenamedInterfaceMembersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Function FooDifferentName(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -52,7 +58,8 @@ Public Class Foo
     Function BarDifferentName(ByRef str As String, i As Integer) As Integer Implements IFoo.FooDifferentName
         Return 4
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooDifferentName(ref string str, int i);
@@ -68,14 +75,17 @@ public partial class Foo : IFoo
 
     int IFoo.FooDifferentName(ref string str, int i) => BarDifferentName(ref str, i);
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task IdenticalInterfaceMethodsWithRenamedInterfaceMembersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Function DoFooBar(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -94,7 +104,8 @@ Public Class FooBar
         Return 2
     End Function
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFooBar(ref string str, int i);
@@ -123,14 +134,17 @@ public partial class FooBar : IFoo, IBar
     int IBar.DoFooBar(ref string str, int i) => Bar(ref str, i);
 
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfaceCasingOnlyDifferenceConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Function DoFoo() As Integer
     Property Prop As Integer
@@ -154,7 +168,8 @@ Public Class Foo
                interfaceInstance.prop + interfaceInstance.Prop
     End Function
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo();
@@ -182,14 +197,17 @@ public partial class Foo : IFoo
     }
 
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfaceCasingOnlyDifferenceForVirtualMemberConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Function DoFoo() As Integer
     Property Prop As Integer
@@ -226,7 +244,8 @@ Public Class Foo
                interfaceInstance.prop + interfaceInstance.Prop +
                baseClass.prop + baseClass.Prop
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo();
@@ -266,14 +285,17 @@ public partial class Foo : BaseFoo
         return foo.doFoo() + foo.doFoo() + interfaceInstance.DoFoo() + interfaceInstance.DoFoo() + baseClass.doFoo() + baseClass.doFoo() + foo.prop + foo.prop + interfaceInstance.Prop + interfaceInstance.Prop + baseClass.prop + baseClass.prop;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfaceCasingOnlyDifferenceWithOverloadedPropertyConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IUserContext
     ReadOnly Property GroupID As String
 End Interface
@@ -310,7 +332,8 @@ Public Class Foo
                iUserContext.GroupId & iUserContext.GroupID
     End Function
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IUserContext
 {
     string GroupID { get; }
@@ -352,14 +375,17 @@ public partial class Foo : BaseFoo, IFoo
     }
 
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedMethodImplementsMultipleInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Function DoFooBar(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -374,7 +400,8 @@ Public Class FooBar
         Return 4
     End Function
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFooBar(ref string str, int i);
@@ -396,14 +423,17 @@ public partial class FooBar : IFoo, IBar
     int IFoo.DoFooBar(ref string str, int i) => Foo(ref str, i);
     int IBar.DoFooBar(ref string str, int i) => Foo(ref str, i);
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task IdenticalInterfacePropertiesWithRenamedInterfaceMembersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Property FooBarProp As Integer
     End Interface
 
@@ -418,7 +448,8 @@ Public Class FooBar
 
     Property Bar As Integer Implements IBar.FooBarProp
     
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooBarProp { get; set; }
@@ -438,14 +469,17 @@ public partial class FooBar : IFoo, IBar
     public int Bar { get; set; }
     int IBar.FooBarProp { get => Bar; set => Bar = value; }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitInterfaceImplementationRequiredMethodParameters_749_Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
   Function DoFooBar(ByRef str As String, i As Integer) As Integer
 End Interface
@@ -465,7 +499,8 @@ Public Class FooBar
     Return 2
   End Function
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFooBar(ref string str, int i);
@@ -494,14 +529,17 @@ public partial class FooBar : IFoo, IBar
     int IBar.DoFooBar(ref string str, int i) => Bar(ref str, i);
 
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitInterfaceImplementationOptionalParameters_1062_Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface InterfaceWithOptionalParameters
     Sub S(Optional i As Integer = 0)
 End Interface
@@ -509,7 +547,8 @@ End Interface
 Public Class ImplInterfaceWithOptionalParameters : Implements InterfaceWithOptionalParameters
     Public Sub InterfaceWithOptionalParameters_S(Optional i As Integer = 0) Implements InterfaceWithOptionalParameters.S
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface InterfaceWithOptionalParameters
 {
     void S(int i = 0);
@@ -523,14 +562,17 @@ public partial class ImplInterfaceWithOptionalParameters : InterfaceWithOptional
 
     void InterfaceWithOptionalParameters.S(int i = 0) => InterfaceWithOptionalParameters_S(i);
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task OptionalParameterWithReservedName_1092_Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class WithOptionalParameters
     Sub S1(Optional a As Object = Nothing, Optional [default] As String = """")
     End Sub
@@ -538,7 +580,8 @@ Public Class WithOptionalParameters
     Sub S()
         S1(, ""a"")
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class WithOptionalParameters
 {
     public void S1(object a = null, string @default = """")
@@ -550,15 +593,18 @@ public partial class WithOptionalParameters
         S1(@default: ""a"");
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task ExplicitInterfaceImplementationOptionalParametersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
   Property ExplicitProp(Optional str As String = """") As Integer
   Function ExplicitFunc(Optional str2 As String = """", Optional i2 As Integer = 1) As Integer
 End Interface
@@ -577,7 +623,8 @@ Public Class Foo
     Set(value As Integer)
     End Set
   End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int get_ExplicitProp(string str = """");
@@ -606,15 +653,18 @@ public partial class Foo : IFoo
     int IFoo.get_ExplicitProp(string str = """") => get_ExplicitProp(str);
     void IFoo.set_ExplicitProp(string str = """", int value = default) => set_ExplicitProp(str, value);
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task ExplicitInterfaceImplementationOptionalMethodParameters_749_Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
   Function DoFooBar(ByRef str As String, Optional i As Integer = 4) As Integer
 End Interface
@@ -634,7 +684,8 @@ Public Class FooBar
     Return 2
   End Function
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFooBar(ref string str, int i = 4);
@@ -663,13 +714,17 @@ public partial class FooBar : IFoo, IBar
     int IBar.DoFooBar(ref string str, int i = 8) => Bar(ref str, i);
 
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfaceMethodFullyQualifiedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace TestNamespace
     Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
@@ -681,7 +736,8 @@ Public Class Foo
     Function DoFooRenamed(ByRef str As String, i As Integer) As Integer Implements TestNamespace.IFoo.DoFoo
         Return 4
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 namespace TestNamespace
 {
     public partial interface IFoo
@@ -699,13 +755,17 @@ public partial class Foo : TestNamespace.IFoo
     }
 
     int TestNamespace.IFoo.DoFoo(ref string str, int i) => DoFooRenamed(ref str, i);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfacePropertyFullyQualifiedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Namespace TestNamespace
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace TestNamespace
     Public Interface IFoo
         Property FooProp As Integer
     End Interface
@@ -716,7 +776,8 @@ Public Class Foo
 
     Property FooPropRenamed As Integer Implements TestNamespace.IFoo.FooProp
     
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 namespace TestNamespace
 {
     public partial interface IFoo
@@ -731,13 +792,17 @@ public partial class Foo : TestNamespace.IFoo
     public int FooPropRenamed { get; set; }
     int TestNamespace.IFoo.FooProp { get => FooPropRenamed; set => FooPropRenamed = value; }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfaceMethodConsumerCasingRenamedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -755,7 +820,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.DOFOORENAMED(str, i) + bar.DoFoo(str, i)
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo(ref string str, int i);
@@ -780,13 +846,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfacePropertyConsumerCasingRenamedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -803,7 +873,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.FOOPROPRENAMED + bar.FooProp
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooProp { get; set; }
@@ -825,13 +896,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.FooPropRenamed + bar.FooProp;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InterfaceMethodCasingRenamedConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Function DoFoo(str As String, i As Integer) As Integer
     End Interface
 
@@ -849,7 +924,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.dofoo(str, i) + bar.DoFoo(str, i)
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo(string str, int i);
@@ -872,13 +948,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.DoFoo(str, i) + bar.DoFoo(str, i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InterfacePropertyCasingRenamedConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -895,7 +975,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.fooprop + bar.FooProp
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooProp { get; set; }
@@ -916,13 +997,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.FooProp + bar.FooProp;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InterfaceRenamedMethodConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -940,7 +1025,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.DoFooRenamed(str, i) + bar.DoFoo(str, i)
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo(ref string str, int i);
@@ -965,13 +1051,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InterfaceRenamedPropertyConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -988,7 +1078,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.FooPropRenamed + bar.FooProp
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooProp { get; set; }
@@ -1010,13 +1101,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.FooPropRenamed + bar.FooProp;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PartialInterfaceRenamedMethodConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Partial Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -1034,7 +1129,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.DoFooRenamed(str, i) + bar.DoFoo(str, i)
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo(ref string str, int i);
@@ -1059,13 +1155,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.DoFooRenamed(ref str, i) + bar.DoFoo(ref str, i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PartialInterfaceRenamedPropertyConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Partial Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Partial Interface IFoo
         Property FooProp As Integer
     End Interface
 
@@ -1082,7 +1182,8 @@ Public Class FooConsumer
         Dim bar As IFoo = foo
         Return foo.FooPropRenamed + bar.FooProp
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooProp { get; set; }
@@ -1104,13 +1205,17 @@ public partial class FooConsumer
         IFoo bar = foo;
         return foo.FooPropRenamed + bar.FooProp;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfaceMethodMyClassConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         Function DoFoo(ByRef str As String, i As Integer) As Integer
     End Interface
 
@@ -1124,7 +1229,8 @@ Public Class Foo
     Function DoFooRenamedConsumer(ByRef str As String, i As Integer) As Integer
         Return MyClass.DoFooRenamed(str, i)
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int DoFoo(ref string str, int i);
@@ -1145,13 +1251,17 @@ public partial class Foo : IFoo
     {
         return MyClassDoFooRenamed(ref str, i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RenamedInterfacePropertyMyClassConsumerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
         ReadOnly Property DoFoo As Integer
         WriteOnly Property DoBar As Integer
     End Interface
@@ -1174,7 +1284,8 @@ Public Class Foo
     Sub DoFooRenamedConsumer()
         MyClass.DoBarRenamed = MyClass.DoFooRenamed
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial interface IFoo
 {
@@ -1225,14 +1336,17 @@ public partial class Foo : IFoo
     {
         MyClassDoBarRenamed = MyClassDoFooRenamed;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitInterfaceImplementationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Property ExplicitProp(str As String) As Integer
     Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
 End Interface
@@ -1251,7 +1365,8 @@ Public Class Foo
         Set(value As Integer)
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int get_ExplicitProp(string str);
@@ -1280,14 +1395,17 @@ public partial class Foo : IFoo
     int IFoo.get_ExplicitProp(string str) => get_ExplicitProp(str);
     void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PropertyInterfaceImplementationKeepsVirtualModifierAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Property PropParams(str As String) As Integer
     Property Prop() As Integer
 End Interface
@@ -1310,7 +1428,8 @@ Public Class Foo
         Set(value As Integer)
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int get_PropParams(string str);
@@ -1340,14 +1459,17 @@ public partial class Foo : IFoo
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PrivateAutoPropertyImplementsMultipleInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Property ExplicitProp As Integer
 End Interface
 
@@ -1359,7 +1481,8 @@ Public Class Foo
     Implements IFoo, IBar
     
     Private Property ExplicitProp As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; set; }
@@ -1376,15 +1499,18 @@ public partial class Foo : IFoo, IBar
     private int ExplicitProp { get; set; }
     int IFoo.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; }
     int IBar.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task ImplementMultipleRenamedPropertiesFromInterfaceAsAbstractAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Property ExplicitProp As Integer
 End Interface
@@ -1396,7 +1522,8 @@ Public MustInherit Class Foo
 
     Protected MustOverride Property ExplicitPropRenamed1 As Integer Implements IFoo.ExplicitProp
     Protected MustOverride Property ExplicitPropRenamed2 As Integer Implements IBar.ExplicitProp
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; set; }
@@ -1413,14 +1540,17 @@ public abstract partial class Foo : IFoo, IBar
     int IFoo.ExplicitProp { get => ExplicitPropRenamed1; set => ExplicitPropRenamed1 = value; }
     protected abstract int ExplicitPropRenamed2 { get; set; }
     int IBar.ExplicitProp { get => ExplicitPropRenamed2; set => ExplicitPropRenamed2 = value; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitInterfaceImplementationForVirtualMemberFromAnotherClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Sub Save()
     Property Prop As Integer
@@ -1442,7 +1572,8 @@ Public Class Foo
 
     Protected Overrides Property MyProp As Integer = 6 Implements IFoo.Prop
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     void Save();
@@ -1470,14 +1601,17 @@ public partial class Foo : BaseFoo, IFoo
     protected override int MyProp { get; set; } = 6;
     int IFoo.Prop { get => MyProp; set => MyProp = value; }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitInterfaceImplementationWhereOnlyOneInterfaceMemberIsRenamedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Sub Save()
     Property A As Integer
@@ -1496,7 +1630,8 @@ Public Class Foo
 
     Public Overridable Property A As Integer Implements IFoo.A, IBar.B
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     void Save();
@@ -1523,14 +1658,17 @@ public partial class Foo : IFoo, IBar
     int IFoo.A { get => A; set => A = value; }
     int IBar.B { get => A; set => A = value; }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitInterfaceImplementationWhereMemberShadowsBaseAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Sub Save()
     Property Prop As Integer
@@ -1552,7 +1690,8 @@ Public Class Foo
 
     Public Shadows Property MyProp As Integer = 6 Implements IFoo.Prop
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     void Save();
@@ -1580,14 +1719,17 @@ public partial class Foo : BaseFoo, IFoo
     public new int MyProp { get; set; } = 6;
     int IFoo.Prop { get => MyProp; set => MyProp = value; }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PrivatePropertyAccessorBlocksImplementsMultipleInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Property ExplicitProp As Integer
 End Interface
 
@@ -1605,7 +1747,8 @@ Public Class Foo
         Set
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; set; }
@@ -1632,14 +1775,17 @@ public partial class Foo : IFoo, IBar
 
     int IFoo.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; }
     int IBar.ExplicitProp { get => ExplicitProp; set => ExplicitProp = value; } // Comment moves because this line gets split
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NonPublicImplementsInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Property FriendProp As Integer
     Sub ProtectedSub()
     Function PrivateFunc() As Integer
@@ -1687,7 +1833,8 @@ Public Class Foo
     Protected Overrides Sub AbstractSubRenamed()
     End Sub
 End Class
-", @"
+", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FriendProp { get; set; }
@@ -1760,14 +1907,17 @@ public partial class Foo : BaseFoo
     protected override void AbstractSubRenamed()
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExplicitPropertyImplementationWithDirectAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Property ExplicitProp As Integer
     ReadOnly Property ExplicitReadOnlyProp As Integer
@@ -1784,7 +1934,8 @@ Public Class Foo
         _ExplicitRenamedReadOnlyProp = 10
     End Sub
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; set; }
@@ -1805,14 +1956,17 @@ public partial class Foo : IFoo
         ExplicitRenamedReadOnlyProp = 10;
     }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ReadonlyRenamedPropertyImplementsMultipleInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     ReadOnly Property ExplicitProp As Integer
 End Interface
 
@@ -1824,7 +1978,8 @@ Public Class Foo
     Implements IFoo, IBar
     
     ReadOnly Property ExplicitPropRenamed As Integer Implements IFoo.ExplicitProp, IBar.ExplicitProp
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { get; }
@@ -1841,14 +1996,17 @@ public partial class Foo : IFoo, IBar
     public int ExplicitPropRenamed { get; private set; }
     int IFoo.ExplicitProp { get => ExplicitPropRenamed; }
     int IBar.ExplicitProp { get => ExplicitPropRenamed; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task WriteonlyPropertyImplementsMultipleInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     WriteOnly Property ExplicitProp As Integer
 End Interface
 
@@ -1863,7 +2021,8 @@ Public Class Foo
         Set
         End Set        
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int ExplicitProp { set; }
@@ -1886,14 +2045,17 @@ public partial class Foo : IFoo, IBar
 
     int IFoo.ExplicitProp { set => ExplicitPropRenamed = value; }
     int IBar.ExplicitProp { set => ExplicitPropRenamed = value; } // Comment moves because this line gets split
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PrivateMethodAndParameterizedPropertyImplementsMultipleInterfacesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Property ExplicitProp(str As String) As Integer
     Function ExplicitFunc(ByRef str2 As String, i2 As Integer) As Integer
 End Interface
@@ -1917,7 +2079,8 @@ Public Class Foo
         Set(value As Integer)
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int get_ExplicitProp(string str);
@@ -1955,7 +2118,9 @@ public partial class Foo : IFoo, IBar
     int IBar.get_ExplicitProp(string str) => get_ExplicitProp(str);
     void IFoo.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
     void IBar.set_ExplicitProp(string str, int value) => set_ExplicitProp(str, value);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     /// <summary>
@@ -1965,8 +2130,9 @@ public partial class Foo : IFoo, IBar
     [Fact]
     public async Task Issue444_InternalMemberDelegatingMethodAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface IFoo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface IFoo
     Function FooDifferentName(ByRef str As String, i As Integer) As Integer
 End Interface
 
@@ -1976,7 +2142,8 @@ Friend Class Foo
     Function BarDifferentName(ByRef str As String, i As Integer) As Integer Implements IFoo.FooDifferentName
         Return 4
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int FooDifferentName(ref string str, int i);
@@ -1992,7 +2159,9 @@ internal partial class Foo : IFoo
 
     int IFoo.FooDifferentName(ref string str, int i) => BarDifferentName(ref str, i);
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
 
@@ -2000,8 +2169,9 @@ internal partial class Foo : IFoo
     [Fact]
     public async Task TestReadOnlyOrWriteOnlyPropertyImplementedByNormalPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Interface IClass
     ReadOnly Property ReadOnlyPropParam(i as Integer) As Integer
     ReadOnly Property ReadOnlyProp As Integer
@@ -2045,7 +2215,8 @@ Class ChildClass
         End Set
     End Property
 End Class
-", @"
+", extension: "vb"),
+                Verifier.Verify(@"
 internal partial interface IClass
 {
     int get_ReadOnlyPropParam(int i);
@@ -2101,14 +2272,17 @@ internal partial class ChildClass : IClass
     }
 
     int IClass.WriteOnlyProp { set => RenamedWriteOnlyProperty = value; } // Comment moves because this line gets split
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestReadOnlyAndWriteOnlyParametrizedPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Interface IClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Interface IClass
     ReadOnly Property ReadOnlyProp(i as Integer) As String
     WriteOnly Property WriteOnlyProp(i as Integer) As String
 End Interface
@@ -2128,7 +2302,8 @@ Class ChildClass
         End Set
     End Property
 End Class
-", @"using System;
+", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial interface IClass
 {
@@ -2148,14 +2323,17 @@ internal partial class ChildClass : IClass
     {
         throw new NotImplementedException();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestExplicitInterfaceOfParametrizedPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Interface IClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Interface IClass
     ReadOnly Property ReadOnlyPropToRename(i as Integer) As String
     WriteOnly Property WriteOnlyPropToRename(i as Integer) As String
     Property PropToRename(i as Integer) As String
@@ -2236,7 +2414,8 @@ Class ChildClass
         End Set
     End Property
 End Class
-", @"using System;
+", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial interface IClass
 {
@@ -2331,6 +2510,8 @@ internal partial class ChildClass : IClass
 
     string IClass.get_PropToRenameNonPublic(int i) => get_PropToRenameNonPublic(i);
     void IClass.set_PropToRenameNonPublic(int i, string value) => set_PropToRenameNonPublic(i, value);
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

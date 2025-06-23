@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -12,8 +13,9 @@ public class TriviaTests : ConverterTestBase
     [Fact]
     public async Task Issue506_IfStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class TestClass506
     Public Sub Deposit(Item As Integer, ColaOnly As Boolean, MonteCarloLogActive As Boolean, InDevEnv As Func(Of Boolean))
@@ -30,7 +32,8 @@ Public Class TestClass506
             'WriteErrorLog() 'write a blank line
         End If
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class TestClass506
 {
@@ -55,14 +58,17 @@ public partial class TestClass506
             // WriteErrorLog() 'write a blank line
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue15_NestedRegionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"#Region ""Whole File""
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"#Region ""Whole File""
 #Region ""Nested""
 Imports System
 
@@ -79,8 +85,8 @@ End Module
 #End Region
 #End Region
 #End Region
-",
-            @"#region Whole File
+", extension: "vb"),
+                Verifier.Verify(@"#region Whole File
 #region Nested
 using System;
 
@@ -98,14 +104,17 @@ internal static partial class Program
 }
 #endregion
 #endregion
-#endregion");
+#endregion", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RegionsWithEventsIssue772Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
     Inherits System.Windows.Forms.Form
 
     #Region "" Members ""
@@ -130,8 +139,8 @@ internal static partial class Program
 
     #End Region
 
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass : System.Windows.Forms.Form
 {
@@ -161,20 +170,23 @@ public partial class VisualBasicClass : System.Windows.Forms.Form
 
     #endregion
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue15_IfTrueAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class AClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class AClass
     #If TRUE
     Private Sub AMethod()
     End Sub
     #End If
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class AClass
 {
     /* TODO ERROR: Skipped IfDirectiveTrivia
@@ -187,20 +199,23 @@ public partial class AClass
 #End If
 */
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue15_IfFalseAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class AClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class AClass
     #If FALSE
     Private Sub AMethod()
     End Sub
     #End If
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class AClass
 {
     /* TODO ERROR: Skipped IfDirectiveTrivia
@@ -211,57 +226,67 @@ public partial class AClass
 */    /* TODO ERROR: Skipped EndIfDirectiveTrivia
 #End If
 */
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue771_DoNotTrimLineCommentsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 '>> Thomas  16.03.2021
 '                       bei BearbeitungsTyp = ""SP__unten""
 Public Class AClass
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 
 // >> Thomas  16.03.2021
 // bei BearbeitungsTyp = ""SP__unten""
 public partial class AClass
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue771_DoNotTrimBlockCommentsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 ''' >> Thomas  16.03.2021
 '''                       bei BearbeitungsTyp = ""SP__unten""
 Public Class AClass
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 
 /// >> Thomas  16.03.2021
 ///                       bei BearbeitungsTyp = ""SP__unten""
 public partial class AClass
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestMethodXmlDocAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     ''' <summary>Xml doc</summary>
     Public Sub TestMethod(Of T As {Class, New}, T2 As Structure, T3)(<Out> ByRef argument As T, ByRef argument2 As T2, ByVal argument3 As T3)
         argument = Nothing
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     /// <summary>Xml doc</summary>
@@ -273,14 +298,17 @@ internal partial class TestClass
         argument2 = default;
         argument3 = default;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestGeneratedMethodXmlDocAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     '''<summary>
     '''  Returns the cached ResourceManager instance used by this class.
     '''</summary>
@@ -289,7 +317,8 @@ internal partial class TestClass
         argument2 = Nothing
         argument3 = Nothing
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     /// <summary>
@@ -303,14 +332,17 @@ internal partial class TestClass
         argument2 = default;
         argument3 = default;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task StatementNewlinesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class X
     <Display(Name:=""Reinsurance Year"")> _
@@ -329,7 +361,8 @@ Friend Class DisplayAttribute
     Inherits Attribute
     Property Name As String
 End Class
-", @"using System;
+", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class X
 {
@@ -348,14 +381,17 @@ public partial class X
 internal partial class DisplayAttribute : Attribute
 {
     public string Name { get; set; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue1017_TestRegionsMovingAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class ConversionTest8
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class ConversionTest8
     Private x As Integer = 5
 
     Public Sub New()
@@ -377,7 +413,8 @@ internal partial class DisplayAttribute : Attribute
     Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = x}
 #End Region
 End Class
-", @"using System.Threading.Tasks;
+", extension: "vb"),
+                Verifier.Verify(@"using System.Threading.Tasks;
 
 public partial class ConversionTest8
 {
@@ -404,7 +441,9 @@ public partial class ConversionTest8
     // Class Comment 3
     private readonly ParallelOptions ClassVariable1;
     #endregion
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]

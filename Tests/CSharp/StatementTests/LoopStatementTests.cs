@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
@@ -15,7 +16,9 @@ public class LoopStatementTests : ConverterTestBase
     [Fact]
     public async Task UntilStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(rand As Random)
         Dim charIndex As Integer
         ' allow only digits and letters
@@ -23,7 +26,8 @@ public class LoopStatementTests : ConverterTestBase
             charIndex = rand.Next(48, 123)
         Loop Until (charIndex >= 48 AndAlso charIndex <= 57) OrElse (charIndex >= 65 AndAlso charIndex <= 90) OrElse (charIndex >= 97 AndAlso charIndex <= 122)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -35,13 +39,17 @@ internal partial class TestClass
             charIndex = rand.Next(48, 123);
         while ((charIndex < 48 || charIndex > 57) && (charIndex < 65 || charIndex > 90) && (charIndex < 97 || charIndex > 122));
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         For idx = 0 To 10
         Next
@@ -49,7 +57,8 @@ internal partial class TestClass
         For idx = 0 To 10
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Program
 {
     public static void Main(string[] args)
@@ -62,54 +71,69 @@ internal partial class Program
         {
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Int16ForLoopAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"    Sub DummyMethod()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"    Sub DummyMethod()
         Dim someArray = New Integer() { 1, 2, 3}
         For index As Int16 = 0 To someArray.Length - 1
             Console.WriteLine(index)
         Next
-    End Sub", @"public void DummyMethod()
+    End Sub", extension: "vb"),
+                Verifier.Verify(@"public void DummyMethod()
 {
     int[] someArray = new int[] { 1, 2, 3 };
     for (short index = 0, loopTo = (short)(someArray.Length - 1); index <= loopTo; index++)
         Console.WriteLine(index);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExternallyDeclaredLoopVariableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Sub Main()
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Sub Main()
     Dim foo As Single = 3.5
     Dim index As Integer
     For index = Int(foo) To Int(foo * 3)
         Console.WriteLine(index)
     Next
-End Sub", @"public void Main()
+End Sub", extension: "vb"),
+                Verifier.Verify(@"public void Main()
 {
     float foo = 3.5f;
     int index;
     var loopTo = (int)Math.Round(Conversion.Int(foo * 3f));
     for (index = (int)Math.Round(Conversion.Int(foo)); index <= loopTo; index++)
         Console.WriteLine(index);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForNonNegativeStepAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -0
         Debug.WriteLine(i)
   Next
 End Sub
-End Class", @"using System.Diagnostics;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Diagnostics;
 
 internal partial class Issue453
 {
@@ -118,19 +142,24 @@ internal partial class Issue453
         for (int i = startIndex, loopTo = endIndex; i <= loopTo; i += -0)
             Debug.WriteLine(i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForNegativeStepAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer)
       For i As Integer = startIndex To endIndex Step -5
         Debug.WriteLine(i)
   Next
 End Sub
-End Class", @"using System.Diagnostics;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Diagnostics;
 
 internal partial class Issue453
 {
@@ -139,19 +168,24 @@ internal partial class Issue453
         for (int i = startIndex, loopTo = endIndex; i >= loopTo; i -= 5)
             Debug.WriteLine(i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForVariableStepAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Issue453
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Class Issue453
     Sub PrintLoop(startIndex As Integer, endIndex As Integer, [step] As Integer)
       For i As Integer = startIndex To endIndex Step [step]
         Debug.WriteLine(i)
   Next
 End Sub
-End Class", @"using System.Diagnostics;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Diagnostics;
 
 internal partial class Issue453
 {
@@ -160,13 +194,17 @@ internal partial class Issue453
         for (int i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += step)
             Debug.WriteLine(i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEnumAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Enum MyEnum
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Enum MyEnum
     Zero
     One
 End Enum
@@ -186,7 +224,8 @@ Friend Class ForEnumAsync
         Debug.WriteLine(i4)
       Next
     End Sub
-End Class", @"using System.Diagnostics;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Diagnostics;
 
 internal enum MyEnum
 {
@@ -207,20 +246,25 @@ internal partial class ForEnumAsync
         for (MyEnum i4 = startIndex; i4 <= (MyEnum)4; i4++)
             Debug.WriteLine(i4);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForeachWithObjectCollectionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Class Program
     Public Shared Sub Main(ByVal args As String())
         Dim zs As Object = { 1, 2, 3 }
         For Each z in zs
             Console.WriteLine(z)
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections;
 
 internal partial class Program
@@ -231,21 +275,26 @@ internal partial class Program
         foreach (var z in (IEnumerable)zs)
             Console.WriteLine(z);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
 
     [Fact]
     public async Task ForWithSingleStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(end As Integer)
         Dim b, s As Integer()
         For i = 0 To [end]
             b(i) = s(i)
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(int end)
@@ -256,13 +305,17 @@ internal partial class TestClass
     }
 }
 1 source compilation errors:
-BC30183: Keyword is not valid as an identifier.");
+BC30183: Keyword is not valid as an identifier.", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForNextMutatingFieldAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Private Index As Integer
 
     Sub Foo()
@@ -270,7 +323,8 @@ BC30183: Keyword is not valid as an identifier.");
 
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     private int Index;
@@ -282,13 +336,17 @@ public partial class Class1
 
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForRequiringExtraVariableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim stringValue AS string = ""42""
         For i As Integer = 1 To 10 - stringValue.Length
@@ -296,7 +354,8 @@ public partial class Class1
            Console.WriteLine(stringValue)
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -309,20 +368,25 @@ internal partial class TestClass
             Console.WriteLine(stringValue);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForWithBlockAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod([end] As Integer)
         Dim b, s As Integer()
         For i = 0 To [end] - 1
             b(i) = s(i)
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(int end)
@@ -331,13 +395,17 @@ internal partial class TestClass
         for (int i = 0, loopTo = end - 1; i <= loopTo; i++)
             b[i] = s[i];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NullInitValueForHoistedVariableIssue913Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
 Private Shared Sub ProblemsWithPullingVariablesOut()
       ' example 1
       For Each a In New List(Of String)
@@ -389,7 +457,8 @@ Private Shared Sub ProblemsWithPullingVariablesOut_AlwaysWriteBeforeRead()
  Private Shared Sub DoSomeImportantStuff(b as Long)
      Debug.Print(""very important"")
  End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 using System.Diagnostics;
 
 public partial class VisualBasicClass
@@ -457,13 +526,17 @@ public partial class VisualBasicClass
     {
         Debug.Print(""very important"");
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LabeledAndForStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class GotoTest1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class GotoTest1
     Private Shared Sub Main()
         Dim x As Integer = 200, y As Integer = 4
         Dim count As Integer = 0
@@ -498,7 +571,8 @@ Finish:
         Console.WriteLine(""Press any key to exit."")
         Console.ReadKey()
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class GotoTest1
 {
@@ -545,20 +619,25 @@ internal partial class GotoTest1
         Console.WriteLine(""Press any key to exit."");
         Console.ReadKey();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LoopWithVariableDeclarationInitializedWithDefault_ShouldNotBePulledOutOfTheLoopAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         For i = 1 To 2
             Dim a As Boolean? = Nothing
             Console.WriteLine(a)
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -570,13 +649,17 @@ internal partial class TestClass
             Console.WriteLine(a);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LoopWithMultipleVariableDeclarationsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         For i = 1 To 2
             Dim a, b as Integer, c, d as Integer, e, f as Long, g = Sub() System.Console.WriteLine(1)
@@ -592,7 +675,8 @@ internal partial class TestClass
             g()
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -619,20 +703,25 @@ internal partial class TestClass
             g();
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LoopWithVariableDeclarationInitializedWithAsNewClause_ShouldNotBePulledOutOfTheLoopAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         For i = 1 To 2
             Dim a As New Integer()
             Console.WriteLine(a)
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -644,13 +733,17 @@ internal partial class TestClass
             Console.WriteLine(a);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
     
     [Fact]
     public async Task ForWithVariableDeclarationIssue897Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         For i = 1 To 2
             Dim b As Boolean
@@ -658,7 +751,8 @@ internal partial class TestClass
             b = True
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -671,13 +765,17 @@ internal partial class TestClass
             b = true;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NestedLoopsWithVariableDeclarationIssue897Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim i=1
         Do
@@ -704,7 +802,8 @@ internal partial class TestClass
         i += 1
         Loop Until i > 3
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -740,13 +839,17 @@ internal partial class TestClass
         }
         while (i <= 3);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForWithVariableDeclarationIssue1000Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         For i = 1 To 2
             Dim b As Boolean
@@ -759,7 +862,8 @@ internal partial class TestClass
             b = True
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -778,13 +882,17 @@ internal partial class TestClass
             b1 = true;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForWithVariableDeclarationIssue998Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(someCondition As Boolean)
         For j = 1 To 2
             If someCondition Then
@@ -794,7 +902,8 @@ internal partial class TestClass
             End If
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -810,6 +919,8 @@ internal partial class TestClass
             }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

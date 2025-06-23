@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -9,8 +10,9 @@ public class ExtensionMethodTests : ConverterTestBase
     [Fact]
     public async Task TestExtensionMethodAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module TestClass
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
@@ -18,7 +20,8 @@ public class ExtensionMethodTests : ConverterTestBase
     <System.Runtime.CompilerServices.Extension()>
     Sub TestMethod2Parameters(ByVal str As String, other As String)
     End Sub
-End Module", @"
+End Module", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class TestClass
 {
     public static void TestMethod(this string str)
@@ -28,33 +31,40 @@ internal static partial class TestClass
     public static void TestMethod2Parameters(this string str, string other)
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestExtensionMethodWithExistingImportAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System.Runtime.CompilerServices ' Removed by simplifier
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Runtime.CompilerServices ' Removed by simplifier
 
 Module TestClass
     <Extension()>
     Sub TestMethod(ByVal str As String)
     End Sub
-End Module", @"
+End Module", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class TestClass
 {
     public static void TestMethod(this string str)
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestRefExtensionMethodAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 Imports System.Runtime.CompilerServices ' Removed since the extension attribute is removed
 
 Public Module MyExtensions
@@ -71,7 +81,8 @@ Public Module UsagePoint
         arr.Add(4)
         System.Console.WriteLine(arr(3))
     End Sub
-End Module", @"using System;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public static partial class MyExtensions
 {
@@ -90,14 +101,17 @@ public static partial class UsagePoint
         MyExtensions.Add(ref arr, 4);
         Console.WriteLine(arr[3]);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestExtensionWithinExtendedTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Extensions
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As ExtendedClass)
     End Sub
@@ -107,7 +121,8 @@ Class ExtendedClass
   Sub TestExtensionConsumer()
     TestExtension()
   End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
@@ -121,14 +136,17 @@ internal partial class ExtendedClass
     {
         this.TestExtension();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestExtensionWithinTypeDerivedFromExtendedTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Extensions
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As ExtendedClass)
     End Sub
@@ -143,7 +161,8 @@ Class DerivedClass
   Sub TestExtensionConsumer()
     TestExtension()
   End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
@@ -162,14 +181,17 @@ internal partial class DerivedClass : ExtendedClass
     {
         this.TestExtension();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestExtensionWithinNestedExtendedTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Extensions
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As NestingClass.ExtendedClass)
     End Sub
@@ -181,7 +203,8 @@ Class NestingClass
         TestExtension()
       End Sub        
     End Class
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Extensions
 {
     public static void TestExtension(this NestingClass.ExtendedClass extendedClass)
@@ -198,14 +221,17 @@ internal partial class NestingClass
             this.TestExtension();
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestExtensionWithMeWithinExtendedTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Extensions
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Extensions
     <Extension()>
     Sub TestExtension(extendedClass As ExtendedClass)
     End Sub
@@ -215,7 +241,8 @@ Class ExtendedClass
   Sub TestExtensionConsumer()
     Me.TestExtension()
   End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Extensions
 {
     public static void TestExtension(this ExtendedClass extendedClass)
@@ -229,6 +256,8 @@ internal partial class ExtendedClass
     {
         this.TestExtension();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

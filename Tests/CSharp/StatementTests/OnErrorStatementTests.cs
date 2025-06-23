@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
@@ -9,7 +10,9 @@ public class OnErrorStatementTests : ConverterTestBase
     [Fact]
     public async Task BasicGotoAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
 Public Function SelfDivisionPossible(x as Integer) As Boolean
     On Error GoTo ErrorHandler
         Dim i as Integer = x / x
@@ -17,7 +20,8 @@ Public Function SelfDivisionPossible(x as Integer) As Boolean
 ErrorHandler:
     Return Err.Number = 6
 End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
@@ -35,20 +39,25 @@ internal partial class TestClass
             return Information.Err().Number == 6;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RemainingScopeIssueCharacterizationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
 Public Function SelfDivisionPossible(x as Integer) As Boolean
     On Error GoTo ErrorHandler
         Dim i as Integer = x / x
 ErrorHandler:
     Return i <> 0
 End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -66,6 +75,8 @@ internal partial class TestClass
     }
 }
 1 target compilation errors:
-CS0103: The name 'i' does not exist in the current context");
+CS0103: The name 'i' does not exist in the current context", extension: "cs")
+            );
+        }
     }
 }

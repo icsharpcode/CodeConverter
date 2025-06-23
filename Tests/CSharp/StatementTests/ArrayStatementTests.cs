@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
@@ -10,8 +11,9 @@ public class ArrayStatementTests : ConverterTestBase
     [Fact]
     public async Task ValuesOfArrayAssignmentWithSurroundingClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class SurroundingClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class SurroundingClass
     Public Arr() As String
 End Class
 
@@ -20,7 +22,8 @@ Class UseClass
         Dim surrounding As SurroundingClass = New SurroundingClass()
         surrounding.Arr(1) = ""bla""
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class SurroundingClass
 {
     public string[] Arr;
@@ -33,45 +36,60 @@ internal partial class UseClass
         var surrounding = new SurroundingClass();
         surrounding.Arr[1] = ""bla"";
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayDeclarationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[] b;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NonDefaultTypedArrayDeclarationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Dim o As Object() = {""a""}", @"{
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Dim o As Object() = {""a""}", extension: "vb"),
+                Verifier.Verify(@"{
     object[] o = new[] { ""a"" };
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayDeclarationWithRangeStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 
 Class TestClass
     Private Sub TestMethod()
         Dim colFics = New List(Of Integer)
         Dim a(0 To colFics.Count - 1) As String
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
 {
@@ -80,18 +98,23 @@ internal partial class TestClass
         var colFics = new List<int>();
         var a = new string[colFics.Count];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InitializeArrayOfArraysAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Module1
     Sub Main()
         Dim ls As New ArrayList(5)
         Dim s(ls.Count - 1)() As String
     End Sub
-End Module", @"using System.Collections;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System.Collections;
 
 internal static partial class Module1
 {
@@ -100,13 +123,17 @@ internal static partial class Module1
         var ls = new ArrayList(5);
         var s = new string[ls.Count][];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayEraseAndRedimStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class TestClass
     Shared Function TestMethod(numArray As Integer(), numArray2 As Integer()) As Integer()
         ReDim numArray(3)
         Erase numArray
@@ -117,7 +144,8 @@ internal static partial class Module1
         ReDim Preserve y(6,8)
         Return numArray2
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class TestClass
 {
@@ -137,18 +165,23 @@ public partial class TestClass
                 Array.Copy(oldY, i * oldY.GetLength(1), y, i * y.GetLength(1), Math.Min(oldY.GetLength(1), y.GetLength(1)));
         return numArray2;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Redim2dArrayAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Friend Class Program
     Private Shared My2darray As Integer()()
     Public Shared Sub Main(ByVal args As String())
         ReDim Me.My2darray(6)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Program
 {
     private static int[][] My2darray;
@@ -159,13 +192,17 @@ internal partial class Program
 }
 1 source compilation errors:
 BC30043: 'Me' is valid only within an instance method.
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task RedimArrayOfGenericsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Dim test() As List(Of Integer)
 
     Private Sub test123(sender As Object, e As EventArgs)
@@ -174,7 +211,8 @@ BC30043: 'Me' is valid only within an instance method.
         Dim test1() As Tuple(Of Integer, Integer)
         ReDim test1(42)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class Class1
@@ -188,63 +226,82 @@ public partial class Class1
         Tuple<int, int>[] test1;
         test1 = new Tuple<int, int>[43];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
     [Fact]
     public async Task ArrayInitializationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = {1, 2, 4}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[] b = new[] { 1, 2, 4 };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayInitializationStatementInVarDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b = {1, 2, 3}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[] b = new[] { 1, 2, 3 };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayInitializationStatementWithTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer() {1, 2, 3}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[] b = new int[] { 1, 2, 3 };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue554_AvoidImplicitArrayTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Net
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Net
 Imports System.Net.Sockets
 
 Public Class Issue554_ImplicitArrayType
@@ -255,8 +312,8 @@ Public Class Issue554_ImplicitArrayType
         Dim i_Test, i_Tab(), bearb(,) As Integer
         l_socket.SendTo(msg, ep)
     End Sub
-End Class"
-            , @"using System.Net;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Net;
 using System.Net.Sockets;
 
 public partial class Issue554_ImplicitArrayType
@@ -271,41 +328,53 @@ public partial class Issue554_ImplicitArrayType
         int[,] bearb;
         l_socket.SendTo(msg, ep);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayInitializationStatementWithLengthAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) {1, 2, 3}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[] b = new int[3] { 1, 2, 3 };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArrayInitializationStatementWithLengthAndNoValuesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer() = New Integer(2) { }
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[] b = new int[3];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     /// <summary>
@@ -314,7 +383,9 @@ internal partial class TestClass
     [Fact]
     public async Task LotsOfArrayInitializationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         ' Declare a single-dimension array of 5 numbers.
         Dim numbers1(4) As Integer
@@ -335,7 +406,8 @@ internal partial class TestClass
         ' Declare a jagged array
         Dim sales()() As Double = New Double(11)() {}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -359,64 +431,83 @@ internal partial class TestClass
         // Declare a jagged array
         double[][] sales = new double[12][];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultidimensionalArrayDeclarationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[,] b;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultidimensionalArrayInitializationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = {{1, 2}, {3, 4}}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[,] b = new[,] { { 1, 2 }, { 3, 4 } };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultidimensionalArrayInitializationStatementWithTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer(,) = New Integer(,) {{1, 3}, {2, 4}}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[,] b = new int[,] { { 1, 3 }, { 2, 4 } };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultidimensionalArrayInitializationStatementWithAndWithoutLengthsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim a As Integer(,) = New Integer(,) {{1, 2}, {3, 4}}
         Dim b As Integer(,) = New Integer(1, 1) {{1, 2}, {3, 4}}
@@ -426,7 +517,8 @@ internal partial class TestClass
         Dim f As Integer()(,) = New Integer(-1)(,) {}
         Dim g As Integer()(,) = New Integer(0)(,) {}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -439,86 +531,110 @@ internal partial class TestClass
         int[][,] f = new int[0][,];
         int[][,] g = new int[1][,];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task JaggedArrayDeclarationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()()
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[][] b;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task JaggedArrayInitializationStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[][] b = new[] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task JaggedArrayInitializationStatementWithTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b = New Integer()() {New Integer() {1}}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[][] b = new int[][] { new int[] { 1 } };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task JaggedArrayInitializationStatementWithLengthAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer()() = New Integer(1)() {New Integer() {1, 2}, New Integer() {3, 4}}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         int[][] b = new int[2][] { new int[] { 1, 2 }, new int[] { 3, 4 } };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SplitArrayDeclarationsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class SplitArrayDeclarations
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class SplitArrayDeclarations
     Public Shared Sub Main()
         Dim i_Test, i_Tab(), bearb(,) As Integer
     End Sub
-End Class"
-            , @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class SplitArrayDeclarations
 {
     public static void Main()
@@ -527,6 +643,8 @@ public partial class SplitArrayDeclarations
         int[] i_Tab;
         int[,] bearb;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

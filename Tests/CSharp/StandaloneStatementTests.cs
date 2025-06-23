@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -76,53 +77,72 @@ obj = null;",
     [Fact]
     public async Task SingleFieldDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Private x As Integer = 3",
-            @"private int x = 3;");
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Private x As Integer = 3", extension: "vb"),
+                Verifier.Verify(@"private int x = 3;", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SingleEmptyClassAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Test
-End Class",
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Test
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Test
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SingleAbstractMethodAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Protected MustOverride Sub abs()",
-            @"protected abstract void abs();");
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Protected MustOverride Sub abs()", extension: "vb"),
+                Verifier.Verify(@"protected abstract void abs();", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SingleEmptyNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Namespace nam
-End Namespace",
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Namespace nam
+End Namespace", extension: "vb"),
+                Verifier.Verify(@"
 namespace nam
 {
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SingleUnusedUsingAliasTidiedAwayAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports tr = System.IO.TextReader ' Removed by simplifier", "");
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports tr = System.IO.TextReader ' Removed by simplifier", extension: "vb"),
+                Verifier.Verify("", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task QuerySyntaxAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Dim cmccIds As New List(Of Integer)
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Dim cmccIds As New List(Of Integer)
 For Each scr In _sponsorPayment.SponsorClaimRevisions
     For Each claim In scr.Claims
         If TypeOf claim.ClaimSummary Is ClaimSummary Then
@@ -131,7 +151,8 @@ For Each scr In _sponsorPayment.SponsorClaimRevisions
             End With
         End If
     Next
-Next", @"{
+Next", extension: "vb"),
+                Verifier.Verify(@"{
     var cmccIds = new List<int>();
     foreach (var scr in _sponsorPayment.SponsorClaimRevisions)
     {
@@ -153,6 +174,8 @@ BC30451: '_sponsorPayment' is not declared. It may be inaccessible due to its pr
 BC30002: Type 'ClaimSummary' is not defined.
 2 target compilation errors:
 CS0103: The name '_sponsorPayment' does not exist in the current context
-CS0246: The type or namespace name 'ClaimSummary' could not be found (are you missing a using directive or an assembly reference?)");
+CS0246: The type or namespace name 'ClaimSummary' could not be found (are you missing a using directive or an assembly reference?)", extension: "cs")
+            );
+        }
     }
 }

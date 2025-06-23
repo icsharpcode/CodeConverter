@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp;
@@ -9,7 +10,9 @@ public class CaseSensitivityTests : ConverterTestBase
     [Fact]
     public async Task HandlesWithDifferingCaseTestAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VBIsCaseInsensitive
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VBIsCaseInsensitive
     Inherits System.Web.UI.Page
 
     Private Sub btnOK_Click(sender As Object, e As System.EventArgs) Handles btnOK.Click
@@ -19,8 +22,8 @@ End Class
 Partial Public Class VBIsCaseInsensitive
     Protected WithEvents btnOk As Global.System.Web.UI.WebControls.Button
 End Class
-",
-            @"using System;
+", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 
 public partial class VBIsCaseInsensitive : System.Web.UI.Page
@@ -58,13 +61,17 @@ public partial class VBIsCaseInsensitive
             }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue1154_NamespaceAndClassSameNameDifferentCaseAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System
 
 Namespace Issue1154
@@ -104,8 +111,8 @@ Namespace CaseSensitive3
         End Class
     End Class
 End Namespace
-",
-            @"
+", extension: "vb"),
+                Verifier.Verify(@"
 using System;
 
 namespace Issue1154
@@ -155,7 +162,9 @@ namespace CaseSensitive3
         }
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
 

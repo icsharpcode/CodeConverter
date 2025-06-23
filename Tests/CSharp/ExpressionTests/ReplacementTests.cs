@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
@@ -9,7 +10,9 @@ public class ReplacementTests : ConverterTestBase
     [Fact]
     public async Task SimpleMethodReplacementsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class TestSimpleMethodReplacements
     Sub TestMethod()
         Dim str1 As String
@@ -25,7 +28,8 @@ Public Class TestSimpleMethodReplacements
         x = Microsoft.VisualBasic.DateAndTime.Minute(dt)
         x = Microsoft.VisualBasic.DateAndTime.Second(dt)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class TestSimpleMethodReplacements
 {
@@ -44,13 +48,17 @@ public partial class TestSimpleMethodReplacements
         x = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar.GetMinute(dt);
         x = System.Threading.Thread.CurrentThread.CurrentCulture.Calendar.GetSecond(dt);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SimpleMyProjectMethodReplacementsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System
 
 Public Class SimpleMyProjectMethodReplacementsWork
@@ -78,7 +86,8 @@ Public Class SimpleMyProjectMethodReplacementsWork
         x = Computer.Info.OSPlatform
         x = Computer.Info.OSVersion
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 using System;
 using System.Globalization;
 using System.IO;
@@ -111,7 +120,9 @@ public partial class SimpleMyProjectMethodReplacementsWork
         x = Computer.Info.OSPlatform;
         x = Environment.OSVersion.Version.ToString();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]

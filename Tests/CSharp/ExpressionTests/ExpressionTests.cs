@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
@@ -9,7 +10,9 @@ public class ExpressionTests : ConverterTestBase
     [Fact]
     public async Task ComparingStringsUsesCoerceToNonNullOnlyWhenNeededAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(a as String)
         Dim result = a = ("""")
         result = """" = a
@@ -24,7 +27,8 @@ public class ExpressionTests : ConverterTestBase
         result = a = (""test"")
         result = ""test"" = a
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(string a)
@@ -42,13 +46,17 @@ internal partial class TestClass
         result = a == ""test"";
         result = ""test"" == a;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DynamicTestAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class C
     Public Function IsPointWithinBoundaryBox(ByVal dblLat As Double, dblLon As Double, ByVal boundbox As Object) As Boolean
         If boundbox IsNot Nothing Then
@@ -61,7 +69,8 @@ Public Class C
         Return False
     End Function
 End Class
-", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class C
 {
@@ -79,13 +88,17 @@ public partial class C
         }
         return false;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DynamicAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off ' Directive gets removed
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Option Strict Off ' Directive gets removed
 
 Public Class TestDynamicUsage
     Property Prop As Integer
@@ -95,7 +108,8 @@ Public Class TestDynamicUsage
         o = New TestDynamicUsage
         o.Prop = 1 'Must not cast to object here
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class TestDynamicUsage
 {
     public int Prop { get; set; }
@@ -106,18 +120,23 @@ public partial class TestDynamicUsage
         o = new TestDynamicUsage();
         ((dynamic)o).Prop = 1; // Must not cast to object here
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DynamicBoolAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class C
     Public Function IsHybridApp() As Boolean
         Return New Object().Session(""hybrid"") IsNot Nothing AndAlso New Object().Session(""hybrid"") = 1
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class C
 {
@@ -125,19 +144,24 @@ public partial class C
     {
         return Conversions.ToBoolean(((dynamic)new object()).Session(""hybrid"") is not null && Operators.ConditionalCompareObjectEqual(((dynamic)new object()).Session(""hybrid""), 1, false));
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ConversionOfNotUsesParensIfNeededAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Not 1 = 2
         Dim rslt2 = Not True
         Dim rslt3 = TypeOf New Object() IsNot Boolean
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -146,18 +170,23 @@ internal partial class TestClass
         bool rslt2 = !true;
         bool rslt3 = !(new object() is bool);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DateLiteralsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(Optional ByVal pDate As Date = #1/1/1900#)
         Dim rslt = #1/1/1900#
         Dim rslt2 = #8/13/2002 12:14 PM#
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -168,36 +197,45 @@ internal partial class TestClass
         var rslt = DateTime.Parse(""1900-01-01"");
         var rslt2 = DateTime.Parse(""2002-08-13 12:14:00"");
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ImplicitCastToDoubleLiteralAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class DoubleLiteral
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class DoubleLiteral
     Private Function Test(myDouble As Double) As Double
         Return Test(2.37D) + Test(&HFFUL) 'VB: D means decimal, C#: D means double
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class DoubleLiteral
 {
     private double Test(double myDouble)
     {
         return Test(2.37d) + Test(255d); // VB: D means decimal, C#: D means double
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DateConstsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue213
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue213
     Const x As Date = #1990-1-1#
 
     Private Sub Y(Optional ByVal opt As Date = x)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -208,13 +246,17 @@ public partial class Issue213
     private void Y([Optional, DateTimeConstant(627667488000000000L/* Global.Issue213.x */)] DateTime opt)
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MethodCallWithImplicitConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Bar(True)
         Me.Bar(""4"")
@@ -224,7 +266,8 @@ public partial class Issue213
 
     Sub Bar(x as Integer)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -239,13 +282,17 @@ public partial class Class1
     public void Bar(int x)
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue580_EnumCastsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class EnumToString
     Enum Tes As Short
         None = 0
@@ -255,8 +302,8 @@ Public Class EnumToString
         Dim sxtr_Tmp As String = ""Use"" & CShort(aEnum).ToString
         Dim si_Txt As Short = CShort(2 ^ Tes.TEST2)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class EnumToString
 {
@@ -270,21 +317,25 @@ public partial class EnumToString
         string sxtr_Tmp = ""Use"" + ((short)aEnum).ToString();
         short si_Txt = (short)Math.Round(Math.Pow(2d, (double)Tes.TEST2));
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task IntToEnumArgAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo(ByVal arg As TriState)
     End Sub
 
     Sub Main()
         Foo(0)
     End Sub
-End Class",
-            @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -296,19 +347,23 @@ public partial class Class1
     {
         Foo(0);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact] // https://github.com/icsharpcode/CodeConverter/issues/636
     public async Task CharacterizeCompilationErrorsWithLateBoundImplicitObjectNarrowingAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
     Public Sub Rounding()
         Dim o as Object = 3.0f
         Dim x = Math.Round(o, 2)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass
 {
@@ -319,13 +374,17 @@ public partial class VisualBasicClass
     }
 }
 1 target compilation errors:
-CS1503: Argument 1: cannot convert from 'object' to 'double'");
+CS1503: Argument 1: cannot convert from 'object' to 'double'", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task EnumToIntCastAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class MyTest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class MyTest
     Public Enum TestEnum As Integer
         Test1 = 0
         Test2 = 1
@@ -335,8 +394,8 @@ CS1503: Argument 1: cannot convert from 'object' to 'double'");
         Dim EnumVariable = TestEnum.Test1
         Dim t1 As Integer = EnumVariable
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class MyTest
 {
     public enum TestEnum : int
@@ -351,13 +410,17 @@ public partial class MyTest
         int t1 = (int)EnumVariable;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task FlagsEnumAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"<Flags()> Public Enum FilePermissions As Integer
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"<Flags()> Public Enum FilePermissions As Integer
     None = 0
     Create = 1
     Read = 2
@@ -366,8 +429,8 @@ public partial class MyTest
 End Enum
 Public Class MyTest
     Public MyEnum As FilePermissions = FilePermissions.None + FilePermissions.Create
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 [Flags()]
 public enum FilePermissions : int
@@ -382,13 +445,17 @@ public enum FilePermissions : int
 public partial class MyTest
 {
     public FilePermissions MyEnum = (FilePermissions)((int)FilePermissions.None + (int)FilePermissions.Create);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task EnumSwitchAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Enum E
         A
     End Enum
@@ -405,8 +472,8 @@ public partial class MyTest
         End Select
 
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     public enum E
@@ -435,13 +502,17 @@ public partial class Class1
         }
 
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DuplicateCaseDiscardedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
     Friend Module Module1
     Sub Main()
         Select Case 1
@@ -454,8 +525,8 @@ public partial class Class1
         End Select
 
     End Sub
-End Module",
-            @"using System;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal static partial class Module1
 {
@@ -480,14 +551,18 @@ internal static partial class Module1
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
+            );
+        }
         //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
     }
 
     [Fact]
     public async Task MethodCallWithoutParensAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Dim w = Bar
         Dim x = Me.Bar
@@ -499,7 +574,8 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
         Return 1
     End Function
     Property Baz As Integer
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     public void Foo()
@@ -515,18 +591,23 @@ public partial class Class1
         return 1;
     }
     public int Baz { get; set; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ConversionOfCTypeUsesParensIfNeededAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim rslt = Ctype(true, Object).ToString()
         Dim rslt2 = Ctype(true, Object)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -534,33 +615,43 @@ internal partial class TestClass
         string rslt = true.ToString();
         object rslt2 = true;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DateKeywordAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private DefaultDate as Date = Nothing
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
     private DateTime DefaultDate = default;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task IfNothingAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class VisualBasicClass
         Dim SomeDate = """"
         Dim SomeDateDateNothing As Date? = If(String.IsNullOrEmpty(SomeDate), Nothing, DateTime.Parse(SomeDate))
         Dim isNotNothing = SomeDateDateNothing IsNot Nothing
         Dim isSomething = SomeDateDateNothing = New Date()
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class VisualBasicClass
@@ -576,18 +667,23 @@ public partial class VisualBasicClass
         isNotNothing = SomeDateDateNothing is not null;
         isSomething = new DateTime() is var arg1 && SomeDateDateNothing.HasValue ? SomeDateDateNothing.Value == arg1 : (bool?)null;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CTypeNothingAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class VisualBasicClass
     Dim SomeDate As String = ""2022-01-01""
     Dim SomeDateDateParsed As Date? = If(String.IsNullOrEmpty(SomeDate), CType(Nothing, Date?), DateTime.Parse(SomeDate))
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass
 {
@@ -598,19 +694,24 @@ public partial class VisualBasicClass
     {
         SomeDateDateParsed = string.IsNullOrEmpty(SomeDate) ? default(DateTime?) : DateTime.Parse(SomeDate);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NullConditionalIndexer_Issue993Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
 
     Private Function TestMethod(testArray As Object()) As Boolean
         Return Not String.IsNullOrWhiteSpace(testArray?(0)?.ToString())
     End Function
     
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class VisualBasicClass
 {
 
@@ -619,17 +720,22 @@ public partial class VisualBasicClass
         return !string.IsNullOrWhiteSpace(testArray?[0]?.ToString());
     }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task GenericComparisonAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class GenericComparison
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class GenericComparison
     Public Sub m(Of T)(p As T)
         If p Is Nothing Then Return
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class GenericComparison
 {
     public void m<T>(T p)
@@ -637,20 +743,25 @@ public partial class GenericComparison
         if (p is null)
             return;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AccessSharedThroughInstanceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class A
     Public Shared x As Integer = 2
     Public Sub Test()
         Dim tmp = Me
         Dim y = Me.x
         Dim z = tmp.x
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class A
 {
     public static int x = 2;
@@ -660,13 +771,17 @@ public partial class A
         int y = x;
         int z = x;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task EmptyArrayExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class Issue495AndIssue713
     Public Function Empty() As Integer()
         Dim emptySingle As IEnumerable(Of Integer) = {}
@@ -677,7 +792,8 @@ Public Class Issue495AndIssue713
         Dim initialized2d As Integer(,) = {{1}}
         Return {}
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class Issue495AndIssue713
@@ -692,20 +808,25 @@ public partial class Issue495AndIssue713
         int[,] initialized2d = new[,] { { 1 } };
         return Array.Empty<int>();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task InitializedArrayExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class Issue713
     Public Function Empty() As Integer()
         Dim initializedSingle As IEnumerable(Of Integer) = {1}
         Dim initialized2d As Integer(,) = {{1}}
         Return {}
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class Issue713
@@ -716,13 +837,17 @@ public partial class Issue713
         int[,] initialized2d = new[,] { { 1 } };
         return Array.Empty<int>();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task EmptyArrayParameterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
     Public Sub s()
         If Validate({}) Then
         End If
@@ -730,7 +855,8 @@ public partial class Issue713
     Private Function Validate(w As IEnumerable(Of Int16)) As Boolean
         Return True
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class VisualBasicClass
@@ -745,32 +871,42 @@ public partial class VisualBasicClass
     {
         return true;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Empty2DArrayExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class Empty2DArray
     Dim data(,) As Double = {}
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Empty2DArray
 {
     private double[,] data = new double[,] { };
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ReducedTypeParametersInferrableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
         Dim y = """".Split("",""c).Select(Of String)(Function(x) x)
     End Sub
-End Class", @"using System.Linq;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Linq;
 
 public partial class Class1
 {
@@ -778,19 +914,24 @@ public partial class Class1
     {
         var y = """".Split(',').Select(x => x);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ReducedTypeParametersNonInferrableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Linq
 
 Public Class Class1
     Sub Foo()
         Dim y = """".Split("",""c).Select(Of Object)(Function(x) x)
     End Sub
-End Class", @"using System.Linq;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Linq;
 
 public partial class Class1
 {
@@ -798,13 +939,17 @@ public partial class Class1
     {
         var y = """".Split(',').Select<string, object>(x => x);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task EnumNullableConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Main()
         Dim x = DayOfWeek.Monday
         Foo(x)
@@ -813,7 +958,8 @@ public partial class Class1
     Sub Foo(x As DayOfWeek?)
 
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Class1
 {
@@ -827,13 +973,17 @@ public partial class Class1
     {
 
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task UninitializedVariableAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub New()
         Dim needsInitialization As Integer
         Dim notUsed As Integer
@@ -875,7 +1025,8 @@ public partial class Class1
             Return y
         End Get
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     public Class1()
@@ -931,47 +1082,61 @@ public partial class Class1
             return y;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task FullyTypeInferredEnumerableCreationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim strings = { ""1"", ""2"" }
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         string[] strings = new[] { ""1"", ""2"" };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task GetTypeExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim typ = GetType(String)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
     {
         var typ = typeof(string);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NullableIntegerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Public Function Bar(value As String) As Integer?
         Dim result As Integer
         If Integer.TryParse(value, result) Then
@@ -980,7 +1145,8 @@ internal partial class TestClass
             Return Nothing
         End If
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     public int? Bar(string value)
@@ -995,20 +1161,25 @@ internal partial class TestClass
             return default;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NothingInvokesDefaultForValueTypesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Public Sub Bar()
         Dim number As Integer
         number = Nothing
         Dim dat As Date
         dat = Nothing
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -1019,35 +1190,45 @@ internal partial class TestClass
         DateTime dat;
         dat = default;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ConditionalExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = If((str = """"), True, False)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(string str)
     {
         bool result = string.IsNullOrEmpty(str) ? true : false;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ConditionalExpressionInStringConcatAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class ConditionalExpressionInStringConcat
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class ConditionalExpressionInStringConcat
     Private Sub TestMethod(ByVal str As String)
         Dim appleCount as integer = 42
         Console.WriteLine(""I have "" & appleCount & If(appleCount = 1, "" apple"", "" apples""))
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class ConditionalExpressionInStringConcat
 {
@@ -1056,34 +1237,44 @@ internal partial class ConditionalExpressionInStringConcat
         int appleCount = 42;
         Console.WriteLine(""I have "" + appleCount + (appleCount == 1 ? "" apple"" : "" apples""));
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ConditionalExpressionInUnaryExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim result As Boolean = Not If((str = """"), True, False)
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(string str)
     {
         bool result = !(string.IsNullOrEmpty(str) ? true : false);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NullCoalescingExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Console.WriteLine(If(str, ""<null>""))
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -1091,13 +1282,17 @@ internal partial class TestClass
     {
         Console.WriteLine(str ?? ""<null>"");
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task OmittedArgumentInInvocationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Module MyExtensions
     public sub NewColumn(type As Type , Optional strV1 As String = nothing, Optional code As String = ""code"", Optional argInt as Integer = 1)
@@ -1109,7 +1304,8 @@ Public Module MyExtensions
         NewColumn(Nothing, ""fred"")
         NewColumn(Nothing, , argInt:=2)
     End Sub
-End Module", @"using System;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public static partial class MyExtensions
 {
@@ -1124,13 +1320,17 @@ public static partial class MyExtensions
         NewColumn(null, ""fred"");
         NewColumn(null, argInt: 2);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task OmittedArgumentInCallInvocationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue445MissingParameter
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue445MissingParameter
     Public Sub First(a As String, b As String, c As Integer)
         Call mySuperFunction(7, , New Object())
     End Sub
@@ -1138,7 +1338,8 @@ public static partial class MyExtensions
     Private Sub mySuperFunction(intSomething As Integer, Optional p As Object = Nothing, Optional optionalSomething As Object = Nothing)
         Throw New NotImplementedException()
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Issue445MissingParameter
 {
@@ -1151,19 +1352,24 @@ public partial class Issue445MissingParameter
     {
         throw new NotImplementedException();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExternalReferenceToOutParameterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim d = New Dictionary(Of string, string)
         Dim s As String
         d.TryGetValue(""a"", s)
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
 {
@@ -1173,14 +1379,18 @@ internal partial class TestClass
         string s;
         d.TryGetValue(""a"", out s);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
         
     [Fact]
     public async Task ExternalReferenceToOutParameterFromInterfaceImplementationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 MustInherit Class TestClass
     Implements IReadOnlyDictionary(Of Integer, Integer)
     Public Function TryGetValue(key as Integer, ByRef value As Integer) As Boolean Implements IReadOnlyDictionary(Of Integer, Integer).TryGetValue
@@ -1199,7 +1409,8 @@ MustInherit Class TestClass
     Public MustOverride ReadOnly Property Keys As IEnumerable(Of Integer) Implements IReadOnlyDictionary(Of Integer, Integer).Keys
     Public MustOverride ReadOnly Property Values As IEnumerable(Of Integer) Implements IReadOnlyDictionary(Of Integer, Integer).Values
     Public MustOverride ReadOnly Property Count As Integer Implements IReadOnlyCollection(Of KeyValuePair(Of Integer, Integer)).Count
-End Class", @"using System.Collections;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections;
 using System.Collections.Generic;
 
 internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
@@ -1224,13 +1435,17 @@ internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
     public abstract IEnumerable<int> Keys { get; }
     public abstract IEnumerable<int> Values { get; }
     public abstract int Count { get; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ElvisOperatorExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass3
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass3
     Private Class Rec
         Public ReadOnly Property Prop As New Rec
     End Class
@@ -1240,7 +1455,8 @@ internal abstract partial class TestClass : IReadOnlyDictionary<int, int>
         Console.ReadKey()
         Return New Rec()?.Prop?.Prop?.Prop
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass3
 {
@@ -1255,13 +1471,17 @@ internal partial class TestClass3
         Console.ReadKey();
         return new Rec()?.Prop?.Prop?.Prop;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ObjectInitializerExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class StudentName
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class StudentName
     Public LastName, FirstName As String
 End Class
 
@@ -1269,7 +1489,8 @@ Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 As StudentName = New StudentName With {.FirstName = ""Craig"", .LastName = ""Playstead""}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class StudentName
 {
     public string LastName, FirstName;
@@ -1281,20 +1502,25 @@ internal partial class TestClass
     {
         var student2 = new StudentName() { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ObjectInitializerWithInferredNameAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class Issue480
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class Issue480
     Public Foo As Integer
 
     Sub Test()
         Dim x = New With {Foo}
     End Sub
 
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class Issue480
 {
     public int Foo;
@@ -1304,20 +1530,25 @@ internal partial class Issue480
         var x = new { Foo };
     }
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue949_AnonymousWithBlockMemberSelfAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Dim anonymousType1 = New With {
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Dim anonymousType1 = New With {
     Key .A = 1,
     Key .B = .A
 }
 Dim anonymousType2 = New With {
     Key .A = 2,
     Key .B = .A
-}", @"{
+}", extension: "vb"),
+                Verifier.Verify(@"{
     var anonymousType1 = new
     {
         A = 1 is var tempA ? tempA : default,
@@ -1328,19 +1559,24 @@ Dim anonymousType2 = New With {
         A = 2 is var tempA1 ? tempA1 : default,
         B = tempA1
     };
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue949_AnonymousWithNestedBlockMemberSelfAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Dim anonymousType = New With {
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Dim anonymousType = New With {
 Key .A = 1, 'Comment gets duplicated
 Key .B = New With {
         Key .A = 2,
         Key .B = .A
     }
-}", @"{
+}", extension: "vb"),
+                Verifier.Verify(@"{
     var anonymousType = new
     {
         A = 1, // Comment gets duplicated
@@ -1351,35 +1587,45 @@ Key .B = New With {
             B = tempA
         }
     };
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ObjectInitializerExpression2Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal str As String)
         Dim student2 = New With {Key .FirstName = ""Craig"", Key .LastName = ""Playstead""}
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(string str)
     {
         var student2 = new { FirstName = ""Craig"", LastName = ""Playstead"" };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task WithObjectInitializerCanReadFromPropertiesOfObjectAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class SomeClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class SomeClass
     Public SomeProperty As String
     Public Shared Instance As SomeClass = New SomeClass() With { ' First line gets moved
              .SomeProperty = .SomeProperty + NameOf(.SomeProperty) ' Second line gets moved
         } ' Third line gets moved
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class SomeClass
 {
     public string SomeProperty;
@@ -1390,13 +1636,17 @@ public partial class SomeClass
     } // Third line gets moved
 
     public static SomeClass Instance = initInstance(); // First line gets moved
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CollectionInitializersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub DoStuff(a As Object)
     End Sub
     Private Sub TestMethod()
@@ -1404,7 +1654,8 @@ public partial class SomeClass
         Dim intList As New List(Of Integer) From {1}
         Dim dict As New Dictionary(Of Integer, Integer) From {{1, 2}, {3, 4}}
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
 {
@@ -1417,18 +1668,23 @@ internal partial class TestClass
         var intList = new List<int>() { 1 };
         var dict = new Dictionary<int, int>() { { 1, 2 }, { 3, 4 } };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DelegateExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(ByVal a As Integer) a * 2
         test(3)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -1437,13 +1693,17 @@ internal partial class TestClass
         Func<int, int> test = (a) => a * 2;
         test(3);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue1148_AddressOfSignatureCompatibilityAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Imports System
 
 Public Class Issue1148
@@ -1473,7 +1733,8 @@ End Class
 
 Public Interface ITestObj
 End Interface
-", @"
+", extension: "vb"),
+                Verifier.Verify(@"
 using System;
 
 public partial class Issue1148
@@ -1507,20 +1768,25 @@ public partial class TestBaseObjClass
 public partial interface ITestObj
 {
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LambdaImmediatelyExecutedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue869
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Issue869
     Sub Main
         Dim i As Integer = Function() 
                                 Return 2 
                         End Function() 
         Console.WriteLine(i)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Issue869
 {
@@ -1531,13 +1797,17 @@ public partial class Issue869
 
         Console.WriteLine(i);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task LambdaBodyExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim test As Func(Of Integer, Integer) = Function(a) a * 2
         Dim test2 As Func(Of Integer, Integer, Double) = Function(a, b)
@@ -1548,7 +1818,8 @@ public partial class Issue869
         Dim test3 As Func(Of Integer, Integer, Integer) = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -1565,13 +1836,17 @@ internal partial class TestClass
         Func<int, int, int> test3 = (a, b) => a % b;
         test(3);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AsyncLambdaBodyExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Async Sub TestMethod()
         Dim test0 As Func(Of Task(Of Integer)) = Async Function()  2
         Dim test1 As Func(Of Integer, Task(Of Integer)) = Async Function(a) a * 2
@@ -1589,7 +1864,8 @@ internal partial class TestClass
         
 Await test1(3)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
 internal partial class TestClass
@@ -1615,13 +1891,17 @@ internal partial class TestClass
 
         await test1(3);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AsyncLambdaParameterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
         public Async Function mySub() As Task(Of Boolean)
             Return Await Me.ExecuteAuthenticatedAsync(Async Function() As Task(Of Boolean)
                 Return Await DoSomethingAsync()
@@ -1634,7 +1914,8 @@ internal partial class TestClass
         Private  Async Function DoSomethingAsync() As Task(Of Boolean)
             Return True
         End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
 internal partial class TestClass
@@ -1652,13 +1933,17 @@ internal partial class TestClass
     {
         return true;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TypeInferredLambdaBodyExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim test = Function(a) a * 2
         Dim test2 = Function(a, b)
@@ -1669,7 +1954,8 @@ internal partial class TestClass
         Dim test3 = Function(a, b) a Mod b
         test(3)
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
 {
@@ -1686,13 +1972,17 @@ internal partial class TestClass
         object test3(object a, object b) => Operators.ModObject(a, b);
         test(3);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue316_LambdaExpressionEqualityCheckAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Option Compare Text
 Imports System.Linq.Expressions
 
 Class TestClass
@@ -1700,7 +1990,8 @@ Class TestClass
         Dim test As Expression(Of Func(Of Boolean)) = Function() a = b
         test.Compile()()
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Linq.Expressions;
 
 internal partial class TestClass
@@ -1710,13 +2001,17 @@ internal partial class TestClass
         Expression<Func<bool>> test = () => a == b;
         test.Compile()();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task Issue930_LambdaExpressionEqualityCheckAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Option Compare Text
 Imports System.Linq.Expressions
 
 Class TestClass
@@ -1724,7 +2019,8 @@ Class TestClass
         Dim test As Expression(Of Func(Of Boolean)) = Function() a = Nothing
         test.Compile()()
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Linq.Expressions;
 
 internal partial class TestClass
@@ -1734,20 +2030,25 @@ internal partial class TestClass
         Expression<Func<bool>> test = () => a == default;
         test.Compile()();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SingleLineLambdaWithStatementBodyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim x = 1
         Dim simpleAssignmentAction As System.Action = Sub() x = 1
         Dim nonBlockAction As System.Action = Sub() Console.WriteLine(""Statement"")
         Dim ifAction As Action = Sub() If True Then Exit Sub
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -1758,13 +2059,17 @@ internal partial class TestClass
         Action nonBlockAction = () => Console.WriteLine(""Statement"");
         Action ifAction = () => { if (true) return; };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AnonymousLambdaArrayTypeConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 Imports System.Diagnostics
 
 Public Class TargetTypeTestClass
@@ -1773,7 +2078,8 @@ Public Class TargetTypeTestClass
         Dim actions As Action() = {Sub() Debug.Print(1), Sub() Debug.Print(2)}
         Dim objects = New List(Of Object) From {Sub() Debug.Print(3), Sub() Debug.Print(4)}
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -1785,13 +2091,17 @@ public partial class TargetTypeTestClass
         Action[] actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
         var objects = new List<object>() { new Action(() => Debug.Print(3.ToString())), new Action(() => Debug.Print(4.ToString())) };
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AnonymousLambdaTypeConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class AnonymousLambdaTypeConversionTest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class AnonymousLambdaTypeConversionTest
     Public Sub CallThing(thingToCall As [Delegate])
     End Sub
 
@@ -1809,7 +2119,8 @@ public partial class TargetTypeTestClass
                   End Function)
         CallThing(Function(a) False)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class AnonymousLambdaTypeConversionTest
 {
@@ -1832,13 +2143,17 @@ public partial class AnonymousLambdaTypeConversionTest
         }));
         CallThing(new Func<object, bool>(a => false));
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task AwaitAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Function SomeAsyncMethod() As Task(Of Integer)
         Return Task.FromResult(0)
     End Function
@@ -1847,7 +2162,8 @@ public partial class AnonymousLambdaTypeConversionTest
         Dim result As Integer = Await SomeAsyncMethod()
         Console.WriteLine(result)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Threading.Tasks;
 
 internal partial class TestClass
@@ -1862,13 +2178,17 @@ internal partial class TestClass
         int result = await SomeAsyncMethod();
         Console.WriteLine(result);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NameQualifyingHandlesInheritanceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClassBase
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClassBase
     Sub DoStuff()
     End Sub
 End Class
@@ -1877,7 +2197,8 @@ Class TestClass
     Private Sub TestMethod()
         DoStuff()
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClassBase
 {
     public void DoStuff()
@@ -1890,17 +2211,22 @@ internal partial class TestClass : TestClassBase
     {
         DoStuff();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task UsingGlobalImportAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Public Function TestMethod() As String
          Return vbCrLf
     End Function
-End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal partial class TestClass
 {
@@ -1908,13 +2234,17 @@ internal partial class TestClass
     {
         return Constants.vbCrLf;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ValueCapitalisationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"public Enum TestState
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"public Enum TestState
 one
 two
 end enum
@@ -1930,7 +2260,8 @@ private _state as TestState
             End If
         End Set
     End Property
-end class", @"
+end class", extension: "vb"),
+                Verifier.Verify(@"
 public enum TestState
 {
     one,
@@ -1954,14 +2285,17 @@ public partial class test
             }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ConstLiteralConversionIssue329Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Module1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Module1
     Const a As Boolean = 1
     Const b As Char = ChrW(1)
     Const c As Single = 1
@@ -1980,7 +2314,8 @@ public partial class test
     Sub Main()
         Const x As SByte = 4
     End Sub
-End Module", @"
+End Module", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Module1
 {
     private const bool a = true;
@@ -2003,14 +2338,17 @@ internal static partial class Module1
         const sbyte x = 4;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SelectCaseIssue361Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Module Module1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Module1
     Enum E
         A = 1
     End Enum
@@ -2022,7 +2360,8 @@ internal static partial class Module1
                 Console.WriteLine(""z"")
         End Select
     End Sub
-End Module", @"using System;
+End Module", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal static partial class Module1
 {
@@ -2043,14 +2382,17 @@ internal static partial class Module1
                 }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SelectCaseIssue675Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class EnumTest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class EnumTest
     Public Enum UserInterface
         Unknown
         Spectrum
@@ -2070,7 +2412,8 @@ internal static partial class Module1
                     activity = 4
             End Select
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class EnumTest
 {
     public enum UserInterface
@@ -2108,14 +2451,17 @@ public partial class EnumTest
                 }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SelectCaseDoesntGenerateBreakWhenLastStatementWillExitAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Test
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Test
     Public Function OnLoad() As Integer
         Dim x = 5
         While True
@@ -2192,7 +2538,8 @@ public partial class EnumTest
         End While
         Return x
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Test
 {
@@ -2363,14 +2710,17 @@ public partial class Test
         }
         return x;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SelectCaseObjectCaseIntegerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class SelectObjectCaseIntegerTest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class SelectObjectCaseIntegerTest
     Sub S()
         Dim o As Object
         Dim j As Integer
@@ -2388,7 +2738,8 @@ public partial class Test
                 j = -1
         End Select
     End Sub
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class SelectObjectCaseIntegerTest
 {
@@ -2429,28 +2780,34 @@ public partial class SelectObjectCaseIntegerTest
     }
 }
 1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", extension: "cs")
+            );
+        }
         //BUG: Correct textual output, but requires var pattern syntax construct not available before CodeAnalysis 3
     }
 
     [Fact]
     public async Task TupleAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Function GetString(yourBoolean as Boolean) As Boolean
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Function GetString(yourBoolean as Boolean) As Boolean
     Return 1 <> 1 OrElse if (yourBoolean, True, False)
-End Function",
-            @"public bool GetString(bool yourBoolean)
+End Function", extension: "vb"),
+                Verifier.Verify(@"public bool GetString(bool yourBoolean)
 {
     return 1 != 1 || (yourBoolean ? true : false);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task UseEventBackingFieldAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Foo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Foo
     Public Event Bar As EventHandler(Of EventArgs)
 
     Protected Sub OnBar(e As EventArgs)
@@ -2460,8 +2817,8 @@ End Function",
             RaiseEvent Bar(Me, e)
         End If
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Diagnostics;
 
 public partial class Foo
@@ -2479,17 +2836,22 @@ public partial class Foo
             Bar?.Invoke(this, e);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DateTimeToDateAndTimeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Sub Foo()
         Dim x = DateAdd(""m"", 5, Now)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
@@ -2498,33 +2860,43 @@ public partial class Class1
     {
         var x = DateAndTime.DateAdd(""m"", 5d, DateTime.Now);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task BaseFinalizeRemovedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Protected Overrides Sub Finalize()
         MyBase.Finalize()
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     ~Class1()
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task GlobalNameIssue375Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Module1
     Sub Main()
         Dim x = Microsoft.VisualBasic.Timer
     End Sub
-End Module", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+End Module", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 
 internal static partial class Module1
 {
@@ -2532,17 +2904,22 @@ internal static partial class Module1
     {
         double x = DateAndTime.Timer;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TernaryConversionIssue363Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Module Module1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Module Module1
     Sub Main()
         Dim x As Short = If(True, CShort(50), 100S)
     End Sub
-End Module", @"
+End Module", extension: "vb"),
+                Verifier.Verify(@"
 internal static partial class Module1
 {
     public static void Main()
@@ -2550,14 +2927,17 @@ internal static partial class Module1
         short x = true ? (short)50 : (short)100;
     }
 }
-");
+", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task GenericMethodCalledWithAnonymousTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class MoreParsing
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class MoreParsing
     Sub DoGet()
         Dim anon = New With {
             .ANumber = 5
@@ -2569,8 +2949,8 @@ internal static partial class Module1
     Private Function Identity(Of TType)(tInstance As TType) As TType
         Return tInstance
     End Function
-End Class",
-            @"using System.Linq;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Linq;
 
 public partial class MoreParsing
 {
@@ -2585,14 +2965,17 @@ public partial class MoreParsing
     {
         return tInstance;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DecimalToIntegerCompoundOperatorsWithTypeConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Compound
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Compound
     Public Sub Operators()
         Dim anInt As Integer = 123
         Dim aDec As Decimal = 12.3
@@ -2602,8 +2985,8 @@ public partial class MoreParsing
         anInt -= aDec
         anInt += aDec
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Compound
 {
@@ -2617,14 +3000,17 @@ public partial class Compound
         anInt = (int)Math.Round(anInt - aDec);
         anInt = (int)Math.Round(anInt + aDec);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DecimalToShortCompoundOperatorsWithTypeConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Compound
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Compound
     Public Sub Operators()
         Dim aShort As Short = 123
         Dim aDec As Decimal = 12.3
@@ -2634,8 +3020,8 @@ public partial class Compound
         aShort -= aDec
         aShort += aDec
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Compound
 {
@@ -2649,14 +3035,17 @@ public partial class Compound
         aShort = (short)Math.Round(aShort - aDec);
         aShort = (short)Math.Round(aShort + aDec);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task IntegerToShortCompoundOperatorsWithTypeConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Compound
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Compound
     Public Sub Operators()
         Dim aShort As Short = 123
         Dim anInt As Integer= 12
@@ -2666,8 +3055,8 @@ public partial class Compound
         aShort -= anInt
         aShort += anInt
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Compound
 {
@@ -2681,14 +3070,17 @@ public partial class Compound
         aShort = (short)(aShort - anInt);
         aShort = (short)(aShort + anInt);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ShortMultiplicationDeclarationAndAssignmentAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Compound
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Compound
     Public Sub Operators()
         Dim aShort As Short = 123
         Dim anotherShort As Short = 234
@@ -2696,8 +3088,8 @@ public partial class Compound
         x *= aShort ' Implicit cast in C# due to compound operator
         x = aShort * x
     End Sub
-End Class",
-            @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Compound
 {
     public void Operators()
@@ -2708,20 +3100,24 @@ public partial class Compound
         x *= aShort; // Implicit cast in C# due to compound operator
         x = (short)(aShort * x);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SquareBracketsInLabelAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Sub S()
     GoTo [finally]
 [finally]:
     GoTo [Step]
 [Step]:
-End Sub",
-            @"
+End Sub", extension: "vb"),
+                Verifier.Verify(@"
 public void S()
 {
     goto @finally;
@@ -2732,17 +3128,21 @@ public void S()
 Step:
     ;
 
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SquareBracketsInIdentifierAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
     Sub [Step]()
         Static i As Integer
-    End Sub",
-            @"
+    End Sub", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class SurroundingClass
 {
     private int _Step_i;
@@ -2750,20 +3150,23 @@ internal partial class SurroundingClass
     public void Step()
     {
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task CintIsConvertedCorrectlyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Compound
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Compound
     Public Sub Operators()
         Dim do_Tmp As Double = 9999 / 100
         Dim i_Tmp as Integer = CInt(do_Tmp)
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class Compound
 {
@@ -2772,22 +3175,25 @@ public partial class Compound
         double do_Tmp = 9999d / 100d;
         int i_Tmp = (int)Math.Round(do_Tmp);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ArgumentsAreTypeConvertedAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Imports System.Drawing
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Drawing
 
 Public Class Compound
     Public Sub TypeCast(someInt As Integer)
         Dim col = Color.FromArgb(someInt * 255.0F, someInt * 255.0F, someInt * 255.0F)
         Dim arry = New Single(7/someInt) {}
     End Sub
-End Class",
-            @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Drawing;
 
 public partial class Compound
@@ -2797,13 +3203,17 @@ public partial class Compound
         var col = Color.FromArgb((int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f));
         float[] arry = new float[(int)Math.Round(7d / someInt + 1)];
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NullCoalescingOperatorUsesParenthesisWhenNeededAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
     Public Sub TestMethod(ByVal x As String, ByVal y As Func(Of Integer))
         Dim a As String = If(x, ""x"")
         Dim b As String = If(x, ""x"").ToUpper()
@@ -2812,7 +3222,8 @@ public partial class Compound
         Dim e =  If(y, Function() 5)
         Dim f =  If(y, (Function() 6))
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class VisualBasicClass
 {
@@ -2825,13 +3236,17 @@ public partial class VisualBasicClass
         var e = y ?? (() => 5);
         var f = y ?? (() => 6);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NullForgivingInvocationDoesNotThrowAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class AClass
         Public Shared Sub Identify(ByVal talker As ITraceMessageTalker)
@@ -2845,7 +3260,8 @@ End Class
 
 Public Interface ITraceMessageTalker
     Function IdentifyTalker(v As Object) As Object
-End Interface", @"using System;
+End Interface", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 public partial class AClass
 {
@@ -2863,13 +3279,17 @@ public partial class AClass
 public partial interface ITraceMessageTalker
 {
     object IdentifyTalker(object v);
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task NegatedNullableBoolAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Public Enum CrashEnum
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Enum CrashEnum
     None = 0
     One = 1
     Two = 2
@@ -2893,7 +3313,8 @@ Public Class CrashTest
         End If
         Return Nothing
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public enum CrashEnum
 {
     None = 0,
@@ -2927,6 +3348,8 @@ public partial class CrashTest
         }
         return null;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

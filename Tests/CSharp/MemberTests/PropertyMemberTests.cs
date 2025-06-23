@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
@@ -11,8 +12,9 @@ public class PropertyMemberTests : ConverterTestBase
     [Fact]
     public async Task TestPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Public Property Test As Integer
 
     Public Property Test2 As Integer
@@ -33,7 +35,8 @@ public class PropertyMemberTests : ConverterTestBase
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     public int Test { get; set; }
@@ -65,14 +68,17 @@ internal partial class TestClass
     }
 }
 1 source compilation errors:
-BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide both a 'Get' and a 'Set'.");
+BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide both a 'Get' and a 'Set'.", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestParameterizedPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
 
@@ -94,7 +100,8 @@ BC30124: Property without a 'ReadOnly' or 'WriteOnly' specifier must provide bot
         FullName(False, True) = ""hello""
         Return FullName(False, True)
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     public string FirstName { get; set; }
@@ -123,14 +130,17 @@ internal partial class TestClass
         set_FullName(false, true, ""hello"");
         return get_FullName(false, true);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestParameterizedPropertyRequiringConversionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Public Property SomeProp(ByVal index As Integer) As Single
         Get
             Return 1.5
@@ -143,7 +153,8 @@ internal partial class TestClass
         Dim someDecimal As Decimal = 123.0
         SomeProp(123) = someDecimal
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class Class1
 {
     public float get_SomeProp(int index)
@@ -159,14 +170,17 @@ public partial class Class1
         decimal someDecimal = 123.0m;
         set_SomeProp(123, (float)someDecimal);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact] //https://github.com/icsharpcode/CodeConverter/issues/642
     public async Task TestOptionalParameterizedPropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Public Property FirstName As String
     Public Property LastName As String
 
@@ -186,7 +200,8 @@ public partial class Class1
         FullName = ""hello4""
         Return FullName
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     public string FirstName { get; set; }
@@ -210,14 +225,17 @@ internal partial class TestClass
         set_FullName(value: ""hello4"");
         return get_FullName();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestParameterizedPropertyAndGenericInvocationAndEnumEdgeCasesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class ParameterizedPropertiesAndEnumTest
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class ParameterizedPropertiesAndEnumTest
     Public Enum MyEnum
         First
     End Enum
@@ -243,7 +261,8 @@ internal partial class TestClass
                 Exit Sub
         End Select
     End Sub
-End Class", @"using System.Linq;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Linq;
 
 public partial class ParameterizedPropertiesAndEnumTest
 {
@@ -281,15 +300,18 @@ public partial class ParameterizedPropertiesAndEnumTest
                 }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestParameterizedPropertyWithTriviaAsync()
     {
         //issue 1095
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class IndexedPropertyWithTrivia
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class IndexedPropertyWithTrivia
     'a
     Property P(i As Integer) As Integer
         'b
@@ -309,7 +331,8 @@ public partial class ParameterizedPropertiesAndEnumTest
         End Set
         'd
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class IndexedPropertyWithTrivia
 {
     // a
@@ -332,21 +355,25 @@ internal partial class IndexedPropertyWithTrivia
                        // 8
                        // d
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PropertyWithMissingTypeDeclarationAsync()//TODO Check object is the inferred type
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class MissingPropertyType
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class MissingPropertyType
                 ReadOnly Property Max
                     Get
                         Dim mx As Double = 0
                         Return mx
                     End Get
                 End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class MissingPropertyType
 {
     public object Max
@@ -357,60 +384,77 @@ internal partial class MissingPropertyType
             return mx;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestReadWriteOnlyInterfacePropertyAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Interface Foo
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Interface Foo
     ReadOnly Property P1() As String
     WriteOnly Property P2() As String
-End Interface", @"
+End Interface", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface Foo
 {
     string P1 { get; }
     string P2 { set; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SynthesizedBackingFieldAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Shared Property First As Integer
 
     Private Second As Integer = _First
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private static int First { get; set; }
 
     private int Second = First;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task PropertyInitializersAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private ReadOnly Property First As New List(Of String)
     Private Property Second As Integer = 0
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 internal partial class TestClass
 {
     private List<string> First { get; set; } = new List<string>();
     private int Second { get; set; } = 0;
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestIndexerAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private _Items As Integer()
 
     Default Public Property Item(ByVal index As Integer) As Integer
@@ -438,7 +482,8 @@ internal partial class TestClass
             Me.m_test3 = value
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private int[] _Items;
@@ -476,33 +521,41 @@ internal partial class TestClass
             m_test3 = value;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestWriteOnlyPropertiesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Interface TestInterface
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Interface TestInterface
     WriteOnly Property Items As Integer()
-End Interface", @"
+End Interface", extension: "vb"),
+                Verifier.Verify(@"
 internal partial interface TestInterface
 {
     int[] Items { set; }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestImplicitPrivateSetterAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class SomeClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class SomeClass
     Public ReadOnly Property SomeValue As Integer
 
     Public Sub SetValue(value1 As Integer, value2 As Integer)
         _SomeValue = value1 + value2
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial class SomeClass
 {
     public int SomeValue { get; private set; }
@@ -511,14 +564,17 @@ public partial class SomeClass
     {
         SomeValue = value1 + value2;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestParametrizedPropertyCalledWithNamedArgumentsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Property Prop(Optional x As Integer = 1, Optional y as Integer = 2) As Integer
 End Interface
@@ -555,7 +611,8 @@ Public Class SomeClass
         foo.Prop(y := -2, x := -1) = 1
         foo.Prop(x := -1, y := -2) = 1
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int get_Prop(int x = 1, int y = 2);
@@ -600,14 +657,17 @@ public partial class SomeClass : IFoo
         foo.set_Prop(y: -2, x: -1, value: 1);
         foo.set_Prop(x: -1, y: -2, value: 1);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestParametrizedPropertyCalledWithOmittedArgumentsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Interface IFoo
     Property Prop(Optional x As Integer = 1, Optional y as Integer = 2, Optional z as Integer = 3) As Integer
 End Interface
@@ -644,7 +704,8 @@ Public Class SomeClass
         foo.Prop(10,,) = 1
         foo.Prop(,,) = 1
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 public partial interface IFoo
 {
     int get_Prop(int x = 1, int y = 2, int z = 3);
@@ -689,14 +750,17 @@ public partial class SomeClass : IFoo
         foo.set_Prop(10, value: 1);
         foo.set_Prop(value: 1);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestSetWithNamedParameterPropertiesAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private _Items As Integer()
     Property Items As Integer()
         Get
@@ -706,7 +770,8 @@ public partial class SomeClass : IFoo
             _Items = v
         End Set
     End Property
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private int[] _Items;
@@ -721,14 +786,17 @@ internal partial class TestClass
             _Items = value;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestPropertyAssignmentReturnAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class Class1
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class Class1
     Public ReadOnly Property Foo() As String
         Get
             Foo = """"
@@ -751,7 +819,8 @@ internal partial class TestClass
             End If
         End Set
     End Property
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+End Class", extension: "vb"),
+                Verifier.Verify(@"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class Class1
 {
@@ -790,21 +859,25 @@ public partial class Class1
             }
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task TestGetIteratorDoesNotGainReturnAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(
-            @"Public Class VisualBasicClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Public Class VisualBasicClass
   Public Shared ReadOnly Iterator Property SomeObjects As IEnumerable(Of Object())
     Get
       Yield New Object(2) {}
       Yield New Object(2) {}
     End Get
   End Property
-End Class", @"using System.Collections.Generic;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections.Generic;
 
 public partial class VisualBasicClass
 {
@@ -816,6 +889,8 @@ public partial class VisualBasicClass
             yield return new object[3];
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }

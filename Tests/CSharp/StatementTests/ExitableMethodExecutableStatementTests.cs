@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using VerifyXunit;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
@@ -17,7 +18,9 @@ public class ExitableMethodExecutableStatementTests : ConverterTestBase
     [Fact]
     public async Task WhileStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -28,7 +31,8 @@ public class ExitableMethodExecutableStatementTests : ConverterTestBase
             b = 1
         End While
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -45,13 +49,17 @@ internal partial class TestClass
             b = 1;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SimpleDoStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -62,7 +70,8 @@ internal partial class TestClass
             b = 1
         Loop
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -80,13 +89,17 @@ internal partial class TestClass
         }
         while (true);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task DoWhileStatementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod()
         Dim b As Integer
         b = 0
@@ -97,7 +110,8 @@ internal partial class TestClass
             b = 1
         Loop While b = 0
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod()
@@ -115,20 +129,25 @@ internal partial class TestClass
         }
         while (b == 0);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithExplicitTypeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each v As Integer In values
             If v = 2 Then Continue For
             If v = 3 Then Exit For
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(int[] values)
@@ -141,20 +160,25 @@ internal partial class TestClass
                 break;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithVarAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         For Each v In values
             If v = 2 Then Continue For
             If v = 3 Then Exit For
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(int[] values)
@@ -167,13 +191,17 @@ internal partial class TestClass
                 break;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithUsedOuterDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         Dim val As Integer
         For Each val In values
@@ -183,7 +211,8 @@ internal partial class TestClass
 
         Console.WriteLine(val)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -201,13 +230,17 @@ internal partial class TestClass
 
         Console.WriteLine(val);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithFieldVarUsedOuterDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Dim val As Integer
 
     Private Sub TestMethod(ByVal values As Integer())
@@ -218,7 +251,8 @@ internal partial class TestClass
 
         Console.WriteLine(val)
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -237,13 +271,17 @@ internal partial class TestClass
 
         Console.WriteLine(val);
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithUnusedOuterDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         Dim val As Integer
         For Each val In values
@@ -251,7 +289,8 @@ internal partial class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private void TestMethod(int[] values)
@@ -264,13 +303,17 @@ internal partial class TestClass
                 break;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithFieldVarUnusedOuterDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Dim val As Integer
     Private Sub TestMethod(ByVal values As Integer())
         For Each val In values
@@ -278,7 +321,8 @@ internal partial class TestClass
             If val = 3 Then Exit For
         Next
     End Sub
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class TestClass
 {
     private int val;
@@ -293,13 +337,17 @@ internal partial class TestClass
                 break;
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ForEachStatementWithUnusedNestedDeclarationAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class TestClass
     Private Sub TestMethod(ByVal values As Integer())
         Dim inline1, inline2, keep1, keep2 As Integer
         For Each inline1 In values
@@ -312,7 +360,8 @@ internal partial class TestClass
             Console.WriteLine(keep1)
         Next
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 
 internal partial class TestClass
 {
@@ -335,13 +384,17 @@ internal partial class TestClass
             Console.WriteLine(keep1);
         }
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task SelectCaseWithExplicitExitAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class A
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Class A
     Public Function Add(ByVal x As Integer) As Integer
         Select Case x
             Case 1
@@ -349,7 +402,8 @@ internal partial class TestClass
         End Select
         Return 3
     End Function
-End Class", @"
+End Class", extension: "vb"),
+                Verifier.Verify(@"
 internal partial class A
 {
     public int Add(int x)
@@ -363,13 +417,17 @@ internal partial class A
         }
         return 3;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_Issue690Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 
 Public Class VisualBasicClass
     Public Sub Test
@@ -387,7 +445,8 @@ Public Class VisualBasicClass
         Next
     system.Console.WriteLine(i_Total.ToString())
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class VisualBasicClass
@@ -419,13 +478,17 @@ public partial class VisualBasicClass
         }
         Console.WriteLine(i_Total.ToString());
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlock_WithoutRunningInterveningCodeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 
 Public Class VisualBasicClass
     Public Sub Test
@@ -446,7 +509,8 @@ Public Class VisualBasicClass
         Next
     system.Console.WriteLine(i_Total.ToString())
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class VisualBasicClass
@@ -484,13 +548,17 @@ public partial class VisualBasicClass
         }
         Console.WriteLine(i_Total.ToString());
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultipleBreakable_CreatesIfStatementsToExitContainingBlockIssue946Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"
 Public Class VisualBasicClass
     Public Function Test(applicationRoles)
         For Each appRole In applicationRoles
@@ -519,7 +587,8 @@ Public Class VisualBasicClass
             End While
         Next
     End Function
-End Class", @"using System.Collections;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System.Collections;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class VisualBasicClass
@@ -588,13 +657,17 @@ public partial class VisualBasicClass
 
         return default;
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task BreakableThenContinuable_CreatesIfStatementsToExitContainingBlock_WithoutRunningInterveningCodeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System.Collections.Generic
 
 Public Class VisualBasicClass
     Public Sub Test
@@ -613,7 +686,8 @@ Public Class VisualBasicClass
         Next
     system.Console.WriteLine(i_Total.ToString())
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class VisualBasicClass
@@ -639,13 +713,17 @@ public partial class VisualBasicClass
         }
         Console.WriteLine(i_Total.ToString());
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task MultipleContinuable_CreatesIfStatementsToExitContainingBlock_WithoutRunningInterveningCodeAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 Imports System.Collections.Generic
 
 Public Class VisualBasicClass
@@ -675,7 +753,8 @@ Public Class VisualBasicClass
         Next
         System.Console.WriteLine(i_Total.ToString())
     End Sub
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using System.Collections.Generic;
 
 public partial class VisualBasicClass
@@ -757,13 +836,17 @@ public partial class VisualBasicClass
         }
         Console.WriteLine(i_Total.ToString());
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task ExitTry_CreatesBreakableLoop_Issue779Async()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -796,7 +879,8 @@ Public Class VisualBasicClass779
     Private Function To_Show_Cost() As Boolean
         Throw New NotImplementedException()
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class VisualBasicClass779
@@ -851,13 +935,17 @@ public partial class VisualBasicClass779
     {
         throw new NotImplementedException();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task WithinNonExitedTryAndFor_ExitForGeneratesBreakAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -879,7 +967,8 @@ Public Class VisualBasicClass779
     Private Function To_Show_Cost() As Boolean
         Throw New NotImplementedException()
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class VisualBasicClass779
@@ -910,13 +999,17 @@ public partial class VisualBasicClass779
     {
         throw new NotImplementedException();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task WithinForAndNonExitedTry_ExitForGeneratesBreakAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -938,7 +1031,8 @@ Public Class VisualBasicClass779
     Private Function To_Show_Cost() As Boolean
         Throw New NotImplementedException()
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class VisualBasicClass779
@@ -969,13 +1063,17 @@ public partial class VisualBasicClass779
     {
         throw new NotImplementedException();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 
     [Fact]
     public async Task WithinForAndExitedTry_ExitForGeneratesIfStatementsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+        {
+            await Task.WhenAll(
+                Verifier.Verify(@"Imports System
 
 Public Class VisualBasicClass779
     Public Property SomeCase As Integer = 1
@@ -999,7 +1097,8 @@ Public Class VisualBasicClass779
     Private Function To_Show_Cost() As Boolean
         Throw New NotImplementedException()
     End Function
-End Class", @"using System;
+End Class", extension: "vb"),
+                Verifier.Verify(@"using System;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
 public partial class VisualBasicClass779
@@ -1045,6 +1144,8 @@ public partial class VisualBasicClass779
     {
         throw new NotImplementedException();
     }
-}");
+}", extension: "cs")
+            );
+        }
     }
 }
