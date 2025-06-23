@@ -165,7 +165,7 @@ new XElement(""Description"", @""
     }
 }
 1 target compilation errors:
-CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'IEnumerable<XElement>' could be found (are you missing a using directive or an assembly reference?)", incompatibleWithAutomatedCommentTesting: true /* auto-testing of comments doesn't work because it tries to put VB comments inside the xml literal */);
+CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'IEnumerable<XElement>' could be found (are you missing a using directive or an assembly reference?)", false, incompatibleWithAutomatedCommentTesting: true /* auto-testing of comments doesn't work because it tries to put VB comments inside the xml literal */);
         //BUG: See compilation error
     }
 

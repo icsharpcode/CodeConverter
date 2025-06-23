@@ -33,7 +33,7 @@ internal partial class MissingLoopType
 1 source compilation errors:
 BC30002: Type 'Asadf' is not defined.
 1 target compilation errors:
-CS0246: The type or namespace name 'Asadf' could not be found (are you missing a using directive or an assembly reference?)", missingSemanticInfo: true);
+CS0246: The type or namespace name 'Asadf' could not be found (are you missing a using directive or an assembly reference?)", false, missingSemanticInfo: true);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ BC30451: 'UnknownArray' is not declared. It may be inaccessible due to its prote
 BC30451: 'unknownIntIdentifer' is not declared. It may be inaccessible due to its protection level.
 2 target compilation errors:
 CS0103: The name 'UnknownArray' does not exist in the current context
-CS0103: The name 'unknownIntIdentifer' does not exist in the current context", missingSemanticInfo: true);
+CS0103: The name 'unknownIntIdentifer' does not exist in the current context", false, missingSemanticInfo: true);
     }
 
     [Fact]
@@ -65,6 +65,6 @@ public partial class ClassWithEvents
     }
 }
 1 source compilation errors:
-BC30506: Handles clause requires a WithEvents variable defined in the containing type or one of its base types.", missingSemanticInfo: true);
+BC30506: Handles clause requires a WithEvents variable defined in the containing type or one of its base types.", false, missingSemanticInfo: true);
     }
 }
