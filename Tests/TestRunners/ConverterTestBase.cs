@@ -104,12 +104,13 @@ End Sub";
         return expectedVisualBasicCode;
     }
 
-    public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode, [CallerFilePath] string sourceFile = "")
+    public async Task TestConversionVisualBasicToCSharpAsync([CallerFilePath] string sourceFile = "")
     {
+        string visualBasicCode;
         var method = UseVerifyAttribute.GetMethod();
-        var inputFilename = Path.ChangeExtension(sourceFile, method + ".vb");
-        var outputFilename = Path.ChangeExtension(sourceFile, method + ".verified.cs");
-        var input = await File.ReadAllTextAsync(inputFilename);
+        var inputFilename = Path.ChangeExtension(sourceFile, method.Name + ".input.vb");
+        if (!File.Exists(inputFilename)) await File.WriteAllTextAsync(inputFilename, "", Encoding.UTF8);
+        visualBasicCode = await File.ReadAllTextAsync(inputFilename);
 
         var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) {
             RootNamespaceOverride = _rootNamespace,
@@ -117,7 +118,7 @@ End Sub";
         };
 
         string convertedTextFollowedByExceptions = await ConvertAsync<VBToCSConversion>(visualBasicCode, conversionOptions);
-        Verifier.Verify(convertedTextFollowedByExceptions.TrimEnd(), extension: "cs", sourceFile: sourceFile);
+        await Verifier.Verify(convertedTextFollowedByExceptions.TrimEnd(), extension: "cs", sourceFile: sourceFile);
 
         if (_testVbtoCsCommentsByDefault) {
             await AssertLineCommentsConvertedInSameOrderAsync<VBToCSConversion>(visualBasicCode, null,
@@ -131,7 +132,7 @@ End Sub";
     /// By default tests run a second time with a numbered comment added to each line (that doesn't already have a comment) and checks the comments come out in the same order. If the order significantly changes, or there are input lines where a line comment is invalid (e.g. multiline xml literal) you can use <paramref name="incompatibleWithAutomatedCommentTesting"/> to skip the check.
     /// </summary>
     public async Task TestConversionVisualBasicToCSharpAsync(string visualBasicCode, string expectedCsharpCode,
-        bool expectSurroundingBlock = false, bool missingSemanticInfo = false,
+        bool expectSurroundingBlock, bool missingSemanticInfo = false,
         bool incompatibleWithAutomatedCommentTesting = false)
     {
         if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
@@ -177,10 +178,10 @@ End Sub";
     protected async Task AssertConvertedCodeResultEqualsAsync<TLanguageConversion>(string inputCode, string expectedConvertedCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
     {
         string convertedTextFollowedByExceptions = await ConvertAsync<TLanguageConversion>(inputCode, conversionOptions);
-        return AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
+        AssertConvertedCodeResultEquals(convertedTextFollowedByExceptions, expectedConvertedCode, inputCode);
     }
 
-    private static string AssertConvertedCodeResultEquals(string convertedCodeFollowedByExceptions,
+    private static void AssertConvertedCodeResultEquals(string convertedCodeFollowedByExceptions,
         string expectedConversionResultText, string originalSource)
     {
         var txt = convertedCodeFollowedByExceptions.TrimEnd();

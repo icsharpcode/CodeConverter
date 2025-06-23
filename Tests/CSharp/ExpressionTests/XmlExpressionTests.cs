@@ -12,43 +12,13 @@ public class XmlExpressionTests : ConverterTestBase
     [Fact]
     public async Task NestedXmlEchoSimpleAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim hello = ""Hello""
-        dim x = <h1><%= hello %></h1>
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        string hello = ""Hello"";
-        var x = new XElement(""h1"", hello);
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
     }
 
     [Fact]
     public async Task TwoLayerNestedXmlWithExpressionsAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim var1 = 1
-        Dim var2 = 2
-        dim x = <h1><%= var1 %><%= var2 %><span><%= var2 %><%= var1 %></span></h1>
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        int var1 = 1;
-        int var2 = 2;
-        var x = new XElement(""h1"", var1, var2, new XElement(""span"", var2, var1));
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
     }
 
     [Fact]
@@ -174,59 +144,19 @@ CS1061: 'IEnumerable<XElement>' does not contain a definition for 'Value' and no
     [Fact]
     public async Task AssignmentStatementWithXmlElementAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim b = <someXmlTag></someXmlTag>
-        Dim c = <someXmlTag><bla anAttribute=""itsValue"">tata</bla><someContent>tata</someContent></someXmlTag>
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        var b = new XElement(""someXmlTag"");
-        var c = new XElement(""someXmlTag"", new XElement(""bla"", new XAttribute(""anAttribute"", ""itsValue""), ""tata""), new XElement(""someContent"", ""tata""));
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
     }
 
     [Fact]
     public async Task AssignmentStatementWithXmlElementAndEmbeddedExpressionAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Const value1 = ""something""
-        Dim xElement = <Elem1 Attr1=<%= value1 %> Attr2=<%= 100 %>></Elem1>
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        const string value1 = ""something"";
-        var xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", value1), new XAttribute(""Attr2"", 100));
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
     }
 
     [Fact]
     public async Task SelfClosingXmlTagAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()       
-        Dim xElement = <Elem1 Attr1=""something"" />
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        var xElement = new XElement(""Elem1"", new XAttribute(""Attr1"", ""something""));
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
     }
 
 
@@ -234,22 +164,7 @@ internal partial class TestClass
     [Fact]
     public async Task ConditionalMemberAccessAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()       
-        Dim xDocument = <Test></Test>
-        Dim elements1 = xDocument.<Something>.SingleOrDefault()?.<SomethingElse>
-    End Sub
-End Class", @"using System.Linq;
-using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        var xDocument = new XElement(""Test"");
-        var elements1 = xDocument.Elements(""Something"").SingleOrDefault()?.Elements(""SomethingElse"");
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
 
     }
 
@@ -258,136 +173,20 @@ internal partial class TestClass
     [Fact]
     public async Task NamespaceImportAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"' Place Imports statements at the top of your program.  
-Imports <xmlns=""http://DefaultNamespace"">
-Imports <xmlns:ns=""http://NewNamespace"">
-
-Module Module1
-
-  Sub Main()
-    ' Create element by using the default global XML namespace. 
-    Dim inner = <innerElement/>
-
-    ' Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
-    Dim outer = <ns:outer><ns:innerElement attr=""value""></ns:innerElement><siblingElement></siblingElement><%= inner %></ns:outer>
-
-    ' Display element to see its final form. 
-    Console.WriteLine(outer)
-  End Sub
-
-End Module", @"using System;
-using System.Xml.Linq;
-using XmlImports = XmlImportsCodeToConvert;
-
-internal static class XmlImportsCodeToConvert
-{
-    // Place Imports statements at the top of your program.  
-    internal static readonly XNamespace Default = ""http://DefaultNamespace"";
-    internal static readonly XNamespace ns = ""http://NewNamespace"";
-    private static readonly XAttribute[] namespaceAttributes = {
-        new XAttribute(""xmlns"", Default.NamespaceName),
-        new XAttribute(XNamespace.Xmlns + ""ns"", ns.NamespaceName)
-    };
-
-    internal static XElement Apply(XElement x)
-    {
-        foreach (var d in x.DescendantsAndSelf())
-        {
-            foreach (var n in namespaceAttributes)
-            {
-                var a = d.Attribute(n.Name);
-                if (a != null && a.Value == n.Value)
-                {
-                    a.Remove();
-                }
-            }
-        }
-        x.Add(namespaceAttributes);
-        return x;
-    }
-
-    internal static XDocument Apply(XDocument x)
-    {
-        Apply(x.Root);
-        return x;
-    }
-}
-
-internal static partial class Module1
-{
-
-    public static void Main()
-    {
-        // Create element by using the default global XML namespace. 
-        var inner = XmlImports.Apply(new XElement(XmlImports.Default + ""innerElement""));
-
-        // Create element by using both the default global XML namespace and the namespace identified with the ""ns"" prefix.
-        var outer = XmlImports.Apply(new XElement(XmlImports.ns + ""outer"", new XElement(XmlImports.ns + ""innerElement"", new XAttribute(""attr"", ""value"")), new XElement(XmlImports.Default + ""siblingElement""), inner));
-
-        // Display element to see its final form. 
-        Console.WriteLine(outer);
-    }
-
-}");
+        await TestConversionVisualBasicToCSharpAsync();
     }
 
     [Fact]
     public async Task XmlBuiltinNamespaceAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()       
-        Dim xElement = <Name xml:lang=""de"">Beispiel</Name>
-        Dim xElement2 = <Name xmlns:ns1=""http://www.example.com/namespace/1"">Beispiel</Name>
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        var xElement = new XElement(""Name"", new XAttribute(XNamespace.Xml + ""lang"", ""de""), ""Beispiel"");
-        var xElement2 = new XElement(""Name"", new XAttribute(XNamespace.Xmlns + ""ns1"", ""http://www.example.com/namespace/1""), ""Beispiel"");
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
 
     }
 
     [Fact]
     public async Task XmlCDataAsync()
     {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()       
-       Dim processedHtml = <![CDATA[
-<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"">
-<html xmlns=""http://www.w3.org/1999/xhtml"">
-	<head>
-		<meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"" /><title>
-	</head>
-	<body>
-		<p class=""cs95E872D0""><span class=""cs9D249CCB"">&nbsp;Regards,</span></p>
-    </body>
-</html>
-    ]]>.Value()
-    End Sub
-End Class", @"using System.Xml.Linq;
-
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        string processedHtml = new XCData(@""
-<!DOCTYPE html PUBLIC """"-//W3C//DTD XHTML 1.0 Transitional//EN"""" """"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"""">
-<html xmlns=""""http://www.w3.org/1999/xhtml"""">
-	<head>
-		<meta http-equiv=""""Content-Type"""" content=""""text/html; charset=utf-8"""" /><title>
-	</head>
-	<body>
-		<p class=""""cs95E872D0""""><span class=""""cs9D249CCB"""">&nbsp;Regards,</span></p>
-    </body>
-</html>
-    "").Value;
-    }
-}");
+        await TestConversionVisualBasicToCSharpAsync();
 
     }
 }

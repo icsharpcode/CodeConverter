@@ -31,8 +31,14 @@
   <ItemGroup>
     <Compile Include="..\CodeConverter\Common\DefaultReferences.cs" Link="DefaultReferences.cs" />
     <Compile Remove="TestData\**" />
+    <Compile Remove="**/*.input.*" />
+    <Compile Remove="**/*.received.*" />
+    <Compile Remove="**/*.verified.*" />
     <EmbeddedResource Remove="TestData\**" />
     <None Include="TestData\**\*.*" />
+    <None Include="**/**.input.*" />
+    <None Include="**/*.received.*" />
+    <None Include="**/*.verified.*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj" />
