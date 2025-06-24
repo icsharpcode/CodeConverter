@@ -30,4 +30,22 @@ internal static class VbSyntaxNodeExtensions
                parent is VBSyntax.TernaryConditionalExpressionSyntax ternary && ternary.Condition == vbNode ||
                parent is VBSyntax.WhereClauseSyntax;
     }
+
+    public static TokenContext GetMemberContext(this VBSyntax.StatementSyntax member)
+    {
+        var parentType = member.GetAncestorOrThis<VBSyntax.TypeBlockSyntax>();
+        var parentTypeKind = parentType?.Kind();
+        switch (parentTypeKind) {
+            case VBasic.SyntaxKind.ModuleBlock:
+                return TokenContext.MemberInModule;
+            case VBasic.SyntaxKind.ClassBlock:
+                return TokenContext.MemberInClass;
+            case VBasic.SyntaxKind.InterfaceBlock:
+                return TokenContext.MemberInInterface;
+            case VBasic.SyntaxKind.StructureBlock:
+                return TokenContext.MemberInStruct;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(member));
+        }
+    }
 }

@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Simplification;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -760,4 +761,39 @@ internal class CommonConversions
     }
 
     private bool IsLinqDelegateExpression(ITypeSymbol convertedType) =>KnownTypes.System_Linq_Expressions_Expression_T?.Equals(convertedType?.OriginalDefinition, SymbolEqualityComparer.Default) == true;
+
+    public static SyntaxToken GetRefToken(RefKind refKind)
+    {
+        SyntaxToken token;
+        switch (refKind) {
+            case RefKind.None:
+                token = default(SyntaxToken);
+                break;
+            case RefKind.Ref:
+                token = SyntaxFactory.Token(CSSyntaxKind.RefKeyword);
+                break;
+            case RefKind.Out:
+                token = SyntaxFactory.Token(CSSyntaxKind.OutKeyword);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(refKind), refKind, null);
+        }
+
+        return token;
+    }
+
+    public async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.ExpressionSyntax conversionNode, VBSyntax.ExpressionSyntax conversionArg)
+    {
+        var csharpArg = await conversionArg.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        var typeInfo = SemanticModel.GetTypeInfo(conversionNode);
+
+        // If written by the user (i.e. not generated during expand phase), maintain intended semantics which could throw sometimes e.g. object o = (int) (object) long.MaxValue;
+        var writtenByUser = !conversionNode.HasAnnotation(Simplifier.Annotation);
+        var forceTargetType = typeInfo.ConvertedType;
+        // TypeConversionAnalyzer can't figure out which type is required for operator/method overloads, inferred func returns or inferred variable declarations
+        //      (currently overapproximates for numeric and gets it wrong in non-numeric cases).
+        // Future: Avoid more redundant conversions by still calling AddExplicitConversion when writtenByUser avoiding the above and forcing typeInfo.Type
+        return writtenByUser ? null : this.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
+            forceTargetType: forceTargetType, defaultToCast: true);
+    }
 }

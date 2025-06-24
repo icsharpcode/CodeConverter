@@ -210,7 +210,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var lhs = await node.Left.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         var lOperation = _semanticModel.GetOperation(node.Left);
 
-        //Already dealt with by call to the same method in VisitInvocationExpression
+        //Already dealt with by call to the same method in ConvertInvocationExpression
         var (parameterizedPropertyAccessMethod, _) = await CommonConversions.GetParameterizedPropertyAccessMethodAsync(lOperation);
         if (parameterizedPropertyAccessMethod != null) return SingleStatement(lhs);
         var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(_expressionVisitor);

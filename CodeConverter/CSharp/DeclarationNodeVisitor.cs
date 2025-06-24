@@ -7,6 +7,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using Microsoft.CodeAnalysis.VisualBasic;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -31,10 +32,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     private readonly HashSet<string> _extraUsingDirectives = new();
     private readonly XmlImportContext _xmlImportContext;
     private readonly VisualBasicEqualityComparison _visualBasicEqualityComparison;
-    private HashSet<string> _accessedThroughMyClass;
     public CommentConvertingVisitorWrapper TriviaConvertingDeclarationVisitor { get; }
     private readonly CommentConvertingVisitorWrapper _triviaConvertingExpressionVisitor;
     private string _topAncestorNamespace;
+    private readonly AccessorDeclarationNodeConverter _accessorDeclarationNodeConverter;
 
     private CommonConversions CommonConversions { get; }
     private Func<VisualBasicSyntaxNode, IReadOnlyCollection<VBSyntax.StatementSyntax>, bool, IdentifierNameSyntax, Task<IReadOnlyCollection<StatementSyntax>>> _convertMethodBodyStatementsAsync { get; }
@@ -45,10 +46,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors)
     {
         _vbCompilation = compilation;
-        _semanticModel = semanticModel;
         _csSyntaxGenerator = csSyntaxGenerator;
         _typeToInheritors = typeToInheritors;
         _xmlImportContext = new XmlImportContext(document);
+        _semanticModel = semanticModel;
         _visualBasicEqualityComparison = new VisualBasicEqualityComparison(_semanticModel, _extraUsingDirectives);
         TriviaConvertingDeclarationVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
         var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
@@ -56,9 +57,9 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator, nullableExpressionsConverter);
         CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
         var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext, nullableExpressionsConverter);
-        _triviaConvertingExpressionVisitor = expressionNodeVisitor.TriviaConvertingExpressionVisitor;
+        _accessorDeclarationNodeConverter = new AccessorDeclarationNodeConverter(semanticModel, CommonConversions, TriviaConvertingDeclarationVisitor, _additionalDeclarations, expressionNodeVisitor.ConvertMethodBodyStatementsAsync);
+        _triviaConvertingExpressionVisitor = CommonConversions.TriviaConvertingExpressionVisitor;
         _convertMethodBodyStatementsAsync = expressionNodeVisitor.ConvertMethodBodyStatementsAsync;
-        CommonConversions.TriviaConvertingExpressionVisitor = _triviaConvertingExpressionVisitor;
         nullableExpressionsConverter.QueryTracker = _triviaConvertingExpressionVisitor;
         _visualBasicEqualityComparison.QueryTracker = _triviaConvertingExpressionVisitor;
     }
@@ -74,6 +75,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
             .WithNodeInformation(node);
     }
+
+    public override Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node) => _accessorDeclarationNodeConverter.ConvertPropertyStatementAsync(node);
+    public override Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node) => _accessorDeclarationNodeConverter.ConvertPropertyBlockAsync(node);
+    public override Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node) => _accessorDeclarationNodeConverter.VisitAccessorBlockAsync(node);
+    public override Task<CSharpSyntaxNode> VisitAccessorStatement(VBSyntax.AccessorStatementSyntax node) => _accessorDeclarationNodeConverter.VisitAccessorStatementAsync(node);
 
     public override async Task<CSharpSyntaxNode> VisitCompilationUnit(VBSyntax.CompilationUnitSyntax node)
     {
@@ -305,7 +311,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     private async Task<MemberDeclarationSyntax> ConvertMemberAsync(VBSyntax.StatementSyntax member)
     {
         try {
-            var sourceTriviaMapKind = member is VBSyntax.PropertyBlockSyntax propBlock && ShouldConvertAsParameterizedProperty(propBlock.PropertyStatement)
+            var sourceTriviaMapKind = member is VBSyntax.PropertyBlockSyntax propBlock && AccessorDeclarationNodeConverter.ShouldConvertAsParameterizedProperty(propBlock.PropertyStatement)
                 ? SourceTriviaMapKind.SubNodesOnly
                 : SourceTriviaMapKind.All;
             return await member.AcceptAsync<MemberDeclarationSyntax>(TriviaConvertingDeclarationVisitor, sourceTriviaMapKind);
@@ -323,7 +329,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     public override async Task<CSharpSyntaxNode> VisitClassBlock(VBSyntax.ClassBlockSyntax node)
     {
-        _accessedThroughMyClass = GetMyClassAccessedNames(node);
+        _accessorDeclarationNodeConverter.AccessedThroughMyClass = GetMyClassAccessedNames(node);
         var classStatement = node.ClassStatement;
         var attributes = await CommonConversions.ConvertAttributesAsync(classStatement.AttributeLists);
         var (parameters, constraints) = await SplitTypeParametersAsync(classStatement.TypeParameterList);
@@ -507,7 +513,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.WithEventsKeyword));
         var isWithEvents = node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.WithEventsKeyword));
         var convertedModifiers =
-            CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers.ToList(), GetMemberContext(node));
+            CommonConversions.ConvertModifiers(node.Declarators[0].Names[0], convertableModifiers.ToList(), node.GetMemberContext());
         var declarations = new List<MemberDeclarationSyntax>(node.Declarators.Count);
 
         foreach (var declarator in node.Declarators)
@@ -644,420 +650,6 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType, designerGeneratedInitializeComponentOrNull, _typeToInheritors);
     }
 
-    public override async Task<CSharpSyntaxNode> VisitPropertyStatement(VBSyntax.PropertyStatementSyntax node)
-    {
-        var attributes = SyntaxFactory.List(await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync));
-        var isReadonly = node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword));
-        var isWriteOnly = node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.WriteOnlyKeyword));
-        var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
-        var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers.ToList(), GetMemberContext(node));
-        var isIndexer = CommonConversions.IsDefaultIndexer(node);
-        var propSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node) as IPropertySymbol;
-        var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, propSymbol);
-
-        var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
-        var additionalDeclarations = new List<MemberDeclarationSyntax>();
-
-        var hasExplicitInterfaceImplementation = IsNonPublicInterfaceImplementation(propSymbol) || IsRenamedInterfaceMember(propSymbol, directlyConvertedCsIdentifier, propSymbol.ExplicitInterfaceImplementations);
-        var additionalInterfaceImplements = propSymbol.ExplicitInterfaceImplementations;
-        directlyConvertedCsIdentifier = hasExplicitInterfaceImplementation ? directlyConvertedCsIdentifier : CommonConversions.ConvertIdentifier(node.Identifier);
-
-        var explicitInterfaceModifiers = modifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword) || m.IsKind(CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
-        var shouldConvertToMethods = ShouldConvertAsParameterizedProperty(node);
-        var (initializer, vbType) = await GetVbReturnTypeAsync(node);
-
-        var rawType = await vbType.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor)
-                      ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.ObjectKeyword));
-
-        AccessorListSyntax accessors;
-        if (node.Parent is VBSyntax.PropertyBlockSyntax propertyBlock) {
-            if (shouldConvertToMethods) {
-                if (accessedThroughMyClass) {
-                    // Would need to create a delegating implementation to implement this
-                    throw new NotImplementedException("MyClass indexing not implemented");
-                }
-                var methodDeclarationSyntaxs = await propertyBlock.Accessors.SelectAsync(async a =>
-                    await a.AcceptAsync<MethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.All));
-                var accessorMethods = methodDeclarationSyntaxs.Select(WithMergedModifiers).ToArray();
-
-                if (hasExplicitInterfaceImplementation) {
-                    accessorMethods
-                        .Zip(propertyBlock.Accessors, Tuple.Create)
-                        .Do(x => {
-                            var (method, accessor) = x;
-                            AddRemainingInterfaceDeclarations(method, attributes, explicitInterfaceModifiers, additionalInterfaceImplements, additionalDeclarations, accessor.Kind());
-                        });
-                }
-                    
-                _additionalDeclarations.Add(propertyBlock, accessorMethods.Skip(1).Concat(additionalDeclarations).ToArray());
-
-                return accessorMethods[0];
-            }
-
-            var convertedAccessors = await propertyBlock.Accessors.SelectAsync(async a => 
-                await a.AcceptAsync<AccessorDeclarationSyntax>(TriviaConvertingDeclarationVisitor));
-            accessors = SyntaxFactory.AccessorList(SyntaxFactory.List(convertedAccessors));
-
-        } else if (shouldConvertToMethods && propSymbol.ContainingType.IsInterfaceType()) {
-            var methodDeclarationSyntaxs = new List<MemberDeclarationSyntax>();
-
-            if (propSymbol.GetMethod != null) {
-                methodDeclarationSyntaxs.Add(await CreateMethodDeclarationSyntaxAsync(node.ParameterList, GetMethodId(node.Identifier.Text), false));
-            }
-
-            if (propSymbol.SetMethod != null) {
-                var setMethod = await CreateMethodDeclarationSyntaxAsync(node.ParameterList, SetMethodId(node.Identifier.Text), true);
-                setMethod = AddValueSetParameter(propSymbol, setMethod, rawType, hasExplicitInterfaceImplementation);
-                methodDeclarationSyntaxs.Add(setMethod);
-            }
-
-            _additionalDeclarations.Add(node, methodDeclarationSyntaxs.Skip(1).ToArray());
-
-            return methodDeclarationSyntaxs[0];
-        } else {
-            bool allowPrivateAccessorForDirectAccess = node.Modifiers.All(m => !m.IsKind(VBasic.SyntaxKind.MustOverrideKeyword, VBasic.SyntaxKind.OverridesKeyword)) && 
-                                                       node.GetAncestor<VBSyntax.InterfaceBlockSyntax>() == null;
-            accessors = ConvertSimpleAccessors(isWriteOnly, isReadonly, allowPrivateAccessorForDirectAccess, propSymbol.DeclaredAccessibility);
-        }
-
-        if (isIndexer) {
-            if (accessedThroughMyClass) {
-                // Not sure if this is possible
-                throw new NotImplementedException("MyClass indexing not implemented");
-            }
-
-            var parameters = await node.ParameterList.Parameters.SelectAsync(async p => await p.AcceptAsync<ParameterSyntax>(_triviaConvertingExpressionVisitor));
-            var parameterList = SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameters));
-            return SyntaxFactory.IndexerDeclaration(
-                SyntaxFactory.List(attributes),
-                modifiers,
-                rawType,
-                null,
-                parameterList,
-                accessors
-            );
-        }
-
-        if (hasExplicitInterfaceImplementation) {
-
-            var delegatingAccessorList = GetDelegatingAccessorList(directlyConvertedCsIdentifier, accessors);
-            foreach (var additionalInterface in additionalInterfaceImplements) {
-                var explicitInterfaceAccessors = new SyntaxList<AccessorDeclarationSyntax>();
-                if (additionalInterface.IsReadOnly)
-                    explicitInterfaceAccessors = explicitInterfaceAccessors.Add(delegatingAccessorList.Single(t => t.IsKind(CSSyntaxKind.GetAccessorDeclaration)));
-                else if (additionalInterface.IsWriteOnly)
-                    explicitInterfaceAccessors = explicitInterfaceAccessors.Add(delegatingAccessorList.Single(t => t.IsKind(CSSyntaxKind.SetAccessorDeclaration)));
-                else
-                    explicitInterfaceAccessors = delegatingAccessorList;
-
-                var interfaceDeclParams = new PropertyDeclarationParameters(attributes, explicitInterfaceModifiers, rawType, SyntaxFactory.AccessorList(explicitInterfaceAccessors));
-                AddInterfaceMemberDeclarations(additionalInterface, additionalDeclarations, interfaceDeclParams);
-            }
-        }
-
-        if (accessedThroughMyClass) {
-
-            var realModifiers = modifiers.RemoveWhere(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
-            string csIdentifierName = AddRealPropertyDelegatingToMyClassVersion(additionalDeclarations, directlyConvertedCsIdentifier, attributes, realModifiers, rawType, isReadonly, isWriteOnly);
-            modifiers = modifiers.Remove(modifiers.Single(m => m.IsKind(CSSyntaxKind.VirtualKeyword)));
-            directlyConvertedCsIdentifier = SyntaxFactory.Identifier(csIdentifierName);
-        }
-
-        if (additionalDeclarations.Any()) {
-            var declNode = (VBSyntax.StatementSyntax)node.FirstAncestorOrSelf<VBSyntax.PropertyBlockSyntax>() ?? node;
-            _additionalDeclarations.Add(declNode, additionalDeclarations.ToArray());
-        }
-
-        var semicolonToken = SyntaxFactory.Token(initializer == null ? CSSyntaxKind.None : CSSyntaxKind.SemicolonToken);
-        return SyntaxFactory.PropertyDeclaration(
-            attributes,
-            modifiers,
-            rawType,
-            explicitInterfaceSpecifier: null,
-            directlyConvertedCsIdentifier, 
-            accessors,
-            null,
-            initializer,
-            semicolonToken);
-
-        MethodDeclarationSyntax WithMergedModifiers(MethodDeclarationSyntax member)
-        {
-            SyntaxTokenList originalModifiers = member.GetModifiers();
-            var hasVisibility = originalModifiers.Any(m => m.IsCsMemberVisibility());
-            var modifiersToAdd = hasVisibility ? modifiers.Where(m => !m.IsCsMemberVisibility()) : modifiers;
-            var newModifiers = SyntaxFactory.TokenList(originalModifiers.Concat(modifiersToAdd));
-            return member.WithModifiers(newModifiers);
-        }
-
-        async Task<MethodDeclarationSyntax> CreateMethodDeclarationSyntaxAsync(VBSyntax.ParameterListSyntax containingPropParameterList, string methodId, bool voidReturn)
-        {
-            var parameterListSyntax = await containingPropParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor);
-            var methodModifiers = SyntaxFactory.TokenList(modifiers.Where(m => !m.IsCsVisibility(false, false)));
-            MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, methodModifiers,
-                    voidReturn ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)) : rawType,
-                    null,
-                    SyntaxFactory.Identifier(methodId), null,
-                    parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), null, null)
-                .WithSemicolonToken(SyntaxFactory.Token(CSSyntaxKind.SemicolonToken));
-            return methodDeclarationSyntax;
-        }
-    }
-
-    private void AddRemainingInterfaceDeclarations(MethodDeclarationSyntax method, SyntaxList<AttributeListSyntax> attributes,
-        SyntaxTokenList filteredModifiers, IEnumerable<IPropertySymbol> additionalInterfaceImplements,
-        ICollection<MemberDeclarationSyntax> additionalDeclarations, VBasic.SyntaxKind accessorKind)
-    {
-        var clause = GetDelegatingClause(method.Identifier, method.ParameterList, false);
-
-        additionalInterfaceImplements.Do(interfaceImplement => {
-            var isGetterMethodForParametrizedProperty = accessorKind == VBasic.SyntaxKind.GetAccessorBlock;
-
-            if (interfaceImplement.IsReadOnly && !isGetterMethodForParametrizedProperty)
-                return;
-            if (interfaceImplement.IsWriteOnly && isGetterMethodForParametrizedProperty)
-                return;
-
-            var identifier = SyntaxFactory.Identifier(isGetterMethodForParametrizedProperty ? 
-                GetMethodId(interfaceImplement.Name) : 
-                SetMethodId(interfaceImplement.Name));
-            var interfaceMethodDeclParams = new MethodDeclarationParameters(attributes, filteredModifiers,
-                method.ReturnType, method.TypeParameterList, method.ParameterList, method.ConstraintClauses, clause, identifier);
-
-            AddInterfaceMemberDeclarations(interfaceImplement, additionalDeclarations, interfaceMethodDeclParams);
-        });
-    }
-
-    private async Task<(EqualsValueClauseSyntax Initializer, VBSyntax.TypeSyntax VbType)> GetVbReturnTypeAsync(VBSyntax.PropertyStatementSyntax node)
-    {
-        var initializer = await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor);
-        VBSyntax.TypeSyntax vbType;
-        switch (node.AsClause)
-        {
-            case VBSyntax.SimpleAsClauseSyntax c:
-                vbType = c.Type;
-                break;
-            case VBSyntax.AsNewClauseSyntax c:
-                initializer = SyntaxFactory.EqualsValueClause(
-                    await c.NewExpression.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor));
-                vbType = VBasic.SyntaxExtensions.Type(c.NewExpression);
-                break;
-            case null:
-                vbType = null;
-                break;
-            default:
-                throw new NotImplementedException($"{node.AsClause.GetType().FullName} not implemented!");
-        }
-
-        return (initializer, vbType);
-    }
-
-    private static SyntaxList<AccessorDeclarationSyntax> GetDelegatingAccessorList(SyntaxToken csIdentifier, AccessorListSyntax accessors)
-    {
-        var getArrowClause = GetDelegatingClause(csIdentifier, null, false);
-        var setArrowClause = GetDelegatingClause(csIdentifier, null, true);
-
-        var getSetDict = new Dictionary<CSSyntaxKind, ArrowExpressionClauseSyntax> {
-            {CSSyntaxKind.GetAccessorDeclaration, getArrowClause},
-            {CSSyntaxKind.SetAccessorDeclaration, setArrowClause}
-        };
-
-        var delegatingAccessors = accessors.Accessors.Select(a => {
-            var attributes = a.AttributeLists;
-            var modifiers = a.Modifiers;
-
-            var delegatingAccessor = SyntaxFactory.AccessorDeclaration(a.Kind(),
-                attributes, modifiers, getSetDict[a.Kind()]).WithSemicolonToken(SemicolonToken);
-
-            return delegatingAccessor;
-        });
-
-        return new SyntaxList<AccessorDeclarationSyntax>(delegatingAccessors);
-    }
-
-    private static string AddRealPropertyDelegatingToMyClassVersion(List<MemberDeclarationSyntax> additionalDeclarations, SyntaxToken csIdentifier,
-        SyntaxList<AttributeListSyntax> attributes, SyntaxTokenList modifiers, TypeSyntax rawType, bool readOnly, bool writeOnly)
-    {
-        var csIdentifierName = "MyClass" + csIdentifier.ValueText;
-        ExpressionSyntax thisDotIdentifier = GetSimpleMemberAccess(SyntaxFactory.Identifier(csIdentifierName));
-
-        var accessors = SyntaxFactory.List(Array.Empty<AccessorDeclarationSyntax>());
-        if (readOnly || !writeOnly) {
-            var getReturn = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(thisDotIdentifier));
-            var getAccessor = SyntaxFactory.AccessorDeclaration(CSSyntaxKind.GetAccessorDeclaration, getReturn);
-            accessors = accessors.Add(getAccessor);
-        }
-
-        if (writeOnly || !readOnly) {
-            var setValue = SyntaxFactory.Block(SyntaxFactory.ExpressionStatement(
-                SyntaxFactory.AssignmentExpression(CSSyntaxKind.SimpleAssignmentExpression, thisDotIdentifier,
-                    ValidSyntaxFactory.IdentifierName(("value")))));
-            var setAccessor = SyntaxFactory.AccessorDeclaration(CSSyntaxKind.SetAccessorDeclaration, setValue);
-            accessors = accessors.Add(setAccessor);
-        }
-
-        var realAccessors = SyntaxFactory.AccessorList(accessors);
-        var realDecl = SyntaxFactory.PropertyDeclaration(
-            attributes,
-            modifiers,
-            rawType,
-            null,
-            csIdentifier, realAccessors,
-            null,
-            null,
-            SyntaxFactory.Token(CSSyntaxKind.None));
-
-        additionalDeclarations.Add(realDecl);
-        return csIdentifierName;
-    }
-
-    private static AccessorListSyntax ConvertSimpleAccessors(bool isWriteOnly, bool isReadonly,
-        bool allowPrivateAccessorForDirectAccess, Accessibility declaredAccessibility)
-    {
-        var getAccessor = SyntaxFactory.AccessorDeclaration(CSSyntaxKind.GetAccessorDeclaration)
-            .WithSemicolonToken(SemicolonToken);
-        var setAccessor = SyntaxFactory.AccessorDeclaration(CSSyntaxKind.SetAccessorDeclaration)
-            .WithSemicolonToken(SemicolonToken);
-
-        if (isWriteOnly && declaredAccessibility != Accessibility.Private) {
-            getAccessor = getAccessor.AddModifiers(SyntaxFactory.Token(CSSyntaxKind.PrivateKeyword));
-        }
-
-        if (isReadonly && declaredAccessibility != Accessibility.Private) {
-            setAccessor = setAccessor.AddModifiers(SyntaxFactory.Token(CSSyntaxKind.PrivateKeyword));
-        }
-
-        // this could be improved by looking if there is actually a direct access somewhere
-        // if not we could skip generating private property accessor
-        var isReadOnlyInterface = !allowPrivateAccessorForDirectAccess && isReadonly;
-        var isWriteOnlyInterface = !allowPrivateAccessorForDirectAccess && isWriteOnly;
-
-        if (isReadOnlyInterface)
-            return SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor }));
-        if (isWriteOnlyInterface)
-            return SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { setAccessor }));
-
-        return SyntaxFactory.AccessorList(SyntaxFactory.List(new[] { getAccessor, setAccessor }));
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitPropertyBlock(VBSyntax.PropertyBlockSyntax node)
-    {
-        var converted = await node.PropertyStatement.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
-
-        if (converted is MethodDeclarationSyntax) {
-            var first = (MethodDeclarationSyntax)converted;
-
-            var firstCsConvertedToken = first.GetFirstToken();
-            var firstVbSourceToken = node.GetFirstToken();
-            first = first.ReplaceToken(firstCsConvertedToken, firstCsConvertedToken.WithSourceMappingFrom(firstVbSourceToken));
-
-            var members = _additionalDeclarations[node];
-            var last = members.OfType<MethodDeclarationSyntax>().LastOrDefault() ?? first;
-            var lastIx = members.ToList().IndexOf(last);
-            var lastIsFirst = lastIx < 0;
-            var lastCsConvertedToken = last.GetLastToken();
-            var lastVbSourceToken = node.GetLastToken();
-            last = last.ReplaceToken(lastCsConvertedToken, lastCsConvertedToken.WithSourceMappingFrom(lastVbSourceToken));
-
-            converted = lastIsFirst ? last : first;
-            if (!lastIsFirst) {
-                members[lastIx] = last;
-            }
-        }
-
-        return converted;
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitAccessorBlock(VBSyntax.AccessorBlockSyntax node)
-    {
-        CSSyntaxKind blockKind;
-        bool isIterator = node.IsIterator();
-        var ancestoryPropertyBlock = node.GetAncestor<VBSyntax.PropertyBlockSyntax>();
-        var containingPropertyStmt = ancestoryPropertyBlock?.PropertyStatement;
-        var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-        var convertedStatements = SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, isIterator, csReturnVariableOrNull));
-        var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
-        var attributes = await CommonConversions.ConvertAttributesAsync(node.AccessorStatement.AttributeLists);
-        var modifiers = CommonConversions.ConvertModifiers(node, node.AccessorStatement.Modifiers, TokenContext.Local);
-        var declaredPropSymbol = containingPropertyStmt != null ? _semanticModel.GetDeclaredSymbol(containingPropertyStmt) : null;
-
-        string potentialMethodId;
-        var sourceMap = ancestoryPropertyBlock?.Accessors.FirstOrDefault() == node ? SourceTriviaMapKind.All : SourceTriviaMapKind.None;
-        var returnType = containingPropertyStmt?.AsClause is VBSyntax.SimpleAsClauseSyntax asClause ?
-            await asClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor, sourceMap) :
-            SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
-
-        switch (node.Kind()) {
-            case VBasic.SyntaxKind.GetAccessorBlock:
-                blockKind = CSSyntaxKind.GetAccessorDeclaration;
-                potentialMethodId = GetMethodId(containingPropertyStmt.Identifier.Text);
-
-                if (ShouldConvertAsParameterizedProperty(containingPropertyStmt)) {
-                    var method = await CreateMethodDeclarationSyntax(containingPropertyStmt.ParameterList, false);
-                    return method;
-                }
-                break;
-            case VBasic.SyntaxKind.SetAccessorBlock:
-                blockKind = CSSyntaxKind.SetAccessorDeclaration;
-                potentialMethodId = SetMethodId(containingPropertyStmt.Identifier.Text);
-
-                if (ShouldConvertAsParameterizedProperty(containingPropertyStmt)) {
-                    var setMethod = await CreateMethodDeclarationSyntax(containingPropertyStmt.ParameterList, true);
-                    return AddValueSetParameter(declaredPropSymbol, setMethod, returnType, false);
-                }
-                break;
-            case VBasic.SyntaxKind.AddHandlerAccessorBlock:
-                blockKind = CSSyntaxKind.AddAccessorDeclaration;
-                break;
-            case VBasic.SyntaxKind.RemoveHandlerAccessorBlock:
-                blockKind = CSSyntaxKind.RemoveAccessorDeclaration;
-                break;
-            case VBasic.SyntaxKind.RaiseEventAccessorBlock:
-                var eventStatement = ((VBSyntax.EventBlockSyntax)node.Parent).EventStatement;
-                var eventName = CommonConversions.ConvertIdentifier(eventStatement.Identifier).ValueText;
-                potentialMethodId = $"On{eventName}";
-                return await CreateMethodDeclarationSyntax(node.AccessorStatement.ParameterList, true);
-            default:
-                throw new NotSupportedException(node.Kind().ToString());
-        }
-
-        return SyntaxFactory.AccessorDeclaration(blockKind, attributes, modifiers, body);
-
-        async Task<MethodDeclarationSyntax> CreateMethodDeclarationSyntax(VBSyntax.ParameterListSyntax containingPropParameterList, bool voidReturn)
-        {
-            var parameterListSyntax = await containingPropParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor, sourceMap);
-
-            MethodDeclarationSyntax methodDeclarationSyntax = SyntaxFactory.MethodDeclaration(attributes, modifiers,
-                voidReturn ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)) : returnType,
-                explicitInterfaceSpecifier: null,
-                SyntaxFactory.Identifier(potentialMethodId), null,
-                parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), body, null);
-            return methodDeclarationSyntax;
-        }
-    }
-
-    private static MethodDeclarationSyntax AddValueSetParameter(IPropertySymbol declaredPropSymbol,
-        MethodDeclarationSyntax setMethod, TypeSyntax returnType, bool hasExplicitInterfaceImplementation)
-    {
-        var valueParam = SyntaxFactory.Parameter(CommonConversions.CsEscapedIdentifier("value")).WithType(returnType);
-        if ((declaredPropSymbol?.Parameters.Any(p => p.IsOptional) ?? false) && !hasExplicitInterfaceImplementation) valueParam = valueParam.WithDefault(SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.DefaultExpression));
-        return setMethod.AddParameterListParameters(valueParam);
-    }
-
-    private static string SetMethodId(string methodName) => $"set_{methodName}";
-
-    private static string GetMethodId(string methodName) => $"get_{methodName}";
-
-    private static bool ShouldConvertAsParameterizedProperty(VBSyntax.PropertyStatementSyntax propStmt)
-    {
-        return propStmt.ParameterList?.Parameters.Any() == true
-               && !CommonConversions.IsDefaultIndexer(propStmt);
-    }
-
-    public override async Task<CSharpSyntaxNode> VisitAccessorStatement(VBSyntax.AccessorStatementSyntax node)
-    {
-        return SyntaxFactory.AccessorDeclaration(node.Kind().ConvertToken(), null);
-    }
-
     public override async Task<CSharpSyntaxNode> VisitMethodBlock(VBSyntax.MethodBlockSyntax node)
     {
         var methodBlock = await node.SubOrFunctionStatement.AcceptAsync<BaseMethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
@@ -1075,7 +667,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
         }
 
-        var body = WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
+        var body = _accessorDeclarationNodeConverter.WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
         return methodBlock.WithBody(body);
     }
@@ -1085,65 +677,9 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return s is ExpressionStatementSyntax ess && ess.Expression is InvocationExpressionSyntax ies && ies.Expression.ToString().Equals("this.ResumeLayout", StringComparison.Ordinal);
     }
 
-    private BlockSyntax WithImplicitReturnStatements(VBSyntax.MethodBlockBaseSyntax node, BlockSyntax convertedStatements,
-        IdentifierNameSyntax csReturnVariableOrNull)
-    {
-        if (!node.MustReturn()) return convertedStatements;
-        if (_semanticModel.GetDeclaredSymbol(node) is { } ms && ms.ReturnsVoidOrAsyncTask()) {
-            return convertedStatements;
-        }
-
-
-        var preBodyStatements = new List<StatementSyntax>();
-        var postBodyStatements = new List<StatementSyntax>();
-
-        var functionSym = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
-        if (functionSym != null) {
-            var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
-
-            if (csReturnVariableOrNull != null) {
-                var retDeclaration = CommonConversions.CreateVariableDeclarationAndAssignment(
-                    csReturnVariableOrNull.Identifier.ValueText, SyntaxFactory.DefaultExpression(returnType),
-                    returnType);
-                preBodyStatements.Add(SyntaxFactory.LocalDeclarationStatement(retDeclaration));
-            }
-
-            ControlFlowAnalysis controlFlowAnalysis = null;
-            if (!node.Statements.IsEmpty())
-                controlFlowAnalysis =
-                    ModelExtensions.AnalyzeControlFlow(_semanticModel, node.Statements.First(), node.Statements.Last());
-
-            bool mayNeedReturn = controlFlowAnalysis?.EndPointIsReachable != false;
-            if (mayNeedReturn) {
-                var csReturnExpression = csReturnVariableOrNull ??
-                                         (ExpressionSyntax)SyntaxFactory.DefaultExpression(returnType);
-                postBodyStatements.Add(SyntaxFactory.ReturnStatement(csReturnExpression));
-            }
-        }
-
-        var statements = preBodyStatements
-            .Concat(convertedStatements.Statements)
-            .Concat(postBodyStatements);
-
-        return SyntaxFactory.Block(statements);
-    }
-
     private static async Task<BlockSyntax> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> methodBodyVisitor)
     {
         return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
-    }
-
-    private bool IsAccessedThroughMyClass(SyntaxNode node, SyntaxToken identifier, ISymbol symbolOrNull)
-    {
-        bool accessedThroughMyClass = false;
-        if (symbolOrNull != null && symbolOrNull.IsVirtual && !symbolOrNull.IsAbstract) {
-            var classBlock = node.Ancestors().OfType<VBSyntax.ClassBlockSyntax>().FirstOrDefault();
-            if (classBlock != null) {
-                accessedThroughMyClass = _accessedThroughMyClass.Contains(identifier.Text);
-            }
-        }
-
-        return accessedThroughMyClass;
     }
 
     private static HashSet<string> GetMyClassAccessedNames(VBSyntax.ClassBlockSyntax classBlock)
@@ -1169,12 +705,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             return hasBody ? declaration : declaration.WithSemicolonToken(SemicolonToken);
         } 
             
-        var tokenContext = GetMemberContext(node);
+        var tokenContext = node.GetMemberContext();
         var declaredSymbol = (IMethodSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
         var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { CSSyntaxKind.ExternKeyword } : Array.Empty<CSSyntaxKind>();
         var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
 
-        bool accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
+        bool accessedThroughMyClass = _accessorDeclarationNodeConverter.IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
         if (declaredSymbol.IsPartialMethodImplementation() || declaredSymbol.IsPartialMethodDefinition()) 
         {
@@ -1195,22 +731,22 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList();
         var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
-        var hasExplicitInterfaceImplementation = IsNonPublicInterfaceImplementation(declaredSymbol) || IsRenamedInterfaceMember(declaredSymbol, directlyConvertedCsIdentifier, declaredSymbol.ExplicitInterfaceImplementations);
+        var hasExplicitInterfaceImplementation = declaredSymbol.IsNonPublicInterfaceImplementation() || declaredSymbol.IsRenamedInterfaceMember(directlyConvertedCsIdentifier, declaredSymbol.ExplicitInterfaceImplementations);
         directlyConvertedCsIdentifier = hasExplicitInterfaceImplementation ? directlyConvertedCsIdentifier : CommonConversions.ConvertIdentifier(node.Identifier);
 
         if (hasExplicitInterfaceImplementation) {
-            var delegatingClause = GetDelegatingClause(directlyConvertedCsIdentifier, parameterList, false);
+            var delegatingClause = ExpressionSyntaxExtensions.GetDelegatingClause(parameterList, directlyConvertedCsIdentifier, false);
             var explicitInterfaceModifiers = convertedModifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword) || m.IsKind(CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
 
             var interfaceDeclParams = new MethodDeclarationParameters(attributes, explicitInterfaceModifiers, returnType, typeParameters, parameterList, constraints, delegatingClause);
-            AddInterfaceMemberDeclarations(declaredSymbol.ExplicitInterfaceImplementations, additionalDeclarations, interfaceDeclParams);
+            _accessorDeclarationNodeConverter.AddInterfaceMemberDeclarations(declaredSymbol.ExplicitInterfaceImplementations, additionalDeclarations, interfaceDeclParams);
         }
 
         // If the method is virtual, and there is a MyClass.SomeMethod() call,
         // we need to emit a non-virtual method for it to call
         if (accessedThroughMyClass) {
             var identifierName = "MyClass" + directlyConvertedCsIdentifier.ValueText;
-            var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(identifierName), CreateDelegatingArgList(parameterList)));
+            var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(identifierName), parameterList.CreateDelegatingArgList()));
             var declModifiers = convertedModifiers;
 
             var originalNameDecl = SyntaxFactory.MethodDeclaration(
@@ -1253,143 +789,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
     }
 
-    private void AddInterfaceMemberDeclarations(ISymbol interfaceImplement,
-        ICollection<MemberDeclarationSyntax> additionalDeclarations,
-        DeclarationParameters declParams)
-    {
-        var semicolonToken = SyntaxFactory.Token(CSSyntaxKind.SemicolonToken);
-        Func<ExplicitInterfaceSpecifierSyntax, SyntaxToken, MemberDeclarationSyntax>
-            declDelegate = declParams switch {
-                MethodDeclarationParameters methodParams => (explintfspec, identifier)
-                    => SyntaxFactory.MethodDeclaration(methodParams.Attributes, methodParams.Modifiers,
-                        methodParams.ReturnType, explintfspec, identifier
-                        , methodParams.TypeParameters, methodParams.ParameterList, methodParams.Constraints, null,
-                        methodParams.ArrowClause, semicolonToken).WithoutSourceMapping(),
-
-                PropertyDeclarationParameters propertyParams => (explintfspec, identifier)
-                    => SyntaxFactory.PropertyDeclaration(propertyParams.Attributes, propertyParams.Modifiers,
-                        propertyParams.ReturnType, explintfspec, identifier, propertyParams.Accessors,
-                        null, null).NormalizeWhitespace(),
-
-                _ => throw new ArgumentOutOfRangeException(nameof(declParams), declParams, null)
-            };
-
-        AddMemberDeclaration(additionalDeclarations, interfaceImplement, declParams.Identifier, declDelegate);
-    }
-
-    private void AddInterfaceMemberDeclarations(IEnumerable<ISymbol> additionalInterfaceImplements,
-        ICollection<MemberDeclarationSyntax> additionalDeclarations,
-        DeclarationParameters declParams)
-    {
-        additionalInterfaceImplements.Do(interfaceImplement => AddInterfaceMemberDeclarations(interfaceImplement, additionalDeclarations, declParams));
-    }
-
-    private void AddMemberDeclaration(ICollection<MemberDeclarationSyntax> additionalDeclarations,
-        ISymbol interfaceImplement, SyntaxToken identifier, Func<ExplicitInterfaceSpecifierSyntax, SyntaxToken, MemberDeclarationSyntax> declDelegate)
-    {
-        var explicitInterfaceName = CommonConversions.GetFullyQualifiedNameSyntax(interfaceImplement.ContainingType);
-        var newExplicitInterfaceSpecifier = SyntaxFactory.ExplicitInterfaceSpecifier(explicitInterfaceName);
-        var interfaceImplIdentifier = identifier == default
-            ? SyntaxFactory.Identifier(interfaceImplement.Name)
-            : identifier;
-
-        var declaration = declDelegate.Invoke(newExplicitInterfaceSpecifier, interfaceImplIdentifier);
-        additionalDeclarations.Add(declaration);
-    }
-
-    private static ArrowExpressionClauseSyntax GetDelegatingClause(SyntaxToken csIdentifier,
-        ParameterListSyntax parameterList, bool isSetAccessor)
-    {
-        if (parameterList != null && isSetAccessor)
-            throw new InvalidOperationException("Parameterized setters shouldn't have a delegating clause. " +
-                                                $"\r\nInvalid arguments: {nameof(isSetAccessor)} = {true}," +
-                                                $" {nameof(parameterList)} has {parameterList.Parameters.Count} parameters");
-
-        var simpleMemberAccess = GetSimpleMemberAccess(csIdentifier);
-
-        var expression = parameterList != null
-            ? (ExpressionSyntax)SyntaxFactory.InvocationExpression(simpleMemberAccess, CreateDelegatingArgList(parameterList))
-            : simpleMemberAccess;
-
-        var arrowClauseExpression = isSetAccessor
-            ? SyntaxFactory.AssignmentExpression(CSSyntaxKind.SimpleAssignmentExpression, simpleMemberAccess,
-                ValidSyntaxFactory.IdentifierName("value"))
-            : expression;
-
-        var arrowClause = SyntaxFactory.ArrowExpressionClause(arrowClauseExpression);
-        return arrowClause;
-    }
-
-    private static MemberAccessExpressionSyntax GetSimpleMemberAccess(SyntaxToken csIdentifier)
-    {
-        var simpleMemberAccess = SyntaxFactory.MemberAccessExpression(
-            CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ThisExpression(),
-            SyntaxFactory.Token(CSSyntaxKind.DotToken), ValidSyntaxFactory.IdentifierName(csIdentifier));
-
-        return simpleMemberAccess;
-    }
-
-    private static bool IsNonPublicInterfaceImplementation(ISymbol declaredSymbol)
-    {
-        return declaredSymbol switch {
-            IMethodSymbol methodSymbol => methodSymbol.DeclaredAccessibility != Accessibility.Public &&
-                                          methodSymbol.ExplicitInterfaceImplementations.Any(),
-            IPropertySymbol propertySymbol => propertySymbol.DeclaredAccessibility != Accessibility.Public &&
-                                              propertySymbol.ExplicitInterfaceImplementations.Any(),
-            _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
-        };
-    }
-
-    private static bool IsRenamedInterfaceMember(ISymbol declaredSymbol,
-        SyntaxToken directlyConvertedCsIdentifier, IEnumerable<ISymbol> explicitInterfaceImplementations)
-    {
-        bool IsRenamed(ISymbol csIdentifier) =>
-            declaredSymbol switch {
-                IMethodSymbol methodSymbol => !StringComparer.OrdinalIgnoreCase.Equals(directlyConvertedCsIdentifier.Value, csIdentifier.Name) && methodSymbol.ExplicitInterfaceImplementations.Any(),
-                IPropertySymbol propertySymbol => !StringComparer.OrdinalIgnoreCase.Equals(directlyConvertedCsIdentifier.Value, csIdentifier.Name) && propertySymbol.ExplicitInterfaceImplementations.Any(),
-                _ => throw new ArgumentOutOfRangeException(nameof(declaredSymbol))
-            };
-
-        return explicitInterfaceImplementations.Any(IsRenamed);
-    }
-
-    private static ArgumentListSyntax CreateDelegatingArgList(ParameterListSyntax parameterList)
-    {
-        var refKinds = parameterList.Parameters.Select(GetSingleModifier).ToArray();
-        return parameterList.Parameters.Select(p => ValidSyntaxFactory.IdentifierName(p.Identifier)).CreateCsArgList(refKinds);
-    }
-
-    private static CSSyntaxKind? GetSingleModifier(ParameterSyntax p)
-    {
-        var argKinds = new CSSyntaxKind?[] { CSSyntaxKind.RefKeyword, CSSyntaxKind.OutKeyword, CSSyntaxKind.InKeyword };
-        return p.Modifiers.Select(Microsoft.CodeAnalysis.CSharp.CSharpExtensions.Kind)
-            .Select<CSSyntaxKind, CSSyntaxKind?>(k => k)
-            .FirstOrDefault(argKinds.Contains);
-    }
-
-    private static TokenContext GetMemberContext(VBSyntax.StatementSyntax member)
-    {
-        var parentType = member.GetAncestorOrThis<VBSyntax.TypeBlockSyntax>();
-        var parentTypeKind = parentType?.Kind();
-        switch (parentTypeKind) {
-            case VBasic.SyntaxKind.ModuleBlock:
-                return TokenContext.MemberInModule;
-            case VBasic.SyntaxKind.ClassBlock:
-                return TokenContext.MemberInClass;
-            case VBasic.SyntaxKind.InterfaceBlock:
-                return TokenContext.MemberInInterface;
-            case VBasic.SyntaxKind.StructureBlock:
-                return TokenContext.MemberInStruct;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(member));
-        }
-    }
-
     public override async Task<CSharpSyntaxNode> VisitEventBlock(VBSyntax.EventBlockSyntax node)
     {
         var block = node.EventStatement;
         var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
-        var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
+        var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, node.GetMemberContext());
 
         var rawType = await (block.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? ValidSyntaxFactory.VarType;
 
@@ -1407,7 +811,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     public override async Task<CSharpSyntaxNode> VisitEventStatement(VBSyntax.EventStatementSyntax node)
     {
         var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
-        var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
+        var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, node.GetMemberContext());
         var id = CommonConversions.ConvertIdentifier(node.Identifier);
 
         var symbol = _semanticModel.GetDeclaredSymbol(node);
@@ -1458,7 +862,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor);
         var methodBodyVisitor = await ConvertMethodBodyStatementsAsync(node, containingBlock.Statements);
         var body = SyntaxFactory.Block(methodBodyVisitor);
-        var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, GetMemberContext(node));
+        var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, node.GetMemberContext());
 
         var conversionModifiers = modifiers.Where(CommonConversions.IsConversionOperator).ToList();
         var nonConversionModifiers = SyntaxFactory.TokenList(modifiers.Except(conversionModifiers));
@@ -1475,7 +879,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var block = node.BlockStatement;
         var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
-        var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, GetMemberContext(node));
+        var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, node.GetMemberContext());
 
         var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
         var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
@@ -1530,7 +934,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var attributeLists = (await CommonConversions.ConvertAttributesAsync(node.AttributeLists)).Add(dllImportAttributeList);
 
-        var tokenContext = GetMemberContext(node);
+        var tokenContext = node.GetMemberContext();
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
         if (!modifiers.Any(m => m.IsKind(CSSyntaxKind.StaticKeyword))) {
             modifiers = modifiers.Add(SyntaxFactory.Token(CSSyntaxKind.StaticKeyword));
