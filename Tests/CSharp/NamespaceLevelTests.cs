@@ -107,14 +107,33 @@ public class NamespaceLevelTests : ConverterTestBase
     {
         await TestConversionVisualBasicToCSharpAsync();
     }
-
     [Fact]
-    public async Task TestDelegateAsync()
+    public async Task TestDelegateAsync1()
     {
-        await TestConversionVisualBasicToCSharpAsync();
-        await TestConversionVisualBasicToCSharpAsync();
-        await TestConversionVisualBasicToCSharpAsync();
-        await TestConversionVisualBasicToCSharpAsync();
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Delegate Sub Test()",
+            @"public delegate void Test();", false);
+    }
+    [Fact]
+    public async Task TestDelegateAsync2()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Delegate Function Test() As Integer",
+            @"public delegate int Test();", false);
+    }
+    [Fact]
+    public async Task TestDelegateAsync3()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Delegate Sub Test(ByVal x As Integer)",
+            @"public delegate void Test(int x);", false);
+    }
+    [Fact]
+    public async Task TestDelegateAsync4()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Delegate Sub Test(ByRef x As Integer)",
+            @"public delegate void Test(ref int x);", false);
     }
 
     [Fact]
