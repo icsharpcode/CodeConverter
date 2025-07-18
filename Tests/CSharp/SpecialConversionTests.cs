@@ -402,4 +402,11 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task Issue1097_PartialMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Partial Private Sub DummyMethod()
+    End Sub", @"partial void DummyMethod();");
+    }
 }
