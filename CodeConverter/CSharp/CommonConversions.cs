@@ -523,6 +523,10 @@ internal class CommonConversions
             && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
             return bExp.Left;
 
+        if (convertedExpression is CSSyntax.ConditionalExpressionSyntax ce) {
+            convertedExpression = SyntaxFactory.ParenthesizedExpression(convertedExpression);
+        }
+
         return SyntaxFactory.BinaryExpression(
             CSSyntaxKind.SubtractExpression,
             convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));

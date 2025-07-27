@@ -210,6 +210,26 @@ public partial class A
     }
 
     [Fact]
+    public async Task TernaryArrayIndexerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class A
+    Public Sub Test()
+        Dim i as integer = 0
+        Dim a(If(i = 1, 2, 3)) as string
+    End Sub
+End Class", @"
+public partial class A
+{
+    public void Test()
+    {
+        int i = 0;
+        var a = new string[(i == 1 ? 2 : 3) + 1];
+    }
+}");
+    }
+
+
+    [Fact]
     public async Task ElementAtOrDefaultIndexingAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
