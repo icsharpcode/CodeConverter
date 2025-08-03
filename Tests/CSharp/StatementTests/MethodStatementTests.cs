@@ -1673,4 +1673,31 @@ internal partial class SurroundingClass
     }
 }");
     }
+
+    [Fact]
+    public async Task TestMsgBoxToMessageBoxConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Private Sub TestMethod(ByVal sMLS As String)
+        Dim MsgBoxRet As MsgBoxResult
+        MsgBoxRet = MsgBox(sMLS, MsgBoxStyle.Question Or MsgBoxStyle.YesNo, ""Title"")
+        If MsgBoxRet = MsgBoxResult.Yes Then
+        End If
+    End Sub
+End Class",
+            @"using System.Windows.Forms;
+
+internal partial class TestClass
+{
+    private void TestMethod(string sMLS)
+    {
+        DialogResult MsgBoxRet;
+        MsgBoxRet = MessageBox.Show(sMLS, ""Title"", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (MsgBoxRet == DialogResult.Yes)
+        {
+        }
+    }
+}");
+    }
 }

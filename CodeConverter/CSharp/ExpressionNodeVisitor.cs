@@ -2062,7 +2062,15 @@ internal class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSha
             }
         }
 
-        if (SimpleMethodReplacement.TryGet(symbol, out var methodReplacement) &&
+        if (cSharpSyntaxNode == null && symbol is IMethodSymbol methodSymbol &&
+            Replacements.MsgBoxReplacement.IsBestMsgBoxMatch(methodSymbol))
+        {
+            var arguments = await ConvertArgumentsAsync(node.ArgumentList);
+            var msgBoxReplacement = new Replacements.MsgBoxReplacement(methodSymbol, arguments.ToList(), _semanticModel, _extraUsingDirectives, _visualBasicEqualityComparison);
+            cSharpSyntaxNode = msgBoxReplacement.Replace();
+        }
+
+        if (cSharpSyntaxNode == null && SimpleMethodReplacement.TryGet(symbol, out var methodReplacement) &&
             methodReplacement.ReplaceIfMatches(symbol, await ConvertArgumentsAsync(node.ArgumentList), false) is {} csExpression) {
             cSharpSyntaxNode = csExpression;
         }
