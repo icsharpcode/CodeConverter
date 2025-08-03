@@ -522,9 +522,9 @@ internal class CommonConversions
             && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
             return bExp.Left;
 
-        return SyntaxFactory.BinaryExpression(
-            CSSyntaxKind.SubtractExpression,
-            convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+        return SyntaxFactory.BinaryExpression(CSSyntaxKind.AddExpression,
+            SyntaxFactory.ParenthesizedExpression(convertedExpression),
+            SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
     }
 
     public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributesAsync(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)

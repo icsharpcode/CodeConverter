@@ -529,4 +529,24 @@ public partial class SplitArrayDeclarations
     }
 }");
     }
+
+    [Fact]
+    public async Task ConditionalArrayBoundsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Private Sub TestMethod()
+        dim i as integer = 0
+        dim a(If(i = 1, 2, 3)) as string
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        int i = 0;
+        var a = new string[(i == 1 ? 2 : 3) + 1];
+    }
+}");
+    }
 }
