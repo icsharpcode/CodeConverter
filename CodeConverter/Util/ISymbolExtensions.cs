@@ -76,7 +76,7 @@ internal static class ISymbolExtensions
 
     public static bool CanHaveMethodBody(this ISymbol? declaredSymbol)
     {
-        return declaredSymbol is IMethodSymbol ms && (!ms.IsPartialDefinition && (ms.PartialImplementationPart == null && !ms.IsExtern));
+        return declaredSymbol is IMethodSymbol ms && !ms.IsExtern && !IsPartialMethodDefinition(declaredSymbol);
     }
 
     public static bool IsPartialMethodDefinition(this ISymbol? declaredSymbol)
