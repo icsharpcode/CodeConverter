@@ -922,6 +922,13 @@ public partial class TestClass // VB doesn't require partial here (when just a s
     }
 
     [Fact]
+    public async Task Issue1097_PartialMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Partial Private Sub DummyMethod()
+    End Sub", @"partial void DummyMethod();");
+    }
+
+    [Fact]
     public async Task NestedClassAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class ClA
