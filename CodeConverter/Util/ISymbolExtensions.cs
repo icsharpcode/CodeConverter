@@ -1,3 +1,4 @@
+#nullable enable
 namespace ICSharpCode.CodeConverter.Util;
 
 internal static class ISymbolExtensions
@@ -23,7 +24,7 @@ internal static class ISymbolExtensions
         return symbol.Locations.Any(loc => loc.IsInSource);
     }
 
-    public static TSymbol ExtractBestMatch<TSymbol>(this SymbolInfo info, Func<TSymbol, bool> isMatch = null) where TSymbol : class, ISymbol
+    public static TSymbol? ExtractBestMatch<TSymbol>(this SymbolInfo info, Func<TSymbol, bool>? isMatch = null) where TSymbol : class, ISymbol
     {
         isMatch ??= (_ => true);
         if (info.Symbol == null && info.CandidateSymbols.Length == 0)
@@ -38,16 +39,16 @@ internal static class ISymbolExtensions
         return null;
     }
 
-    public static string ToCSharpDisplayString(this ISymbol symbol, SymbolDisplayFormat format = null)
+    public static string? ToCSharpDisplayString(this ISymbol symbol, SymbolDisplayFormat? format = null)
     {
         if (TryGetSpecialVBTypeConversion(symbol, out var cSharpDisplayString)) return cSharpDisplayString;
 
         return symbol.ToDisplayString(format);
     }
 
-    private static bool TryGetSpecialVBTypeConversion(ISymbol symbol, out string cSharpDisplayString)
+    private static bool TryGetSpecialVBTypeConversion(ISymbol symbol, out string? cSharpDisplayString)
     {
-        var containingNamespace = symbol?.ContainingNamespace?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+        var containingNamespace = symbol.ContainingNamespace?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
         if (containingNamespace == "Microsoft.VisualBasic" || containingNamespace == "System") {
             if (symbol is ITypeSymbol && TypesToConvertToDateTime.Contains(symbol.Name)) {
                 {
@@ -68,28 +69,28 @@ internal static class ISymbolExtensions
         return false;
     }
 
-    public static bool IsPartialMethodImplementation(this ISymbol declaredSymbol)
+    public static bool IsPartialMethodImplementation(this ISymbol? declaredSymbol)
     {
-        return declaredSymbol is IMethodSymbol ms && ms.PartialDefinitionPart != null;
+        return declaredSymbol is IMethodSymbol {PartialDefinitionPart: not null};
     }
 
-    public static bool CanHaveMethodBody(this ISymbol declaredSymbol)
+    public static bool CanHaveMethodBody(this ISymbol? declaredSymbol)
     {
         return declaredSymbol is IMethodSymbol ms && (!ms.IsPartialDefinition && (ms.PartialImplementationPart == null && !ms.IsExtern));
     }
 
-    public static bool IsPartialMethodDefinition(this ISymbol declaredSymbol)
+    public static bool IsPartialMethodDefinition(this ISymbol? declaredSymbol)
     {
         return declaredSymbol is IMethodSymbol ms && (ms.PartialImplementationPart != null || ms.IsPartialDefinition);
     }
 
-    public static bool IsPartialClassDefinition(this ISymbol declaredSymbol)
+    public static bool IsPartialClassDefinition(this ISymbol? declaredSymbol)
     {
         return declaredSymbol is ITypeSymbol ts && (ts.DeclaringSyntaxReferences.Length > 1
                                                     || ts.ContainingAssembly.Name == ForcePartialTypesAssemblyName);
     }
 
-    public static bool IsReducedTypeParameterMethod(this ISymbol symbol)
+    public static bool IsReducedTypeParameterMethod(this ISymbol? symbol)
     {
         return symbol is IMethodSymbol ms && ms.ReducedFrom?.TypeParameters.Length > ms.TypeParameters.Length;
     }
@@ -98,5 +99,5 @@ internal static class ISymbolExtensions
     /// Since non value types can't be ref types for extension methods in C#, convert to a static invocation
     /// https://github.com/icsharpcode/CodeConverter/issues/785
     /// </summary>
-    public static bool ValidCSharpExtensionMethodParameter(this IParameterSymbol vbSymbol) => vbSymbol != null && (vbSymbol.RefKind != RefKind.Ref || vbSymbol.Type.IsValueType);
+    public static bool ValidCSharpExtensionMethodParameter(this IParameterSymbol? vbSymbol) => vbSymbol != null && (vbSymbol.RefKind != RefKind.Ref || vbSymbol.Type.IsValueType);
 }
