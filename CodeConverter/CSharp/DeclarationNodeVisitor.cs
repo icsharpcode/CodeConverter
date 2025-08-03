@@ -655,7 +655,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var methodBlock = await node.SubOrFunctionStatement.AcceptAsync<BaseMethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
 
         var declaredSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
-        if (!declaredSymbol.CanHaveMethodBody()) {
+        if (declaredSymbol?.CanHaveMethodBody() == false) {
             return methodBlock;
         }
         var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
@@ -786,7 +786,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             null
         );
 
-        return hasBody && declaredSymbol.CanHaveMethodBody() ? decl : decl.WithSemicolonToken(SemicolonToken);
+        bool canHaveMethodBody = declaredSymbol?.CanHaveMethodBody() != false;
+        return hasBody && canHaveMethodBody ? decl : decl.WithSemicolonToken(SemicolonToken);
     }
 
     public override async Task<CSharpSyntaxNode> VisitEventBlock(VBSyntax.EventBlockSyntax node)
