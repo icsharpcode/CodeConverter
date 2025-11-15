@@ -131,64 +131,6 @@ public sealed class MsBuildWorkspaceConverter
             return errorString;
         }
 
-        private async Task<List<Diagnostic>> GetDiagnosticsAsync(Project project)
-        {
-            Compilation? compilation = await project.GetCompilationAsync();
-            if (compilation is null) {
-                var collection = Diagnostic.Create("FAIL", "Compilation", "Compilation is null", DiagnosticSeverity.Error, DiagnosticSeverity.Error, true, 3);
-                return new List<Diagnostic> {collection};
-            }
-
-            ImmutableArray<Diagnostic> compileDiagnostics = compilation.GetDiagnostics();
-
-            var analyzers = project.AnalyzerReferences
-                .SelectMany(r => r.GetAnalyzersForAllLanguages())
-                .ToImmutableArray();
-
-            ImmutableArray<Diagnostic> analyzerDiagnostics = ImmutableArray<Diagnostic>.Empty;
-            if (!analyzers.IsEmpty)
-            {
-                var compWithAnalyzers = compilation.WithAnalyzers(analyzers);
-                analyzerDiagnostics = await compWithAnalyzers.GetAllDiagnosticsAsync();
-            }
-
-            var allDiagnostics = compileDiagnostics
-                .Concat(analyzerDiagnostics)
-                .ToList();
-
-            return allDiagnostics;
-        }
-
-        private void HandleWorkspaceFailure(object? sender, WorkspaceDiagnosticEventArgs e)
-        {
-            if (e.Diagnostic.Kind == WorkspaceDiagnosticKind.Failure && 
-                !e.Diagnostic.Message.Contains("SDK Resolver Failure") &&
-                !e.Diagnostic.Message.Contains(".NETFramework,Version=v4.8"))
-            {
-                var diagnostic = Diagnostic.Create(
-                    id: e.Diagnostic.Kind.ToString(),
-                    category: "Workspace",
-                    message: e.Diagnostic.Message,
-                    severity: DiagnosticSeverity.Error,
-                    defaultSeverity: DiagnosticSeverity.Error,
-                    isEnabledByDefault: true,
-                    warningLevel: 0);
-                _loadDiagnostics.Add(diagnostic);
-            }
-            else if (e.Diagnostic.Kind == WorkspaceDiagnosticKind.Warning)
-            {
-                var diagnostic = Diagnostic.Create(
-                    id: e.Diagnostic.Kind.ToString(),
-                    category: "Workspace",
-                    message: e.Diagnostic.Message,
-                    severity: DiagnosticSeverity.Warning,
-                    defaultSeverity: DiagnosticSeverity.Warning,
-                    isEnabledByDefault: true,
-                    warningLevel: 1);
-                _loadDiagnostics.Add(diagnostic);
-            }
-        }
-
         private async Task RunDotnetRestoreAsync(string path)
         {
             var processStartInfo = new ProcessStartInfo
