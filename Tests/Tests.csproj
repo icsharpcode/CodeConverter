@@ -11,7 +11,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.IO.Redist" Version="6.0.1" />
     <PackageReference Include="Moq" Version="4.18.3" />
-    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.6.6" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">
@@ -33,14 +32,14 @@
     <EmbeddedResource Remove="TestData\**" />
     <None Include="TestData\**\*.*" />
   </ItemGroup>
-  <ItemGroup Label="ReSharper test runner requirements - test against latest Visual Studio version">
+  <!--<ItemGroup Label="ReSharper test runner requirements - test against latest Visual Studio version">
     <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="4.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.1.0" />
     <PackageReference Include="Microsoft.Build" Version="17.4.0" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.4.0" />
-  </ItemGroup>
+  </ItemGroup>-->
   <ItemGroup>
     <ProjectReference Include="..\CommandLine\CodeConv\CodeConv.csproj" />
   </ItemGroup>
