@@ -9,7 +9,7 @@ using Microsoft.VisualBasic;
 // See the LICENSE file in the project root for more information.
 
 // See Compiler::LoadXmlSolutionExtension
-namespace Prefix.VbLibrary.My
+namespace VisualBasicConsoleApp.My
 {
     [Embedded()]
     [DebuggerNonUserCode()]

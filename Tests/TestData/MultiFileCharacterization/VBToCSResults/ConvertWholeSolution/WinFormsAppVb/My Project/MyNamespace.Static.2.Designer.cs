@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
@@ -9,7 +10,7 @@ using Microsoft.VisualBasic;
 // See the LICENSE file in the project root for more information.
 
 // See Compiler::LoadXmlSolutionExtension
-namespace Prefix.VbLibrary.My
+namespace WinFormsAppVb.My
 {
     [Embedded()]
     [DebuggerNonUserCode()]
