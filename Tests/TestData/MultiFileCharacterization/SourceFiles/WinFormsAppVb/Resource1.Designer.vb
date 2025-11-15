@@ -25,7 +25,7 @@ Namespace My.Resources
     <Global.System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0"),  _
      Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
      Global.System.Runtime.CompilerServices.CompilerGeneratedAttribute()>  _
-    Friend Class Resource2
+    Public Class Resource1
         
         Private Shared resourceMan As Global.System.Resources.ResourceManager
         
@@ -40,10 +40,10 @@ Namespace My.Resources
         '''  Returns the cached ResourceManager instance used by this class.
         '''</summary>
         <Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)>  _
-        Friend Shared ReadOnly Property ResourceManager() As Global.System.Resources.ResourceManager
+        Public Shared ReadOnly Property ResourceManager() As Global.System.Resources.ResourceManager
             Get
                 If Object.ReferenceEquals(resourceMan, Nothing) Then
-                    Dim temp As Global.System.Resources.ResourceManager = New Global.System.Resources.ResourceManager("WindowsAppVb.Resource2", GetType(Resource2).Assembly)
+                    Dim temp As Global.System.Resources.ResourceManager = New Global.System.Resources.ResourceManager("WinFormsAppVb.Resource1", GetType(Resource1).Assembly)
                     resourceMan = temp
                 End If
                 Return resourceMan
@@ -55,7 +55,7 @@ Namespace My.Resources
         '''  resource lookups using this strongly typed resource class.
         '''</summary>
         <Global.System.ComponentModel.EditorBrowsableAttribute(Global.System.ComponentModel.EditorBrowsableState.Advanced)>  _
-        Friend Shared Property Culture() As Global.System.Globalization.CultureInfo
+        Public Shared Property Culture() As Global.System.Globalization.CultureInfo
             Get
                 Return resourceCulture
             End Get
@@ -65,9 +65,9 @@ Namespace My.Resources
         End Property
         
         '''<summary>
-        '''  Looks up a localized string similar to AnotherString.
+        '''  Looks up a localized string similar to Colour.
         '''</summary>
-        Friend Shared ReadOnly Property String1() As String
+        Public Shared ReadOnly Property String1() As String
             Get
                 Return ResourceManager.GetString("String1", resourceCulture)
             End Get
@@ -76,7 +76,7 @@ Namespace My.Resources
         '''<summary>
         '''  Looks up a localized resource of type System.Drawing.Bitmap.
         '''</summary>
-        Friend Shared ReadOnly Property test() As System.Drawing.Bitmap
+        Public Shared ReadOnly Property test() As System.Drawing.Bitmap
             Get
                 Dim obj As Object = ResourceManager.GetObject("test", resourceCulture)
                 Return CType(obj,System.Drawing.Bitmap)
@@ -86,7 +86,7 @@ Namespace My.Resources
         '''<summary>
         '''  Looks up a localized resource of type System.Drawing.Bitmap.
         '''</summary>
-        Friend Shared ReadOnly Property test2() As System.Drawing.Bitmap
+        Public Shared ReadOnly Property test2() As System.Drawing.Bitmap
             Get
                 Dim obj As Object = ResourceManager.GetObject("test2", resourceCulture)
                 Return CType(obj,System.Drawing.Bitmap)
@@ -96,7 +96,7 @@ Namespace My.Resources
         '''<summary>
         '''  Looks up a localized resource of type System.Drawing.Bitmap.
         '''</summary>
-        Friend Shared ReadOnly Property test3() As System.Drawing.Bitmap
+        Public Shared ReadOnly Property test3() As System.Drawing.Bitmap
             Get
                 Dim obj As Object = ResourceManager.GetObject("test3", resourceCulture)
                 Return CType(obj,System.Drawing.Bitmap)

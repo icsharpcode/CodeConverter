@@ -54,7 +54,7 @@ Partial Class FolderForm
         'ToolStripButton1
         '
         Me.ToolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
-        Me.ToolStripButton1.Image = Global.WindowsAppVb.My.Resources.Resources.test
+        Me.ToolStripButton1.Image = Global.WinFormsAppVb.My.Resources.Resources.test
         Me.ToolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta
         Me.ToolStripButton1.Name = "ToolStripButton1"
         Me.ToolStripButton1.Size = New System.Drawing.Size(23, 22)
@@ -63,7 +63,7 @@ Partial Class FolderForm
         'ToolStripButton2
         '
         Me.ToolStripButton2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
-        Me.ToolStripButton2.Image = Global.WindowsAppVb.My.Resources.Resources.test2
+        Me.ToolStripButton2.Image = Global.WinFormsAppVb.My.Resources.Resources.test2
         Me.ToolStripButton2.ImageTransparentColor = System.Drawing.Color.Magenta
         Me.ToolStripButton2.Name = "ToolStripButton2"
         Me.ToolStripButton2.Size = New System.Drawing.Size(23, 22)
@@ -72,7 +72,7 @@ Partial Class FolderForm
         'ToolStripButton3
         '
         Me.ToolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
-        Me.ToolStripButton3.Image = Global.WindowsAppVb.My.Resources.Resources.test3
+        Me.ToolStripButton3.Image = Global.WinFormsAppVb.My.Resources.Resources.test3
         Me.ToolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta
         Me.ToolStripButton3.Name = "ToolStripButton3"
         Me.ToolStripButton3.Size = New System.Drawing.Size(23, 22)
@@ -81,7 +81,7 @@ Partial Class FolderForm
         'ToolStripButton4
         '
         Me.ToolStripButton4.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
-        Me.ToolStripButton4.Image = Global.WindowsAppVb.My.Resources.Resource1.test
+        Me.ToolStripButton4.Image = Global.WinFormsAppVb.My.Resources.Resource1.test
         Me.ToolStripButton4.ImageTransparentColor = System.Drawing.Color.Magenta
         Me.ToolStripButton4.Name = "ToolStripButton4"
         Me.ToolStripButton4.Size = New System.Drawing.Size(23, 22)
@@ -90,7 +90,7 @@ Partial Class FolderForm
         'ToolStripButton5
         '
         Me.ToolStripButton5.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
-        Me.ToolStripButton5.Image = Global.WindowsAppVb.My.Resources.Resource1.test2
+        Me.ToolStripButton5.Image = Global.WinFormsAppVb.My.Resources.Resource1.test2
         Me.ToolStripButton5.ImageTransparentColor = System.Drawing.Color.Magenta
         Me.ToolStripButton5.Name = "ToolStripButton5"
         Me.ToolStripButton5.Size = New System.Drawing.Size(23, 22)
@@ -99,7 +99,7 @@ Partial Class FolderForm
         'ToolStripButton6
         '
         Me.ToolStripButton6.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image
-        Me.ToolStripButton6.Image = Global.WindowsAppVb.My.Resources.Resource1.test3
+        Me.ToolStripButton6.Image = Global.WinFormsAppVb.My.Resources.Resource1.test3
         Me.ToolStripButton6.ImageTransparentColor = System.Drawing.Color.Magenta
         Me.ToolStripButton6.Name = "ToolStripButton6"
         Me.ToolStripButton6.Size = New System.Drawing.Size(23, 22)
