@@ -11,7 +11,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CodeConvProgram.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ConversionResultWriter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MSBuildWorkspaceConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MsBuildWorkspaceConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\DirectoryInfoExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\EnumerableExtensions.cs" />
     <Compile Include="..\CodeConv.Shared\Util\AppDomainExtensions.cs" />

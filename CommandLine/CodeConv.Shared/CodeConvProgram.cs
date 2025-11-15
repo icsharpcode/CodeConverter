@@ -150,7 +150,7 @@ public partial class CodeConvProgram
 
         var properties = ParsedProperties();
         var joinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
-        var msbuildWorkspaceConverter = new MSBuildWorkspaceConverter(finalSolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties);
+        var msbuildWorkspaceConverter = new MsBuildWorkspaceConverter(finalSolutionPath, CoreOnlyProjects, joinableTaskFactory, BestEffort, properties);
 
         var converterResultsEnumerable = msbuildWorkspaceConverter.ConvertProjectsWhereAsync(ShouldIncludeProject, TargetLanguage, progress, cancellationToken);
         await ConversionResultWriter.WriteConvertedAsync(converterResultsEnumerable, finalSolutionPath, outputDirectory, Force, true, strProgress, cancellationToken);
