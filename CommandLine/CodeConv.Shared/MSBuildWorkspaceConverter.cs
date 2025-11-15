@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.VisualStudio.Threading;
 
@@ -26,12 +22,14 @@ namespace ICSharpCode.CodeConverter.CommandLine;
 /// </summary>
 public sealed class MsBuildWorkspaceConverter
 {
+    private readonly JoinableTaskFactory _joinableTaskFactory;
     private readonly SolutionLoader _solutionLoader;
     private AsyncLazy<Solution>? _cachedSolution;
 
     // The other parameters are ignored for compatibility
-    public MsBuildWorkspaceConverter(string solutionFilePath, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
+    public MsBuildWorkspaceConverter(JoinableTaskFactory joinableTaskFactory, string solutionFilePath, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
     {
+        _joinableTaskFactory = joinableTaskFactory;
         _solutionLoader = new SolutionLoader(solutionFilePath, bestEffortConversion, buildProps);
     }
 
@@ -39,14 +37,11 @@ public sealed class MsBuildWorkspaceConverter
     public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
     {
         var strProgress = new Progress<string>(s => progress.Report(new ConversionProgress(s)));
-#pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed - Shouldn't need main thread, and I can't access ThreadHelper without referencing VS shell.
-        _cachedSolution ??= new AsyncLazy<Solution>(async () => await _solutionLoader.AnalyzeSolutionAsync(strProgress));
-#pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
+        _cachedSolution ??= new AsyncLazy<Solution>(async () => await _solutionLoader.AnalyzeSolutionAsync(strProgress), _joinableTaskFactory);
+
         var solution = await _cachedSolution.GetValueAsync(token);
 
-        if (!targetLanguage.HasValue) {
-            targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? Language.CS : Language.VB;
-        }
+        targetLanguage ??= solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? Language.CS : Language.VB;
 
         var languageConversion = targetLanguage == Language.CS
             ? (ILanguageConversion)new VBToCSConversion()
@@ -89,17 +84,8 @@ public sealed class MsBuildWorkspaceConverter
             };
 
             using var workspace = MSBuildWorkspace.Create(properties);
-            workspace.WorkspaceFailed += HandleWorkspaceFailure;
 
-            Solution solution;
-            try
-            {
-                solution = await workspace.OpenSolutionAsync(_solutionFilePath);
-            }
-            finally
-            {
-                workspace.WorkspaceFailed -= HandleWorkspaceFailure;
-            }
+            Solution solution = await workspace.OpenSolutionAsync(_solutionFilePath);
 
             var errorString = await GetCompilationErrorsAsync(workspace, solution.Projects);
             if (string.IsNullOrEmpty(errorString)) return solution;
