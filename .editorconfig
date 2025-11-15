@@ -130,7 +130,7 @@ dotnet_diagnostic.RCS1124.severity = none
 dotnet_diagnostic.RCS1077.severity = none
 
 # IDE0040: Add accessibility modifiers
-dotnet_style_require_accessibility_modifiers = always:warning
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 
 # IDE0048: Add parentheses for clarity
 dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:none
