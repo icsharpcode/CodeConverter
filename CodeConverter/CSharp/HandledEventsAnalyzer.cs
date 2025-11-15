@@ -36,7 +36,9 @@ internal class HandledEventsAnalyzer
             .ToDictionary(m => m.Key, g => g.First(), StringComparer.OrdinalIgnoreCase); // Uses the fact that GroupBy maintains addition order to get the closest declaration
 #pragma warning restore RS1024 // Compare symbols correctly
 
-        var writtenWithEventsProperties = await ancestorPropsMembersByName.Values.OfType<IPropertySymbol>().ToAsyncEnumerable().ToDictionaryAwaitAsync(async p => p.Name, async p => (p, await IsNeverWrittenOrOverriddenAsync(p)), StringComparer.OrdinalIgnoreCase);
+
+        var writtenWithEventsProperties = await ancestorPropsMembersByName.Values.OfType<IPropertySymbol>().ToAsyncEnumerable()
+            .ToDictionaryAsync(async (p, _) => p.Name, async (p, cancellationToken) => (p, await IsNeverWrittenOrOverriddenAsync(p, cancellationToken)));
 
         var eventContainerToMethods = _type.GetMembers().OfType<IMethodSymbol>()
             .SelectMany(HandledEvents)
