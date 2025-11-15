@@ -9,11 +9,6 @@
     <DocumentationFile>bin\Debug\ConsoleApp2.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="microsoft.visualbasic" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\CSharpNetStandardLib\CSharpNetStandardLib.csproj" />
   </ItemGroup>
 </Project>
