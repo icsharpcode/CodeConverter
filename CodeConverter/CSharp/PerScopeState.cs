@@ -253,7 +253,6 @@ internal class PerScopeState
             var ifTrue = new PostIfTrueBlock(scopeVar.IdentifierName, stmt);
             scope.HoistedNodes.Add(scopeVar);
             scope.HoistedNodes.Add(ifTrue);
-            return scopeVar;
         }
 
         return scopeVar;
