@@ -32,14 +32,6 @@
     <EmbeddedResource Remove="TestData\**" />
     <None Include="TestData\**\*.*" />
   </ItemGroup>
-  <!--<ItemGroup Label="ReSharper test runner requirements - test against latest Visual Studio version">
-    <PackageReference Include="Microsoft.CodeAnalysis.Features" Version="4.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.1.0" />
-    <PackageReference Include="Microsoft.Build" Version="17.4.0" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.4.0" />
-  </ItemGroup>-->
   <ItemGroup>
     <ProjectReference Include="..\CommandLine\CodeConv\CodeConv.csproj" />
   </ItemGroup>

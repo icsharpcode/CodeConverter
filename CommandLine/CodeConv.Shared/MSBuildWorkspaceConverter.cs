@@ -14,7 +14,6 @@ using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using McMaster.Extensions.CommandLineUtils;
-using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.MSBuild;
@@ -30,7 +29,6 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
     private readonly AsyncLazy<MSBuildWorkspace> _workspace; //Cached to avoid NullRef from OptionsService when initialized concurrently (e.g. in our tests)
     private AsyncLazy<Solution>? _cachedSolution; //Cached for performance of tests
     private readonly bool _isNetCore;
-    private Version? _versionUsed;
 
     public MSBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, JoinableTaskFactory joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
     {
@@ -95,8 +93,7 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
         return solution;
 
         ValidationException CreateException(string mainMessage, string fullDetail) {
-            var versionUsedString = _versionUsed != null ? $"Used MSBuild {_versionUsed}.{Environment.NewLine}" : "";
-            return new ValidationException($"{mainMessage}:{Environment.NewLine}{versionUsedString}{fullDetail}{Environment.NewLine}{mainMessage}");
+            return new ValidationException($"{mainMessage}:{Environment.NewLine}{fullDetail}{Environment.NewLine}{mainMessage}");
         }
     }
 
@@ -120,15 +117,6 @@ public sealed class MSBuildWorkspaceConverter : IDisposable
 
     private async Task<MSBuildWorkspace> CreateWorkspaceAsync(Dictionary<string, string> buildProps)
     {
-        if (MSBuildLocator.CanRegister) {
-            var instances = MSBuildLocator.QueryVisualStudioInstances().ToArray();
-            var instance = instances.OrderByDescending(x => x.Version).FirstOrDefault()
-                           ?? throw new ValidationException("No Visual Studio instance available");
-            MSBuildLocator.RegisterInstance(instance);
-            _versionUsed = instance.Version;
-            AppDomain.CurrentDomain.UseVersionAgnosticAssemblyResolution();
-        }
-
         var hostServices = await ThreadSafeWorkspaceHelper.CreateHostServicesAsync(MSBuildMefHostServices.DefaultAssemblies);
         return MSBuildWorkspace.Create(buildProps, hostServices);
     }

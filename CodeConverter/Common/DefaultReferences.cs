@@ -30,7 +30,7 @@ public static class DefaultReferences
         typeof(System.Xml.Linq.XElement),
         typeof(System.Linq.Expressions.Expression),
         typeof(Microsoft.VisualBasic.Constants),
-        typeof(System.Data.SqlClient.SqlCommand)
+        typeof(System.Data.Common.DbCommand)
     }.Select(t => t.Assembly).Concat(
         new[] { Assembly.Load("System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a") }
     ).ToArray();
