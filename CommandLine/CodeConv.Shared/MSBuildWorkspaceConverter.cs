@@ -1,17 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.MSBuild;
-using Microsoft.CodeAnalysis.Diagnostics;
 using ICSharpCode.CodeConverter;
 using ICSharpCode.CodeConverter.Common;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Util;
+using ICSharpCode.CodeConverter.VB;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.MSBuild;
+using Microsoft.VisualStudio.Threading;
 
 namespace ICSharpCode.CodeConverter.CommandLine;
 
@@ -20,81 +26,62 @@ namespace ICSharpCode.CodeConverter.CommandLine;
 /// </summary>
 public sealed class MsBuildWorkspaceConverter
 {
-    private readonly string _solutionFilePath;
+    private readonly SolutionLoader _solutionLoader;
+    private AsyncLazy<Solution>? _cachedSolution;
+
     // The other parameters are ignored for compatibility
-    public MsBuildWorkspaceConverter(string solutionFilePath, bool isNetCore, object joinableTaskFactory, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
+    public MsBuildWorkspaceConverter(string solutionFilePath, bool bestEffortConversion = false, Dictionary<string, string>? buildProps = null)
     {
-        _solutionFilePath = solutionFilePath;
+        _solutionLoader = new SolutionLoader(solutionFilePath, bestEffortConversion, buildProps);
     }
 
-    /// <summary>
-    /// Maintains compatibility: yields a ConversionResult for each diagnostic in the solution.
-    /// </summary>
-    public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(
-        Func<Project, bool> shouldConvertProject,
-        Language? targetLanguage,
-        IProgress<ConversionProgress> progress,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken token)
+
+    public async IAsyncEnumerable<ConversionResult> ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language? targetLanguage, IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken token)
     {
-        var analysis = await AnalyzeSolutionAsync(_solutionFilePath);
-        foreach (var projectResult in analysis.ProjectResults)
-        {
-            if (!shouldConvertProject(projectResult.Project)) continue;
-            foreach (var diag in projectResult.Diagnostics)
-            {
-                var result = new ConversionResult(new Exception(diag.ToString()))
-                {
-                    SourcePathOrNull = projectResult.Project.FilePath
-                };
-                yield return result;
-            }
+        var strProgress = new Progress<string>(s => progress.Report(new ConversionProgress(s)));
+#pragma warning disable VSTHRD012 // Provide JoinableTaskFactory where allowed - Shouldn't need main thread, and I can't access ThreadHelper without referencing VS shell.
+        _cachedSolution ??= new AsyncLazy<Solution>(async () => await _solutionLoader.AnalyzeSolutionAsync(strProgress));
+#pragma warning restore VSTHRD012 // Provide JoinableTaskFactory where allowed
+        var solution = await _cachedSolution.GetValueAsync(token);
+
+        if (!targetLanguage.HasValue) {
+            targetLanguage = solution.Projects.Any(p => p.Language == LanguageNames.VisualBasic) ? Language.CS : Language.VB;
         }
+
+        var languageConversion = targetLanguage == Language.CS
+            ? (ILanguageConversion)new VBToCSConversion()
+            : new CSToVBConversion();
+        languageConversion.ConversionOptions = new ConversionOptions { AbandonOptionalTasksAfter = TimeSpan.FromHours(4) };
+        var languageNameToConvert = targetLanguage == Language.CS
+            ? LanguageNames.VisualBasic
+            : LanguageNames.CSharp;
+
+        var projectsToConvert = solution.Projects.Where(p => p.Language == languageNameToConvert && shouldConvertProject(p)).ToArray();
+        var results = SolutionConverter.CreateFor(languageConversion, projectsToConvert, progress, token).ConvertAsync();
+        await foreach (var r in results.WithCancellation(token)) yield return r;
     }
 
-    /// <summary>
-    /// Analyzes a complete .NET solution (.sln) file and returns diagnostics for all projects.
-    /// </summary>
-    /// <param name="solutionPath">The absolute path to the .sln file.</param>
-    /// <param name="configuration">The build configuration (e.g., "Debug" or "Release").</param>
-    /// <returns>A SolutionAnalysisResult containing all projects and diagnostics.</returns>
-    public async Task<SolutionAnalysisResult> AnalyzeSolutionAsync(string solutionPath, string configuration = "Debug")
+    private class SolutionLoader
     {
-        var analyzer = new SolutionAnalyzer();
-        return await analyzer.AnalyzeSolutionAsync(solutionPath, configuration);
-    }
+        private readonly string _solutionFilePath;
+        private readonly bool _bestEffort;
+        private readonly IDictionary<string, string> _buildProps;
 
-    /// <summary>
-    /// A container for the results of a full solution analysis.
-    /// </summary>
-    public class SolutionAnalysisResult
-    {
-        public Solution Solution { get; set; } = null!;
-        public List<ProjectAnalysisResult> ProjectResults { get; set; } = new List<ProjectAnalysisResult>();
-        public IEnumerable<Diagnostic> AllDiagnostics => ProjectResults.SelectMany(p => p.Diagnostics);
-    }
-
-    /// <summary>
-    /// A container for the results of a single project analysis.
-    /// </summary>
-    public class ProjectAnalysisResult
-    {
-        public Project Project { get; set; } = null!;
-        public IReadOnlyList<Diagnostic> Diagnostics { get; set; } = Array.Empty<Diagnostic>();
-    }
-
-    private class SolutionAnalyzer
-    {
-        private readonly List<Diagnostic> _loadDiagnostics = new();
-
-        public async Task<SolutionAnalysisResult> AnalyzeSolutionAsync(string solutionPath, string configuration = "Debug")
+        public SolutionLoader(string solutionFilePath, bool bestEffort, IDictionary<string, string>? buildProps)
         {
-            // === PREREQUISITE: Run 'dotnet restore' ===
-            await RunDotnetRestoreAsync(solutionPath);
+            _solutionFilePath = solutionFilePath;
+            _bestEffort = bestEffort;
+            _buildProps = buildProps ?? new Dictionary<string, string>();
+        }
 
-            _loadDiagnostics.Clear();
+        public async Task<Solution> AnalyzeSolutionAsync(IProgress<string> progress, string configuration = "Debug")
+        {
+            progress.Report($"Running dotnet restore on {_solutionFilePath}");
+            // === PREREQUISITE: Run 'dotnet restore' ===
+            await RunDotnetRestoreAsync(_solutionFilePath);
 
             // === STEP 1: Create and Configure Workspace ===
-            var properties = new Dictionary<string, string>
+            var properties = new Dictionary<string, string>(_buildProps)
             {
                 { "Configuration", configuration },
                 { "RunAnalyzers", "true" },
@@ -107,49 +94,49 @@ public sealed class MsBuildWorkspaceConverter
             Solution solution;
             try
             {
-                solution = await workspace.OpenSolutionAsync(solutionPath);
+                solution = await workspace.OpenSolutionAsync(_solutionFilePath);
             }
             finally
             {
                 workspace.WorkspaceFailed -= HandleWorkspaceFailure;
             }
 
-            // === STEP 2: Analyze Each Project ===
-            var projectResults = new List<ProjectAnalysisResult>();
-            foreach (var project in solution.Projects)
-            {
-                var projectResult = await AnalyzeProjectAsync(project);
-                projectResults.Add(projectResult);
+            var errorString = await GetCompilationErrorsAsync(workspace, solution.Projects);
+            if (string.IsNullOrEmpty(errorString)) return solution;
+            errorString = "    " + errorString.Replace(Environment.NewLine, Environment.NewLine + "    ");
+            progress.Report($"Compilation errors found before conversion.:{Environment.NewLine}{errorString}");
+
+            if (_bestEffort) {
+                progress.Report("Attempting best effort conversion on broken input due to override");
+            } else {
+                throw CreateException("Fix compilation errors before conversion for an accurate conversion, or as a last resort, use the best effort conversion option", errorString);
             }
 
-            // Include load diagnostics in the first project or create a dummy entry
-            if (projectResults.Count > 0 && _loadDiagnostics.Any())
-            {
-                var firstProject = projectResults[0];
-                projectResults[0] = new ProjectAnalysisResult
-                {
-                    Project = firstProject.Project,
-                    Diagnostics = _loadDiagnostics.Concat(firstProject.Diagnostics).ToList()
-                };
-            }
+            return solution;
 
-            return new SolutionAnalysisResult
+            ValidationException CreateException(string mainMessage, string fullDetail)
             {
-                Solution = solution,
-                ProjectResults = projectResults
-            };
+                return new ValidationException($"{mainMessage}:{Environment.NewLine}{fullDetail}{Environment.NewLine}{mainMessage}");
+            }
         }
 
-        private async Task<ProjectAnalysisResult> AnalyzeProjectAsync(Project project)
+        private async Task<string> GetCompilationErrorsAsync(MSBuildWorkspace workspace, IEnumerable<Project> projectsToConvert)
+        {
+            var workspaceErrors = workspace.Diagnostics.GetErrorString();
+            var errors = await projectsToConvert.ParallelSelectAwaitAsync(async x => {
+                var c = await x.GetCompilationAsync() ?? throw new InvalidOperationException($"Compilation could not be created for {x.Language}");
+                return new[] { CompilationWarnings.WarningsForCompilation(c, c.AssemblyName) };
+            }, Env.MaxDop).ToArrayAsync();
+            var errorString = string.Join("\r\n", workspaceErrors.Yield().Concat(errors.SelectMany(w => w)).Where(w => w != null));
+            return errorString;
+        }
+
+        private async Task<List<Diagnostic>> GetDiagnosticsAsync(Project project)
         {
             Compilation? compilation = await project.GetCompilationAsync();
-            if (compilation is null)
-            {
-                return new ProjectAnalysisResult
-                {
-                    Project = project,
-                    Diagnostics = new List<Diagnostic>()
-                };
+            if (compilation is null) {
+                var collection = Diagnostic.Create("FAIL", "Compilation", "Compilation is null", DiagnosticSeverity.Error, DiagnosticSeverity.Error, true, 3);
+                return new List<Diagnostic> {collection};
             }
 
             ImmutableArray<Diagnostic> compileDiagnostics = compilation.GetDiagnostics();
@@ -169,11 +156,7 @@ public sealed class MsBuildWorkspaceConverter
                 .Concat(analyzerDiagnostics)
                 .ToList();
 
-            return new ProjectAnalysisResult
-            {
-                Project = project,
-                Diagnostics = allDiagnostics
-            };
+            return allDiagnostics;
         }
 
         private void HandleWorkspaceFailure(object? sender, WorkspaceDiagnosticEventArgs e)
