@@ -14,12 +14,14 @@ namespace ICSharpCode.CodeConverter.Common;
 public static class DefaultReferences
 {
     private static readonly Assembly[] DefaultAssemblies = new []{
-        typeof(object),
-        typeof(IEnumerable),
+        // ReSharper disable RedundantNameQualifier
+        typeof(System.Object),
+        typeof(System.Collections.IEnumerable),
         typeof(IEnumerable<>),
         typeof(ErrorEventArgs),
         typeof(System.Text.Encoding),
-        typeof(Enumerable),
+        typeof(System.Linq.Enumerable),
+        typeof(System.Console),
         typeof(System.ComponentModel.BrowsableAttribute),
         typeof(System.Dynamic.DynamicObject),
         typeof(System.Data.DataRow),
@@ -30,7 +32,10 @@ public static class DefaultReferences
         typeof(System.Xml.Linq.XElement),
         typeof(System.Linq.Expressions.Expression),
         typeof(Microsoft.VisualBasic.Constants),
-        typeof(System.Data.Common.DbCommand)
+        typeof(System.Data.Common.DbCommand),
+        typeof(Microsoft.VisualBasic.Devices.Computer),
+        typeof(System.Windows.Forms.Form)
+        // ReSharper restore RedundantNameQualifier
     }.Select(t => t.Assembly).Concat(
         new[] { Assembly.Load("System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a") }
     ).ToArray();
