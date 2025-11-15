@@ -225,7 +225,7 @@ internal class PerScopeState
     {
         var scopesToExit = _hoistedNodesPerScope.Where(x => x.ExitableKind is not VBasic.SyntaxKind.None).TakeWhile(x => x.ExitableKind != vbBlockKeywordKind && x.IsBreakableInCs).ToArray();
         // Select is breakable, but not continuable, so only need to break out of it on the way to something else, not if it's last.
-        scopesToExit = scopesToExit.Reverse().SkipWhile(x => x.ExitableKind is VBasic.SyntaxKind.SelectKeyword).Reverse().ToArray();
+        scopesToExit = Enumerable.Reverse(scopesToExit).SkipWhile(x => x.ExitableKind is VBasic.SyntaxKind.SelectKeyword).Reverse().ToArray();
         var assignmentExpression = CommonConversions.Literal(true);
         int i = 0;
         foreach (var scope in scopesToExit) {
