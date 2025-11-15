@@ -62,10 +62,10 @@ internal class HandledEventsAnalyzer
         return toDiscard;
     }
 
-    private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol)
+    private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol, CancellationToken cancellationToken = default)
     {
         var projectSolution = _commonConversions.Document.Project.Solution;
-        if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull)) return false;
+        if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull, cancellationToken: cancellationToken)) return false;
         return !_typeToInheritors.Contains(symbol.ContainingType);
     }
 
