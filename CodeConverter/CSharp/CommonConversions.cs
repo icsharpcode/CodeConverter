@@ -577,7 +577,7 @@ internal class CommonConversions
     {
         if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
             !VisualBasicExtensions.IsDefault(pro.Property)) {
-            var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
+            var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.ChildOperations.First() == pro;
             var extraArg = isSetter
                 ? await GetParameterizedSetterArgAsync(operation)
                 : null;
@@ -684,7 +684,7 @@ internal class CommonConversions
 
     public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
     {
-        return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
+        return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps.Cast<CSSyntax.ParameterSyntax>()));
     }
 
     public static ExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType, bool inExpressionLambda = false)
