@@ -1,6 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Util;
-using ICSharpCode.CodeConverter.Web;
-using Microsoft.OpenApi.Models;
+﻿using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,14 +31,6 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseCors(localOrigins);
-
-app.MapPost("/api/convert", async (ConvertRequest todo) => await WebConverter.ConvertAsync(todo))
-    .RequireCors(localOrigins)
-    .Produces<ConvertResponse>();
-
-app.MapGet("/api/version", () => CodeConverterVersion.GetVersion())
-    .RequireCors(localOrigins)
-    .Produces<string>();
 
 app.MapFallbackToFile("index.html");
 
