@@ -36,22 +36,27 @@ public class ConverterTestBase
             .WithOptionCompareText(false)
             .WithOptionStrict(OptionStrict.Off)
             .WithOptionInfer(true);
-        EmptyNamespaceOptionStrictOff = new TextConversionOptions(DefaultReferences.NetStandard2) {
+        EmptyNamespaceOptionStrictOff = new TextConversionOptions(References) {
             RootNamespaceOverride = string.Empty, TargetCompilationOptionsOverride = options,
             ShowCompilationErrors = true
         };
-        VisualBasic11 = new TextConversionOptions(DefaultReferences.NetStandard2) {
+        VisualBasic11 = new TextConversionOptions(References) {
             RootNamespaceOverride = string.Empty,
             TargetCompilationOptionsOverride = options.WithParseOptions(new VisualBasicParseOptions(LanguageVersion.VisualBasic11)),
             ShowCompilationErrors = true
         };
     }
 
+    private static IReadOnlyCollection<PortableExecutableReference> References { get; } = DefaultReferences.With(
+        typeof(System.Windows.Forms.Form).Assembly,
+        typeof(Microsoft.VisualBasic.Devices.Computer).Assembly
+    );
+
     public async Task TestConversionCSharpToVisualBasicAsync(string csharpCode, string expectedVisualBasicCode, bool expectSurroundingMethodBlock = false, bool expectCompilationErrors = false, TextConversionOptions conversionOptions = null, bool hasLineCommentConversionIssue = false)
     {
         expectedVisualBasicCode = AddSurroundingMethodBlock(expectedVisualBasicCode, expectSurroundingMethodBlock);
 
-        conversionOptions ??= new TextConversionOptions(DefaultReferences.NetStandard2) { ShowCompilationErrors = !expectSurroundingMethodBlock };
+        conversionOptions ??= new TextConversionOptions(References) { ShowCompilationErrors = !expectSurroundingMethodBlock };
         await AssertConvertedCodeResultEqualsAsync<CSToVBConversion>(csharpCode, expectedVisualBasicCode, conversionOptions);
         if (_testCstoVbCommentsByDefault && !hasLineCommentConversionIssue) {
             await AssertLineCommentsConvertedInSameOrderAsync<CSToVBConversion>(csharpCode, conversionOptions, "//", LineCanHaveCSharpComment);
@@ -109,7 +114,7 @@ End Sub";
         bool incompatibleWithAutomatedCommentTesting = false)
     {
         if (expectSurroundingBlock) expectedCsharpCode = SurroundWithBlock(expectedCsharpCode);
-        var conversionOptions = new TextConversionOptions(DefaultReferences.NetStandard2) {
+        var conversionOptions = new TextConversionOptions(References) {
             RootNamespaceOverride = _rootNamespace,
             ShowCompilationErrors = !expectSurroundingBlock
         };
@@ -143,7 +148,7 @@ End Sub";
 
     protected async Task<string> ConvertAsync<TLanguageConversion>(string inputCode, TextConversionOptions conversionOptions = default) where TLanguageConversion : ILanguageConversion, new()
     {
-        var textConversionOptions = conversionOptions ?? new TextConversionOptions(DefaultReferences.NetStandard2) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = true };
+        var textConversionOptions = conversionOptions ?? new TextConversionOptions(References) { RootNamespaceOverride = _rootNamespace, ShowCompilationErrors = true };
         var conversionResult = await ProjectConversion.ConvertTextAsync<TLanguageConversion>(inputCode, textConversionOptions);
         return (conversionResult.ConvertedCode ?? "") + (conversionResult.GetExceptionsAsString() ?? "");
     }
