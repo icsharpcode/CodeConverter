@@ -147,12 +147,21 @@ internal class ArgumentConverter
     private ISymbol GetInvocationSymbol(SyntaxNode invocation)
     {
         var symbol = invocation.TypeSwitch(
-            (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
+            (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).CandidateSymbols
+                .OrderByDescending(s => s.GetParameters().Length == e.ArgumentList.Arguments.Count)
+                .ThenByDescending(s => ParameterMatchScore(s, e.ArgumentList.Arguments))
+                .FirstOrDefault(),
             (VBSyntax.ObjectCreationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).ExtractBestMatch<ISymbol>(),
             (VBSyntax.RaiseEventStatementSyntax e) => _semanticModel.GetSymbolInfo(e.Name).ExtractBestMatch<ISymbol>(),
             (VBSyntax.MidExpressionSyntax _) => CommonConversions.KnownTypes.VbCompilerStringType?.GetMembers("MidStmtStr").FirstOrDefault(),
             _ => throw new NotSupportedException());
         return symbol;
+    }
+
+    private static int ParameterMatchScore(ISymbol symbol, SeparatedSyntaxList<VBSyntax.ArgumentSyntax> arguments)
+    {
+        //TODO: Match on name/position and type
+        return 1;
     }
 
     private IEnumerable<CSSyntax.ArgumentSyntax> GetAdditionalRequiredArgs(
