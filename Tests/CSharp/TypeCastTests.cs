@@ -1355,7 +1355,7 @@ internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {
-        return text.Split('""');
+        return text.Split(""\"""");
     }
 }");
     }
@@ -1535,8 +1535,7 @@ public partial class CopiedFromTheSelfVerifyingBooleanTests
     Private Shared Function GenericFunctionWithCastThatExistsInCsharp(Of T As {TestGenericCast})() As T
         Return New TestGenericCast
     End Function
-End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
-
+End Class", @"
 internal partial class TestGenericCast
 {
     private static T GenericFunctionWithCTypeCast<T>()
