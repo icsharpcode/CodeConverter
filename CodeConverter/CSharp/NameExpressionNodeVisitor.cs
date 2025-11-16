@@ -435,7 +435,7 @@ internal class NameExpressionNodeVisitor
                 var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
                 arguments.Add(arg);
                 var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
-                parameters.Add(par);
+                parameters.Add(par.WithDefault(null));
             }
             return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
         }
