@@ -572,11 +572,13 @@ public partial class VisualBasicClass
 
     public VisualBasicClass()
     {
-        SomeDateDateNothing = string.IsNullOrEmpty(Conversions.ToString(SomeDate)) ? default : DateTime.Parse(Conversions.ToString(SomeDate));
+        SomeDateDateNothing = string.IsNullOrEmpty(Conversions.ToString(SomeDate)) ? (object)null : DateTime.Parse(SomeDate);
         isNotNothing = SomeDateDateNothing is not null;
         isSomething = new DateTime() is var arg1 && SomeDateDateNothing.HasValue ? SomeDateDateNothing.Value == arg1 : (bool?)null;
     }
-}");
+}
+1 target compilation errors:
+CS1503: Argument 1: cannot convert from 'object' to 'string'");
     }
 
     [Fact]
