@@ -1535,7 +1535,8 @@ public partial class CopiedFromTheSelfVerifyingBooleanTests
     Private Shared Function GenericFunctionWithCastThatExistsInCsharp(Of T As {TestGenericCast})() As T
         Return New TestGenericCast
     End Function
-End Class", @"
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
 internal partial class TestGenericCast
 {
     private static T GenericFunctionWithCTypeCast<T>()
@@ -1552,7 +1553,7 @@ internal partial class TestGenericCast
     }
     private static T GenericFunctionWithCastThatExistsInCsharp<T>() where T : TestGenericCast
     {
-        return (T)new TestGenericCast();
+        return Conversions.ToGenericParameter<T>(new TestGenericCast());
     }
 }");
     }

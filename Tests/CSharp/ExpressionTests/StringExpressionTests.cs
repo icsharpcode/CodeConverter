@@ -504,6 +504,7 @@ public partial class Issue396ComparisonOperatorForStringsAsync
     End Sub
 End Class",
             @"using System;
+using System.IO;
 
 public partial class EnumTests
 {

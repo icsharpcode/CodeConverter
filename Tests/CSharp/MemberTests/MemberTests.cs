@@ -786,7 +786,8 @@ public partial class A
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class DoesNotNeedConstructor
     Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = 5}
-End Class", @"
+End Class", @"using System.Threading.Tasks;
+
 public partial class DoesNotNeedConstructor
 {
     private readonly ParallelOptions ClassVariable1 = new ParallelOptions() { MaxDegreeOfParallelism = 5 };

@@ -377,7 +377,8 @@ internal partial class DisplayAttribute : Attribute
     Private ReadOnly ClassVariable1 As New ParallelOptions With {.MaxDegreeOfParallelism = x}
 #End Region
 End Class
-", @"
+", @"using System.Threading.Tasks;
+
 public partial class ConversionTest8
 {
     private int x = 5;
