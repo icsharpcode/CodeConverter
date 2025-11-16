@@ -103,7 +103,8 @@ CS0246: The type or namespace name 'SomeClass' could not be found (are you missi
 
         Next
     End Sub
-End Class", @"
+End Class", @"using System.Linq;
+
 public partial class Class1
 {
     public void Foo()

@@ -968,11 +968,10 @@ static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle
 Private Shared Function OpenProcess(dwDesiredAccess As AccessMask, bInheritHandle As Boolean, dwProcessId As UInteger) As IntPtr
 End Function
 
-4 source compilation errors:
+3 source compilation errors:
 CS0246: The type or namespace name 'AccessMask' could not be found (are you missing a using directive or an assembly reference?)
 CS0246: The type or namespace name 'DllImportAttribute' could not be found (are you missing a using directive or an assembly reference?)
 CS0246: The type or namespace name 'DllImport' could not be found (are you missing a using directive or an assembly reference?)
-CS0246: The type or namespace name 'SetLastError' could not be found (are you missing a using directive or an assembly reference?)
 1 target compilation errors:
 BC30002: Type 'AccessMask' is not defined.");
     }
@@ -1308,12 +1307,12 @@ End Class
 
 15 source compilation errors:
 CS1002: ; expected
-CS0535: 'TestClass' does not implement interface member 'IList.Add(object)'
-CS0535: 'TestClass' does not implement interface member 'IList.Contains(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.Add(object?)'
+CS0535: 'TestClass' does not implement interface member 'IList.Contains(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.Clear()'
-CS0535: 'TestClass' does not implement interface member 'IList.IndexOf(object)'
-CS0535: 'TestClass' does not implement interface member 'IList.Insert(int, object)'
-CS0535: 'TestClass' does not implement interface member 'IList.Remove(object)'
+CS0535: 'TestClass' does not implement interface member 'IList.IndexOf(object?)'
+CS0535: 'TestClass' does not implement interface member 'IList.Insert(int, object?)'
+CS0535: 'TestClass' does not implement interface member 'IList.Remove(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.RemoveAt(int)'
 CS0535: 'TestClass' does not implement interface member 'IList.IsReadOnly'
 CS0535: 'TestClass' does not implement interface member 'IList.IsFixedSize'

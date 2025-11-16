@@ -291,7 +291,7 @@ internal partial class TestClass
     private void TestMethod()
     {
         string b;
-        b = new string(""test"".ToCharArray());
+        b = new string(""test"");
     }
 }");
     }
@@ -325,7 +325,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        string b = new string(""test"".ToCharArray());
+        string b = new string(""test"");
     }
 }");
     }
@@ -342,7 +342,7 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        string b = new string(""test"".ToCharArray());
+        string b = new string(""test"");
     }
 }");
     }
@@ -608,7 +608,7 @@ public partial class TestWithForEachClass
         {
             y._x = 1;
             Console.Write(y._x);
-            y = (TestWithForEachClass)null;
+            y = null;
         }
     }
 }

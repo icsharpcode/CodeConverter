@@ -116,22 +116,22 @@ internal partial class TestClass
     {
         var catalog = new XDocument(
 new XElement(""Catalog"",
-new XElement(""Book"", new XAttribute(""id"", ""bk101""),
-new XElement(""Author"", ""Garghentini, Davide""),
-new XElement(""Title"", ""XML Developer's Guide""),
-new XElement(""Price"", ""44.95""),
-new XElement(""Description"", @""
+    new XElement(""Book"", new XAttribute(""id"", ""bk101""),
+        new XElement(""Author"", ""Garghentini, Davide""),
+        new XElement(""Title"", ""XML Developer's Guide""),
+        new XElement(""Price"", ""44.95""),
+        new XElement(""Description"", @""
           An in-depth look at creating applications
           with "", new XElement(""technology"", ""XML""), @"". For
           "", new XElement(""audience"", ""beginners""), @"" or
           "", new XElement(""audience"", ""advanced""), @"" developers.
         "")
-),
-new XElement(""Book"", new XAttribute(""id"", ""bk331""),
-new XElement(""Author"", ""Spencer, Phil""),
-new XElement(""Title"", ""Developing Applications with Visual Basic .NET""),
-new XElement(""Price"", ""45.95""),
-new XElement(""Description"", @""
+    ),
+    new XElement(""Book"", new XAttribute(""id"", ""bk331""),
+        new XElement(""Author"", ""Spencer, Phil""),
+        new XElement(""Title"", ""Developing Applications with Visual Basic .NET""),
+        new XElement(""Price"", ""45.95""),
+        new XElement(""Description"", @""
           Get the expert insights, practical code samples,
           and best practices you need
           to advance your expertise with "", new XElement(""technology"", @""Visual
@@ -140,23 +140,21 @@ new XElement(""Description"", @""
           based on professional,
           pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), @"".
         "")
-)
+    )
 )
 
 );
         var htmlOutput = new XElement(""html"",
-
                   new XElement(""body"", from book in catalog.Elements(""Catalog"").Elements(""Book"")
                                        select new XElement(""div"",
-                 new XElement(""h1"", book.Elements(""Title"").Value),
-                 new XElement(""h3"", ""By "" + book.Elements(""Author"").Value),
-                 new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value),
-
+                                                  new XElement(""h1"", book.Elements(""Title"").Value),
+                                                  new XElement(""h3"", ""By "" + book.Elements(""Author"").Value),
+                                                  new XElement(""h3"", ""Price = "" + book.Elements(""Price"").Value),
 
                                                   new XElement(""h2"", ""Description""), TransformDescription((string)book.Elements(""Description"").ElementAtOrDefault(0)), new XElement(""hr"")
-                 )
-                    )
-                );
+                                              )
+              )
+          );
     }
 
     public string TransformDescription(string s)

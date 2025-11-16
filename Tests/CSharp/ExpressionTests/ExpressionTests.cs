@@ -319,7 +319,7 @@ public partial class VisualBasicClass
     }
 }
 1 target compilation errors:
-CS1503: Argument 1: cannot convert from 'object' to 'double'");
+CS1503: Argument 1: cannot convert from 'object' to 'decimal'");
     }
 
     [Fact]

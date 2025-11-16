@@ -388,7 +388,8 @@ End Sub", @"private static void LinqSub()
         Dim MaxObj As Integer = Aggregate o In objs Into Max(o.GetHashCode())
         Dim CountWhereObj As Integer = Aggregate o In objs Where o.GetHashCode() > 3 Into Count()
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", @"using System;
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class VisualBasicClass
@@ -611,7 +612,8 @@ internal partial class Test
         Dim xs As New List(Of String)
         Dim y = From x In xs Group By x.Length, x.Count() Into Group
     End Sub
-End Class", @"using System.Collections.Generic;
+End Class", @"using System;
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class Class1
