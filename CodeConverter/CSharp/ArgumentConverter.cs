@@ -32,7 +32,7 @@ internal class ArgumentConverter
         var baseSymbol = symbol?.OriginalDefinition.GetBaseSymbol();
         var possibleParameters = (CommonConversions.GetCsOriginalSymbolOrNull(baseSymbol) ?? symbol)?.GetParameters();
         if (possibleParameters.HasValue) {
-            var refType = _semanticModel.GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
+            var refType = CommonConversions.GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
             token = CommonConversions.GetRefToken(refKind);
             if (refType != SemanticModelExtensions.RefConversion.Inline) {
                 convertedArgExpression = HoistByRefDeclaration(node, convertedArgExpression, refType, argName, refKind);
