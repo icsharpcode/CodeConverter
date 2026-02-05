@@ -76,12 +76,10 @@ public sealed class MsBuildWorkspaceConverter
             await RunDotnetRestoreAsync(_solutionFilePath);
 
             // === STEP 1: Create and Configure Workspace ===
-            var properties = new Dictionary<string, string>(_buildProps)
-            {
-                { "Configuration", configuration },
-                { "RunAnalyzers", "true" },
-                { "RunAnalyzersDuringBuild", "true" }
-            };
+            var properties = new Dictionary<string, string>(_buildProps);
+            properties.TryAdd("Configuration", configuration);
+            properties.TryAdd("RunAnalyzers", true.ToString());
+            properties.TryAdd("RunAnalyzersDuringBuild", true.ToString());
 
             using var workspace = MSBuildWorkspace.Create(properties);
 
