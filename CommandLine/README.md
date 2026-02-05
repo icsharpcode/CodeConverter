@@ -4,7 +4,7 @@
 dotnet tool install ICSharpCode.CodeConverter.CodeConv -g
 ```
 
-.NET Core 3.1 Tool 
+.NET 10 Tool 
 
 ```
 codeconv -h

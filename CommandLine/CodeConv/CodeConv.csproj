@@ -27,7 +27,6 @@
   
   <ItemGroup>
     <None Include="CodeConvNuGetPackageIcon.png" Pack="true" PackagePath="" />
-    <None Include="$(SolutionDir)CommandLine\CodeConv.NetFramework\bin\$(Configuration)\**" LinkBase="..\NetFramework" PackagePath="tools\NetFramework" Pack="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,6 +44,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CodeConverter\CodeConverter.csproj" />
   </ItemGroup>
-
-  <Import Project="..\CodeConv.Shared\CodeConv.Shared.projitems" Label="Shared" />
 </Project>
