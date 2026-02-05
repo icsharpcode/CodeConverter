@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.DotNetTool.Util;
 using ICSharpCode.CodeConverter.Util;
 using ICSharpCode.CodeConverter.VB;
 using Microsoft.CodeAnalysis;
@@ -117,30 +118,13 @@ public sealed class MsBuildWorkspaceConverter
 
         private async Task RunDotnetRestoreAsync(string path)
         {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "dotnet",
-                Arguments = $"restore \"{path}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = new Process { StartInfo = processStartInfo };
-            var output = new StringBuilder();
-            var error = new StringBuilder();
-            process.OutputDataReceived += (sender, args) => { if (args.Data != null) output.AppendLine(args.Data); };
-            process.ErrorDataReceived += (sender, args) => { if (args.Data != null) error.AppendLine(args.Data); };
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            await process.WaitForExitAsync();
-            if (process.ExitCode != 0)
+            var psi = new ProcessStartInfo("dotnet", $"restore \"{path}\"");
+            var (exitCode, _, stdErr) = await psi.GetOutputAsync();
+            if (exitCode != 0)
             {
                 throw new InvalidOperationException(
-                    $"dotnet restore failed with exit code {process.ExitCode}.\n" +
-                    $"Error: {error}");
+                    $"dotnet restore failed with exit code {exitCode}.\n" +
+                    $"Error: {stdErr}");
             }
         }
     }
