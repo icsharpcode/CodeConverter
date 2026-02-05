@@ -147,7 +147,7 @@ internal class ArgumentConverter
     private ISymbol GetInvocationSymbol(SyntaxNode invocation)
     {
         var symbol = invocation.TypeSwitch(
-            (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).CandidateSymbols
+            (VBSyntax.InvocationExpressionSyntax e) => _semanticModel.GetAllCandidateSymbols(e)
                 .OrderByDescending(s => s.GetParameters().Length == e.ArgumentList.Arguments.Count)
                 .ThenByDescending(s => ParameterMatchScore(s, e.ArgumentList.Arguments))
                 .FirstOrDefault(),
