@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis;
 
@@ -15,6 +16,10 @@ public static class CompilerExtensions
     /// <remarks>The transitive closure of the references for <paramref name="requiredAssemblies"/> are added.</remarks>
     public static Assembly AssemblyFromCode(this ICompiler compiler, SyntaxTree syntaxTree, params Assembly[] requiredAssemblies)
     {
+        // Register CodePages encoding provider for Windows-1252 and other code pages
+        // This is needed for VB.NET Chr() function which relies on code page specific encodings
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         var allReferences = DefaultReferences.With(requiredAssemblies);
         var compilation = compiler.CreateCompilationFromTree(syntaxTree, allReferences);
 

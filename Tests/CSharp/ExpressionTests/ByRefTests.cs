@@ -764,33 +764,34 @@ internal static partial class Other
         await TestConversionVisualBasicToCSharpAsync(@"Public Class Issue856
     Sub Main()
         Dim decimalTarget As Decimal
-        Double.TryParse(""123"", decimalTarget)
+        Double.TryParse(""123"".AsSpan(), decimalTarget)
         
         Dim longTarget As Long
-        Integer.TryParse(""123"", longTarget)
+        Integer.TryParse(""123"".AsSpan(), longTarget)
         
         Dim intTarget As Integer
-        Long.TryParse(""123"", intTarget)
+        Long.TryParse(""123"".AsSpan(), intTarget)
     End Sub
 
-End Class", @"
+End Class", @"using System;
+
 public partial class Issue856
 {
     public void Main()
     {
         var decimalTarget = default(decimal);
         double argresult = (double)decimalTarget;
-        double.TryParse(""123"", out argresult);
+        double.TryParse(""123"".AsSpan(), out argresult);
         decimalTarget = (decimal)argresult;
 
         var longTarget = default(long);
         int argresult1 = (int)longTarget;
-        int.TryParse(""123"", out argresult1);
+        int.TryParse(""123"".AsSpan(), out argresult1);
         longTarget = argresult1;
 
         var intTarget = default(int);
         long argresult2 = intTarget;
-        long.TryParse(""123"", out argresult2);
+        long.TryParse(""123"".AsSpan(), out argresult2);
         intTarget = (int)argresult2;
     }
 

@@ -1,14 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.1.31911.260
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11205.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConverter", "CodeConverter\CodeConverter.csproj", "{7EA075C6-6406-445C-AB77-6C47AFF88D58}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{21DBA1CE-AF55-4159-B04B-B8C621BE8921}"
-	ProjectSection(ProjectDependencies) = postProject
-		{160F0B34-0F6F-4532-8D7B-39064956364D} = {160F0B34-0F6F-4532-8D7B-39064956364D}
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vsix", "Vsix\Vsix.csproj", "{99498EF8-C9E0-433B-8D7B-EA8E9E66F0C7}"
 EndProject
@@ -17,25 +14,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		CHANGELOG.md = CHANGELOG.md
 		Directory.Build.props = Directory.Build.props
+		IncrementVersion.ps1 = IncrementVersion.ps1
+		README.md = README.md
+		Update-NpmPackages.ps1 = Update-NpmPackages.ps1
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Web", "Web\Web.csproj", "{08A20D4F-6310-43BB-B339-6317ACF3B52E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommandLine", "CommandLine", "{926D43FE-D6AE-45E7-A933-8A0F866E7876}"
-	ProjectSection(SolutionItems) = preProject
-		CommandLine\README.md = CommandLine\README.md
-	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv.NetFramework", "CommandLine\CodeConv.NetFramework\CodeConv.NetFramework.csproj", "{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeConv", "CommandLine\CodeConv\CodeConv.csproj", "{160F0B34-0F6F-4532-8D7B-39064956364D}"
-	ProjectSection(ProjectDependencies) = postProject
-		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D} = {CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}
-	EndProjectSection
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CodeConv.Shared", "CommandLine\CodeConv.Shared\CodeConv.Shared.shproj", "{D3A957FF-DAFC-4265-9AE2-D94F6473411A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Func", "Func\Func.csproj", "{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeConv", "CodeConv\CodeConv.csproj", "{3C0A6B55-283A-6775-8AC5-B9C61150C58E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,33 +47,19 @@ Global
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08A20D4F-6310-43BB-B339-6317ACF3B52E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{160F0B34-0F6F-4532-8D7B-39064956364D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{160F0B34-0F6F-4532-8D7B-39064956364D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{160F0B34-0F6F-4532-8D7B-39064956364D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{160F0B34-0F6F-4532-8D7B-39064956364D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4A2AA3A2-7C6D-4429-AFA9-B9AFD9AAD877}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C0A6B55-283A-6775-8AC5-B9C61150C58E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C0A6B55-283A-6775-8AC5-B9C61150C58E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C0A6B55-283A-6775-8AC5-B9C61150C58E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C0A6B55-283A-6775-8AC5-B9C61150C58E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{CF18CBCF-67FF-46CA-8D1D-3221B7706D7D} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
-		{160F0B34-0F6F-4532-8D7B-39064956364D} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
-		{D3A957FF-DAFC-4265-9AE2-D94F6473411A} = {926D43FE-D6AE-45E7-A933-8A0F866E7876}
-	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B87DD8E0-BF04-46F6-A98F-76F93AFD2988}
-	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{160f0b34-0f6f-4532-8d7b-39064956364d}*SharedItemsImports = 5
-		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{cf18cbcf-67ff-46ca-8d1d-3221b7706d7d}*SharedItemsImports = 5
-		CommandLine\CodeConv.Shared\CodeConv.Shared.projitems*{d3a957ff-dafc-4265-9ae2-d94f6473411a}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

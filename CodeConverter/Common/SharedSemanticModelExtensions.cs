@@ -13,4 +13,10 @@ internal static class SharedSemanticModelExtensions
 
         return default;
     }
+
+    public static ISymbol[] GetAllCandidateSymbols(this SemanticModel semanticModel, SyntaxNode node, CancellationToken cancellationToken = default(CancellationToken))
+    {
+        var symbolInfo = semanticModel.GetSymbolInfo(node, cancellationToken);
+        return [.. symbolInfo.Symbol.YieldNotNull(), .. symbolInfo.CandidateSymbols];
+    }
 }

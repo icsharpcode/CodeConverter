@@ -443,7 +443,7 @@ End Interface");
 End Class
 
 1 source compilation errors:
-CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object)'
+CS0535: 'test' does not implement interface member 'IComparable.CompareTo(object?)'
 1 target compilation errors:
 BC30149: Class 'test' must implement 'Function CompareTo(obj As Object) As Integer' for interface 'IComparable'.");
     }

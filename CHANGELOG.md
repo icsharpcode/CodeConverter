@@ -10,6 +10,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+
+### C# -> VB
+
+
+## [10.0.0] - 2026-02-06
+
+* Support for net framework dropped. Please use an older version if you are converting projects that still use it.
+* dotnet 10 required to run codeconv command line tool
+* Improvements to codeconv tool to support converting newer dotnet versions
+
+### Vsix
+
+
+### VB -> C#
+
 * Xor operator overloads now converted [#1182](htts://github.com/icsharpcode/CodeConverter/issues/1182)
 
 ### C# -> VB
@@ -17,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [9.2.7] - 2025-02-15
 
+This is the last version that supports net framework.
 
 ### Vsix
 

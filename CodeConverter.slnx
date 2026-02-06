@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="CHANGELOG.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="IncrementVersion.ps1" />
+    <File Path="README.md" />
+    <File Path="Update-NpmPackages.ps1" />
+  </Folder>
+  <Project Path="CodeConv/CodeConv.csproj" />
+  <Project Path="CodeConverter/CodeConverter.csproj" />
+  <Project Path="Func/Func.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+  <Project Path="Vsix/Vsix.csproj" Id="99498ef8-c9e0-433b-8d7b-ea8e9e66f0c7" />
+  <Project Path="Web/Web.csproj" />
+</Solution>

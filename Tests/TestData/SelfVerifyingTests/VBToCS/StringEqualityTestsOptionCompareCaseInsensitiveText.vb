@@ -153,7 +153,7 @@ Public Class StringEqualityTests
         Assert.Equal("1111011", GetVisualBasicEqualitySelectStatementMap(nullCharArray))
     End Sub
 
-    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As String)
+    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As String) As String
         Dim record = ""
         Select Case toTest
             Case nullObject
@@ -201,7 +201,7 @@ Public Class StringEqualityTests
         Return record
     End Function
 
-    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As Char())
+    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As Char()) As String
         Dim record = ""
         Select Case toTest
             Case nullObject
@@ -249,7 +249,7 @@ Public Class StringEqualityTests
         Return record
     End Function
 
-    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As Object)
+    Public Overloads Function GetVisualBasicEqualitySelectStatementMap(toTest As Object) As String
         Dim record = ""
         Select Case toTest
             Case nullObject

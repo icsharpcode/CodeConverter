@@ -64,21 +64,6 @@ internal static class SemanticModelExtensions
         return semanticModel.SyntaxTree == node.SyntaxTree ? semanticModel.GetSymbolInfo(node).ExtractBestMatch<TSymbol>() : null;
     }
 
-    public static RefConversion GetRefConversionType(this SemanticModel semanticModel, VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
-    {
-        var parameter = node.IsNamed && node is VBSyntax.SimpleArgumentSyntax sas
-            ? parameters.FirstOrDefault(p => p.Name.Equals(sas.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase))
-            : parameters.ElementAtOrDefault(argList.Arguments.IndexOf(node));
-        if (parameter != null) {
-            refKind = parameter.RefKind;
-            argName = parameter.Name;
-        } else {
-            refKind = RefKind.None;
-            argName = null;
-        }
-        return semanticModel.NeedsVariableForArgument(node, refKind);
-    }
-
     public static RefConversion NeedsVariableForArgument(this SemanticModel semanticModel, VBasic.Syntax.ArgumentSyntax node, RefKind refKind)
     {
         if (refKind == RefKind.None) return RefConversion.Inline;

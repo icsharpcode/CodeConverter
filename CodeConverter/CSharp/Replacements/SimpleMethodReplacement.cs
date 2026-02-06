@@ -133,7 +133,7 @@ internal class SimpleMethodReplacement
     private static bool QualifiedMethodNameMatches(ISymbol symbol, params string[] parts)
     {
         if (symbol == null) return false;
-        foreach (var part in parts.Reverse()) {
+        foreach (var part in Enumerable.Reverse(parts)) {
             if (!part.Equals(symbol.Name, StringComparison.OrdinalIgnoreCase)) return false;
             symbol = symbol.ContainingSymbol;
         }

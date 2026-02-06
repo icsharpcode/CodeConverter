@@ -36,7 +36,9 @@ internal class HandledEventsAnalyzer
             .ToDictionary(m => m.Key, g => g.First(), StringComparer.OrdinalIgnoreCase); // Uses the fact that GroupBy maintains addition order to get the closest declaration
 #pragma warning restore RS1024 // Compare symbols correctly
 
-        var writtenWithEventsProperties = await ancestorPropsMembersByName.Values.OfType<IPropertySymbol>().ToAsyncEnumerable().ToDictionaryAwaitAsync(async p => p.Name, async p => (p, await IsNeverWrittenOrOverriddenAsync(p)), StringComparer.OrdinalIgnoreCase);
+
+        var writtenWithEventsProperties = await ancestorPropsMembersByName.Values.OfType<IPropertySymbol>().ToAsyncEnumerable()
+            .ToDictionaryAsync(async (p, _) => p.Name, async (p, cancellationToken) => (p, await IsNeverWrittenOrOverriddenAsync(p, cancellationToken)));
 
         var eventContainerToMethods = _type.GetMembers().OfType<IMethodSymbol>()
             .SelectMany(HandledEvents)
@@ -62,10 +64,10 @@ internal class HandledEventsAnalyzer
         return toDiscard;
     }
 
-    private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol)
+    private async Task<bool> IsNeverWrittenOrOverriddenAsync(ISymbol symbol, CancellationToken cancellationToken = default)
     {
         var projectSolution = _commonConversions.Document.Project.Solution;
-        if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull)) return false;
+        if (!await projectSolution.IsNeverWrittenAsync(symbol, _initializeComponentLocationOrNull, cancellationToken: cancellationToken)) return false;
         return !_typeToInheritors.Contains(symbol.ContainingType);
     }
 

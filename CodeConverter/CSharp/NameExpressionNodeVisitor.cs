@@ -435,7 +435,7 @@ internal class NameExpressionNodeVisitor
                 var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
                 arguments.Add(arg);
                 var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
-                parameters.Add(par);
+                parameters.Add(par.WithDefault(null));
             }
             return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
         }
@@ -452,7 +452,7 @@ internal class NameExpressionNodeVisitor
 
         bool RequiresLocalFunction(RefConversion possibleInline, VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
         {
-            var refConversion = _semanticModel.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out string _, out _);
+            var refConversion = CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out string _, out _);
             if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
             if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
             var argExpression = sas.Expression.SkipIntoParens();

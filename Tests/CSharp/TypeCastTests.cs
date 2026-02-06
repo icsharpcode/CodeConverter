@@ -1355,7 +1355,7 @@ internal partial class CharTestClass
 {
     private string[] QuoteSplit(string text)
     {
-        return text.Split('""');
+        return text.Split(""\"""");
     }
 }");
     }
@@ -1553,7 +1553,7 @@ internal partial class TestGenericCast
     }
     private static T GenericFunctionWithCastThatExistsInCsharp<T>() where T : TestGenericCast
     {
-        return (T)new TestGenericCast();
+        return Conversions.ToGenericParameter<T>(new TestGenericCast());
     }
 }");
     }

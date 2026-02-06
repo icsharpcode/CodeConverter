@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Collections.Immutable;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.Classification;
@@ -577,7 +578,7 @@ internal class CommonConversions
     {
         if (operation is IPropertyReferenceOperation pro && pro.Arguments.Any() &&
             !VisualBasicExtensions.IsDefault(pro.Property)) {
-            var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.Children.First() == pro;
+            var isSetter = pro.Parent.Kind == OperationKind.SimpleAssignment && pro.Parent.ChildOperations.First() == pro;
             var extraArg = isSetter
                 ? await GetParameterizedSetterArgAsync(operation)
                 : null;
@@ -669,6 +670,7 @@ internal class CommonConversions
         symbol = symbol.OriginalDefinition;
         // Construct throws an exception if ConstructedFrom differs from it, so let's use ConstructedFrom directly
         var symbolToFind = symbol is IMethodSymbol m ? m.ConstructedFrom : symbol;
+        // This no longer works for private members: https://github.com/dotnet/roslyn/issues/72369#issuecomment-1975066163
         var similarSymbol = SymbolFinder.FindSimilarSymbols(symbolToFind, _csCompilation).FirstOrDefault();
         return similarSymbol;
     }
@@ -684,7 +686,7 @@ internal class CommonConversions
 
     public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
     {
-        return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps));
+        return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(ps.Cast<CSSyntax.ParameterSyntax>()));
     }
 
     public static ExpressionSyntax NotNothingComparison(ExpressionSyntax otherArgument, bool isReferenceType, bool inExpressionLambda = false)
@@ -747,6 +749,9 @@ internal class CommonConversions
             return csParam.RefKind;
         }
 
+        var syntaxNodes = vbParameter?.DeclaringSyntaxReferences.Select(r => r.GetSyntax());
+        optionalParameterSyntax ??= syntaxNodes?.OfType<VBSyntax.ParameterSyntax>().FirstOrDefault();
+
         if (optionalParameterSyntax?.AttributeLists.Any(this.HasOutAttribute) == true) {
             return RefKind.Out;
         }
@@ -799,5 +804,20 @@ internal class CommonConversions
         // Future: Avoid more redundant conversions by still calling AddExplicitConversion when writtenByUser avoiding the above and forcing typeInfo.Type
         return writtenByUser ? null : this.TypeConversionAnalyzer.AddExplicitConversion(conversionArg, csharpArg,
             forceTargetType: forceTargetType, defaultToCast: true);
+    }
+
+    public SemanticModelExtensions.RefConversion GetRefConversionType(VBSyntax.ArgumentSyntax node, VBSyntax.ArgumentListSyntax argList, ImmutableArray<IParameterSymbol> parameters, out string argName, out RefKind refKind)
+    {
+        var parameter = node.IsNamed && node is VBSyntax.SimpleArgumentSyntax sas
+            ? parameters.FirstOrDefault(p => p.Name.Equals(sas.NameColonEquals.Name.Identifier.Text, StringComparison.OrdinalIgnoreCase))
+            : parameters.ElementAtOrDefault(argList.Arguments.IndexOf(node));
+        if (parameter != null) {
+            refKind = GetCsRefKind(parameter);
+            argName = parameter.Name;
+        } else {
+            refKind = RefKind.None;
+            argName = null;
+        }
+        return SemanticModel.NeedsVariableForArgument(node, refKind);
     }
 }

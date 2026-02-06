@@ -18,14 +18,14 @@ public class MultiFileSolutionAndProjectTests
         _multiFileTestFixture = multiFileTestFixture;
     }
 
-    [Fact(Skip = "CI system cannot run this at the moment due to installed SDK versions")]
+    [Fact()]
     public async Task ConvertWholeSolutionAsync()
     {
         //the `CSharpRefReturn` project is excluded because it has ref return properties which are not supported in VB
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name != "CSharpRefReturn", Language.VB);
     }
 
-    [Fact(Skip = "CI system cannot run this at the moment due to installed SDK versions")]
+    [Fact()]
     public async Task ConvertCSharpConsoleAppOnlyAsync()
     {
         await _multiFileTestFixture.ConvertProjectsWhereAsync(p => p.Name == "CSharpConsoleApp", Language.VB);

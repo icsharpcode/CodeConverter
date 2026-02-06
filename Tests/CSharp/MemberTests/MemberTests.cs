@@ -1154,7 +1154,7 @@ internal static partial class TaskExtensions
             @"<DllImport(""kernel32.dll"", SetLastError:=True)>
 Private Shared Function OpenProcess(ByVal dwDesiredAccess As AccessMask, ByVal bInheritHandle As Boolean, ByVal dwProcessId As UInteger) As IntPtr
 End Function", @"[DllImport(""kernel32.dll"", SetLastError = true)]
-private static extern IntPtr OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+private static extern nint OpenProcess(AccessMask dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
 
 1 source compilation errors:
 BC30002: Type 'AccessMask' is not defined.
@@ -1529,7 +1529,7 @@ BC30455: Argument not specified for parameter 'str1' of 'Private Sub ByRefNoDefa
 BC30455: Argument not specified for parameter 'str2' of 'Private Sub OptionalByRefNoDefault(ByRef str2 As String)'.
 BC30455: Argument not specified for parameter 'str3' of 'Private Sub OptionalByRefWithDefault(ByRef str3 As String)'.
 1 target compilation errors:
-CS7036: There is no argument given that corresponds to the required formal parameter 'str1' of 'MissingByRefArgumentWithNoExplicitDefaultValue.ByRefNoDefault(ref string)'
+CS7036: There is no argument given that corresponds to the required parameter 'str1' of 'MissingByRefArgumentWithNoExplicitDefaultValue.ByRefNoDefault(ref string)'
 ");
     }
 }

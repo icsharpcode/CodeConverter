@@ -33,9 +33,9 @@ public partial class VBIsCaseInsensitive : System.Web.UI.Page
 
 public partial class VBIsCaseInsensitive
 {
-    private System.Web.UI.WebControls.Button _btnOk;
+    private Global.System.Web.UI.WebControls.Button _btnOk;
 
-    protected virtual System.Web.UI.WebControls.Button btnOk
+    protected virtual Global.System.Web.UI.WebControls.Button btnOk
     {
         [MethodImpl(MethodImplOptions.Synchronized)]
         get
@@ -58,7 +58,14 @@ public partial class VBIsCaseInsensitive
             }
         }
     }
-}");
+}
+3 source compilation errors:
+BC30002: Type 'System.Web.UI.Page' is not defined.
+BC30002: Type 'Global.System.Web.UI.WebControls.Button' is not defined.
+BC30590: Event 'Click' cannot be found.
+2 target compilation errors:
+CS0234: The type or namespace name 'UI' does not exist in the namespace 'System.Web' (are you missing an assembly reference?)
+CS0246: The type or namespace name 'Global.System.Web.UI.WebControls.Button' could not be found (are you missing a using directive or an assembly reference?)");
     }
 
     [Fact]
