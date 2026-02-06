@@ -6,7 +6,7 @@ Convert code from VB.NET to C# (and vice versa) using Roslyn - all free and open
 * [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter)
   * To install close VS and double-click the downloadeded .vsix file
 * [Online snippet converter](https://icsharpcode.github.io/CodeConverter/)
-* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global` (still requires VS2022 17.1+ installed)
+* Command line `dotnet tool install ICSharpCode.CodeConverter.codeconv --global` (still requires VS2026 18.0+ installed)
 * [Nuget library](https://www.nuget.org/packages/ICSharpCode.CodeConverter/) (this underpins all other free converters you'll find online)
 
 See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on getting the best results, or the [changelog](https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md) for recent improvements.
@@ -15,7 +15,7 @@ See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on gett
 
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for advice / help using it.
 
-Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Use VS 2022 17.1+)
+Download from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SharpDevelopTeam.CodeConverter) (Use VS VS2026 18.0+)
 
 * Flexible: Convert a small selection, or a whole solution in one go, in either direction.
 * Accurate: Full project context (through Roslyn) is used to get the most accurate conversion.
@@ -47,10 +47,11 @@ Visual Basic .NET is slowly dying. It has support for *some* project types on .N
 * Integrating the NuGet library
   * See [CodeConversion.ConvertDocumentUnhandledAsync](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) or [CodeConversion.ConvertProjectUnhandled](https://github.com/icsharpcode/CodeConverter/blob/daa741246770fabf9aa87cd75b753220306aaaaa/Vsix/CodeConversion.cs#L276-L279) in the VSIX project.
   * See [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
+* See older builds in [Releases](https://github.com/icsharpcode/CodeConverter/tags) if you need to convert net framework projects.
 
 ## Building/running from source
 
-1. Ensure you have [.NET Core SDK 6.0](https://dotnet.microsoft.com/download/dotnet-core/6.0)
+1. Ensure you have [.NET Core SDK 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 2. Open the solution in Visual Studio 2022+ (Community edition is sufficient)
 3. To run the website, set CodeConverter.Web as the startup project
   * You will need [Node (LTS)](https://community.chocolatey.org/packages/nodejs-lts) 16.* (node 17 introduces a breaking change causing ERR_OSSL_EVP_UNSUPPORTED)

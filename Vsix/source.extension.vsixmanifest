@@ -13,12 +13,12 @@
         <Tags>code converter vb csharp visual basic csharp net translate</Tags>
     </Metadata>
     <Installation>
-      <InstallationTarget Version="[17.6,18.0)" Id="Microsoft.VisualStudio.Community">
-        <ProductArchitecture>amd64</ProductArchitecture>
-      </InstallationTarget>
-      <InstallationTarget Version="[17.6,18.0)" Id="Microsoft.VisualStudio.Community">
-        <ProductArchitecture>arm64</ProductArchitecture>
-      </InstallationTarget>
+        <InstallationTarget Version="[17.8,18.0)" Id="Microsoft.VisualStudio.Community">
+            <ProductArchitecture>amd64</ProductArchitecture>
+        </InstallationTarget>
+        <InstallationTarget Version="[17.8,18.0)" Id="Microsoft.VisualStudio.Community">
+            <ProductArchitecture>arm64</ProductArchitecture>
+        </InstallationTarget>
     </Installation>
     <Assets>
         <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
