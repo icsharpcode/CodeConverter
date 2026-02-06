@@ -111,9 +111,7 @@
     <Compile Include="..\CodeConverter\Common\DefaultReferences.cs">
       <Link>DefaultReferences.cs</Link>
     </Compile>
-    <Compile Include="..\CommandLine\CodeConv.Shared\Util\AppDomainExtensions.cs">
-      <Link>AppDomainExtensions.cs</Link>
-    </Compile>
+    <Compile Include="AppDomainExtensions.cs" />
     <Compile Include="OleMenuCommandWithBlockingStatus.cs" />
     <Compile Include="CodeConversion.cs" />
     <Compile Include="ConvertCSToVBCommand.cs" />

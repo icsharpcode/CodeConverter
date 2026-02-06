@@ -43,7 +43,4 @@
     <EmbeddedResource Remove="TestData\**" />
     <None Include="TestData\**\*.*" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CommandLine\CodeConv\CodeConv.csproj" />
-  </ItemGroup>
 </Project>
