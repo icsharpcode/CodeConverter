@@ -3,8 +3,7 @@
     "path": "CodeConverter.sln",
     "projects": [
       "CodeConverter\\CodeConverter.csproj",
-      "CommandLine\\CodeConv.Shared\\CodeConv.Shared.shproj",
-      "CommandLine\\CodeConv\\CodeConv.csproj",
+      "CodeConv\\CodeConv.csproj",
       "Func\\Func.csproj",
       "Tests\\Tests.csproj",
       "Web\\Web.csproj"
