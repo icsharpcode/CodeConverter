@@ -30,6 +30,7 @@ Remarks:
 public partial class CodeConvProgram
 {
     public const string CoreOptionDefinition = "--core-only";
+    private static readonly string[] ValidSolutionExtensions = { ".sln", ".slnx" };
 
     /// <remarks>Calls <see cref="OnExecuteAsync(CommandLineApplication)"/> by reflection</remarks>
     public static async Task<int> Main(string[] args) => await CommandLineApplication.ExecuteAsync<CodeConvProgram>(args);
@@ -105,8 +106,10 @@ public partial class CodeConvProgram
 
         IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
 
-        if (!string.Equals(Path.GetExtension(finalSolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
-            throw new ValidationException("Solution path must end in `.sln`");
+        var extension = Path.GetExtension(finalSolutionPath);
+        if (!ValidSolutionExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)) {
+            var extensionsStr = string.Join(" or ", ValidSolutionExtensions.Select(e => $"`{e}`"));
+            throw new ValidationException($"Solution path must end in {extensionsStr}");
         }
 
         string? directoryName = string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(finalSolutionPath) : OutputDirectory;
