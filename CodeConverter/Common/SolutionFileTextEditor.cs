@@ -19,7 +19,21 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
 
             (string oldType, string newType) = GetProjectTypeReplacement(projTypeGuidMappings, projName, projPathEscaped,
                 sourceSolutionContents);
-            (string oldGuid, string newGuid, bool firstOnly) = GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents);
+            var guidReplacement = GetProjectGuidReplacement(projPathEscaped, sourceSolutionContents);
+
+            // For solution files without GUIDs (e.g., .slnx format), only replace project type and path
+            if (guidReplacement == null)
+            {
+                if (!string.IsNullOrEmpty(oldType))
+                {
+                    var oldProjRefWithoutGuid = oldType + projPathEscaped;
+                    var newProjRefWithoutGuid = newType + newProjPath.TrimEnd(',', ' ');
+                    projectReferenceReplacements.Add((oldProjRefWithoutGuid, newProjRefWithoutGuid, false));
+                }
+                continue;
+            }
+
+            (string oldGuid, string newGuid, bool firstOnly) = guidReplacement.Value;
 
             var oldProjRefReplacement = oldType + projPathEscaped + @""", """ + oldGuid + @"""";
             var newProjRefReplacement = newType + newProjPath + @"""" + newGuid + @"""";
@@ -53,7 +67,11 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
                 continue;
             }
 
-            projectReferenceReplacements.Add(GetProjectGuidReplacement(escapedProjPath, sourceSolutionContents));
+            var guidReplacement = GetProjectGuidReplacement(escapedProjPath, sourceSolutionContents);
+            if (guidReplacement != null)
+            {
+                projectReferenceReplacements.Add(guidReplacement.Value);
+            }
         }
 
         return projectReferenceReplacements;
@@ -85,7 +103,7 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         return default;
     }
 
-    private static (string Find, string Replace, bool FirstOnly) GetProjectGuidReplacement(string projPath,
+    private static (string Find, string Replace, bool FirstOnly)? GetProjectGuidReplacement(string projPath,
         string contents)
     {
         var guidPattern = projPath + @""", ""({[0-9A-Fa-f\-]{32,36}})("")";
@@ -93,8 +111,8 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         var projGuidMatch = projGuidRegex.Match(contents);
 
         if (!projGuidMatch.Success) {
-            throw new OperationCanceledException($"{nameof(guidPattern)} {guidPattern} doesn't match with" +
-                                                 $" sourceSlnFileContents {contents}");
+            // Return null for solution formats without GUIDs (e.g., .slnx)
+            return null;
         }
 
         var oldGuid = projGuidMatch.Groups[1].Value;
