@@ -2,9 +2,9 @@ name: Build CodeConverter
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
 
 env:
   BuildVersion: '10.0.0'
@@ -78,7 +78,7 @@ jobs:
         path: Func/bin/${{ env.BuildTarget }}/publish/
         
  deploy:
-     if: ${{ github.ref == 'refs/heads/master' }}
+     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
      concurrency: ci-${{ github.ref }}
      needs: [build] # The second job must depend on the first one to complete before running and uses ubuntu-latest instead of windows.
      runs-on: ubuntu-latest
