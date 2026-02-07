@@ -35,7 +35,9 @@ internal class AccessorDeclarationNodeConverter
         var convertibleModifiers = node.Modifiers.Where(m => !m.IsKind(VBasic.SyntaxKind.ReadOnlyKeyword, VBasic.SyntaxKind.WriteOnlyKeyword, VBasic.SyntaxKind.DefaultKeyword));
         var modifiers = CommonConversions.ConvertModifiers(node, convertibleModifiers.ToList(), node.GetMemberContext());
         var isIndexer = CommonConversions.IsDefaultIndexer(node);
-        var propSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node) as IPropertySymbol;
+        IPropertySymbol propSymbol = node.Parent is VBSyntax.PropertyBlockSyntax pb
+            ? _semanticModel.GetDeclaredSymbol(pb)
+            : _semanticModel.GetDeclaredSymbol(node);
         var accessedThroughMyClass = IsAccessedThroughMyClass(node, node.Identifier, propSymbol);
 
         var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
@@ -452,7 +454,12 @@ internal class AccessorDeclarationNodeConverter
         var preBodyStatements = new List<CSSyntax.StatementSyntax>();
         var postBodyStatements = new List<CSSyntax.StatementSyntax>();
 
-        var functionSym = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
+        var symbolNode = node.TypeSwitch(
+            (VBSyntax.MethodBlockSyntax mb) => (VisualBasicSyntaxNode)mb.SubOrFunctionStatement,
+            (VBSyntax.AccessorBlockSyntax ab) => ab.AccessorStatement,
+            _ => node
+        );
+        var functionSym = ModelExtensions.GetDeclaredSymbol(_semanticModel, symbolNode);
         if (functionSym != null) {
             var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
 
