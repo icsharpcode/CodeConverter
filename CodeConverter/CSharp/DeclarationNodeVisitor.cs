@@ -1,11 +1,9 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
-using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using CSSyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
-using Microsoft.CodeAnalysis.VisualBasic;
+using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 
@@ -20,7 +18,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 {
     private static readonly Type DllImportType = typeof(DllImportAttribute);
     private static readonly Type CharSetType = typeof(CharSet);
-    private static readonly SyntaxToken SemicolonToken = SyntaxFactory.Token(CSSyntaxKind.SemicolonToken);
+    private static readonly SyntaxToken SemicolonToken = CS.SyntaxFactory.Token(CS.SyntaxKind.SemicolonToken);
     private readonly SyntaxGenerator _csSyntaxGenerator;
     private readonly ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
     private readonly Compilation _vbCompilation;
@@ -90,7 +88,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var fileOptionCompareValue = node.Options.Where(x => x.NameKeyword.IsKind(VBasic.SyntaxKind.CompareKeyword)).LastOrDefault()?.ValueKeyword;
         _visualBasicEqualityComparison.OptionCompareTextCaseInsensitive = fileOptionCompareValue?.IsKind(VBasic.SyntaxKind.TextKeyword) ?? options.OptionCompareText;
 
-        var attributes = SyntaxFactory.List(await node.Attributes.SelectMany(a => a.AttributeLists).SelectManyAsync(CommonConversions.ConvertAttributeAsync));
+        var attributes = CS.SyntaxFactory.List(await node.Attributes.SelectMany(a => a.AttributeLists).SelectManyAsync(CommonConversions.ConvertAttributeAsync));
 
         var xmlImportHelperClassDeclarationOrNull = (await _xmlImportContext.HandleImportsAsync(importsClauses, x => x.AcceptAsync<FieldDeclarationSyntax>(TriviaConvertingDeclarationVisitor))).GenerateHelper();
             
@@ -106,17 +104,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var usings = await importsClauses
             .SelectAsync(async c => await c.AcceptAsync<UsingDirectiveSyntax>(TriviaConvertingDeclarationVisitor));
         var usingDirectiveSyntax = usings
-            .Concat(_extraUsingDirectives.Select(u => SyntaxFactory.UsingDirective(SyntaxFactory.ParseName(u))))
+            .Concat(_extraUsingDirectives.Select(u => CS.SyntaxFactory.UsingDirective(CS.SyntaxFactory.ParseName(u))))
             .OrderByDescending(IsSystemUsing).ThenBy(u => u.Name.ToString().Replace("global::", "")).ThenByDescending(HasSourceMapAnnotations)
             .GroupBy(u => (Name: u.Name.ToString(), Alias: u.Alias))
             .Select(g => g.First())
-            .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(_ => SyntaxFactory.UsingDirective(SyntaxFactory.NameEquals(XmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
+            .Concat(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Select(_ => CS.SyntaxFactory.UsingDirective(CS.SyntaxFactory.NameEquals(XmlImportContext.HelperClassShortIdentifierName), _xmlImportContext.HelperClassUniqueIdentifierName)));
 
-        return SyntaxFactory.CompilationUnit(
-            SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
-            SyntaxFactory.List(usingDirectiveSyntax),
+        return CS.SyntaxFactory.CompilationUnit(
+            CS.SyntaxFactory.List<ExternAliasDirectiveSyntax>(),
+            CS.SyntaxFactory.List(usingDirectiveSyntax),
             attributes,
-            SyntaxFactory.List(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Concat(convertedMembers))
+            CS.SyntaxFactory.List(xmlImportHelperClassDeclarationOrNull.YieldNotNull().Concat(convertedMembers))
         );
     }
 
@@ -146,7 +144,16 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private bool ShouldBeNestedInRootNamespace(VBSyntax.StatementSyntax vbStatement, string rootNamespace)
     {
-        return (_semanticModel.GetDeclaredSymbol(vbStatement)?.ToDisplayString()).StartsWith(rootNamespace, StringComparison.InvariantCulture) == true;
+        ISymbol symbol = vbStatement switch {
+            VBSyntax.TypeBlockSyntax tb => _semanticModel.GetDeclaredSymbol(tb.BlockStatement as VBSyntax.TypeStatementSyntax),
+            VBSyntax.MethodBlockSyntax mb => _semanticModel.GetDeclaredSymbol(mb.SubOrFunctionStatement),
+            VBSyntax.FieldDeclarationSyntax fd => _semanticModel.GetDeclaredSymbol(fd.Declarators.First().Names.First()),
+            VBSyntax.NamespaceBlockSyntax nb => _semanticModel.GetDeclaredSymbol(nb.NamespaceStatement),
+            VBSyntax.PropertyBlockSyntax pb => _semanticModel.GetDeclaredSymbol(pb.PropertyStatement),
+            VBSyntax.EnumBlockSyntax eb => _semanticModel.GetDeclaredSymbol(eb.EnumStatement),
+            _ => null
+        };
+        return (symbol?.ToDisplayString()).StartsWith(rootNamespace, StringComparison.InvariantCulture) == true;
     }
 
     private static bool IsNamespaceDeclaration(VBSyntax.StatementSyntax m)
@@ -158,13 +165,13 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var nameEqualsSyntax = node.Alias == null
             ? null
-            : SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Alias.Identifier)));
+            : CS.SyntaxFactory.NameEquals(CS.SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Alias.Identifier)));
 
         var name = await node.Name.AcceptAsync<NameSyntax>(_triviaConvertingExpressionVisitor);
 
         //Add static keyword for class and module imports
         var classification = await CommonConversions.GetClassificationLastTokenAsync(node);
-        var staticToken = SyntaxFactory.Token(CSSyntaxKind.StaticKeyword);
+        var staticToken = CS.SyntaxFactory.Token(CS.SyntaxKind.StaticKeyword);
         var staticClassifications = new List<string>
         {
             ClassificationTypeNames.ClassName,
@@ -173,7 +180,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var usingDirective = staticClassifications.Contains(classification)
             ? ValidSyntaxFactory.UsingDirective(staticToken, nameEqualsSyntax, name)
-            : SyntaxFactory.UsingDirective(nameEqualsSyntax, name);
+            : CS.SyntaxFactory.UsingDirective(nameEqualsSyntax, name);
 
         return usingDirective;
     }
@@ -181,15 +188,15 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     public override async Task<CSharpSyntaxNode> VisitNamespaceBlock(VBSyntax.NamespaceBlockSyntax node)
     {
         var members = (await node.Members.SelectAsync(ConvertMemberAsync)).Where(m => m != null);
-        var sym = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
+        var sym = _semanticModel.GetDeclaredSymbol(node.NamespaceStatement);
         string namespaceToDeclare = await WithDeclarationNameCasingAsync(node, sym);
         var parentNamespaceSyntax = node.GetAncestor<VBSyntax.NamespaceBlockSyntax>();
-        var parentNamespaceDecl = parentNamespaceSyntax != null ? ModelExtensions.GetDeclaredSymbol(_semanticModel, parentNamespaceSyntax) : null;
+        var parentNamespaceDecl = parentNamespaceSyntax != null ? _semanticModel.GetDeclaredSymbol(parentNamespaceSyntax.NamespaceStatement) : null;
         var parentNamespaceFullName = parentNamespaceDecl?.ToDisplayString() ?? _topAncestorNamespace;
         if (parentNamespaceFullName != null && namespaceToDeclare.StartsWith(parentNamespaceFullName + ".", StringComparison.InvariantCulture))
             namespaceToDeclare = namespaceToDeclare.Substring(parentNamespaceFullName.Length + 1);
 
-        var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, SyntaxFactory.List(members));
+        var cSharpSyntaxNode = (CSharpSyntaxNode) _csSyntaxGenerator.NamespaceDeclaration(namespaceToDeclare, CS.SyntaxFactory.List(members));
         return cSharpSyntaxNode;
     }
 
@@ -215,7 +222,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var members = parentType.Members;
 
-        var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType);
+        var namedTypeSymbol = _semanticModel.GetDeclaredSymbol(parentType.BlockStatement);
         var additionalInitializers = new AdditionalInitializers(parentType, namedTypeSymbol, _vbCompilation);
         var methodsWithHandles = await GetMethodWithHandlesAsync(parentType, additionalInitializers.DesignerGeneratedInitializeComponentOrNull);
 
@@ -286,8 +293,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var csId = CommonConversions.ConvertIdentifier(f.n.Identifier);
         string initializerFunctionName = CommonConversions.GetInitialValueFunctionName(f.n);
-        var invocation = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName((initializerFunctionName)), SyntaxFactory.ArgumentList());
-        return new Assignment(ValidSyntaxFactory.IdentifierName(csId), CSSyntaxKind.SimpleAssignmentExpression, invocation);
+        var invocation = CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName((initializerFunctionName)), CS.SyntaxFactory.ArgumentList());
+        return new Assignment(ValidSyntaxFactory.IdentifierName(csId), CS.SyntaxKind.SimpleAssignmentExpression, invocation);
     }
 
     private MemberDeclarationSyntax[] GetAdditionalDeclarations(VBSyntax.StatementSyntax member)
@@ -322,7 +329,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         MemberDeclarationSyntax CreateErrorMember(VBSyntax.StatementSyntax memberCausingError, Exception e)
         {
             var dummyClass
-                = SyntaxFactory.ClassDeclaration("_failedMemberConversionMarker" + ++_failedMemberConversionMarkerCount);
+                = CS.SyntaxFactory.ClassDeclaration("_failedMemberConversionMarker" + ++_failedMemberConversionMarkerCount);
             return dummyClass.WithCsTrailingErrorComment(memberCausingError, e);
         }
     }
@@ -335,13 +342,13 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var (parameters, constraints) = await SplitTypeParametersAsync(classStatement.TypeParameterList);
         var convertedIdentifier = CommonConversions.ConvertIdentifier(classStatement.Identifier);
 
-        return SyntaxFactory.ClassDeclaration(
+        return CS.SyntaxFactory.ClassDeclaration(
             attributes, ConvertTypeBlockModifiers(classStatement, TokenContext.Global),
             convertedIdentifier,
             parameters,
             await ConvertInheritsAndImplementsAsync(node.Inherits, node.Implements),
             constraints,
-            SyntaxFactory.List(await ConvertMembersAsync(node))
+            CS.SyntaxFactory.List(await ConvertMembersAsync(node))
         );
     }
 
@@ -351,19 +358,19 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             return null;
         var baseTypes = new List<BaseTypeSyntax>();
         foreach (var t in inherits.SelectMany(c => c.Types).Concat(implements.SelectMany(c => c.Types)))
-            baseTypes.Add(SyntaxFactory.SimpleBaseType(await t.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor)));
-        return SyntaxFactory.BaseList(SyntaxFactory.SeparatedList(baseTypes));
+            baseTypes.Add(CS.SyntaxFactory.SimpleBaseType(await t.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor)));
+        return CS.SyntaxFactory.BaseList(CS.SyntaxFactory.SeparatedList(baseTypes));
     }
 
     public override async Task<CSharpSyntaxNode> VisitModuleBlock(VBSyntax.ModuleBlockSyntax node)
     {
         var stmt = node.ModuleStatement;
         var attributes = await CommonConversions.ConvertAttributesAsync(stmt.AttributeLists);
-        var members = SyntaxFactory.List(await ConvertMembersAsync(node));
+        var members = CS.SyntaxFactory.List(await ConvertMembersAsync(node));
         var (parameters, constraints) = await SplitTypeParametersAsync(stmt.TypeParameterList);
 
-        return SyntaxFactory.ClassDeclaration(
-            attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, CSSyntaxKind.StaticKeyword),
+        return CS.SyntaxFactory.ClassDeclaration(
+            attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule, CS.SyntaxKind.StaticKeyword),
             CommonConversions.ConvertIdentifier(stmt.Identifier),
             parameters,
             await ConvertInheritsAndImplementsAsync(node.Inherits, node.Implements),
@@ -376,11 +383,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var stmt = node.StructureStatement;
         var attributes = await CommonConversions.ConvertAttributesAsync(stmt.AttributeLists);
-        var members = SyntaxFactory.List(await ConvertMembersAsync(node));
+        var members = CS.SyntaxFactory.List(await ConvertMembersAsync(node));
 
         var (parameters, constraints) = await SplitTypeParametersAsync(stmt.TypeParameterList);
 
-        return SyntaxFactory.StructDeclaration(
+        return CS.SyntaxFactory.StructDeclaration(
             attributes, ConvertTypeBlockModifiers(stmt, TokenContext.Global), CommonConversions.ConvertIdentifier(stmt.Identifier),
             parameters,
             await ConvertInheritsAndImplementsAsync(node.Inherits, node.Implements),
@@ -393,11 +400,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var stmt = node.InterfaceStatement;
         var attributes = await CommonConversions.ConvertAttributesAsync(stmt.AttributeLists);
-        var members = SyntaxFactory.List(await ConvertMembersAsync(node));
+        var members = CS.SyntaxFactory.List(await ConvertMembersAsync(node));
 
         var (parameters, constraints) = await SplitTypeParametersAsync(stmt.TypeParameterList);
 
-        return SyntaxFactory.InterfaceDeclaration(
+        return CS.SyntaxFactory.InterfaceDeclaration(
             attributes, ConvertTypeBlockModifiers(stmt, TokenContext.InterfaceOrModule), CommonConversions.ConvertIdentifier(stmt.Identifier),
             parameters,
             await ConvertInheritsAndImplementsAsync(node.Inherits, node.Implements),
@@ -407,10 +414,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     }
 
     private SyntaxTokenList ConvertTypeBlockModifiers(VBSyntax.TypeStatementSyntax stmt,
-        TokenContext interfaceOrModule, params Microsoft.CodeAnalysis.CSharp.SyntaxKind[] extraModifiers)
+        TokenContext interfaceOrModule, params CS.SyntaxKind[] extraModifiers)
     {
         if (IsPartialType(stmt) && !HasPartialKeyword(stmt.Modifiers)) {
-            extraModifiers = extraModifiers.Concat(new[] { CSSyntaxKind.PartialKeyword})
+            extraModifiers = extraModifiers.Concat(new[] { CS.SyntaxKind.PartialKeyword})
                 .ToArray();
         }
 
@@ -424,7 +431,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private bool IsPartialType(VBSyntax.DeclarationStatementSyntax stmt)
     {
-        return _semanticModel.GetDeclaredSymbol(stmt).IsPartialClassDefinition();
+        return _semanticModel.GetDeclaredSymbol((VBSyntax.TypeStatementSyntax)stmt).IsPartialClassDefinition();
     }
 
     public override async Task<CSharpSyntaxNode> VisitEnumBlock(VBSyntax.EnumBlockSyntax node)
@@ -435,19 +442,19 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributes = await stmt.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
         BaseListSyntax baseList = null;
         if (asClause != null) {
-            baseList = SyntaxFactory.BaseList(SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(SyntaxFactory.SimpleBaseType(await asClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor))));
+            baseList = CS.SyntaxFactory.BaseList(CS.SyntaxFactory.SingletonSeparatedList<BaseTypeSyntax>(CS.SyntaxFactory.SimpleBaseType(await asClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor))));
             if (asClause.AttributeLists.Count > 0) {
                 var attributeLists = await asClause.AttributeLists.SelectManyAsync(l => CommonConversions.ConvertAttributeAsync(l));
                 attributes = attributes.Concat(
-                    SyntaxFactory.AttributeList(
-                        SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(CSSyntaxKind.ReturnKeyword)),
-                        SyntaxFactory.SeparatedList(attributeLists.SelectMany(a => a.Attributes)))
+                    CS.SyntaxFactory.AttributeList(
+                        CS.SyntaxFactory.AttributeTargetSpecifier(CS.SyntaxFactory.Token(CS.SyntaxKind.ReturnKeyword)),
+                        CS.SyntaxFactory.SeparatedList(attributeLists.SelectMany(a => a.Attributes)))
                 ).ToArray();
             }
         }
-        var members = SyntaxFactory.SeparatedList(await node.Members.SelectAsync(async m => await m.AcceptAsync<EnumMemberDeclarationSyntax>(TriviaConvertingDeclarationVisitor)));
-        return SyntaxFactory.EnumDeclaration(
-            SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers), CommonConversions.ConvertIdentifier(stmt.Identifier),
+        var members = CS.SyntaxFactory.SeparatedList(await node.Members.SelectAsync(async m => await m.AcceptAsync<EnumMemberDeclarationSyntax>(TriviaConvertingDeclarationVisitor)));
+        return CS.SyntaxFactory.EnumDeclaration(
+            CS.SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(stmt, stmt.Modifiers), CommonConversions.ConvertIdentifier(stmt.Identifier),
             baseList,
             members
         );
@@ -456,7 +463,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     public override async Task<CSharpSyntaxNode> VisitEnumMemberDeclaration(VBSyntax.EnumMemberDeclarationSyntax node)
     {
         var attributes = await CommonConversions.ConvertAttributesAsync(node.AttributeLists);
-        return SyntaxFactory.EnumMemberDeclaration(
+        return CS.SyntaxFactory.EnumMemberDeclaration(
             attributes, CommonConversions.ConvertIdentifier(node.Identifier),
             await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor)
         );
@@ -471,21 +478,21 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         TypeSyntax returnType;
         var asClause = node.AsClause;
         if (asClause == null) {
-            returnType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
+            returnType = CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
         } else {
             returnType = await asClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor);
             if (asClause.AttributeLists.Count > 0) {
                 var attributeListSyntaxs = await asClause.AttributeLists.SelectManyAsync(l => CommonConversions.ConvertAttributeAsync(l));
                 attributes = attributes.Concat(
-                    SyntaxFactory.AttributeList(
-                        SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(CSSyntaxKind.ReturnKeyword)),
-                        SyntaxFactory.SeparatedList(attributeListSyntaxs.SelectMany(a => a.Attributes)))
+                    CS.SyntaxFactory.AttributeList(
+                        CS.SyntaxFactory.AttributeTargetSpecifier(CS.SyntaxFactory.Token(CS.SyntaxKind.ReturnKeyword)),
+                        CS.SyntaxFactory.SeparatedList(attributeListSyntaxs.SelectMany(a => a.Attributes)))
                 ).ToArray();
             }
         }
 
-        return SyntaxFactory.DelegateDeclaration(
-            SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers),
+        return CS.SyntaxFactory.DelegateDeclaration(
+            CS.SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers),
             returnType, CommonConversions.ConvertIdentifier(node.Identifier),
             typeParameters,
             await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),
@@ -534,9 +541,9 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         {
             var thisFieldModifiers = convertedModifiers;
             if (variablesDecl.Type?.SpecialType == SpecialType.System_DateTime) {
-                var index = thisFieldModifiers.IndexOf(CSSyntaxKind.ConstKeyword);
+                var index = thisFieldModifiers.IndexOf(CS.SyntaxKind.ConstKeyword);
                 if (index >= 0) {
-                    thisFieldModifiers = thisFieldModifiers.Replace(thisFieldModifiers[index], SyntaxFactory.Token(CSSyntaxKind.StaticKeyword));
+                    thisFieldModifiers = thisFieldModifiers.Replace(thisFieldModifiers[index], CS.SyntaxFactory.Token(CS.SyntaxKind.StaticKeyword));
                 }
             }
 
@@ -551,7 +558,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                         yield return additionalDecl;
                     }
                 } else {
-                    yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), thisFieldModifiers, variablesDecl.Decl);
+                    yield return CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List(attributes), thisFieldModifiers, variablesDecl.Decl);
                 }
 
             }
@@ -566,15 +573,15 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             .ToDictionary(v => v.Identifier.Text, v => v.Initializer);
         var fieldDecl = decl.RemoveNodes(initializers.Values, SyntaxRemoveOptions.KeepNoTrivia);
         var initializerState = _typeContext.Initializers;
-        var initializerCollection = convertedModifiers.Any(m => m.IsKind(CSSyntaxKind.StaticKeyword))
+        var initializerCollection = convertedModifiers.Any(m => m.IsKind(CS.SyntaxKind.StaticKeyword))
             ? initializerState.AdditionalStaticInitializers
             : initializerState.AdditionalInstanceInitializers;
         foreach (var initializer in initializers) {
-            initializerCollection.Add(new Assignment(ValidSyntaxFactory.IdentifierName(initializer.Key), CSSyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
+            initializerCollection.Add(new Assignment(ValidSyntaxFactory.IdentifierName(initializer.Key), CS.SyntaxKind.SimpleAssignmentExpression, initializer.Value.Value));
         }
 
         var fieldDecls = _typeContext.HandledEventsAnalysis.GetDeclarationsForFieldBackedProperty(fieldDecl,
-            convertedModifiers, SyntaxFactory.List(attributes));
+            convertedModifiers, CS.SyntaxFactory.List(attributes));
         return fieldDecls;
     }
 
@@ -610,18 +617,18 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var newNames = declarationInfo.ToDictionary(l => l.Id, l => l.Prefix);
         var newInitializer = PerScopeState.ReplaceNames(v.Initializer.Value, newNames);
 
-        var body = SyntaxFactory.Block(localVars.Concat(SyntaxFactory.ReturnStatement(newInitializer).Yield()));
+        var body = CS.SyntaxFactory.Block(localVars.Concat(CS.SyntaxFactory.ReturnStatement(newInitializer).Yield()));
         // Method calls in initializers must be static in C# - Supporting this is #281
         var methodDecl = ValidSyntaxFactory.CreateParameterlessMethod(newMethodName, decl.Type, body);
         yield return methodDecl;
 
         var newVar =
-            v.WithInitializer(SyntaxFactory.EqualsValueClause(
-                SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(newMethodName))));
+            v.WithInitializer(CS.SyntaxFactory.EqualsValueClause(
+                CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(newMethodName))));
         var newVarDecl =
-            SyntaxFactory.VariableDeclaration(decl.Type, SyntaxFactory.SingletonSeparatedList(newVar));
+            CS.SyntaxFactory.VariableDeclaration(decl.Type, CS.SyntaxFactory.SingletonSeparatedList(newVar));
 
-        yield return SyntaxFactory.FieldDeclaration(SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
+        yield return CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
     }
 
     private IReadOnlyCollection<MemberDeclarationSyntax> CreateExtraMethodMembers()
@@ -644,7 +651,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private async Task<HandledEventsAnalysis> GetMethodWithHandlesAsync(VBSyntax.TypeBlockSyntax parentType, IMethodSymbol designerGeneratedInitializeComponentOrNull)
     {
-        if (parentType == null || _semanticModel.GetDeclaredSymbol((SyntaxNode)parentType) is not INamedTypeSymbol containingType) {
+        if (parentType == null || _semanticModel.GetDeclaredSymbol(parentType.BlockStatement as VBSyntax.TypeStatementSyntax) is not INamedTypeSymbol containingType) {
             return new HandledEventsAnalysis(CommonConversions, null, Array.Empty<(HandledEventsAnalysis.EventContainer EventContainer, (IPropertySymbol Property, bool IsNeverWrittenOrOverridden) PropertyDetails, (EventDescriptor Event, IMethodSymbol HandlingMethod, int ParametersToDiscard)[] HandledMethods)>());
         }
         return await HandledEventsAnalyzer.AnalyzeAsync(CommonConversions, containingType, designerGeneratedInitializeComponentOrNull, _typeToInheritors);
@@ -654,12 +661,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var methodBlock = await node.SubOrFunctionStatement.AcceptAsync<BaseMethodDeclarationSyntax>(TriviaConvertingDeclarationVisitor, SourceTriviaMapKind.SubNodesOnly);
 
-        var declaredSymbol = ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
+        var declaredSymbol = _semanticModel.GetDeclaredSymbol(node.SubOrFunctionStatement);
         if (declaredSymbol?.CanHaveMethodBody() == false) {
             return methodBlock;
         }
         var csReturnVariableOrNull = CommonConversions.GetRetVariableNameOrNull(node);
-        var convertedStatements = SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, node.IsIterator(), csReturnVariableOrNull));
+        var convertedStatements = CS.SyntaxFactory.Block(await ConvertMethodBodyStatementsAsync(node, node.Statements, node.IsIterator(), csReturnVariableOrNull));
 
         //  Just class events - for property events, see other use of IsDesignerGeneratedTypeWithInitializeComponent
         if (node.SubOrFunctionStatement.Identifier.Text == "InitializeComponent" && node.SubOrFunctionStatement.IsKind(VBasic.SyntaxKind.SubStatement) && declaredSymbol.ContainingType.GetDesignerGeneratedInitializeComponentOrNull(_vbCompilation) != null) {
@@ -679,7 +686,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private static async Task<BlockSyntax> ConvertStatementsAsync(SyntaxList<VBSyntax.StatementSyntax> statements, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> methodBodyVisitor)
     {
-        return SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
+        return CS.SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
     }
 
     private static HashSet<string> GetMyClassAccessedNames(VBSyntax.ClassBlockSyntax classBlock)
@@ -699,36 +706,36 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         if ("Finalize".Equals(node.Identifier.ValueText, StringComparison.OrdinalIgnoreCase) && 
             node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.OverridesKeyword)))
         {
-            var declaration = SyntaxFactory.
+            var declaration = CS.SyntaxFactory.
                 DestructorDeclaration(CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier)).
                 WithAttributeLists(attributes);
             return hasBody ? declaration : declaration.WithSemicolonToken(SemicolonToken);
         } 
             
         var tokenContext = node.GetMemberContext();
-        var declaredSymbol = (IMethodSymbol)ModelExtensions.GetDeclaredSymbol(_semanticModel, node);
-        var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { CSSyntaxKind.ExternKeyword } : Array.Empty<CSSyntaxKind>();
+        var declaredSymbol = (IMethodSymbol)_semanticModel.GetDeclaredSymbol(node);
+        var extraCsModifierKinds = declaredSymbol?.IsExtern == true ? new[] { CS.SyntaxKind.ExternKeyword } : Array.Empty<CS.SyntaxKind>();
         var convertedModifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext, extraCsModifierKinds: extraCsModifierKinds);
 
         bool accessedThroughMyClass = _accessorDeclarationNodeConverter.IsAccessedThroughMyClass(node, node.Identifier, declaredSymbol);
 
         if (declaredSymbol.IsPartialMethodImplementation() || declaredSymbol.IsPartialMethodDefinition()) 
         {
-            var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(CSSyntaxKind.PrivateKeyword));
+            var privateModifier = convertedModifiers.SingleOrDefault(m => m.IsKind(CS.SyntaxKind.PrivateKeyword));
             if (privateModifier != default) {
                 convertedModifiers = convertedModifiers.Remove(privateModifier);
             }
             if (!HasPartialKeyword(node.Modifiers)) {
-                convertedModifiers = convertedModifiers.Add(SyntaxFactory.Token(CSSyntaxKind.PartialKeyword));
+                convertedModifiers = convertedModifiers.Add(CS.SyntaxFactory.Token(CS.SyntaxKind.PartialKeyword));
             }
         }
         var (typeParameters, constraints) = await SplitTypeParametersAsync(node.TypeParameterList);
 
         var returnType = (declaredSymbol != null ? CommonConversions.GetTypeSyntax(declaredSymbol.ReturnType) :
-            await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)));
+            await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)));
 
         var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
-        var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList();
+        var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList();
         var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
         var hasExplicitInterfaceImplementation = declaredSymbol.IsNonPublicInterfaceImplementation() || declaredSymbol.IsRenamedInterfaceMember(directlyConvertedCsIdentifier, declaredSymbol.ExplicitInterfaceImplementations);
@@ -736,7 +743,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         if (hasExplicitInterfaceImplementation) {
             var delegatingClause = ExpressionSyntaxExtensions.GetDelegatingClause(parameterList, directlyConvertedCsIdentifier, false);
-            var explicitInterfaceModifiers = convertedModifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CSSyntaxKind.VirtualKeyword, CSSyntaxKind.AbstractKeyword) || m.IsKind(CSSyntaxKind.OverrideKeyword, CSSyntaxKind.NewKeyword));
+            var explicitInterfaceModifiers = convertedModifiers.RemoveWhere(m => m.IsCsMemberVisibility() || m.IsKind(CS.SyntaxKind.VirtualKeyword, CS.SyntaxKind.AbstractKeyword) || m.IsKind(CS.SyntaxKind.OverrideKeyword, CS.SyntaxKind.NewKeyword));
 
             var interfaceDeclParams = new MethodDeclarationParameters(attributes, explicitInterfaceModifiers, returnType, typeParameters, parameterList, constraints, delegatingClause);
             _accessorDeclarationNodeConverter.AddInterfaceMemberDeclarations(declaredSymbol.ExplicitInterfaceImplementations, additionalDeclarations, interfaceDeclParams);
@@ -746,10 +753,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         // we need to emit a non-virtual method for it to call
         if (accessedThroughMyClass) {
             var identifierName = "MyClass" + directlyConvertedCsIdentifier.ValueText;
-            var arrowClause = SyntaxFactory.ArrowExpressionClause(SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(identifierName), parameterList.CreateDelegatingArgList()));
+            var arrowClause = CS.SyntaxFactory.ArrowExpressionClause(CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(identifierName), parameterList.CreateDelegatingArgList()));
             var declModifiers = convertedModifiers;
 
-            var originalNameDecl = SyntaxFactory.MethodDeclaration(
+            var originalNameDecl = CS.SyntaxFactory.MethodDeclaration(
                 attributes,
                 declModifiers,
                 returnType,
@@ -760,12 +767,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 constraints,
                 null,
                 arrowClause,
-                SyntaxFactory.Token(CSSyntaxKind.SemicolonToken)
+                CS.SyntaxFactory.Token(CS.SyntaxKind.SemicolonToken)
             );
 
             additionalDeclarations.Add(originalNameDecl);
-            convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(CSSyntaxKind.VirtualKeyword)));
-            directlyConvertedCsIdentifier = SyntaxFactory.Identifier(identifierName);
+            convertedModifiers = convertedModifiers.Remove(convertedModifiers.Single(m => m.IsKind(CS.SyntaxKind.VirtualKeyword)));
+            directlyConvertedCsIdentifier = CS.SyntaxFactory.Identifier(identifierName);
         }
 
         if (additionalDeclarations.Any()) {
@@ -773,7 +780,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             _additionalDeclarations.Add(declNode, additionalDeclarations.ToArray());
         }
 
-        var decl = SyntaxFactory.MethodDeclaration(
+        var decl = CS.SyntaxFactory.MethodDeclaration(
             attributes,
             convertedModifiers,
             returnType,
@@ -800,12 +807,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var convertedAccessors = await node.Accessors.SelectAsync(async a => await a.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingDeclarationVisitor));
         _additionalDeclarations.Add(node, convertedAccessors.OfType<MemberDeclarationSyntax>().ToArray());
-        return SyntaxFactory.EventDeclaration(
-            SyntaxFactory.List(attributes),
+        return CS.SyntaxFactory.EventDeclaration(
+            CS.SyntaxFactory.List(attributes),
             modifiers,
             rawType,
             null, CommonConversions.ConvertIdentifier(block.Identifier),
-            SyntaxFactory.AccessorList(SyntaxFactory.List(convertedAccessors.OfType<AccessorDeclarationSyntax>()))
+            CS.SyntaxFactory.AccessorList(CS.SyntaxFactory.List(convertedAccessors.OfType<AccessorDeclarationSyntax>()))
         );
     }
 
@@ -817,33 +824,33 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var symbol = _semanticModel.GetDeclaredSymbol(node);
         if (node.AsClause == null && symbol.BaseMember() == null) {
-            var delegateName = SyntaxFactory.Identifier(id.ValueText + "EventHandler");
+            var delegateName = CS.SyntaxFactory.Identifier(id.ValueText + "EventHandler");
 
-            var delegateDecl = SyntaxFactory.DelegateDeclaration(
-                SyntaxFactory.List<AttributeListSyntax>(),
-                modifiers.RemoveWhere(m => m.IsKind(CSSyntaxKind.StaticKeyword)),
-                SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword)),
+            var delegateDecl = CS.SyntaxFactory.DelegateDeclaration(
+                CS.SyntaxFactory.List<AttributeListSyntax>(),
+                modifiers.RemoveWhere(m => m.IsKind(CS.SyntaxKind.StaticKeyword)),
+                CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)),
                 delegateName,
                 null,
-                await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ParameterList(),
-                SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
+                await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList(),
+                CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
             );
 
-            var eventDecl = SyntaxFactory.EventFieldDeclaration(
-                SyntaxFactory.List(attributes),
+            var eventDecl = CS.SyntaxFactory.EventFieldDeclaration(
+                CS.SyntaxFactory.List(attributes),
                 modifiers,
-                SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.IdentifierName(delegateName),
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)))
+                CS.SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.IdentifierName(delegateName),
+                    CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.VariableDeclarator(id)))
             );
 
             _additionalDeclarations.Add(node, new MemberDeclarationSyntax[] { delegateDecl });
             return eventDecl;
         }
         var type = symbol.Type != null || node.AsClause == null ? CommonConversions.GetTypeSyntax(symbol.Type) : await node.AsClause.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor);
-        var declaration = SyntaxFactory.VariableDeclaration(type,
-            SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(id)));
-        return SyntaxFactory.EventFieldDeclaration(
-            SyntaxFactory.List(attributes),
+        var declaration = CS.SyntaxFactory.VariableDeclaration(type,
+            CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.VariableDeclarator(id)));
+        return CS.SyntaxFactory.EventFieldDeclaration(
+            CS.SyntaxFactory.List(attributes),
             modifiers,
             declaration
         );
@@ -858,22 +865,22 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var containingBlock = (VBSyntax.OperatorBlockSyntax) node.Parent;
         var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
-        var attributeList = SyntaxFactory.List(attributes);
-        var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
+        var attributeList = CS.SyntaxFactory.List(attributes);
+        var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
         var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor);
         var methodBodyVisitor = await ConvertMethodBodyStatementsAsync(node, containingBlock.Statements);
-        var body = SyntaxFactory.Block(methodBodyVisitor);
+        var body = CS.SyntaxFactory.Block(methodBodyVisitor);
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, node.GetMemberContext());
 
         var conversionModifiers = modifiers.Where(CommonConversions.IsConversionOperator).ToList();
-        var nonConversionModifiers = SyntaxFactory.TokenList(modifiers.Except(conversionModifiers));
+        var nonConversionModifiers = CS.SyntaxFactory.TokenList(modifiers.Except(conversionModifiers));
 
         if (conversionModifiers.Any()) {
-            return SyntaxFactory.ConversionOperatorDeclaration(attributeList, nonConversionModifiers,
+            return CS.SyntaxFactory.ConversionOperatorDeclaration(attributeList, nonConversionModifiers,
                 conversionModifiers.Single(), returnType, parameterList, body, null);
         }
 
-        return SyntaxFactory.OperatorDeclaration(attributeList, nonConversionModifiers, returnType, node.OperatorToken.ConvertToken(), parameterList, body, null);
+        return CS.SyntaxFactory.OperatorDeclaration(attributeList, nonConversionModifiers, returnType, node.OperatorToken.ConvertToken(), parameterList, body, null);
     }
 
     public override async Task<CSharpSyntaxNode> VisitConstructorBlock(VBSyntax.ConstructorBlockSyntax node)
@@ -884,7 +891,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
         var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
-        var ctorArgs = await (ctor?.ArgumentList).AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.ArgumentList();
+        var ctorArgs = await (ctor?.ArgumentList).AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ArgumentList();
 
         IEnumerable<VBSyntax.StatementSyntax> statements;
         ConstructorInitializerSyntax ctorCall;
@@ -893,23 +900,23 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             ctorCall = null;
         } else if (ctorExpression.Expression is VBSyntax.MyBaseExpressionSyntax) {
             statements = node.Statements.Skip(1);
-            ctorCall = SyntaxFactory.ConstructorInitializer(CSSyntaxKind.BaseConstructorInitializer, ctorArgs);
+            ctorCall = CS.SyntaxFactory.ConstructorInitializer(CS.SyntaxKind.BaseConstructorInitializer, ctorArgs);
         } else if (ctorExpression.Expression is VBSyntax.MeExpressionSyntax || ctorExpression.Expression is VBSyntax.MyClassExpressionSyntax) {
             statements = node.Statements.Skip(1);
-            ctorCall = SyntaxFactory.ConstructorInitializer(CSSyntaxKind.ThisConstructorInitializer, ctorArgs);
+            ctorCall = CS.SyntaxFactory.ConstructorInitializer(CS.SyntaxKind.ThisConstructorInitializer, ctorArgs);
         } else {
             statements = node.Statements;
             ctorCall = null;
         }
 
         var convertedBodyStatements = await ConvertMethodBodyStatementsAsync(node, statements.ToArray());
-        return SyntaxFactory.ConstructorDeclaration(
-            SyntaxFactory.List(attributes),
+        return CS.SyntaxFactory.ConstructorDeclaration(
+            CS.SyntaxFactory.List(attributes),
             modifiers, 
             CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier).WithoutSourceMapping(), //TODO Use semantic model for this name
             await block.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),
             ctorCall,
-            SyntaxFactory.Block(convertedBodyStatements)
+            CS.SyntaxFactory.Block(convertedBodyStatements)
         );
     }
 
@@ -918,48 +925,48 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var importAttributes = new List<AttributeArgumentSyntax>();
         _extraUsingDirectives.Add(DllImportType.Namespace);
         _extraUsingDirectives.Add(CharSetType.Namespace);
-        var dllImportAttributeName = SyntaxFactory.ParseName(DllImportType.Name.Replace("Attribute", ""));
+        var dllImportAttributeName = CS.SyntaxFactory.ParseName(DllImportType.Name.Replace("Attribute", ""));
         var dllImportLibLiteral = await node.LibraryName.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor);
-        importAttributes.Add(SyntaxFactory.AttributeArgument(dllImportLibLiteral));
+        importAttributes.Add(CS.SyntaxFactory.AttributeArgument(dllImportLibLiteral));
 
         if (node.AliasName != null) {
-            importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals("EntryPoint"), null, await node.AliasName.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor)));
+            importAttributes.Add(CS.SyntaxFactory.AttributeArgument(CS.SyntaxFactory.NameEquals("EntryPoint"), null, await node.AliasName.AcceptAsync<ExpressionSyntax>(_triviaConvertingExpressionVisitor)));
         }
 
-        if (!node.CharsetKeyword.IsKind(CSSyntaxKind.None)) {
-            importAttributes.Add(SyntaxFactory.AttributeArgument(SyntaxFactory.NameEquals(CharSetType.Name), null, SyntaxFactory.MemberAccessExpression(CSSyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ParseTypeName(CharSetType.Name), ValidSyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
+        if (!node.CharsetKeyword.IsKind(CS.SyntaxKind.None)) {
+            importAttributes.Add(CS.SyntaxFactory.AttributeArgument(CS.SyntaxFactory.NameEquals(CharSetType.Name), null, CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression, CS.SyntaxFactory.ParseTypeName(CharSetType.Name), ValidSyntaxFactory.IdentifierName(node.CharsetKeyword.Text))));
         }
 
         var attributeArguments = CommonConversions.CreateAttributeArgumentList(importAttributes.ToArray());
-        var dllImportAttributeList = SyntaxFactory.AttributeList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(dllImportAttributeName, attributeArguments)));
+        var dllImportAttributeList = CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.Attribute(dllImportAttributeName, attributeArguments)));
 
         var attributeLists = (await CommonConversions.ConvertAttributesAsync(node.AttributeLists)).Add(dllImportAttributeList);
 
         var tokenContext = node.GetMemberContext();
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, tokenContext);
-        if (!modifiers.Any(m => m.IsKind(CSSyntaxKind.StaticKeyword))) {
-            modifiers = modifiers.Add(SyntaxFactory.Token(CSSyntaxKind.StaticKeyword));
+        if (!modifiers.Any(m => m.IsKind(CS.SyntaxKind.StaticKeyword))) {
+            modifiers = modifiers.Add(CS.SyntaxFactory.Token(CS.SyntaxKind.StaticKeyword));
         }
-        modifiers = modifiers.Add(SyntaxFactory.Token(CSSyntaxKind.ExternKeyword));
+        modifiers = modifiers.Add(CS.SyntaxFactory.Token(CS.SyntaxKind.ExternKeyword));
 
-        var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(CSSyntaxKind.VoidKeyword));
+        var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
         var parameterListSyntax = await (node.ParameterList).AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ??
-                                  SyntaxFactory.ParameterList();
+                                  CS.SyntaxFactory.ParameterList();
 
-        return SyntaxFactory.MethodDeclaration(attributeLists, modifiers, returnType, null, CommonConversions.ConvertIdentifier(node.Identifier), null,
-            parameterListSyntax, SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), null, null).WithSemicolonToken(SemicolonToken);
+        return CS.SyntaxFactory.MethodDeclaration(attributeLists, modifiers, returnType, null, CommonConversions.ConvertIdentifier(node.Identifier), null,
+            parameterListSyntax, CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), null, null).WithSemicolonToken(SemicolonToken);
     }
 
     public override async Task<CSharpSyntaxNode> VisitTypeParameterList(VBSyntax.TypeParameterListSyntax node)
     {
-        return SyntaxFactory.TypeParameterList(
-            SyntaxFactory.SeparatedList(await node.Parameters.SelectAsync(async p => await p.AcceptAsync<TypeParameterSyntax>(TriviaConvertingDeclarationVisitor)))
+        return CS.SyntaxFactory.TypeParameterList(
+            CS.SyntaxFactory.SeparatedList(await node.Parameters.SelectAsync(async p => await p.AcceptAsync<TypeParameterSyntax>(TriviaConvertingDeclarationVisitor)))
         );
     }
 
     private async Task<(TypeParameterListSyntax parameters, SyntaxList<TypeParameterConstraintClauseSyntax> constraints)> SplitTypeParametersAsync(VBSyntax.TypeParameterListSyntax typeParameterList)
     {
-        var constraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
+        var constraints = CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
         if (typeParameterList == null) return (null, constraints);
 
         var paramList = new List<TypeParameterSyntax>();
@@ -971,8 +978,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             if (constraint != null)
                 constraintList.Add(constraint);
         }
-        var parameters = SyntaxFactory.TypeParameterList(SyntaxFactory.SeparatedList(paramList));
-        constraints = SyntaxFactory.List(constraintList);
+        var parameters = CS.SyntaxFactory.TypeParameterList(CS.SyntaxFactory.SeparatedList(paramList));
+        constraints = CS.SyntaxFactory.List(constraintList);
         return (parameters, constraints);
     }
 
@@ -980,47 +987,47 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         SyntaxToken variance = default(SyntaxToken);
         if (!node.VarianceKeyword.IsKind(VBasic.SyntaxKind.None)) {
-            variance = SyntaxFactory.Token(node.VarianceKeyword.IsKind(VBasic.SyntaxKind.InKeyword) ? CSSyntaxKind.InKeyword : CSSyntaxKind.OutKeyword);
+            variance = CS.SyntaxFactory.Token(node.VarianceKeyword.IsKind(VBasic.SyntaxKind.InKeyword) ? CS.SyntaxKind.InKeyword : CS.SyntaxKind.OutKeyword);
         }
-        return SyntaxFactory.TypeParameter(SyntaxFactory.List<AttributeListSyntax>(), variance, CommonConversions.ConvertIdentifier(node.Identifier));
+        return CS.SyntaxFactory.TypeParameter(CS.SyntaxFactory.List<AttributeListSyntax>(), variance, CommonConversions.ConvertIdentifier(node.Identifier));
     }
 
     public override async Task<CSharpSyntaxNode> VisitTypeParameterSingleConstraintClause(VBSyntax.TypeParameterSingleConstraintClauseSyntax node)
     {
-        var id = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
-        return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SingletonSeparatedList(await node.Constraint.AcceptAsync<TypeParameterConstraintSyntax>(TriviaConvertingDeclarationVisitor)));
+        var id = CS.SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
+        return CS.SyntaxFactory.TypeParameterConstraintClause(id, CS.SyntaxFactory.SingletonSeparatedList(await node.Constraint.AcceptAsync<TypeParameterConstraintSyntax>(TriviaConvertingDeclarationVisitor)));
     }
 
     public override async Task<CSharpSyntaxNode> VisitTypeParameterMultipleConstraintClause(VBSyntax.TypeParameterMultipleConstraintClauseSyntax node)
     {
-        var id = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
+        var id = CS.SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(((VBSyntax.TypeParameterSyntax)node.Parent).Identifier));
         var constraints = await node.Constraints.SelectAsync(async c => await c.AcceptAsync<TypeParameterConstraintSyntax>(TriviaConvertingDeclarationVisitor));
-        return SyntaxFactory.TypeParameterConstraintClause(id, SyntaxFactory.SeparatedList(constraints.OrderBy(c => c.Kind() == CSSyntaxKind.ConstructorConstraint ? 1 : 0)));
+        return CS.SyntaxFactory.TypeParameterConstraintClause(id, CS.SyntaxFactory.SeparatedList(constraints.OrderBy(c => c.Kind() == CS.SyntaxKind.ConstructorConstraint ? 1 : 0)));
     }
 
     public override async Task<CSharpSyntaxNode> VisitSpecialConstraint(VBSyntax.SpecialConstraintSyntax node)
     {
         if (node.ConstraintKeyword.IsKind(VBasic.SyntaxKind.NewKeyword))
-            return SyntaxFactory.ConstructorConstraint();
-        return SyntaxFactory.ClassOrStructConstraint(node.IsKind(VBasic.SyntaxKind.ClassConstraint) ? CSSyntaxKind.ClassConstraint : CSSyntaxKind.StructConstraint);
+            return CS.SyntaxFactory.ConstructorConstraint();
+        return CS.SyntaxFactory.ClassOrStructConstraint(node.IsKind(VBasic.SyntaxKind.ClassConstraint) ? CS.SyntaxKind.ClassConstraint : CS.SyntaxKind.StructConstraint);
     }
 
     public override async Task<CSharpSyntaxNode> VisitTypeConstraint(VBSyntax.TypeConstraintSyntax node)
     {
-        return SyntaxFactory.TypeConstraint(await node.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.TypeConstraint(await node.Type.AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitXmlNamespaceImportsClause(VBSyntax.XmlNamespaceImportsClauseSyntax node)
     {
         var identifierName = await node.XmlNamespace.Name.AcceptAsync<IdentifierNameSyntax>(TriviaConvertingDeclarationVisitor);
         var valueLiteral = await node.XmlNamespace.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingDeclarationVisitor);
-        var declarator = SyntaxFactory.VariableDeclarator(identifierName.Identifier, null, SyntaxFactory.EqualsValueClause(valueLiteral));
-        return SyntaxFactory.FieldDeclaration(
-            SyntaxFactory.List<AttributeListSyntax>(),
-            SyntaxFactory.TokenList(SyntaxFactory.Token(CSSyntaxKind.InternalKeyword), 
-                SyntaxFactory.Token(CSSyntaxKind.StaticKeyword), 
-                SyntaxFactory.Token(CSSyntaxKind.ReadOnlyKeyword)),
-            SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.IdentifierName("XNamespace"), SyntaxFactory.SingletonSeparatedList(declarator)));
+        var declarator = CS.SyntaxFactory.VariableDeclarator(identifierName.Identifier, null, CS.SyntaxFactory.EqualsValueClause(valueLiteral));
+        return CS.SyntaxFactory.FieldDeclaration(
+            CS.SyntaxFactory.List<AttributeListSyntax>(),
+            CS.SyntaxFactory.TokenList(CS.SyntaxFactory.Token(CS.SyntaxKind.InternalKeyword), 
+                CS.SyntaxFactory.Token(CS.SyntaxKind.StaticKeyword), 
+                CS.SyntaxFactory.Token(CS.SyntaxKind.ReadOnlyKeyword)),
+            CS.SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.IdentifierName("XNamespace"), CS.SyntaxFactory.SingletonSeparatedList(declarator)));
     }
 
     public override async Task<CSharpSyntaxNode> VisitXmlName(VBSyntax.XmlNameSyntax node)

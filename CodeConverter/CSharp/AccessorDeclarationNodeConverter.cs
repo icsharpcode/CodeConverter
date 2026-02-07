@@ -1,5 +1,6 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
-using Microsoft.CodeAnalysis.VisualBasic;
+﻿using Microsoft.CodeAnalysis.VisualBasic;
+using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -446,7 +447,12 @@ internal class AccessorDeclarationNodeConverter
         CSSyntax.IdentifierNameSyntax csReturnVariableOrNull)
     {
         if (!node.MustReturn()) return convertedStatements;
-        if (_semanticModel.GetDeclaredSymbol(node) is { } ms && ms.ReturnsVoidOrAsyncTask()) {
+        var methodSymbol = node switch {
+            VBSyntax.MethodBlockSyntax mb => _semanticModel.GetDeclaredSymbol(mb.SubOrFunctionStatement),
+            VBSyntax.AccessorBlockSyntax ab => _semanticModel.GetDeclaredSymbol(ab.AccessorStatement),
+            _ => _semanticModel.GetDeclaredSymbol(node)
+        } as IMethodSymbol;
+        if (methodSymbol?.ReturnsVoidOrAsyncTask() == true) {
             return convertedStatements;
         }
 
@@ -454,12 +460,15 @@ internal class AccessorDeclarationNodeConverter
         var preBodyStatements = new List<CSSyntax.StatementSyntax>();
         var postBodyStatements = new List<CSSyntax.StatementSyntax>();
 
-        var symbolNode = node.TypeSwitch(
-            (VBSyntax.MethodBlockSyntax mb) => (VisualBasicSyntaxNode)mb.SubOrFunctionStatement,
-            (VBSyntax.AccessorBlockSyntax ab) => ab.AccessorStatement,
-            _ => node
-        );
-        var functionSym = ModelExtensions.GetDeclaredSymbol(_semanticModel, symbolNode);
+        var symbol = node switch {
+            VBSyntax.MethodBlockSyntax mb => _semanticModel.GetDeclaredSymbol(mb.SubOrFunctionStatement),
+            VBSyntax.AccessorBlockSyntax ab => _semanticModel.GetDeclaredSymbol(ab.AccessorStatement),
+            _ => null
+        };
+        var functionSym = symbol switch {
+            IMethodSymbol ms => ms,
+            _ => _semanticModel.GetDeclaredSymbol(node) as IMethodSymbol
+        };
         if (functionSym != null) {
             var returnType = CommonConversions.GetTypeSyntax(functionSym.GetReturnType());
 
