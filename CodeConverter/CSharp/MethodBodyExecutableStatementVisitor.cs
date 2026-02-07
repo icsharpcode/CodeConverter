@@ -911,7 +911,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return (reusableExprWithoutSideEffects, stmts, exprWithoutSideEffects);
     }
 
-    private static bool IsReusableReadOnlyLocalKind(ISymbol symbol) => symbol is ILocalSymbol ls && (VBasic.VisualBasicExtensions.IsForEach(ls) || ls.GetIsUsing());
+    private static bool IsReusableReadOnlyLocalKind(ISymbol symbol) => symbol is ILocalSymbol ls && (VBasic.VisualBasicExtensions.IsForEach(ls) || ls.IsUsing);
 
     private (StatementSyntax Declaration, IdentifierNameSyntax Reference) CreateLocalVariableWithUniqueName(VBSyntax.ExpressionSyntax vbExpr, string variableNameBase, ExpressionSyntax expr, TypeSyntax forceType = null)
     {
