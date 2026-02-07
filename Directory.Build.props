@@ -7,7 +7,7 @@
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1605;NU1701;NU1901;NU1902;NU1903;NU1904;NU1510;NU1903;RS1039</WarningsNotAsErrors>
     <WarningLevel>4</WarningLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>14.0</LangVersion>
     <AssemblyVersion>10.0.0.0</AssemblyVersion>
     <FileVersion>10.0.0.0</FileVersion>
     <Version>10.0.0</Version>
