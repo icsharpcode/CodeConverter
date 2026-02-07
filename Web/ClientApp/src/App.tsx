@@ -1,10 +1,9 @@
 import * as Api from "./Api"
 import React, { Component, useEffect, useState } from "react";
-import { Route } from "react-router";
+import { Route, Routes } from "react-router";
 import Layout from "./components/Layout";
-import { Routes } from "react-router-dom";
 import { Home } from "./components/Home";
-import { About} from "./components/About";
+import { About } from "./components/About";
 
 import "./custom.css"
 
@@ -20,7 +19,7 @@ const App = () => {
     return (
         <Layout>
             <Routes>
-                <Route path="/" element={<Home />}/>
+                <Route path="/" element={<Home />} />
                 <Route path="/about" element={<About />} />
             </Routes>
             <hr />
