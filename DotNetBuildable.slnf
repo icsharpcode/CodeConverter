@@ -6,7 +6,7 @@
       "CodeConv\\CodeConv.csproj",
       "Func\\Func.csproj",
       "Tests\\Tests.csproj",
-      "Web\\Web.csproj"
+      "Web\\web.esproj"
     ]
   }
 }
