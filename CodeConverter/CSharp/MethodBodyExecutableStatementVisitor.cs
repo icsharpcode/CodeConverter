@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -89,7 +90,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 _extraUsingDirectives.Add("System");
                 return "Environment.Exit(0);";
             default:
-                throw new NotImplementedException(node.StopOrEndKeyword.Kind() + " not implemented!");
+                throw new NotImplementedException(VBasic.VisualBasicExtensions.Kind(node.StopOrEndKeyword) + " not implemented!");
         }
     }
 
@@ -479,10 +480,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
                                                              ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
                                                              ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
-                var enclosingMethodInfo = await typeContainer.TypeSwitch(
-                    async (VBSyntax.LambdaExpressionSyntax e) => _semanticModel.GetSymbolInfo(e).Symbol,
-                    async (VBSyntax.MethodBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e),
-                    async (VBSyntax.AccessorBlockSyntax e) => _semanticModel.GetDeclaredSymbol(e)) as IMethodSymbol;
+                var enclosingMethodInfo = typeContainer switch {
+                    VBSyntax.LambdaExpressionSyntax e => _semanticModel.GetSymbolInfo(e).Symbol,
+                    VBSyntax.MethodBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.SubOrFunctionStatement),
+                    VBSyntax.AccessorBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.AccessorStatement),
+                    _ => null
+                } as IMethodSymbol;
 
                 if (IsIterator) return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
 

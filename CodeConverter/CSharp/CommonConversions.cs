@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Simplification;
+using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using ArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentListSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayRankSpecifierSyntax;
 using ArrayTypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ArrayTypeSyntax;
@@ -598,7 +599,12 @@ internal class CommonConversions
     public CSSyntax.IdentifierNameSyntax GetRetVariableNameOrNull(VBSyntax.MethodBlockBaseSyntax node)
     {
         if (!node.MustReturn()) return null;
-        if (SemanticModel.GetDeclaredSymbol(node) is IMethodSymbol ms && ms.ReturnsVoidOrAsyncTask()) {
+        var methodSymbol = node switch {
+            VBSyntax.MethodBlockSyntax mb => SemanticModel.GetDeclaredSymbol(mb.SubOrFunctionStatement),
+            VBSyntax.AccessorBlockSyntax ab => SemanticModel.GetDeclaredSymbol(ab.AccessorStatement),
+            _ => SemanticModel.GetDeclaredSymbol(node)
+        } as IMethodSymbol;
+        if (methodSymbol?.ReturnsVoidOrAsyncTask() == true) {
             return null;
         }
             

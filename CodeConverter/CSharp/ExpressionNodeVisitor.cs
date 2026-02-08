@@ -1,7 +1,8 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using Microsoft.VisualBasic.CompilerServices;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -90,12 +91,12 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitGetTypeExpression(VBasic.Syntax.GetTypeExpressionSyntax node)
     {
-        return SyntaxFactory.TypeOfExpression(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.TypeOfExpression(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitAwaitExpression(VBasic.Syntax.AwaitExpressionSyntax node)
     {
-        return SyntaxFactory.AwaitExpression(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.AwaitExpression(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitCTypeExpression(VBasic.Syntax.CTypeExpressionSyntax node)
@@ -120,9 +121,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         if (node.Keyword.IsKind(VBasic.SyntaxKind.CDateKeyword)) {
 
             _extraUsingDirectives.Add("Microsoft.VisualBasic.CompilerServices");
-            return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseExpression("Conversions.ToDate"), SyntaxFactory.ArgumentList(
-                SyntaxFactory.SingletonSeparatedList(
-                    SyntaxFactory.Argument(expressionSyntax))));
+            return CS.SyntaxFactory.InvocationExpression(CS.SyntaxFactory.ParseExpression("Conversions.ToDate"), CS.SyntaxFactory.ArgumentList(
+                CS.SyntaxFactory.SingletonSeparatedList(
+                    CS.SyntaxFactory.Argument(expressionSyntax))));
         }
 
         var withConversion = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, expressionSyntax, false, true, forceTargetType: _semanticModel.GetTypeInfo(node).Type);
@@ -131,8 +132,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitTryCastExpression(VBasic.Syntax.TryCastExpressionSyntax node)
     {
-        return node.ParenthesizeIfPrecedenceCouldChange(SyntaxFactory.BinaryExpression(
-            SyntaxKind.AsExpression,
+        return node.ParenthesizeIfPrecedenceCouldChange(CS.SyntaxFactory.BinaryExpression(
+            CS.SyntaxKind.AsExpression,
             await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
             await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor)
         ));
@@ -144,10 +145,10 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var convertedType = typeInfo.ConvertedType;
         if (node.Token.Value == null) {
             if (convertedType == null) {
-                return SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+                return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.DefaultLiteralExpression);
             }
 
-            return !convertedType.IsReferenceType ? SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);
+            return !convertedType.IsReferenceType ? CS.SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(convertedType)) : CommonConversions.Literal(null);
         }
 
         if (TypeConversionAnalyzer.ConvertStringToCharLiteral(node, convertedType, out char chr)) {
@@ -167,17 +168,17 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitInterpolation(VBasic.Syntax.InterpolationSyntax node)
     {
-        return SyntaxFactory.Interpolation(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor), await node.AlignmentClause.AcceptAsync<InterpolationAlignmentClauseSyntax>(TriviaConvertingExpressionVisitor), await node.FormatClause.AcceptAsync<InterpolationFormatClauseSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.Interpolation(await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor), await node.AlignmentClause.AcceptAsync<InterpolationAlignmentClauseSyntax>(TriviaConvertingExpressionVisitor), await node.FormatClause.AcceptAsync<InterpolationFormatClauseSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitInterpolatedStringExpression(VBasic.Syntax.InterpolatedStringExpressionSyntax node)
     {
         var useVerbatim = node.DescendantNodes().OfType<VBasic.Syntax.InterpolatedStringTextSyntax>().Any(c => LiteralConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
         var startToken = useVerbatim ?
-            SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedVerbatimStringStartToken, "$@\"", "$@\"", default(SyntaxTriviaList))
-            : SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringStartToken, "$\"", "$\"", default(SyntaxTriviaList));
+            CS.SyntaxFactory.Token(default(SyntaxTriviaList), CS.SyntaxKind.InterpolatedVerbatimStringStartToken, "$@\"", "$@\"", default(SyntaxTriviaList))
+            : CS.SyntaxFactory.Token(default(SyntaxTriviaList), CS.SyntaxKind.InterpolatedStringStartToken, "$\"", "$\"", default(SyntaxTriviaList));
         var contents = await node.Contents.SelectAsync(async c => await c.AcceptAsync<InterpolatedStringContentSyntax>(TriviaConvertingExpressionVisitor));
-        InterpolatedStringExpressionSyntax interpolatedStringExpressionSyntax = SyntaxFactory.InterpolatedStringExpression(startToken, SyntaxFactory.List(contents), SyntaxFactory.Token(SyntaxKind.InterpolatedStringEndToken));
+        InterpolatedStringExpressionSyntax interpolatedStringExpressionSyntax = CS.SyntaxFactory.InterpolatedStringExpression(startToken, CS.SyntaxFactory.List(contents), CS.SyntaxFactory.Token(CS.SyntaxKind.InterpolatedStringEndToken));
         return interpolatedStringExpressionSyntax;
     }
 
@@ -185,33 +186,33 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     {
         var useVerbatim = node.Parent.DescendantNodes().OfType<VBasic.Syntax.InterpolatedStringTextSyntax>().Any(c => LiteralConversions.IsWorthBeingAVerbatimString(c.TextToken.Text));
         var textForUser = LiteralConversions.EscapeQuotes(node.TextToken.Text, node.TextToken.ValueText, useVerbatim);
-        InterpolatedStringTextSyntax interpolatedStringTextSyntax = SyntaxFactory.InterpolatedStringText(SyntaxFactory.Token(default(SyntaxTriviaList), SyntaxKind.InterpolatedStringTextToken, textForUser, node.TextToken.ValueText, default(SyntaxTriviaList)));
+        InterpolatedStringTextSyntax interpolatedStringTextSyntax = CS.SyntaxFactory.InterpolatedStringText(CS.SyntaxFactory.Token(default(SyntaxTriviaList), CS.SyntaxKind.InterpolatedStringTextToken, textForUser, node.TextToken.ValueText, default(SyntaxTriviaList)));
         return interpolatedStringTextSyntax;
     }
 
     public override async Task<CSharpSyntaxNode> VisitInterpolationAlignmentClause(VBasic.Syntax.InterpolationAlignmentClauseSyntax node)
     {
-        return SyntaxFactory.InterpolationAlignmentClause(SyntaxFactory.Token(SyntaxKind.CommaToken), await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.InterpolationAlignmentClause(CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken), await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitInterpolationFormatClause(VBasic.Syntax.InterpolationFormatClauseSyntax node)
     {
         var textForUser = LiteralConversions.EscapeEscapeChar(node.FormatStringToken.ValueText);
-        SyntaxToken formatStringToken = SyntaxFactory.Token(SyntaxTriviaList.Empty, SyntaxKind.InterpolatedStringTextToken, textForUser, node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
-        return SyntaxFactory.InterpolationFormatClause(SyntaxFactory.Token(SyntaxKind.ColonToken), formatStringToken);
+        SyntaxToken formatStringToken = CS.SyntaxFactory.Token(SyntaxTriviaList.Empty, CS.SyntaxKind.InterpolatedStringTextToken, textForUser, node.FormatStringToken.ValueText, SyntaxTriviaList.Empty);
+        return CS.SyntaxFactory.InterpolationFormatClause(CS.SyntaxFactory.Token(CS.SyntaxKind.ColonToken), formatStringToken);
     }
 
     public override async Task<CSharpSyntaxNode> VisitParenthesizedExpression(VBasic.Syntax.ParenthesizedExpressionSyntax node)
     {
         var cSharpSyntaxNode = await node.Expression.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
         // If structural changes are necessary the expression may have been lifted a statement (e.g. Type inferred lambda)
-        return cSharpSyntaxNode is ExpressionSyntax expr ? SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
+        return cSharpSyntaxNode is ExpressionSyntax expr ? CS.SyntaxFactory.ParenthesizedExpression(expr) : cSharpSyntaxNode;
     }
 
     public override async Task<CSharpSyntaxNode> VisitConditionalAccessExpression(VBasic.Syntax.ConditionalAccessExpressionSyntax node)
     {
         var leftExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor) ?? _withBlockLhs.Peek();
-        return SyntaxFactory.ConditionalAccessExpression(leftExpression, await node.WhenNotNull.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.ConditionalAccessExpression(leftExpression, await node.WhenNotNull.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitArgumentList(VBasic.Syntax.ArgumentListSyntax node)
@@ -220,17 +221,17 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             return CommonConversions.CreateAttributeArgumentList(await node.Arguments.SelectAsync(_argumentConverter.ToAttributeArgumentAsync));
         }
         var argumentSyntaxes = await _argumentConverter.ConvertArgumentsAsync(node);
-        return SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(argumentSyntaxes));
+        return CS.SyntaxFactory.ArgumentList(CS.SyntaxFactory.SeparatedList(argumentSyntaxes));
     }
 
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
     {
-        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
+        return CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), CS.SyntaxFactory.ArgumentList(CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
     }
 
     public override async Task<CSharpSyntaxNode> VisitEqualsValue(VBasic.Syntax.EqualsValueSyntax node)
     {
-        return SyntaxFactory.EqualsValueClause(await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.EqualsValueClause(await node.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitAnonymousObjectCreationExpression(VBasic.Syntax.AnonymousObjectCreationExpressionSyntax node)
@@ -238,7 +239,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var vbInitializers = node.Initializer.Initializers;
         try {
             var initializers = await vbInitializers.AcceptSeparatedListAsync<VBSyntax.FieldInitializerSyntax, AnonymousObjectMemberDeclaratorSyntax>(TriviaConvertingExpressionVisitor);
-            return SyntaxFactory.AnonymousObjectCreationExpression(initializers);
+            return CS.SyntaxFactory.AnonymousObjectCreationExpression(initializers);
         } finally {
             var kvpsToPop = _tempNameForAnonymousScope.Where(t => t.Value.Peek().Scope == node).ToArray();
             foreach (var kvp in kvpsToPop) {
@@ -252,7 +253,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override async Task<CSharpSyntaxNode> VisitObjectCreationExpression(VBasic.Syntax.ObjectCreationExpressionSyntax node)
     {
 
-        var objectCreationExpressionSyntax = SyntaxFactory.ObjectCreationExpression(
+        var objectCreationExpressionSyntax = CS.SyntaxFactory.ObjectCreationExpression(
             await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),
             // VB can omit empty arg lists:
             await _argumentConverter.ConvertArgumentListOrEmptyAsync(node, node.ArgumentList),
@@ -265,10 +266,10 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             _withBlockLhs.Push(idToUse);
             try {
                 var initializer = await ConvertInitializer();
-                var originalExpressions = initializer.Expressions.Select(x => x is AssignmentExpressionSyntax e ? e.ReplaceNode(e.Left, SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, idToUse, (SimpleNameSyntax) e.Left)) : null).ToArray<ExpressionSyntax>();
-                var expressions = SyntaxFactory.SeparatedList(originalExpressions.Append(idToUse).Select(SyntaxFactory.Argument));
-                var tuple = SyntaxFactory.TupleExpression(expressions);
-                return SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, tuple, idToUse);
+                var originalExpressions = initializer.Expressions.Select(x => x is AssignmentExpressionSyntax e ? e.ReplaceNode(e.Left, CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression, idToUse, (SimpleNameSyntax) e.Left)) : null).ToArray<ExpressionSyntax>();
+                var expressions = CS.SyntaxFactory.SeparatedList(originalExpressions.Append(idToUse).Select(CS.SyntaxFactory.Argument));
+                var tuple = CS.SyntaxFactory.TupleExpression(expressions);
+                return CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression, tuple, idToUse);
             } finally {
                 _withBlockLhs.Pop();
             }
@@ -289,8 +290,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                                node.Initializer.Initializers.Any() && node.ArrayBounds.Arguments.All(b => b.IsOmitted || _semanticModel.GetConstantValue(b.GetExpression()).HasValue);
 
         var initializerToConvert = allowInitializer ? node.Initializer : null;
-        return SyntaxFactory.ArrayCreationExpression(
-            SyntaxFactory.ArrayType(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor), bounds),
+        return CS.SyntaxFactory.ArrayCreationExpression(
+            CS.SyntaxFactory.ArrayType(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor), bounds),
             await initializerToConvert.AcceptAsync<InitializerExpressionSyntax>(TriviaConvertingExpressionVisitor)
         );
     }
@@ -306,22 +307,22 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var convertToken = node.Kind().ConvertToken();
         var expressionSyntax = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         var ascendingOrDescendingKeyword = node.AscendingOrDescendingKeyword.ConvertToken();
-        return SyntaxFactory.Ordering(convertToken, expressionSyntax, ascendingOrDescendingKeyword);
+        return CS.SyntaxFactory.Ordering(convertToken, expressionSyntax, ascendingOrDescendingKeyword);
     }
     public override async Task<CSharpSyntaxNode> VisitVariableNameEquals(VBSyntax.VariableNameEqualsSyntax node) =>
-        SyntaxFactory.NameEquals(SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier.Identifier)));
+        CS.SyntaxFactory.NameEquals(CS.SyntaxFactory.IdentifierName(ConvertIdentifier(node.Identifier.Identifier)));
 
 
     public override async Task<CSharpSyntaxNode> VisitBinaryConditionalExpression(VBasic.Syntax.BinaryConditionalExpressionSyntax node)
     {
         var leftSide = await node.FirstExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         var rightSide = await node.SecondExpression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        var expr = SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression,
+        var expr = CS.SyntaxFactory.BinaryExpression(CS.SyntaxKind.CoalesceExpression,
             node.FirstExpression.ParenthesizeIfPrecedenceCouldChange(leftSide),
             node.SecondExpression.ParenthesizeIfPrecedenceCouldChange(rightSide));
 
         if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || node.PrecedenceCouldChange())
-            return SyntaxFactory.ParenthesizedExpression(expr);
+            return CS.SyntaxFactory.ParenthesizedExpression(expr);
 
         return expr;
     }
@@ -337,19 +338,19 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         var whenFalse = await node.WhenFalse.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         whenFalse = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.WhenFalse, whenFalse);
 
-        var expr = SyntaxFactory.ConditionalExpression(condition, whenTrue, whenFalse);
+        var expr = CS.SyntaxFactory.ConditionalExpression(condition, whenTrue, whenFalse);
 
 
         if (node.Parent.IsKind(VBasic.SyntaxKind.Interpolation) || node.PrecedenceCouldChange())
-            return SyntaxFactory.ParenthesizedExpression(expr);
+            return CS.SyntaxFactory.ParenthesizedExpression(expr);
 
         return expr;
     }
 
     public override async Task<CSharpSyntaxNode> VisitTypeOfExpression(VBasic.Syntax.TypeOfExpressionSyntax node)
     {
-        var expr = SyntaxFactory.BinaryExpression(
-            SyntaxKind.IsExpression,
+        var expr = CS.SyntaxFactory.BinaryExpression(
+            CS.SyntaxKind.IsExpression,
             await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
             await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor)
         );
@@ -363,19 +364,19 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             return ConvertAddressOf(node, expr);
         }
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
-        SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
+        CS.SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
 
-        if (kind == SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
+        if (kind == CS.SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
             if (t.IsNumericType() || t.IsEnumType()) {
-                csTokenKind = SyntaxKind.TildeToken;
+                csTokenKind = CS.SyntaxKind.TildeToken;
             } else if (await NegateAndSimplifyOrNullAsync(node, expr, t) is { } simpleNegation) {
                 return simpleNegation;
             }
         }
 
-        return SyntaxFactory.PrefixUnaryExpression(
+        return CS.SyntaxFactory.PrefixUnaryExpression(
             kind,
-            SyntaxFactory.Token(csTokenKind),
+            CS.SyntaxFactory.Token(csTokenKind),
             expr.AddParens()
         );
     }
@@ -386,11 +387,11 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             return nothingComparison;
         }
         if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean && node.AlwaysHasBooleanTypeInCSharp()) {
-            return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, expr, LiteralConversions.GetLiteralExpression(false));
+            return CS.SyntaxFactory.BinaryExpression(CS.SyntaxKind.EqualsExpression, expr, LiteralConversions.GetLiteralExpression(false));
         }
 
-        if (expr is BinaryExpressionSyntax eq && eq.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken, SyntaxKind.ExclamationEqualsToken)){
-            return eq.WithOperatorToken(SyntaxFactory.Token(eq.OperatorToken.IsKind(SyntaxKind.ExclamationEqualsToken) ? SyntaxKind.EqualsEqualsToken : SyntaxKind.ExclamationEqualsToken));
+        if (expr is BinaryExpressionSyntax eq && eq.OperatorToken.IsKind(CS.SyntaxKind.EqualsEqualsToken, CS.SyntaxKind.ExclamationEqualsToken)){
+            return eq.WithOperatorToken(CS.SyntaxFactory.Token(eq.OperatorToken.IsKind(CS.SyntaxKind.ExclamationEqualsToken) ? CS.SyntaxKind.EqualsEqualsToken : CS.SyntaxKind.ExclamationEqualsToken));
         }
 
         return null;
@@ -411,9 +412,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     {
         var parameters = await node.Parameters.SelectAsync(async p => await p.AcceptAsync<ParameterSyntax>(TriviaConvertingExpressionVisitor));
         if (node.Parent is VBSyntax.PropertyStatementSyntax && CommonConversions.IsDefaultIndexer(node.Parent)) {
-            return SyntaxFactory.BracketedParameterList(SyntaxFactory.SeparatedList(parameters));
+            return CS.SyntaxFactory.BracketedParameterList(CS.SyntaxFactory.SeparatedList(parameters));
         }
-        return SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters));
+        return CS.SyntaxFactory.ParameterList(CS.SyntaxFactory.SeparatedList(parameters));
     }
 
     public override async Task<CSharpSyntaxNode> VisitParameter(VBSyntax.ParameterSyntax node)
@@ -423,22 +424,22 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         TypeSyntax paramType = null;
         if (node.Parent?.Parent?.IsKind(VBasic.SyntaxKind.FunctionLambdaHeader,
                 VBasic.SyntaxKind.SubLambdaHeader) != true || node.AsClause != null) {
-            var vbParamSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
+            var vbParamSymbol = (IParameterSymbol)_semanticModel.GetDeclaredSymbol(node);
             paramType = vbParamSymbol != null ? CommonConversions.GetTypeSyntax(vbParamSymbol.Type)
                 : await SyntaxOnlyConvertParamAsync(node);
         }
 
         var attributes = (await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync)).ToList();
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, TokenContext.Local);
-        var vbSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
+        var vbSymbol = _semanticModel.GetDeclaredSymbol(node);
         var baseParameters = vbSymbol?.ContainingSymbol.OriginalDefinition.GetBaseSymbol().GetParameters();
         var baseParameter = baseParameters?[vbSymbol.Ordinal];
 
         var csRefKind = CommonConversions.GetCsRefKind(baseParameter ?? vbSymbol, node);
         if (csRefKind == RefKind.Out) {
-            modifiers = SyntaxFactory.TokenList(modifiers
-                .Where(m => !m.IsKind(SyntaxKind.RefKeyword))
-                .Concat(SyntaxFactory.Token(SyntaxKind.OutKeyword).Yield())
+            modifiers = CS.SyntaxFactory.TokenList(modifiers
+                .Where(m => !m.IsKind(CS.SyntaxKind.RefKeyword))
+                .Concat(CS.SyntaxFactory.Token(CS.SyntaxKind.OutKeyword).Yield())
             );
         }
 
@@ -450,32 +451,32 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                 var constant = _semanticModel.GetConstantValue(defaultValue);
                 if (constant.HasValue && constant.Value is DateTime dt) {
                     var dateTimeAsLongCsLiteral = CommonConversions.Literal(dt.Ticks)
-                        .WithTrailingTrivia(SyntaxFactory.ParseTrailingTrivia($"/* {defaultValue} */"));
-                    var dateTimeArg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
+                        .WithTrailingTrivia(CS.SyntaxFactory.ParseTrailingTrivia($"/* {defaultValue} */"));
+                    var dateTimeArg = CommonConversions.CreateAttributeArgumentList(CS.SyntaxFactory.AttributeArgument(dateTimeAsLongCsLiteral));
                     _extraUsingDirectives.Add("System.Runtime.InteropServices");
                     _extraUsingDirectives.Add("System.Runtime.CompilerServices");
                     var optionalDateTimeAttributes = new[] {
-                        SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
-                        SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DateTimeConstant"), dateTimeArg)
+                        CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
+                        CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DateTimeConstant"), dateTimeArg)
                     };
                     attributes.Insert(0,
-                        SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
+                        CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
                 }
             } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword)) || HasRefParametersAfterThisOne()) {
                 var defaultExpression = await node.Default.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-                var arg = CommonConversions.CreateAttributeArgumentList(SyntaxFactory.AttributeArgument(defaultExpression));
+                var arg = CommonConversions.CreateAttributeArgumentList(CS.SyntaxFactory.AttributeArgument(defaultExpression));
                 _extraUsingDirectives.Add("System.Runtime.InteropServices");
                 _extraUsingDirectives.Add("System.Runtime.CompilerServices");
                 var optionalAttributes = new List<AttributeSyntax> {
-                    SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
+                    CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
                 };
                 if (!node.Default.Value.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    optionalAttributes.Add(SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
+                    optionalAttributes.Add(CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
                 }
                 attributes.Insert(0,
-                    SyntaxFactory.AttributeList(SyntaxFactory.SeparatedList(optionalAttributes)));
+                    CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalAttributes)));
             } else {
-                @default = SyntaxFactory.EqualsValueClause(
+                @default = CS.SyntaxFactory.EqualsValueClause(
                     await node.Default.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
             }
         }
@@ -483,10 +484,10 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         if (node.Parent.Parent is VBSyntax.MethodStatementSyntax mss
             && mss.AttributeLists.Any(CommonConversions.HasExtensionAttribute) && node.Parent.ChildNodes().First() == node &&
             vbSymbol.ValidCSharpExtensionMethodParameter()) {
-            modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.ThisKeyword));
+            modifiers = modifiers.Insert(0, CS.SyntaxFactory.Token(CS.SyntaxKind.ThisKeyword));
         }
-        return SyntaxFactory.Parameter(
-            SyntaxFactory.List(attributes),
+        return CS.SyntaxFactory.Parameter(
+            CS.SyntaxFactory.List(attributes),
             modifiers,
             paramType,
             id,
@@ -499,19 +500,19 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private async Task<TypeSyntax> SyntaxOnlyConvertParamAsync(VBSyntax.ParameterSyntax node)
     {
         var syntaxParamType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor)
-                              ?? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword));
+                              ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.ObjectKeyword));
 
         var rankSpecifiers = await CommonConversions.ConvertArrayRankSpecifierSyntaxesAsync(node.Identifier.ArrayRankSpecifiers, node.Identifier.ArrayBounds, false);
         if (rankSpecifiers.Any()) {
-            syntaxParamType = SyntaxFactory.ArrayType(syntaxParamType, rankSpecifiers);
+            syntaxParamType = CS.SyntaxFactory.ArrayType(syntaxParamType, rankSpecifiers);
         }
 
-        if (!node.Identifier.Nullable.IsKind(SyntaxKind.None)) {
+        if (!node.Identifier.Nullable.IsKind(CS.SyntaxKind.None)) {
             var arrayType = syntaxParamType as ArrayTypeSyntax;
             if (arrayType == null) {
-                syntaxParamType = SyntaxFactory.NullableType(syntaxParamType);
+                syntaxParamType = CS.SyntaxFactory.NullableType(syntaxParamType);
             } else {
-                syntaxParamType = arrayType.WithElementType(SyntaxFactory.NullableType(arrayType.ElementType));
+                syntaxParamType = arrayType.WithElementType(CS.SyntaxFactory.NullableType(arrayType.ElementType));
             }
         }
         return syntaxParamType;
@@ -519,35 +520,35 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)
     {
-        return SyntaxFactory.AttributeList(
-            node.Target == null ? null : SyntaxFactory.AttributeTargetSpecifier(node.Target.AttributeModifier.ConvertToken()),
-            SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Attribute(await node.Name.AcceptAsync<NameSyntax>(TriviaConvertingExpressionVisitor), await node.ArgumentList.AcceptAsync<AttributeArgumentListSyntax>(TriviaConvertingExpressionVisitor)))
+        return CS.SyntaxFactory.AttributeList(
+            node.Target == null ? null : CS.SyntaxFactory.AttributeTargetSpecifier(node.Target.AttributeModifier.ConvertToken()),
+            CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.Attribute(await node.Name.AcceptAsync<NameSyntax>(TriviaConvertingExpressionVisitor), await node.ArgumentList.AcceptAsync<AttributeArgumentListSyntax>(TriviaConvertingExpressionVisitor)))
         );
     }
 
     public override async Task<CSharpSyntaxNode> VisitTupleType(VBasic.Syntax.TupleTypeSyntax node)
     {
         var elements = await node.Elements.SelectAsync(async e => await e.AcceptAsync<TupleElementSyntax>(TriviaConvertingExpressionVisitor));
-        return SyntaxFactory.TupleType(SyntaxFactory.SeparatedList(elements));
+        return CS.SyntaxFactory.TupleType(CS.SyntaxFactory.SeparatedList(elements));
     }
 
     public override async Task<CSharpSyntaxNode> VisitTypedTupleElement(VBasic.Syntax.TypedTupleElementSyntax node)
     {
-        return SyntaxFactory.TupleElement(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.TupleElement(await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitNamedTupleElement(VBasic.Syntax.NamedTupleElementSyntax node)
     {
-        return SyntaxFactory.TupleElement(await node.AsClause.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor), CommonConversions.ConvertIdentifier(node.Identifier));
+        return CS.SyntaxFactory.TupleElement(await node.AsClause.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor), CommonConversions.ConvertIdentifier(node.Identifier));
     }
 
     public override async Task<CSharpSyntaxNode> VisitTupleExpression(VBasic.Syntax.TupleExpressionSyntax node)
     {
         var args = await node.Arguments.SelectAsync(async a => {
             var expr = await a.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            return SyntaxFactory.Argument(expr);
+            return CS.SyntaxFactory.Argument(expr);
         });
-        return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(args));
+        return CS.SyntaxFactory.TupleExpression(CS.SyntaxFactory.SeparatedList(args));
     }
 
     public override async Task<CSharpSyntaxNode> VisitPredefinedType(VBasic.Syntax.PredefinedTypeSyntax node)
@@ -555,30 +556,30 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         if (node.Keyword.IsKind(VBasic.SyntaxKind.DateKeyword)) {
             return ValidSyntaxFactory.IdentifierName(nameof(DateTime));
         }
-        return SyntaxFactory.PredefinedType(node.Keyword.ConvertToken());
+        return CS.SyntaxFactory.PredefinedType(node.Keyword.ConvertToken());
     }
 
     public override async Task<CSharpSyntaxNode> VisitNullableType(VBasic.Syntax.NullableTypeSyntax node)
     {
-        return SyntaxFactory.NullableType(await node.ElementType.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
+        return CS.SyntaxFactory.NullableType(await node.ElementType.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
     }
 
     public override async Task<CSharpSyntaxNode> VisitArrayType(VBasic.Syntax.ArrayTypeSyntax node)
     {
         var ranks = await node.RankSpecifiers.SelectAsync(async r => await r.AcceptAsync<ArrayRankSpecifierSyntax>(TriviaConvertingExpressionVisitor));
-        return SyntaxFactory.ArrayType(await node.ElementType.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor), SyntaxFactory.List(ranks));
+        return CS.SyntaxFactory.ArrayType(await node.ElementType.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor), CS.SyntaxFactory.List(ranks));
     }
 
     public override async Task<CSharpSyntaxNode> VisitArrayRankSpecifier(VBasic.Syntax.ArrayRankSpecifierSyntax node)
     {
-        return SyntaxFactory.ArrayRankSpecifier(SyntaxFactory.SeparatedList(Enumerable.Repeat<ExpressionSyntax>(SyntaxFactory.OmittedArraySizeExpression(), node.Rank)));
+        return CS.SyntaxFactory.ArrayRankSpecifier(CS.SyntaxFactory.SeparatedList(Enumerable.Repeat<ExpressionSyntax>(CS.SyntaxFactory.OmittedArraySizeExpression(), node.Rank)));
     }
 
 
     public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
     {
         var args = await node.Arguments.SelectAsync(async a => await a.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
-        return SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(args));
+        return CS.SyntaxFactory.TypeArgumentList(CS.SyntaxFactory.SeparatedList(args));
     }
 
     private async Task<CSharpSyntaxNode> ConvertCastExpressionAsync(VBSyntax.CastExpressionSyntax node,
@@ -609,10 +610,10 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private static InvocationExpressionSyntax Invoke(ExpressionSyntax toInvoke, ExpressionSyntax argExpression)
     {
         return
-            SyntaxFactory.InvocationExpression(toInvoke,
-                SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SingletonSeparatedList(
-                        SyntaxFactory.Argument(argExpression)))
+            CS.SyntaxFactory.InvocationExpression(toInvoke,
+                CS.SyntaxFactory.ArgumentList(
+                    CS.SyntaxFactory.SingletonSeparatedList(
+                        CS.SyntaxFactory.Argument(argExpression)))
             );
     }
 

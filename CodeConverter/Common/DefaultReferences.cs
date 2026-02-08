@@ -33,7 +33,6 @@ public static class DefaultReferences
         typeof(System.Xml.Linq.XElement),
         typeof(System.Linq.Expressions.Expression),
         typeof(Microsoft.VisualBasic.Constants),
-        typeof(System.Data.SqlClient.SqlCommand),
         typeof(System.Threading.Tasks.ParallelOptions)
         // ReSharper restore RedundantNameQualifier
     }.Select(t => t.Assembly).Concat(

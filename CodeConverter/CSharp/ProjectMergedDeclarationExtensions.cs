@@ -82,7 +82,7 @@ internal static class ProjectMergedDeclarationExtensions
     private static async IAsyncEnumerable<string> GetAllEmbeddedSourceTextAsync(Compilation compilation)
     {
         var roots = await compilation.SourceModule.GlobalNamespace.Locations.
-            Where(l => !l.IsInSource).Select(CachedReflectedDelegates.GetEmbeddedSyntaxTree)
+            Where(l => !l.IsInSource).Select(l => l.EmbeddedSyntaxTree)
             .SelectAsync(t => t.GetTextAsync());
         foreach (var r in roots) yield return r.ToString();
     }

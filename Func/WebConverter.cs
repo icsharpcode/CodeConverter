@@ -24,7 +24,7 @@ public static class WebConverter
         }
 
         var codeWithOptions = new CodeWithOptions(todo.code)
-            .WithTypeReferences(DefaultReferences.NetStandard2)
+            .WithTypeReferences(DefaultReferences.With(typeof(Microsoft.Data.SqlClient.SqlCommand).Assembly))
             .SetFromLanguage(fromLanguage)
             .SetToLanguage(toLanguage);
 

@@ -1,6 +1,6 @@
 {
   "solution": {
-    "path": "CodeConverter.sln",
+    "path": "CodeConverter.slnx",
     "projects": [
       "CodeConverter\\CodeConverter.csproj",
       "CodeConv\\CodeConv.csproj",
