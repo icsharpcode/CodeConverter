@@ -1,6 +1,6 @@
 import * as Api from "./Api"
 import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router";
+import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import { Home } from "./components/Home";
 import { About } from "./components/About";
