@@ -35,7 +35,7 @@ jobs:
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
       with:
-       vs-version: '[18.0,)'
+       vs-version: '[17.0,)'
 
     - name: Dotnet deterministic Build
       run:  dotnet build DotNetBuildable.slnf /p:Platform=$env:BuildPlatform /p:Configuration=$env:BuildTarget /p:ContinuousIntegrationBuild=true
