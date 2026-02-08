@@ -5,16 +5,8 @@
     },
     "baseUris": [
         {
-            "key": "SameApp",
-            "baseUri": ""
-        },
-        {
-            "key": "LocalWeb",
-            "baseUri": "https://localhost:7183"
-        },
-        {
             "key": "LocalFunc",
-            "baseUri": "http://localhost:7071"
+            "baseUri": "http://localhost:7144"
         },
         {
             "key": "HostedFunc",
