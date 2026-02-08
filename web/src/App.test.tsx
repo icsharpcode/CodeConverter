@@ -1,3 +1,4 @@
+import { it } from 'vitest';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';

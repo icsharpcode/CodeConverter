@@ -1,5 +1,3 @@
-import React from "react";
-
 export const About = () => 
     <div className="row">
         <div className="col-md-8">
