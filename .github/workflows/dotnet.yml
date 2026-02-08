@@ -65,7 +65,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ICSharpCode.CodeConverter.CodeConv.${{ env.BuildVersion }}.nupkg
-        path: CommandLine/CodeConv/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.CodeConv.*.nupkg
+        path: CodeConv/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.CodeConv.*.nupkg
     - name: Upload Web
       uses: actions/upload-artifact@v4
       with:

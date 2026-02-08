@@ -41,13 +41,4 @@ Remarks:
 
 ## Design
 
-The tool can run in both netcore and netframework because:
--   The conversion needs to be able run in a dot net core process so it works cross platform
-    -   So linux users can convert dot net core projects
--   The conversion needs to be able to run in a net framework process because:
-    -   Dot net core msbuild can't load framework projects (i.e. 95% of the world's VB and C#)
-    -   Dot net core processes can't load net framework msbuild ([not planned to change](https://github.com/icsharpcode/CodeConverter/blob/master/CommandLine/CodeConv.Shared/CodeConvProgram.cs#L73-L81))
-    
-## Future
-
-The package is about 27MB. The size is made up by the Roslyn dependencies. It includes most of Roslyn, but not MSBuild (which must be installed on the machine). In future we could get Roslyn from the installation too like the VS extension does. It just needs careful management of versions. The dot net framework version can match the vs extension dependency versions. The dot net core one can depend on later versions.
+The tool doesn't support netframework because dot net core's build process can't build net framework projects. The old version of this tool loaded a separate net framework command line referencing msbuild, but that was hard work to maintain. If there's high demand, it could be resurrected, but it's probably best for people to upgrade to a recent version of dot net first anyway.

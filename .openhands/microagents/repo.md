@@ -14,7 +14,7 @@ This repository contains a code conversion tool that translates between C# and V
 
 ## Repository Structure
 - `CodeConverter/`: Core conversion logic
-- `CommandLine/`: CLI tools for conversion
+- `CodeConv/`: CLI tool for conversion
 - `Tests/`: Comprehensive test suite
 - `Web/`: Web interface components
 - `Vsix/`: Visual Studio extension
