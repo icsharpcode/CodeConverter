@@ -1,11 +1,12 @@
 import * as Api from "./Api"
-import React, { Component, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router";
 import Layout from "./components/Layout";
 import { Home } from "./components/Home";
 import { About } from "./components/About";
 
 import "./custom.css"
+
 
 const App = () => {
     const [versionString, setVersionString] = useState("");
