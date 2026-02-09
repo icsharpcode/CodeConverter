@@ -5,12 +5,13 @@ on:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
+  workflow_dispatch:
 
 env:
   BuildVersion: '10.0.0'
   
 jobs:
- build:
+  build:
     runs-on: windows-2022
     env:
       BuildPlatform: Any CPU
@@ -81,24 +82,48 @@ jobs:
         name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip
         path: Func/bin/${{ env.BuildTarget }}/publish/
         
- deploy:
-     if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
-     concurrency: ci-${{ github.ref }}
-     needs: [build] # The second job must depend on the first one to complete before running and uses ubuntu-latest instead of windows.
-     runs-on: ubuntu-latest
-     steps:
-       - name: Checkout 🛎️
-         uses: actions/checkout@v4
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') }}
+    concurrency: ci-${{ github.ref }}
+    needs: [build] # The second job must depend on the first one to complete before running and uses ubuntu-latest instead of windows.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
  
-       - name: Download Artifacts 🔻 # The built project is downloaded into the 'site' folder.
-         uses: actions/download-artifact@v4
-         with:
-           name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
-           path: site
+      - name: Download Artifacts 🔻 # The built project is downloaded into the 'site' folder.
+        uses: actions/download-artifact@v4
+        with:
+          name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
+          path: site
+
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Extract latest changelog section
+        id: changelog
+        shell: pwsh
+        run: |
+          ./Get-LatestChangelog.ps1 -Path CHANGELOG.md | Tee-Object -FilePath release-notes.md
+          "notes<<EOF" >> $env:GITHUB_OUTPUT
+          Get-Content release-notes.md >> $env:GITHUB_OUTPUT
+          "EOF" >> $env:GITHUB_OUTPUT
  
-       - name: Deploy 🚀
-         uses: JamesIves/github-pages-deploy-action@v4
-         with:
-           branch: 'autoupdated/gh-pages'
-           folder: 'site/wwwroot'
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: 'autoupdated/gh-pages'
+          folder: 'site/wwwroot'
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.BuildVersion }}.${{ github.run_number }}
+          name: v${{ env.BuildVersion }}.${{ github.run_number }}
+          body: ${{ steps.changelog.outputs.notes }}
+          files: release-artifacts/**
           
