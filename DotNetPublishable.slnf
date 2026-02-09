@@ -3,7 +3,7 @@
     "path": "CodeConverter.slnx",
     "projects": [
       "Func\\Func.csproj",
-      "Web\\Web.csproj"
+      "Web\\web.esproj"
     ]
   }
 }

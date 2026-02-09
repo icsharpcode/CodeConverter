@@ -1,5 +1,5 @@
 $null = & npm install -g npm-check-updates@latest
-Push-Location './Web/ClientApp'
+Push-Location './Web'
 try {
     & npm-check-updates -u
     & npm install --audit false

@@ -1,5 +1,5 @@
 import * as Api from "../Api"
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import  Editor  from "@monaco-editor/react";
 import * as monacoEditor from "monaco-editor";
 

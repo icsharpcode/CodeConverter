@@ -1148,6 +1148,50 @@ internal static partial class TaskExtensions
     }
 
     [Fact]
+    public async Task TestAsyncFunctionExitReturnsDefaultAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+Class AsyncExit
+    Public Async Function AsyncFuncExit() As Task(Of Integer)
+        Await Task.Delay(1)
+        Exit Function
+    End Function
+End Class", @"using System.Threading.Tasks;
+
+internal partial class AsyncExit
+{
+    public async Task<int> AsyncFuncExit()
+    {
+        await Task.Delay(1);
+        return default;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestAsyncTaskFunctionNoImplicitReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+Class AsyncNoReturn
+    Public Async Function DoAsync() As Task
+        Await Task.Delay(1)
+    End Function
+End Class", @"using System.Threading.Tasks;
+
+internal partial class AsyncNoReturn
+{
+    public async Task DoAsync()
+    {
+        await Task.Delay(1);
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestExternDllImportAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(

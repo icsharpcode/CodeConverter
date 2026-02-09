@@ -1,0 +1,36 @@
+{
+    "name": "codeconverter",
+    "version": "10.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "start": "vite",
+        "test": "vitest",
+        "build": "tsc && vite build",
+        "preview": "vite preview",
+        "lint": "eslint ./src/"
+    },
+    "dependencies": {
+        "@monaco-editor/react": "^4.7.0",
+        "axios": "^1.13.4",
+        "bootstrap": "^5.3.8",
+        "monaco-editor": "^0.55.1",
+        "prop-types": "^15.8.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "react-router-bootstrap": "^0.26.3",
+        "react-router-dom": "^7.13.0",
+        "reactstrap": "^9.2.3"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.5",
+        "@types/react": "^19.2.13",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^4.3.4",
+        "jsdom": "^27.0.1",
+        "typescript": "~5.7.2",
+        "vite": "^6.0.11",
+        "vitest": "^3.2.4"
+    }
+}
