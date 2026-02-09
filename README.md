@@ -36,7 +36,7 @@ The VB -> C# conversion quality is much higher than the C# -> VB conversion qual
 
 ### Use cases
 
-Visual Basic .NET is slowly dying. It has support for *some* project types on .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/). Hence the main use case for:
+Visual Basic .NET is slowly dying. It has support for *some* project types from .NET 5, but won't be getting new features according to the [.NET Team Blog](https://devblogs.microsoft.com/vbteam/visual-basic-support-planned-for-net-5-0/). Hence the main use case for:
 * VB->C#: moving whole projects
 * C#->VB: help incorporate snippets from stack overflow into existing VB codebase, or to help learning one language from the other
 
