@@ -33,13 +33,14 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
 
-      - name: Download Web artifact from latest successful build 🔻
+      - name: Download Web artifact to site directory
         if: ${{ inputs.deployWeb }}
         uses: dawidd6/action-download-artifact@v6
         with:
           workflow: dotnet.yml
-          branch: main
-          name_pattern: ICSharpCode.CodeConverter.Web.*.zip
+          branch: master
+          name_is_regexp: true
+          name: ICSharpCode\.CodeConverter\.Web\..*\.zip
           path: site
 
       - name: Download release artifacts
@@ -47,17 +48,18 @@ jobs:
         uses: dawidd6/action-download-artifact@v6
         with:
           workflow: dotnet.yml
-          branch: main
-          name_pattern: ICSharpCode.CodeConverter*
+          branch: master
+          name_is_regexp: true
+          name: ICSharpCode\.CodeConverter.*\.(nupkg|vsix)$
           path: release-artifacts
-          merge-multiple: true
+          skip_unpack: true
 
       - name: Extract build version from artifacts
         id: get_version
         if: ${{ inputs.createRelease }}
         shell: pwsh
         run: |
-          $artifact = Get-ChildItem -Path release-artifacts -Filter "*.nupkg" | Select-Object -First 1
+          $artifact = Get-ChildItem -Path release-artifacts -Filter "ICSharpCode.CodeConverter.*.nupkg" | Select-Object -First 1
           if ($artifact) {
             $version = $artifact.Name -replace '^ICSharpCode\.CodeConverter\.(.+)\.nupkg$', '$1'
             Write-Output "version=$version" >> $env:GITHUB_OUTPUT
@@ -91,14 +93,9 @@ jobs:
           if (-not $env:NUGET_API_KEY) { throw "nugetApiKey input is required when Publish NuGet is checked." }
           Write-Output "::add-mask::$env:NUGET_API_KEY"
           $source = "https://api.nuget.org/v3/index.json"
-          $packages = @(
-            "release-artifacts/ICSharpCode.CodeConverter.*.nupkg",
-            "release-artifacts/ICSharpCode.CodeConverter.CodeConv.*.nupkg"
-          )
-          foreach ($pattern in $packages) {
-            Get-ChildItem -Path $pattern -File | ForEach-Object {
-              dotnet nuget push $_.FullName -k $env:NUGET_API_KEY -s $source --skip-duplicate
-            }
+          $packages = Get-ChildItem -Path release-artifacts -Filter "*.nupkg"
+          foreach ($package in $packages) {
+            dotnet nuget push $package.FullName -k $env:NUGET_API_KEY -s $source --skip-duplicate
           }
 
       - name: Create GitHub release
