@@ -288,3 +288,4 @@ __pycache__/
 *.xsd.cs
 /.nuget
 /web/.vite/
+/web/dist/

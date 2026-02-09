@@ -1,0 +1,111 @@
+name: Deploy CodeConverter
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployWeb:
+        description: "Deploy web to GitHub Pages"
+        required: false
+        type: boolean
+        default: false
+      publishNuget:
+        description: "Publish NuGet package and dotnet tool"
+        required: false
+        type: boolean
+        default: false
+      createRelease:
+        description: "Create GitHub release"
+        required: false
+        type: boolean
+        default: false
+      nugetApiKey:
+        description: "NuGet API key (required if Publish NuGet is checked)"
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    concurrency: deploy-${{ github.ref }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      - name: Download Web artifact from latest successful build 🔻
+        if: ${{ inputs.deployWeb }}
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: dotnet.yml
+          branch: main
+          name_pattern: ICSharpCode.CodeConverter.Web.*.zip
+          path: site
+
+      - name: Download release artifacts
+        if: ${{ inputs.createRelease || inputs.publishNuget }}
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: dotnet.yml
+          branch: main
+          name_pattern: ICSharpCode.CodeConverter*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Extract build version from artifacts
+        id: get_version
+        if: ${{ inputs.createRelease }}
+        shell: pwsh
+        run: |
+          $artifact = Get-ChildItem -Path release-artifacts -Filter "*.nupkg" | Select-Object -First 1
+          if ($artifact) {
+            $version = $artifact.Name -replace '^ICSharpCode\.CodeConverter\.(.+)\.nupkg$', '$1'
+            Write-Output "version=$version" >> $env:GITHUB_OUTPUT
+          } else {
+            throw "No NuGet packages found in release-artifacts directory"
+          }
+
+      - name: Extract latest changelog section
+        id: changelog
+        shell: pwsh
+        if: ${{ inputs.createRelease }}
+        run: |
+          ./Get-LatestChangelog.ps1 -Path CHANGELOG.md | Tee-Object -FilePath release-notes.md
+          "notes<<EOF" >> $env:GITHUB_OUTPUT
+          Get-Content release-notes.md >> $env:GITHUB_OUTPUT
+          "EOF" >> $env:GITHUB_OUTPUT
+
+      - name: Deploy to GitHub Pages 🚀
+        if: ${{ inputs.deployWeb }}
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: 'autoupdated/gh-pages'
+          folder: 'site'
+
+      - name: Publish NuGet packages
+        if: ${{ inputs.publishNuget }}
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ inputs.nugetApiKey }}
+        run: |
+          if (-not $env:NUGET_API_KEY) { throw "nugetApiKey input is required when Publish NuGet is checked." }
+          Write-Output "::add-mask::$env:NUGET_API_KEY"
+          $source = "https://api.nuget.org/v3/index.json"
+          $packages = @(
+            "release-artifacts/ICSharpCode.CodeConverter.*.nupkg",
+            "release-artifacts/ICSharpCode.CodeConverter.CodeConv.*.nupkg"
+          )
+          foreach ($pattern in $packages) {
+            Get-ChildItem -Path $pattern -File | ForEach-Object {
+              dotnet nuget push $_.FullName -k $env:NUGET_API_KEY -s $source --skip-duplicate
+            }
+          }
+
+      - name: Create GitHub release
+        if: ${{ inputs.createRelease }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: v${{ steps.get_version.outputs.version }}
+          body: ${{ steps.changelog.outputs.notes }}
+          files: release-artifacts/**
