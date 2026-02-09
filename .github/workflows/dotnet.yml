@@ -6,6 +6,26 @@ on:
   pull_request:
     branches: [ master, main ]
   workflow_dispatch:
+    inputs:
+      publishNuget:
+        description: "Publish NuGet package and dotnet tool"
+        required: false
+        type: boolean
+        default: false
+      deployWebFunc:
+        description: "Deploy web/func artifacts"
+        required: false
+        type: boolean
+        default: false
+      createRelease:
+        description: "Create GitHub release"
+        required: false
+        type: boolean
+        default: false
+      nugetApiKey:
+        description: "NuGet API key (required if Publish NuGet is checked)"
+        required: false
+        type: string
 
 env:
   BuildVersion: '10.0.0'
@@ -93,20 +113,25 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
  
-      - name: Download Artifacts 🔻 # The built project is downloaded into the 'site' folder.
+      - name: Download web artifact 🔻 # The built project is downloaded into the 'site' folder.
+        if: ${{ inputs.deployWebFunc }}
         uses: actions/download-artifact@v4
         with:
           name: ICSharpCode.CodeConverter.Web.${{ env.BuildVersion }}.zip
           path: site
 
-      - name: Download all release artifacts
+      - name: Download release artifacts
+        if: ${{ inputs.createRelease || inputs.publishNuget }}
         uses: actions/download-artifact@v4
         with:
+          pattern: ICSharpCode.CodeConverter.*
           path: release-artifacts
+          merge-multiple: true
 
       - name: Extract latest changelog section
         id: changelog
         shell: pwsh
+        if: ${{ inputs.createRelease }}
         run: |
           ./Get-LatestChangelog.ps1 -Path CHANGELOG.md | Tee-Object -FilePath release-notes.md
           "notes<<EOF" >> $env:GITHUB_OUTPUT
@@ -114,12 +139,33 @@ jobs:
           "EOF" >> $env:GITHUB_OUTPUT
  
       - name: Deploy 🚀
+        if: ${{ inputs.deployWebFunc }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: 'autoupdated/gh-pages'
           folder: 'site/wwwroot'
 
+      - name: Publish NuGet packages
+        if: ${{ inputs.publishNuget }}
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ inputs.nugetApiKey }}
+        run: |
+          if (-not $env:NUGET_API_KEY) { throw "nugetApiKey input is required when Publish NuGet is checked." }
+          Write-Output "::add-mask::$env:NUGET_API_KEY"
+          $source = "https://api.nuget.org/v3/index.json"
+          $packages = @(
+            "release-artifacts/ICSharpCode.CodeConverter.*.nupkg",
+            "release-artifacts/ICSharpCode.CodeConverter.CodeConv.*.nupkg"
+          )
+          foreach ($pattern in $packages) {
+            Get-ChildItem -Path $pattern -File | ForEach-Object {
+              dotnet nuget push $_.FullName -k $env:NUGET_API_KEY -s $source --skip-duplicate
+            }
+          }
+
       - name: Create GitHub release
+        if: ${{ inputs.createRelease }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.BuildVersion }}.${{ github.run_number }}
