@@ -41,7 +41,17 @@ jobs:
           branch: master
           name_is_regexp: true
           name: ICSharpCode\.CodeConverter\.Web\..*\.zip
-          path: site
+          path: site-temp
+
+      - name: Move web files to site root
+        if: ${{ inputs.deployWeb }}
+        shell: pwsh
+        run: |
+          $subDir = Get-ChildItem -Path site-temp -Directory | Select-Object -First 1
+          if ($subDir) {
+            Move-Item -Path "$($subDir.FullName)/*" -Destination site/
+            Remove-Item $subDir.FullName
+          }
 
       - name: Download release artifacts
         if: ${{ inputs.createRelease || inputs.publishNuget }}
@@ -52,7 +62,7 @@ jobs:
           name_is_regexp: true
           name: ICSharpCode\.CodeConverter.*\.(nupkg|vsix)$
           path: release-artifacts
-          skip_unpack: true
+          skip_unpack: false
 
       - name: Extract build version from artifacts
         id: get_version
