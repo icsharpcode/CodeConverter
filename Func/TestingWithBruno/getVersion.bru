@@ -1,0 +1,15 @@
+meta {
+  name: getVersion
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:7144/api/Version
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

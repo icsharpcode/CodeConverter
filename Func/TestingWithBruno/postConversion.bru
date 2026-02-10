@@ -1,0 +1,20 @@
+meta {
+  name: postConversion
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:7144/api/Convert
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {"code": "usingSystem;usingSystem.Collections.Generic;usingSystem.Collections.Immutable;usingSystem.Diagnostics;usingSystem.Diagnostics.CodeAnalysis;usingSystem.Linq;usingSystem.Threading;usingSystem.Threading.Tasks;classProgram{staticvoidMain(){Console.WriteLine(\"Hello.\");}}","requestedConversion":"cs2vbnet"}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -9,15 +9,21 @@
     <AssemblyName>ICSharpCode.CodeConverter.Func</AssemblyName>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
   </PropertyGroup>
-  
+
+  <ItemGroup>
+    <Compile Remove="TestingWithBruno\**" />
+    <EmbeddedResource Remove="TestingWithBruno\**" />
+    <None Remove="TestingWithBruno\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\CodeConverter\Common\DefaultReferences.cs" Link="DefaultReferences.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\CodeConverter\CodeConverter.csproj" />
-  </ItemGroup>  
-  
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.51.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.3.0" />
@@ -27,7 +33,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.4.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    
+
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
