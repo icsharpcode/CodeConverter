@@ -83,9 +83,6 @@ jobs:
         if: ${{ inputs.createRelease }}
         run: |
           ./Get-LatestChangelog.ps1 -Path CHANGELOG.md | Tee-Object -FilePath release-notes.md
-          "notes<<EOF" >> $env:GITHUB_OUTPUT
-          Get-Content release-notes.md >> $env:GITHUB_OUTPUT
-          "EOF" >> $env:GITHUB_OUTPUT
 
       - name: Deploy to GitHub Pages 🚀
         if: ${{ inputs.deployWeb }}
@@ -114,5 +111,5 @@ jobs:
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: v${{ steps.get_version.outputs.version }}
-          body: ${{ steps.changelog.outputs.notes }}
+          body_path: release-notes.md
           files: release-artifacts/**
