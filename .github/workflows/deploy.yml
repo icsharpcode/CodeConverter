@@ -53,7 +53,7 @@ jobs:
             Remove-Item $subDir.FullName
           }
 
-      - name: Download release artifacts
+      - name: Download NuGet and VSIX artifacts
         if: ${{ inputs.createRelease || inputs.publishNuget }}
         uses: dawidd6/action-download-artifact@v6
         with:
@@ -63,6 +63,26 @@ jobs:
           name: ICSharpCode\.CodeConverter.*\.(nupkg|vsix)$
           path: release-artifacts
           skip_unpack: false
+
+      - name: Download ZIP artifacts
+        if: ${{ inputs.createRelease }}
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: dotnet.yml
+          branch: master
+          name_is_regexp: true
+          name: ICSharpCode\.CodeConverter.*\.zip$
+          path: release-artifacts
+          skip_unpack: true
+
+      - name: Rename ZIP files
+        if: ${{ inputs.createRelease }}
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path release-artifacts -Filter "*.zip.zip" | ForEach-Object {
+            $newName = $_.Name -replace '\.zip\.zip$', '.zip'
+            Rename-Item -Path $_.FullName -NewName $newName
+          }
 
       - name: Extract build version from artifacts
         id: get_version
