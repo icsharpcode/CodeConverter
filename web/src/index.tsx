@@ -8,18 +8,16 @@ import App from './App';
 const headElement = document.head as HTMLElement & { dataset: DOMStringMap };
 headElement.dataset['apisource'] = import.meta.env.VITE_DEFAULT_APISOURCE || 'LocalWeb';
 
-const baseUrl = document.getElementsByTagName('base')[0]?.getAttribute('href') || undefined;
 
 const container = document.getElementById('root');
 const root = createRoot(container!);
-let normalizedBaseUrl = baseUrl;
-if (normalizedBaseUrl && normalizedBaseUrl.endsWith('/') && normalizedBaseUrl !== '/') {
-    normalizedBaseUrl = normalizedBaseUrl.substring(0, normalizedBaseUrl.length - 1);
-}
+// Derive basename from BASE_URL (set at build time)
+const baseUrl = import.meta.env.BASE_URL;
+const normalizedBaseUrl = baseUrl && baseUrl.endsWith('/') && baseUrl !== '/' ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
 
 root.render(
     <StrictMode>
-        <BrowserRouter basename={baseUrl}>
+        <BrowserRouter basename={normalizedBaseUrl}>
             <App />
         </BrowserRouter>
     </StrictMode>

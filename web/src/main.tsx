@@ -8,11 +8,13 @@ import App from './App.tsx'
 const headElement = document.head as HTMLElement & { dataset: DOMStringMap };
 headElement.dataset['apisource'] = import.meta.env.VITE_DEFAULT_APISOURCE || 'LocalWeb';
 
-const baseUrl = document.getElementsByTagName('base')[0]?.getAttribute('href') || undefined;
+// const baseUrl = document.getElementsByTagName('base')[0]?.getAttribute('href') || undefined;
+// Derive basename from BASE_URL (set at build time)
+const basename = import.meta.env.BASE_URL === './' ? '/' : import.meta.env.BASE_URL;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename={baseUrl}>
+    <BrowserRouter basename={basename}>
       <App />
     </BrowserRouter>
   </StrictMode>,
