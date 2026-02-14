@@ -33,24 +33,23 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
 
-      - name: Download Web artifact to site directory
-        if: ${{ inputs.deployWeb }}
+      - name: Download ZIP artifacts
         uses: dawidd6/action-download-artifact@v6
         with:
           workflow: dotnet.yml
           branch: master
           name_is_regexp: true
-          name: ICSharpCode\.CodeConverter\.Web\..*\.zip
-          path: site-temp
-
-      - name: Get web folder name
-        if: ${{ inputs.deployWeb }}
-        id: web_folder
+          name: ICSharpCode\.CodeConverter.*\.zip$
+          path: release-artifacts
+          skip_unpack: true
+  
+      - name: Rename ZIP files
         shell: pwsh
         run: |
-          $subDir = Get-ChildItem -Path site-temp -Directory | Select-Object -First 1
-          $path = if ($subDir) { "site-temp/$($subDir.Name)" } else { "site-temp" }
-          Write-Output "path=$path" >> $env:GITHUB_OUTPUT
+          Get-ChildItem -Path release-artifacts -Filter "*.zip.zip" | ForEach-Object {
+            $newName = $_.Name -replace '\.zip\.zip$', '.zip'
+            Rename-Item -Path $_.FullName -NewName $newName
+          }
 
       - name: Download NuGet and VSIX artifacts
         if: ${{ inputs.createRelease || inputs.publishNuget }}
@@ -63,25 +62,11 @@ jobs:
           path: release-artifacts
           skip_unpack: false
 
-      - name: Download ZIP artifacts
-        if: ${{ inputs.createRelease }}
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          workflow: dotnet.yml
-          branch: master
-          name_is_regexp: true
-          name: ICSharpCode\.CodeConverter.*\.zip$
-          path: release-artifacts
-          skip_unpack: true
-
-      - name: Rename ZIP files
-        if: ${{ inputs.createRelease }}
+      - name: Extract web files
+        if: ${{ inputs.deployWeb }}
         shell: pwsh
         run: |
-          Get-ChildItem -Path release-artifacts -Filter "*.zip.zip" | ForEach-Object {
-            $newName = $_.Name -replace '\.zip\.zip$', '.zip'
-            Rename-Item -Path $_.FullName -NewName $newName
-          }
+          Expand-Archive -Path release-artifacts/ICSharpCode.CodeConverter.Web.*.zip -DestinationPath site -Force
 
       - name: Extract build version from artifacts
         id: get_version
@@ -103,14 +88,14 @@ jobs:
         run: |
           ./Get-LatestChangelog.ps1 -Path CHANGELOG.md | Tee-Object -FilePath release-notes.md
 
-      - name: Deploy to GitHub Pages 🚀
+      - name: Publish web to GitHub Pages 🚀
         if: ${{ inputs.deployWeb }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: 'autoupdated/gh-pages'
-          folder: ${{ steps.web_folder.outputs.path }}
+          folder: 'site'
 
-      - name: Publish NuGet packages
+      - name: Publish NuGet packages (tool and library)
         if: ${{ inputs.publishNuget }}
         shell: pwsh
         env:
@@ -124,7 +109,7 @@ jobs:
             dotnet nuget push $package.FullName -k $env:NUGET_API_KEY -s $source --skip-duplicate
           }
 
-      - name: Create GitHub release
+      - name: Publish GitHub release with changelog
         if: ${{ inputs.createRelease }}
         uses: softprops/action-gh-release@v2
         with:
