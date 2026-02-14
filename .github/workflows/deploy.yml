@@ -43,15 +43,14 @@ jobs:
           name: ICSharpCode\.CodeConverter\.Web\..*\.zip
           path: site-temp
 
-      - name: Move web files to site root
+      - name: Get web folder name
         if: ${{ inputs.deployWeb }}
+        id: web_folder
         shell: pwsh
         run: |
           $subDir = Get-ChildItem -Path site-temp -Directory | Select-Object -First 1
-          if ($subDir) {
-            Move-Item -Path "$($subDir.FullName)/*" -Destination site/
-            Remove-Item $subDir.FullName
-          }
+          $path = if ($subDir) { "site-temp/$($subDir.Name)" } else { "site-temp" }
+          Write-Output "path=$path" >> $env:GITHUB_OUTPUT
 
       - name: Download NuGet and VSIX artifacts
         if: ${{ inputs.createRelease || inputs.publishNuget }}
@@ -109,7 +108,7 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: 'autoupdated/gh-pages'
-          folder: 'site'
+          folder: ${{ steps.web_folder.outputs.path }}
 
       - name: Publish NuGet packages
         if: ${{ inputs.publishNuget }}
