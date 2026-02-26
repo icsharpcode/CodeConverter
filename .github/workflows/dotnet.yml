@@ -46,11 +46,6 @@ jobs:
     - name: MSBuild Vsix
       run: msbuild Vsix\Vsix.csproj -restore /p:Configuration=$env:BuildTarget
 
-    - name: Execute unit tests
-      run: dotnet test $env:Tests1
-      env:
-        Tests1: Tests/bin/${{ env.BuildTarget }}/ICSharpCode.CodeConverter.Tests.dll
-
     - name: Run vitest
       working-directory: Web
       run: npm test -- --run
@@ -80,4 +75,15 @@ jobs:
       with:
         name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip
         path: Func/bin/${{ env.BuildTarget }}/publish/
-          
+
+  test-vs2022:
+    uses: ./.github/workflows/dotnet-tests.yml
+    with:
+      runs-on: windows-2022
+      vs-version: '[17.0,18.0)'
+
+  test-vs2026:
+    uses: ./.github/workflows/dotnet-tests.yml
+    with:
+      runs-on: windows-2025-vs2026
+      vs-version: '[18.0,)'

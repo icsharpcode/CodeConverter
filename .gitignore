@@ -289,3 +289,4 @@ __pycache__/
 /.nuget
 /web/.vite/
 /web/dist/
+.claude/settings.local.json

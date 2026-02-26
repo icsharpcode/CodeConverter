@@ -1,0 +1,34 @@
+name: .NET Tests
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        required: true
+        type: string
+      vs-version:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ${{ inputs.runs-on }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: ${{ inputs.vs-version }}
+
+    - name: Build
+      run: dotnet build DotNetBuildable.slnf /p:Configuration=Release
+
+    - name: Execute unit tests
+      run: dotnet test Tests/bin/Release/ICSharpCode.CodeConverter.Tests.dll
