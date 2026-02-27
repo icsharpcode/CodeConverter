@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Globalization;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -688,14 +688,39 @@ internal class NameExpressionNodeVisitor
 
     private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
     {
-        var firstPossiblyConditionalAncestor = node.Parent;
-        while (firstPossiblyConditionalAncestor != null &&
-               firstPossiblyConditionalAncestor.IsKind(VBasic.SyntaxKind.InvocationExpression,
-                   VBasic.SyntaxKind.SimpleMemberAccessExpression)) {
-            firstPossiblyConditionalAncestor = firstPossiblyConditionalAncestor.Parent;
+        SyntaxNode child = node;
+        SyntaxNode parent = node.Parent;
+
+        while (parent != null)
+        {
+            if (parent.IsKind(VBasic.SyntaxKind.InvocationExpression,
+                              VBasic.SyntaxKind.SimpleMemberAccessExpression,
+                              VBasic.SyntaxKind.ParenthesizedExpression))
+            {
+                child = parent;
+                parent = parent.Parent;
+                continue;
+            }
+
+            if (parent is VBSyntax.ConditionalAccessExpressionSyntax cae)
+            {
+                if (cae.WhenNotNull == child)
+                {
+                    return true;
+                }
+
+                if (cae.Expression == child)
+                {
+                     child = parent;
+                     parent = parent.Parent;
+                     continue;
+                }
+            }
+
+            break;
         }
 
-        return firstPossiblyConditionalAncestor?.IsKind(VBasic.SyntaxKind.ConditionalAccessExpression) == true;
+        return false;
     }
 
     private static CSharpSyntaxNode ReplaceRightmostIdentifierText(CSharpSyntaxNode expr, SyntaxToken idToken, string overrideIdentifier)
