@@ -4,6 +4,25 @@ namespace ICSharpCode.CodeConverter.Common;
 
 public class SolutionFileTextEditor : ISolutionFileTextEditor
 {
+    /// <summary>
+    /// For .slnx files: simply replaces project path extensions (no GUIDs or project type GUIDs exist in .slnx).
+    /// </summary>
+    public static List<(string Find, string Replace, bool FirstOnly)> GetSlnxSolutionFileProjectReferenceReplacements(
+        IEnumerable<string> relativeProjPaths, string sourceSolutionContents)
+    {
+        if (string.IsNullOrWhiteSpace(sourceSolutionContents)) return new List<(string Find, string Replace, bool FirstOnly)>();
+
+        var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
+        foreach (var relativeProjPath in relativeProjPaths)
+        {
+            var escapedProjPath = Regex.Escape(relativeProjPath);
+            var newProjPath = PathConverter.TogglePathExtension(relativeProjPath);
+            projectReferenceReplacements.Add((escapedProjPath, newProjPath, false));
+        }
+
+        return projectReferenceReplacements;
+    }
+
     public static List<(string Find, string Replace, bool FirstOnly)> GetSolutionFileProjectReferenceReplacements(
         IEnumerable<(string Name, string RelativeProjPath)> projTuples, string sourceSolutionContents,
         IReadOnlyCollection<(string, string)> projTypeGuidMappings)

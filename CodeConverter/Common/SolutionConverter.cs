@@ -43,8 +43,10 @@ public class SolutionConverter
             return (proj.Name, RelativeProjPath: relativeProjPath, ProjContents: projContents);
         });
 
+        // .slnx files have no project GUIDs - skip the GUID lookup by passing empty solution contents
+        var isSlnx = string.Equals(Path.GetExtension(solutionFilePath), ".slnx", StringComparison.OrdinalIgnoreCase);
         var solutionFileTextEditor = new SolutionFileTextEditor();
-        var projectReferenceReplacements = solutionFileTextEditor.GetProjectFileProjectReferenceReplacements(projTuples, sourceSolutionContents);
+        var projectReferenceReplacements = solutionFileTextEditor.GetProjectFileProjectReferenceReplacements(projTuples, isSlnx ? "" : sourceSolutionContents);
 
         return new SolutionConverter(solutionFilePath, sourceSolutionContents, projectsToConvert, projectReferenceReplacements, languageConversion, fileSystem, progress ?? new Progress<ConversionProgress>(), cancellationToken);
     }
@@ -108,12 +110,20 @@ public class SolutionConverter
 
     public ConversionResult ConvertSolutionFile()
     {
-        var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
-        var relativeProjPaths = _projectsToConvert.Select(proj =>
-            (proj.Name, RelativeProjPath: PathConverter.GetRelativePath(_solutionFilePath, proj.FilePath)));
+        IEnumerable<(string Find, string Replace, bool FirstOnly)> slnProjectReferenceReplacements;
 
-        var slnProjectReferenceReplacements = SolutionFileTextEditor.GetSolutionFileProjectReferenceReplacements(relativeProjPaths,
-            _sourceSolutionContents, projectTypeGuidMappings);
+        if (string.Equals(Path.GetExtension(_solutionFilePath), ".slnx", StringComparison.OrdinalIgnoreCase)) {
+            var relativeProjPaths = _projectsToConvert.Select(proj =>
+                PathConverter.GetRelativePath(_solutionFilePath, proj.FilePath));
+            slnProjectReferenceReplacements = SolutionFileTextEditor.GetSlnxSolutionFileProjectReferenceReplacements(
+                relativeProjPaths, _sourceSolutionContents);
+        } else {
+            var projectTypeGuidMappings = _languageConversion.GetProjectTypeGuidMappings();
+            var relativeProjPaths = _projectsToConvert.Select(proj =>
+                (proj.Name, RelativeProjPath: PathConverter.GetRelativePath(_solutionFilePath, proj.FilePath)));
+            slnProjectReferenceReplacements = SolutionFileTextEditor.GetSolutionFileProjectReferenceReplacements(
+                relativeProjPaths, _sourceSolutionContents, projectTypeGuidMappings);
+        }
 
         var convertedSolutionContents = TextReplacementConverter.Replace(_sourceSolutionContents, slnProjectReferenceReplacements);
         return new ConversionResult(convertedSolutionContents) {
