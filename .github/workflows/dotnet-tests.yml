@@ -9,6 +9,9 @@ on:
       vs-version:
         required: true
         type: string
+      dotnet-version:
+        required: true
+        type: string
 
 jobs:
   test:
@@ -20,12 +23,15 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
       with:
         vs-version: ${{ inputs.vs-version }}
+
+    - name: Log MSBuild version
+      run: msbuild -version
 
     - name: Build
       run: dotnet build DotNetBuildable.slnf /p:Configuration=Release
