@@ -320,6 +320,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csTargetArrayExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         var convertedBounds = (await CommonConversions.ConvertArrayBoundsAsync(node.ArrayBounds)).Sizes.ToList();
         if (preserve && convertedBounds.Count == 1) {
+            if (node.Expression is VBSyntax.MemberAccessExpressionSyntax || node.Expression is VBSyntax.IdentifierNameSyntax identifier && _semanticModel.GetSymbolInfo(identifier).Symbol.IsKind(SymbolKind.Property)) {
+                var (tempVarDecl, tempVar) = CreateLocalVariableWithUniqueName(node.Expression, "arg" + csTargetArrayExpression.ToString().Split('.').Last(), csTargetArrayExpression);
+                var resizeArgs = new[] { (ExpressionSyntax)tempVar, convertedBounds.Single() }.CreateCsArgList(SyntaxKind.RefKeyword);
+                var resizeCall = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), resizeArgs);
+                var assignment = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csTargetArrayExpression, tempVar);
+                return SyntaxFactory.List(new StatementSyntax[] { tempVarDecl, SyntaxFactory.ExpressionStatement(resizeCall), SyntaxFactory.ExpressionStatement(assignment) });
+            }
+
             var argumentList = new[] { csTargetArrayExpression, convertedBounds.Single() }.CreateCsArgList(SyntaxKind.RefKeyword);
             var arrayResize = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), argumentList);
             return SingleStatement(arrayResize);
