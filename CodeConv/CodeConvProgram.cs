@@ -105,8 +105,10 @@ public partial class CodeConvProgram
 
         IProgress<string> strProgress = new Progress<string>(p => progress.Report(new ConversionProgress(p)));
 
-        if (!string.Equals(Path.GetExtension(finalSolutionPath), ".sln", StringComparison.OrdinalIgnoreCase)) {
-            throw new ValidationException("Solution path must end in `.sln`");
+        var ext = Path.GetExtension(finalSolutionPath);
+        if (!string.Equals(ext, ".sln", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(ext, ".slnx", StringComparison.OrdinalIgnoreCase)) {
+            throw new ValidationException("Solution path must end in `.sln` or `.slnx`");
         }
 
         string? directoryName = string.IsNullOrWhiteSpace(OutputDirectory) ? Path.GetDirectoryName(finalSolutionPath) : OutputDirectory;

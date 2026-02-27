@@ -552,7 +552,7 @@ EndProject";
         return Utils.HomogenizeEol(referenceString);
     }
 
-    private static Solution CreateTestSolution()
+    private static Solution CreateTestSolution(string filePath = SlnFilePath)
     {
         var ws = Task.Run(() => ThreadSafeWorkspaceHelper.CreateAdhocWorkspace.GetValueAsync())
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits - the tests don't deadlock
@@ -560,7 +560,7 @@ EndProject";
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
         var solutionId = SolutionId.CreateNewId(SlnName);
         var versionStamp = VersionStamp.Create();
-        var solutionInfo = SolutionInfo.Create(solutionId, versionStamp, SlnFilePath);
+        var solutionInfo = SolutionInfo.Create(solutionId, versionStamp, filePath);
 
         return ws.AddSolution(solutionInfo);
     }
@@ -588,5 +588,55 @@ EndProject";
             .SingleAsync(result => result.SourcePathOrNull == referencingProject.FilePath);
 
         return conversionResult.ConvertedCode;
+    }
+
+    [Fact]
+    public void ConvertSlnxSolutionFile_WhenInSolutionBaseDirThenUpdated()
+    {
+        //Arrange
+        var slnxContents = "<Solution>\r\n  <Project Path=\"VbLibrary.vbproj\" />\r\n</Solution>";
+        var slnxSln = CreateTestSolution(@"C:\MySolution\MySolution.slnx");
+        var projectId = ProjectId.CreateNewId();
+        var projInfo = ProjectInfo.Create(projectId, VersionStamp.Create(), "VbLibrary", "VbLibrary",
+            LanguageNames.VisualBasic, @"C:\MySolution\VbLibrary.vbproj");
+        slnxSln = slnxSln.AddProject(projInfo);
+        var testProject = slnxSln.GetProject(projectId);
+
+        _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
+
+        var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> { testProject },
+            fileSystem: _fsMock.Object, solutionContents: slnxContents);
+
+        //Act
+        var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
+
+        //Assert
+        var expectedSlnFile = "<Solution>\r\n  <Project Path=\"VbLibrary.csproj\" />\r\n</Solution>";
+        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+    }
+
+    [Fact]
+    public void ConvertSlnxSolutionFile_WhenInProjectFolderThenUpdated()
+    {
+        //Arrange
+        var slnxContents = "<Solution>\r\n  <Project Path=\"VbLibrary\\VbLibrary.vbproj\" />\r\n</Solution>";
+        var slnxSln = CreateTestSolution(@"C:\MySolution\MySolution.slnx");
+        var projectId = ProjectId.CreateNewId();
+        var projInfo = ProjectInfo.Create(projectId, VersionStamp.Create(), "VbLibrary", "VbLibrary",
+            LanguageNames.VisualBasic, @"C:\MySolution\VbLibrary\VbLibrary.vbproj");
+        slnxSln = slnxSln.AddProject(projInfo);
+        var testProject = slnxSln.GetProject(projectId);
+
+        _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
+
+        var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> { testProject },
+            fileSystem: _fsMock.Object, solutionContents: slnxContents);
+
+        //Act
+        var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
+
+        //Assert
+        var expectedSlnFile = "<Solution>\r\n  <Project Path=\"VbLibrary\\VbLibrary.csproj\" />\r\n</Solution>";
+        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
     }
 }
