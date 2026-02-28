@@ -48,8 +48,6 @@ public class ConverterTestBase
     }
 
     private static IReadOnlyCollection<PortableExecutableReference> References { get; } = DefaultReferences.With(
-        typeof(System.Windows.Forms.Form).Assembly,
-        typeof(Microsoft.VisualBasic.Devices.Computer).Assembly,
         typeof(System.Data.SqlClient.SqlConnection).Assembly
     );
 
