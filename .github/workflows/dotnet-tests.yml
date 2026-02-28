@@ -19,11 +19,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Create global.json to enforce .NET 8 for MSBuild
-      if: inputs.dotnet-version == '8.0.x'
-      run: echo '{"sdk":{"version":"8.0.0","rollForward":"latestFeature"}}' > global.json
-
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
@@ -34,14 +29,18 @@ jobs:
       with:
         vs-version: ${{ inputs.vs-version }}
 
+    - name: Build
+      run: dotnet build DotNetBuildable.slnf /p:Configuration=Release
+
+    - name: Create global.json to enforce .NET 8 for MSBuild
+      if: inputs.dotnet-version == '8.0.x'
+      run: echo '{"sdk":{"version":"8.0.0","rollForward":"latestFeature"}}' > global.json
+
     - name: Log MSBuild version
       run: msbuild -version
 
     - name: Log .NET version
       run: dotnet --info
-
-    - name: Build
-      run: dotnet build DotNetBuildable.slnf /p:Configuration=Release
 
     - name: Execute unit tests
       run: dotnet test Tests/Tests.csproj -c Release --framework net${{ inputs.dotnet-version == '8.0.x' && '8.0' || '10.0' }} --no-build
