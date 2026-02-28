@@ -693,31 +693,25 @@ internal class NameExpressionNodeVisitor
 
         while (parent != null)
         {
+            // On right hand side of a ?. conditional access
+            if (parent is VBSyntax.ConditionalAccessExpressionSyntax cae && cae.WhenNotNull == child)
+            {
+                return true;
+            }
+
+            // Recurse outwards through chained accesses
             if (parent.IsKind(VBasic.SyntaxKind.InvocationExpression,
                               VBasic.SyntaxKind.SimpleMemberAccessExpression,
-                              VBasic.SyntaxKind.ParenthesizedExpression))
+                              VBasic.SyntaxKind.ParenthesizedExpression,
+                              VBasic.SyntaxKind.ConditionalAccessExpression))
             {
                 child = parent;
                 parent = parent.Parent;
-                continue;
             }
-
-            if (parent is VBSyntax.ConditionalAccessExpressionSyntax cae)
+            else
             {
-                if (cae.WhenNotNull == child)
-                {
-                    return true;
-                }
-
-                if (cae.Expression == child)
-                {
-                     child = parent;
-                     parent = parent.Parent;
-                     continue;
-                }
+                break;
             }
-
-            break;
         }
 
         return false;
