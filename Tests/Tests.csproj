@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <OutputType>Library</OutputType>
     <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
