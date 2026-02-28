@@ -27,8 +27,7 @@ Public Class LoosingProperties
         Dim y = New ClassWithReflectionDefaultMember() 'from C#
         y.Caption = ""World""
     End Sub
-End Class", @"
-using System.Reflection;
+End Class", @"using System.Reflection;
 
 [DefaultMember(""Caption"")]
 public partial class ClassWithReflectionDefaultMember
