@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -1670,6 +1670,46 @@ internal partial class SurroundingClass
         }
 
         return FuncRet;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task WithBlockWithNullConditionalAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Public Class Class1
+    Public Property x As Class1
+    Public Property Name As String
+End Class
+
+Public Class TestClass
+    Private _Data As Class1
+    Private x As String
+
+    Public Sub TestMethod()
+        With _Data
+            x = .x?.Name
+        End With
+    End Sub
+End Class", @"
+public partial class Class1
+{
+    public Class1 x { get; set; }
+    public string Name { get; set; }
+}
+
+public partial class TestClass
+{
+    private Class1 _Data;
+    private string x;
+
+    public void TestMethod()
+    {
+        {
+            ref var withBlock = ref _Data;
+            x = withBlock.x?.Name;
+        }
     }
 }");
     }
