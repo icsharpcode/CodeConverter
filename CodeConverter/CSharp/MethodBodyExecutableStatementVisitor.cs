@@ -320,16 +320,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csTargetArrayExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         var convertedBounds = (await CommonConversions.ConvertArrayBoundsAsync(node.ArrayBounds)).Sizes.ToList();
         if (preserve && convertedBounds.Count == 1) {
-            if (_semanticModel.GetSymbolInfo(node.Expression).Symbol?.IsKind(SymbolKind.Property) == true) {
-                var (tempVarDecl, tempVar) = CreateLocalVariableWithUniqueName(node.Expression, "arg" + csTargetArrayExpression.ToString().Split('.').Last(), csTargetArrayExpression);
-                var resizeArgs = new[] { (ExpressionSyntax)tempVar, convertedBounds.Single() }.CreateCsArgList(SyntaxKind.RefKeyword);
-                var resizeCall = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), resizeArgs);
-                var assignment = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csTargetArrayExpression, tempVar);
-                return SyntaxFactory.List(new StatementSyntax[] { tempVarDecl, SyntaxFactory.ExpressionStatement(resizeCall), SyntaxFactory.ExpressionStatement(assignment) });
+            bool isProperty = _semanticModel.GetSymbolInfo(node.Expression).Symbol?.IsKind(SymbolKind.Property) == true;
+            var arrayToResize = isProperty ? CreateLocalVariableWithUniqueName(node.Expression, "arg" + csTargetArrayExpression.ToString().Split('.').Last(), csTargetArrayExpression) : default;
+            var resizeArg = isProperty ? (ExpressionSyntax)arrayToResize.Reference : csTargetArrayExpression;
+
+            var argumentList = new[] { resizeArg, convertedBounds.Single() }.CreateCsArgList(SyntaxKind.RefKeyword);
+            var arrayResize = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), argumentList);
+
+            if (isProperty) {
+                var assignment = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, csTargetArrayExpression, arrayToResize.Reference);
+                return SyntaxFactory.List(new StatementSyntax[] { arrayToResize.Declaration, SyntaxFactory.ExpressionStatement(arrayResize), SyntaxFactory.ExpressionStatement(assignment) });
             }
 
-            var argumentList = new[] { csTargetArrayExpression, convertedBounds.Single() }.CreateCsArgList(SyntaxKind.RefKeyword);
-            var arrayResize = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), argumentList);
             return SingleStatement(arrayResize);
         }
         var newArrayAssignment = CreateNewArrayAssignment(node.Expression, csTargetArrayExpression, convertedBounds);
