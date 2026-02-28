@@ -14,6 +14,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [10.0.1] - 2026-02-28
+
+* Reintroduce tentative legacy support for dotnet 8 and VS2022
+* Support slnx format [1195](https://github.com/icsharpcode/CodeConverter/issues/1195)
+
+### VB -> C#
+* Fix for ReDim Preserve of array property - [#1156](https://github.com/icsharpcode/CodeConverter/issues/1156)
+* Fix for with block conversion with null conditional [#1174](https://github.com/icsharpcode/CodeConverter/issues/1174)
+Fixes #1195
+
+
 ## [10.0.0] - 2026-02-06
 
 * Support for net framework dropped. Please use an older version if you are converting projects that still use it.
