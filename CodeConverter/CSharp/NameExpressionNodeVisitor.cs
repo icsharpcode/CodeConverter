@@ -52,7 +52,7 @@ internal class NameExpressionNodeVisitor
 
         var simpleNameSyntax = await node.Name.AcceptAsync<SimpleNameSyntax>(TriviaConvertingExpressionVisitor);
 
-        var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p);
+        var isDefaultProperty = nodeSymbol is IPropertySymbol p && VBasic.VisualBasicExtensions.IsDefault(p) && p.Parameters.Any();
         ExpressionSyntax left = null;
         if (node.Expression is VBasic.Syntax.MyClassExpressionSyntax && nodeSymbol != null) {
             if (nodeSymbol.IsStatic) {
