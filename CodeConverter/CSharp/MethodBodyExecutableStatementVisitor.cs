@@ -320,7 +320,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csTargetArrayExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         var convertedBounds = (await CommonConversions.ConvertArrayBoundsAsync(node.ArrayBounds)).Sizes.ToList();
         if (preserve && convertedBounds.Count == 1) {
-            if (node.Expression is VBSyntax.MemberAccessExpressionSyntax || node.Expression is VBSyntax.IdentifierNameSyntax identifier && _semanticModel.GetSymbolInfo(identifier).Symbol.IsKind(SymbolKind.Property)) {
+            if (_semanticModel.GetSymbolInfo(node.Expression).Symbol?.IsKind(SymbolKind.Property) == true) {
                 var (tempVarDecl, tempVar) = CreateLocalVariableWithUniqueName(node.Expression, "arg" + csTargetArrayExpression.ToString().Split('.').Last(), csTargetArrayExpression);
                 var resizeArgs = new[] { (ExpressionSyntax)tempVar, convertedBounds.Single() }.CreateCsArgList(SyntaxKind.RefKeyword);
                 var resizeCall = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Array), nameof(Array.Resize)), resizeArgs);
