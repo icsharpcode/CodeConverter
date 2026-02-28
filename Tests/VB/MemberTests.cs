@@ -1308,33 +1308,33 @@ End Class
 15 source compilation errors:
 CS1002: ; expected
 CS0535: 'TestClass' does not implement interface member 'IList.Add(object?)'
-CS0535: 'TestClass' does not implement interface member 'IList.Contains(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.Clear()'
+CS0535: 'TestClass' does not implement interface member 'IList.Contains(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.IndexOf(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.Insert(int, object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.Remove(object?)'
 CS0535: 'TestClass' does not implement interface member 'IList.RemoveAt(int)'
-CS0535: 'TestClass' does not implement interface member 'IList.IsReadOnly'
 CS0535: 'TestClass' does not implement interface member 'IList.IsFixedSize'
+CS0535: 'TestClass' does not implement interface member 'IList.IsReadOnly'
 CS0535: 'TestClass' does not implement interface member 'ICollection.CopyTo(Array, int)'
 CS0535: 'TestClass' does not implement interface member 'ICollection.Count'
-CS0535: 'TestClass' does not implement interface member 'ICollection.SyncRoot'
 CS0535: 'TestClass' does not implement interface member 'ICollection.IsSynchronized'
+CS0535: 'TestClass' does not implement interface member 'ICollection.SyncRoot'
 CS0535: 'TestClass' does not implement interface member 'IEnumerable.GetEnumerator()'
 14 target compilation errors:
 BC30149: Class 'TestClass' must implement 'Function Add(value As Object) As Integer' for interface 'IList'.
-BC30149: Class 'TestClass' must implement 'Function Contains(value As Object) As Boolean' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'Sub Clear()' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'Function Contains(value As Object) As Boolean' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'Function IndexOf(value As Object) As Integer' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'Sub Insert(index As Integer, value As Object)' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'Sub Remove(value As Object)' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'Sub RemoveAt(index As Integer)' for interface 'IList'.
-BC30149: Class 'TestClass' must implement 'ReadOnly Property IsReadOnly As Boolean' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'ReadOnly Property IsFixedSize As Boolean' for interface 'IList'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property IsReadOnly As Boolean' for interface 'IList'.
 BC30149: Class 'TestClass' must implement 'Sub CopyTo(array As Array, index As Integer)' for interface 'ICollection'.
 BC30149: Class 'TestClass' must implement 'ReadOnly Property Count As Integer' for interface 'ICollection'.
-BC30149: Class 'TestClass' must implement 'ReadOnly Property SyncRoot As Object' for interface 'ICollection'.
 BC30149: Class 'TestClass' must implement 'ReadOnly Property IsSynchronized As Boolean' for interface 'ICollection'.
+BC30149: Class 'TestClass' must implement 'ReadOnly Property SyncRoot As Object' for interface 'ICollection'.
 BC30149: Class 'TestClass' must implement 'Function GetEnumerator() As IEnumerator' for interface 'IEnumerable'.");
     }
     [Fact]

@@ -578,7 +578,7 @@ public partial class VisualBasicClass
     }
 }
 1 target compilation errors:
-CS1503: Argument 1: cannot convert from 'object' to 'string'");
+CS1503: Argument 1: cannot convert from 'object' to 'System.ReadOnlySpan<char>'");
     }
 
     [Fact]
