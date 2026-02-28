@@ -59,6 +59,31 @@ public class SolutionFileTextEditorTests : IDisposable
     }
 
     [Fact]
+    public void ConvertSlnxSolutionFile_ProjectElementsWithForwardSlashesAreUpdated()
+    {
+        //Arrange
+        var slnxContents = "<Solution>\r\n  <Project Path=\"ConsoleApp1/ConsoleApp1.vbproj\" />\r\n</Solution>";
+        var slnxSln = CreateTestSolution(@"C:\MySolution\MySolution.slnx");
+        var projectId = ProjectId.CreateNewId();
+        var projInfo = ProjectInfo.Create(projectId, VersionStamp.Create(), "ConsoleApp1", "ConsoleApp1",
+            LanguageNames.VisualBasic, @"C:\MySolution\ConsoleApp1\ConsoleApp1.vbproj");
+        slnxSln = slnxSln.AddProject(projInfo);
+        var testProject = slnxSln.GetProject(projectId);
+
+        _fsMock.Setup(mock => mock.File.ReadAllText(It.IsAny<string>())).Returns("");
+
+        var slnConverter = SolutionConverter.CreateFor<VBToCSConversion>(new List<Project> { testProject },
+            fileSystem: _fsMock.Object, solutionContents: slnxContents);
+
+        //Act
+        var convertedSlnFile = slnConverter.ConvertSolutionFile().ConvertedCode;
+
+        //Assert
+        var expectedSlnFile = "<Solution>\r\n  <Project Path=\"ConsoleApp1/ConsoleApp1.csproj\" />\r\n</Solution>";
+        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+    }
+
+    [Fact]
     public void ConvertSolutionFile_WhenInProjectFolderThenUpdated()
     {
         //Arrange

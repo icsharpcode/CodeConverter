@@ -1,5 +1,7 @@
-<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.4671869">
+﻿<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.4671869">
   <PropertyGroup>
+    <ResolveNuGetPackages>false</ResolveNuGetPackages>
+    <ShouldRunNpmAudit>false</ShouldRunNpmAudit>
     <StartupCommand>npm run dev</StartupCommand>
     <JavaScriptTestRoot>src\</JavaScriptTestRoot>
     <JavaScriptTestFramework>Vitest</JavaScriptTestFramework>
@@ -8,5 +10,4 @@
     <!-- Folder where production build objects will be placed -->
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
   </PropertyGroup>
-
 </Project>

@@ -15,9 +15,21 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
         foreach (var relativeProjPath in relativeProjPaths)
         {
-            var escapedProjPath = Regex.Escape(relativeProjPath);
-            var newProjPath = PathConverter.TogglePathExtension(relativeProjPath);
-            projectReferenceReplacements.Add((escapedProjPath, newProjPath, false));
+            // Add replacements for both backslash and forward-slash variants so .slnx files using either separator are handled
+            var nativeVariant = relativeProjPath;
+            var altVariant = relativeProjPath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            // native (likely backslashes on Windows)
+            var escapedNative = Regex.Escape(nativeVariant);
+            var newNative = PathConverter.TogglePathExtension(nativeVariant);
+            projectReferenceReplacements.Add((escapedNative, newNative, false));
+
+            // alternate (forward slashes)
+            if (altVariant != nativeVariant) {
+                var escapedAlt = Regex.Escape(altVariant);
+                var newAlt = PathConverter.TogglePathExtension(altVariant);
+                projectReferenceReplacements.Add((escapedAlt, newAlt, false));
+            }
         }
 
         return projectReferenceReplacements;
