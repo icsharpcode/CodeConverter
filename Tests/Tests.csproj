@@ -1,13 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>ICSharpCode.CodeConverter.Tests</AssemblyName>
     <RootNamespace>ICSharpCode.CodeConverter.Tests</RootNamespace>
     <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <UseWindowsForms>true</UseWindowsForms>
     <WarningsNotAsErrors>NU1510;NU1903</WarningsNotAsErrors>
   </PropertyGroup>
   <ItemGroup>
@@ -24,21 +21,18 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <!-- So we can reference commonly referenced assemblies in created compilations-->
+    <!-- Reference assemblies for use in created compilations during tests -->
+    <PackageReference Include="Basic.Reference.Assemblies.Net80" Version="1.8.4" />
+    <PackageReference Include="Basic.Reference.Assemblies.Net80Windows" Version="1.8.4" />
+    <PackageReference Include="Basic.Reference.Assemblies.NetStandard20" Version="1.8.4" />
+    <!-- SqlClient is not in the standard reference packs -->
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
-    <PackageReference Include="System.Formats.Asn1" Version="8.0.1" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\CodeConverter\Common\DefaultReferences.cs" Link="DefaultReferences.cs" />
     <Compile Remove="TestData\**" />
     <EmbeddedResource Remove="TestData\**" />
     <None Include="TestData\**\*.*" />
