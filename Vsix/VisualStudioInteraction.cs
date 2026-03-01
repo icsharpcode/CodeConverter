@@ -32,8 +32,13 @@ internal static class VisualStudioInteraction
 {
     private static DTE2 _dte;
 
-    /// <remarks>All calls and usages must be from the main thread</remarks>>
-    internal static DTE2 Dte => _dte ??= Package.GetGlobalService(typeof(DTE)) as DTE2;
+    /// <remarks>All calls and usages must be from the main thread</remarks>
+    internal static DTE2 Dte {
+        get {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            return _dte ??= Package.GetGlobalService(typeof(DTE)) as DTE2;
+        }
+    }
 
     private static CancellationToken _cancelAllToken;
     private static readonly Version LowestSupportedVersion = new(16, 10, 0, 0);
