@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Threading;
+using static Basic.Reference.Assemblies.NetStandard20;
 using Task = System.Threading.Tasks.Task;
 
 namespace ICSharpCode.CodeConverter.VsExtension;
@@ -377,7 +378,7 @@ Please 'Reload All' when Visual Studio prompts you.", true, files.Count > errors
 
     private async Task<TextConversionOptions> CreateTextConversionOptionsAsync(string documentPath = null)
     {
-        return new TextConversionOptions(DefaultReferences.NetStandard2, documentPath) {
+        return new TextConversionOptions(References.All, documentPath) {
             AbandonOptionalTasksAfter = await GetAbandonOptionalTasksAfterAsync()
         };
     }

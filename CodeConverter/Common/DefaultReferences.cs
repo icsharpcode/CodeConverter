@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Basic.Reference.Assemblies;
 using Microsoft.CodeAnalysis;
+using static Basic.Reference.Assemblies.AspNet100;
 
 namespace ICSharpCode.CodeConverter.Common;
 
@@ -42,10 +44,7 @@ public static class DefaultReferences
     private static readonly Dictionary<string, (string Location, string[] ReferenceNames)> _assemblyInfoCache = new();
 
     public static IReadOnlyCollection<PortableExecutableReference> NetStandard2 { get; } =
-        With(Array.Empty<Assembly>()).ToArray();
-
-    public static IReadOnlyCollection<PortableExecutableReference> With(params Assembly[] assemblies) =>
-        GetRefs(GetPathsForAllReferences(DefaultAssemblies.Concat(assemblies))).ToArray();
+        AspNet100.References.All;
 
     private static IEnumerable<PortableExecutableReference> GetRefs(IEnumerable<string> assemblyLocations) =>
         assemblyLocations.Select(a => MetadataReference.CreateFromFile(a));

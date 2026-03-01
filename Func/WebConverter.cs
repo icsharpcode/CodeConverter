@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Basic.Reference.Assemblies;
 using ICSharpCode.CodeConverter.Common;
 using Microsoft.CodeAnalysis;
 
@@ -24,7 +25,7 @@ public static class WebConverter
         }
 
         var codeWithOptions = new CodeWithOptions(todo.code)
-            .WithTypeReferences(DefaultReferences.With(typeof(Microsoft.Data.SqlClient.SqlCommand).Assembly))
+            .WithTypeReferences(AspNet100.References.All)
             .SetFromLanguage(fromLanguage)
             .SetToLanguage(toLanguage);
 
