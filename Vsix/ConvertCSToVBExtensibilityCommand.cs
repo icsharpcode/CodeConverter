@@ -19,7 +19,27 @@ public class ConvertCSToVBExtensibilityCommand : Command
 
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken cancellationToken)
     {
-        // This will be wired up to the existing logic in Phase 2
-        await Task.CompletedTask;
+        var codeConversion = CodeConverterPackage.CodeConversionInstance;
+        var serviceProvider = CodeConverterPackage.Instance;
+        if (codeConversion == null || serviceProvider == null) return;
+
+        var itemsPath = await VisualStudioInteraction.GetSelectedItemsPathAsync(CodeConversion.IsCSFileName);
+        if (itemsPath.Count > 0)
+        {
+            await codeConversion.ConvertDocumentsAsync<ICSharpCode.CodeConverter.VB.CSToVBConversion>(itemsPath, cancellationToken);
+            return;
+        }
+
+        var projects = await VisualStudioInteraction.GetSelectedProjectsAsync(".csproj");
+        if (projects.Count > 0)
+        {
+            await codeConversion.ConvertProjectsAsync<ICSharpCode.CodeConverter.VB.CSToVBConversion>(projects, cancellationToken);
+            return;
+        }
+
+        (string filePath, var selection) = await VisualStudioInteraction.GetCurrentFilenameAndSelectionAsync(serviceProvider, CodeConversion.IsCSFileName, false);
+        if (filePath != null && selection != null) {
+            await codeConversion.ConvertDocumentAsync<ICSharpCode.CodeConverter.VB.CSToVBConversion>(filePath, selection.Value, cancellationToken);
+        }
     }
 }
