@@ -35,7 +35,7 @@ internal class ArgumentConverter
             var refType = CommonConversions.GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
             token = CommonConversions.GetRefToken(refKind);
             if (refType != SemanticModelExtensions.RefConversion.Inline) {
-                convertedArgExpression = HoistByRefDeclaration(node, convertedArgExpression, refType, argName, refKind);
+                convertedArgExpression = HoistByRefDeclaration(node.Expression, convertedArgExpression, refType, argName, refKind);
             } else {
                 convertedArgExpression = typeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression, defaultToCast: refKind != RefKind.None);
             }
@@ -119,11 +119,11 @@ internal class ArgumentConverter
     }
 
 
-    private CSSyntax.ExpressionSyntax HoistByRefDeclaration(VBSyntax.SimpleArgumentSyntax node, CSSyntax.ExpressionSyntax refLValue, SemanticModelExtensions.RefConversion refType, string argName, RefKind refKind)
+    internal CSSyntax.ExpressionSyntax HoistByRefDeclaration(VBSyntax.ExpressionSyntax node, CSSyntax.ExpressionSyntax refLValue, SemanticModelExtensions.RefConversion refType, string argName, RefKind refKind)
     {
         string prefix = $"arg{argName}";
-        var expressionTypeInfo = _semanticModel.GetTypeInfo(node.Expression);
-        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node.Expression, expressionTypeInfo.ConvertedType, out var _);
+        var expressionTypeInfo = _semanticModel.GetTypeInfo(node);
+        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node, expressionTypeInfo.ConvertedType, out var _);
         var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
 
         if (refLValue is CSSyntax.ElementAccessExpressionSyntax eae) {
@@ -132,12 +132,12 @@ internal class ArgumentConverter
             refLValue = eae.WithExpression(tmpContainer.IdentifierName);
         }
 
-        var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, refLValue, defaultToCast: refKind != RefKind.None);
+        var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, refLValue, defaultToCast: refKind != RefKind.None);
 
         var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
 
         if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
-            var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
+            var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
             _typeContext.PerScopeState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
         }
 
