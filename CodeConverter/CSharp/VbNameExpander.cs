@@ -65,7 +65,7 @@ internal class VbNameExpander : ISyntaxExpander
             semanticModel.GetOperation(node) is IMemberReferenceOperation { Instance: { Syntax: ExpressionSyntax promotedInstance }, Member: {} member }) {
             return MemberAccess(promotedInstance, SyntaxFactory.IdentifierName(member.Name));
         }
-        return IsOriginalSymbolGenericMethod(semanticModel, node) ? node : Simplifier.Expand(node, semanticModel, workspace);
+        return IsOriginalSymbolGenericOrExtensionMethod(semanticModel, node) ? node : Simplifier.Expand(node, semanticModel, workspace);
     }
 
     private static bool IsReducedExtensionInExtendedTypeOrDerivedType(SyntaxNode node, ISymbol symbol, SemanticModel semanticModel)
@@ -136,8 +136,15 @@ internal class VbNameExpander : ISyntaxExpander
     /// Roslyn bug - accidentally expands anonymous types to just "Global."
     /// Since the C# reducer also doesn't seem to reduce generic extension methods, it's best to avoid those too, so let's just avoid all generic methods
     /// </summary>
-    private static bool IsOriginalSymbolGenericMethod(SemanticModel semanticModel, SyntaxNode node) =>
-        semanticModel.GetSymbolInfo(node).Symbol.IsGenericMethod();
+    private static bool IsOriginalSymbolGenericOrExtensionMethod(SemanticModel semanticModel, SyntaxNode node)
+    {
+        var symbolInfo = semanticModel.GetSymbolInfo(node);
+        var symbol = symbolInfo.Symbol ?? symbolInfo.CandidateSymbols.FirstOrDefault();
+        if (symbol?.IsGenericMethod() == true) return true;
+        if (symbol is IMethodSymbol ms && (ms.MethodKind == MethodKind.ReducedExtension || ms.IsExtensionMethod)) return true;
+        return false;
+    }
+
 
     private static bool IsQualifiableInstanceReference(ISymbol symbol) =>
         symbol?.IsStatic == false && (symbol.IsKind(SymbolKind.Method) || symbol.IsKind(SymbolKind.Field) ||
