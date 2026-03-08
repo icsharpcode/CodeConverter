@@ -165,7 +165,7 @@ internal class TypeConversionAnalyzer
                 return TypeConversionKind.Identity;
             }
 
-            if (vbConvertedType.SpecialType == SpecialType.System_String) {
+            if (!vbConvertedType.IsEnumType()) {
                 return TypeConversionKind.EnumCastThenConversion;
             }
             return TypeConversionKind.Conversion;
