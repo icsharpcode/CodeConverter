@@ -47,7 +47,7 @@ Visual Basic .NET is slowly dying. It has support for *some* project types from 
 * Integrating the NuGet library
   * See [CodeConversion.ConvertDocumentUnhandledAsync](https://github.com/icsharpcode/CodeConverter/blob/8226313a8d46d5dd73bd35f07af2212e6155d0fd/Vsix/CodeConversion.cs#L226) or [CodeConversion.ConvertProjectUnhandled](https://github.com/icsharpcode/CodeConverter/blob/daa741246770fabf9aa87cd75b753220306aaaaa/Vsix/CodeConversion.cs#L276-L279) in the VSIX project.
   * See [ConverterController](https://github.com/icsharpcode/CodeConverter/blob/master/Web/ConverterController.cs) for a more web-focused API.
-* See older builds in [Releases](https://github.com/icsharpcode/CodeConverter/tags) if you need to convert net framework projects (or better, update to dot net core first)
+* Note: If converting net framework projects, the command line dropped support in version 10, but the visual studio extension still supports it
 
 ## Building/running from source
 
