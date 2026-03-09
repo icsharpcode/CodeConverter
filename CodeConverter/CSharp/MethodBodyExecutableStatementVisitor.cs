@@ -211,9 +211,22 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var lhs = await node.Left.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         var lOperation = _semanticModel.GetOperation(node.Left);
 
-        //Already dealt with by call to the same method in ConvertInvocationExpression
         var (parameterizedPropertyAccessMethod, _) = await CommonConversions.GetParameterizedPropertyAccessMethodAsync(lOperation);
-        if (parameterizedPropertyAccessMethod != null) return SingleStatement(lhs);
+
+        // If it's a simple assignment, we can return early as it's already handled by ConvertInvocationExpression
+        if (parameterizedPropertyAccessMethod != null && node.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement)) {
+            return SingleStatement(lhs);
+        }
+
+        // For compound assignments, we want to expand it to the setter, but parameterizedPropertyAccessMethod above
+        // returned 'get_Item' or 'set_Item' depending on operation context.
+        // We know for sure the left-hand side is a getter invocation for compound assignments (e.g. this.get_Item(0) += 2),
+        // but we need the setter name to build the final expression.
+        string setMethodName = null;
+        if (lOperation is IPropertyReferenceOperation pro && pro.Arguments.Any() && !Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
+            setMethodName = pro.Property.SetMethod?.Name;
+        }
+
         var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
 
         if (node.Left is VBSyntax.IdentifierNameSyntax id &&
@@ -241,18 +254,62 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 
             var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
             var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
-            if (nonCompoundRhs != typeConvertedNonCompoundRhs) {
+            if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
                 kind = SyntaxKind.SimpleAssignmentExpression;
                 typeConvertedRhs = typeConvertedNonCompoundRhs;
             }
+        } else if (setMethodName != null && node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation which might need casting back to lhsType
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: _semanticModel.Compilation.GetTypeByMetadataName("System.Double"), forceTargetType: lhsTypeInfo.Type);
+            kind = SyntaxKind.SimpleAssignmentExpression;
+            typeConvertedRhs = typeConvertedNonCompoundRhs;
         }
 
         rhs = typeConvertedRhs;
-            
-        var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
 
-        var postAssignment = GetPostAssignmentStatements(node);
-        return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+        if (setMethodName != null) {
+            if (lhs is InvocationExpressionSyntax ies) {
+                ExpressionSyntax exprToReplace = ies.Expression;
+                if (exprToReplace is MemberAccessExpressionSyntax maes && maes.Name is IdentifierNameSyntax idn) {
+                    var newName = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(idn);
+                    exprToReplace = maes.WithName(newName);
+
+                    var skipParens = node.Left.SkipIntoParens();
+                    if (maes.Expression is ThisExpressionSyntax) {
+                        if (skipParens is VBSyntax.InvocationExpressionSyntax inv && inv.Expression is VBSyntax.IdentifierNameSyntax) {
+                            exprToReplace = newName.WithLeadingTrivia(maes.GetLeadingTrivia()).WithTrailingTrivia(maes.GetTrailingTrivia());
+                        } else if (skipParens is VBSyntax.IdentifierNameSyntax) {
+                            exprToReplace = newName.WithLeadingTrivia(maes.GetLeadingTrivia()).WithTrailingTrivia(maes.GetTrailingTrivia());
+                        } else if (skipParens is VBSyntax.MemberAccessExpressionSyntax vbMaes && vbMaes.Expression is VBSyntax.MyClassExpressionSyntax == false && vbMaes.Expression is VBSyntax.MeExpressionSyntax == false) {
+                            // keep it
+                        } else {
+                            exprToReplace = newName.WithLeadingTrivia(maes.GetLeadingTrivia()).WithTrailingTrivia(maes.GetTrailingTrivia());
+                        }
+                    }
+                } else if (exprToReplace is IdentifierNameSyntax idn2) {
+                    var newName = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(idn2);
+                    exprToReplace = newName;
+                }
+                var newArg = SyntaxFactory.Argument(rhs);
+                var newArgs = ies.ArgumentList.Arguments.Add(newArg);
+                var newArgList = ies.ArgumentList.WithArguments(newArgs);
+                var newLhs = ies.WithExpression(exprToReplace).WithArgumentList(newArgList);
+                var invokeAssignment = SyntaxFactory.ExpressionStatement(newLhs);
+                var postAssign = GetPostAssignmentStatements(node);
+                return postAssign.Insert(0, invokeAssignment);
+            }
+            return SingleStatement(lhs);
+        }
+
+        if (kind == SyntaxKind.SimpleAssignmentExpression) {
+            var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
+            var postAssignment = GetPostAssignmentStatements(node);
+            return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+        }
+
+        var compoundAssignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
+        var compoundPostAssignment = GetPostAssignmentStatements(node);
+        return compoundPostAssignment.Insert(0, SyntaxFactory.ExpressionStatement(compoundAssignment));
     }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
