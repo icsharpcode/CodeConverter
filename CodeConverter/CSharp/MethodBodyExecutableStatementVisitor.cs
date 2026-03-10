@@ -301,15 +301,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SingleStatement(lhs);
         }
 
-        if (kind == SyntaxKind.SimpleAssignmentExpression) {
-            var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
-            var postAssignment = GetPostAssignmentStatements(node);
-            return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
-        }
-
-        var compoundAssignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
-        var compoundPostAssignment = GetPostAssignmentStatements(node);
-        return compoundPostAssignment.Insert(0, SyntaxFactory.ExpressionStatement(compoundAssignment));
+        var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
+        var postAssignment = GetPostAssignmentStatements(node);
+        return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
     }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
