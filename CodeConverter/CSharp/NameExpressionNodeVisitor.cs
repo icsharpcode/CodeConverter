@@ -87,7 +87,7 @@ internal class NameExpressionNodeVisitor
             if (IsSubPartOfConditionalAccess(node)) {
                 return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
                     : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
-            } else if (node.IsParentKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NamedFieldInitializer)) {
+            } else if (node.IsParentKind(VBasic.SyntaxKind.NamedFieldInitializer)) {
                 return ValidSyntaxFactory.IdentifierName(_tempNameForAnonymousScope[node.Name.Identifier.Text].Peek().TempName);
             }
             left = _withBlockLhs.Peek();
@@ -292,21 +292,10 @@ internal class NameExpressionNodeVisitor
             var refKind = CommonConversions.GetCsRefKind(thisParam);
 
             bool requiresHoist = false;
-            SemanticModelExtensions.RefConversion refConversion = SemanticModelExtensions.RefConversion.Inline;
+            RefConversion refConversion = RefConversion.Inline;
             if (refKind != RefKind.None) {
-                var symbolInfo = _semanticModel.GetSymbolInfoInDocument<ISymbol>(maes.Expression);
-                if (symbolInfo is IPropertySymbol { ReturnsByRef: false, ReturnsByRefReadonly: false } propertySymbol) {
-                    refConversion = propertySymbol.IsReadOnly ? SemanticModelExtensions.RefConversion.PreAssigment : SemanticModelExtensions.RefConversion.PreAndPostAssignment;
-                } else if (symbolInfo is IFieldSymbol { IsConst: true } or ILocalSymbol { IsConst: true }) {
-                    refConversion = SemanticModelExtensions.RefConversion.PreAssigment;
-                } else if (symbolInfo is IMethodSymbol { ReturnsByRef: false, ReturnsByRefReadonly: false }) {
-                    refConversion = SemanticModelExtensions.RefConversion.PreAssigment;
-                } else {
-                    var typeInfo = _semanticModel.GetTypeInfo(maes.Expression);
-                    bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability);
-                    if (isTypeMismatch) refConversion = SemanticModelExtensions.RefConversion.PreAndPostAssignment;
-                }
-                requiresHoist = refConversion != SemanticModelExtensions.RefConversion.Inline;
+                refConversion = _semanticModel.GetRefConversionForExpression(maes.Expression);
+                requiresHoist = refConversion != RefConversion.Inline;
             }
 
             if (requiresStaticInvocation || requiresHoist) {
