@@ -49,7 +49,6 @@ public partial class ExtensionMethodsRefPropertyParameter
 public static partial class MathEx
 {
     public static void NegEx(this ref int num)
-
     {
         num = -num;
     }
