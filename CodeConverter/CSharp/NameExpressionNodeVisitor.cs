@@ -87,7 +87,7 @@ internal class NameExpressionNodeVisitor
             if (IsSubPartOfConditionalAccess(node)) {
                 return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
                     : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
-            } else if (node.IsParentKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NamedFieldInitializer)) {
+            } else if (node.IsParentKind(VBasic.SyntaxKind.NamedFieldInitializer)) {
                 return ValidSyntaxFactory.IdentifierName(_tempNameForAnonymousScope[node.Name.Identifier.Text].Peek().TempName);
             }
             left = _withBlockLhs.Peek();
@@ -285,14 +285,36 @@ internal class NameExpressionNodeVisitor
         }
 
         if (invocationSymbol.IsReducedExtension() && invocationSymbol is IMethodSymbol { ReducedFrom: { Parameters: var parameters } } &&
-            !parameters.FirstOrDefault().ValidCSharpExtensionMethodParameter() &&
             node.Expression is VBSyntax.MemberAccessExpressionSyntax maes) {
-            var thisArgExpression = await maes.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-            var thisArg = SyntaxFactory.Argument(thisArgExpression).WithRefKindKeyword(CommonConversions.GetRefToken(RefKind.Ref));
-            convertedArgumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(convertedArgumentList.Arguments.Prepend(thisArg)));
-            var containingType = (ExpressionSyntax)CommonConversions.CsSyntaxGenerator.TypeExpression(invocationSymbol.ContainingType);
-            convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, containingType,
-                ValidSyntaxFactory.IdentifierName((invocationSymbol.Name)));
+
+            var thisParam = parameters.FirstOrDefault();
+            bool requiresStaticInvocation = !thisParam.ValidCSharpExtensionMethodParameter();
+            var refKind = CommonConversions.GetCsRefKind(thisParam);
+
+            bool requiresHoist = false;
+            RefConversion refConversion = RefConversion.Inline;
+            if (refKind != RefKind.None) {
+                refConversion = _semanticModel.GetRefConversionForExpression(maes.Expression);
+                requiresHoist = refConversion != RefConversion.Inline;
+            }
+
+            if (requiresStaticInvocation || requiresHoist) {
+                var thisArgExpression = await maes.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+
+                if (requiresHoist) {
+                    thisArgExpression = _argumentConverter.HoistByRefDeclaration(maes.Expression, thisArgExpression, refConversion, thisParam.Name, refKind);
+                }
+
+                if (requiresStaticInvocation) {
+                    var thisArg = SyntaxFactory.Argument(thisArgExpression).WithRefKindKeyword(CommonConversions.GetRefToken(refKind));
+                    convertedArgumentList = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(convertedArgumentList.Arguments.Prepend(thisArg)));
+                    var containingType = (ExpressionSyntax)CommonConversions.CsSyntaxGenerator.TypeExpression(invocationSymbol.ContainingType);
+                    convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, containingType,
+                        ValidSyntaxFactory.IdentifierName((invocationSymbol.Name)));
+                } else {
+                    convertedExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, thisArgExpression, ValidSyntaxFactory.IdentifierName((invocationSymbol.Name)));
+                }
+            }
         }
 
         if (invocationSymbol is IMethodSymbol m && convertedExpression is LambdaExpressionSyntax) {

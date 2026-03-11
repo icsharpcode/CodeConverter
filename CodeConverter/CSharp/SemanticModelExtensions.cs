@@ -70,11 +70,15 @@ internal static class SemanticModelExtensions
         if (!(node is VBSyntax.SimpleArgumentSyntax sas) || sas is { Expression: VBSyntax.ParenthesizedExpressionSyntax }) return RefConversion.PreAssigment;
         var expression = sas.Expression;
 
-        return GetRefConversion(expression);
+        return semanticModel.GetRefConversionForExpression(expression);
 
-        RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expression)
+    }
+
+    public static RefConversion GetRefConversionForExpression(this SemanticModel semanticModel, VBasic.Syntax.ExpressionSyntax expression)
+    {
+        RefConversion GetRefConversion(VBSyntax.ExpressionSyntax expr)
         {
-            var symbolInfo = semanticModel.GetSymbolInfoInDocument<ISymbol>(expression);
+            var symbolInfo = semanticModel.GetSymbolInfoInDocument<ISymbol>(expr);
             if (symbolInfo is IPropertySymbol { ReturnsByRef: false, ReturnsByRefReadonly: false } propertySymbol) {
                 // a property in VB.NET code can be ReturnsByRef if it's defined in a C# assembly the VB.NET code references
                 return propertySymbol.IsReadOnly ? RefConversion.PreAssigment : RefConversion.PreAndPostAssignment;
@@ -87,10 +91,10 @@ internal static class SemanticModelExtensions
 
             if (DeclaredInUsing(symbolInfo)) return RefConversion.PreAssigment;
 
-            if (expression is VBasic.Syntax.IdentifierNameSyntax || expression is VBSyntax.MemberAccessExpressionSyntax ||
-                IsRefArrayAcces(expression)) {
+            if (expr is VBasic.Syntax.IdentifierNameSyntax || expr is VBSyntax.MemberAccessExpressionSyntax ||
+                IsRefArrayAcces(expr)) {
 
-                var typeInfo = semanticModel.GetTypeInfo(expression);
+                var typeInfo = semanticModel.GetTypeInfo(expr);
                 bool isTypeMismatch = typeInfo.Type == null || !typeInfo.Type.Equals(typeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability);
 
                 if (isTypeMismatch) {
@@ -103,9 +107,9 @@ internal static class SemanticModelExtensions
             return RefConversion.PreAssigment;
         }
 
-        bool IsRefArrayAcces(VBSyntax.ExpressionSyntax expression)
+        bool IsRefArrayAcces(VBSyntax.ExpressionSyntax expr)
         {
-            if (!(expression is VBSyntax.InvocationExpressionSyntax ies)) return false;
+            if (!(expr is VBSyntax.InvocationExpressionSyntax ies)) return false;
             var op = semanticModel.GetOperation(ies);
             return (op.IsArrayElementAccess() || IsReturnsByRefPropertyElementAccess(op))
                 && GetRefConversion(ies.Expression) == RefConversion.Inline;
@@ -117,6 +121,8 @@ internal static class SemanticModelExtensions
                  && (prop.ReturnsByRef || prop.ReturnsByRefReadonly);
             }
         }
+
+        return GetRefConversion((VBSyntax.ExpressionSyntax)expression);
     }
 
     private static bool DeclaredInUsing(ISymbol symbolInfo)
