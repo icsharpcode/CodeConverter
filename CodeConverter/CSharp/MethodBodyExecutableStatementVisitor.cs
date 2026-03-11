@@ -270,31 +270,20 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         if (setMethodName != null) {
             if (lhs is InvocationExpressionSyntax ies) {
                 ExpressionSyntax exprToReplace = ies.Expression;
-                if (exprToReplace is MemberAccessExpressionSyntax {Name: IdentifierNameSyntax idn} maes) {
-                    var newName = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(idn);
-                    exprToReplace = maes.WithName(newName);
-
-                    if (maes.Expression is ThisExpressionSyntax) {
-                        var skipParens = node.Left.SkipIntoParens();
-                        var isNonSelfQualified = skipParens is VBSyntax.MemberAccessExpressionSyntax {
-                            Expression: not VBSyntax.MeExpressionSyntax
-                            and not VBSyntax.MyClassExpressionSyntax
+                if (exprToReplace is MemberAccessExpressionSyntax maes) {
+                    var newName = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(maes.Name);
+                    var stripThis = maes.Expression is ThisExpressionSyntax
+                        && node.Left.SkipIntoParens() is not VBSyntax.MemberAccessExpressionSyntax {
+                            Expression: not (VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax)
                         };
-                        if (!isNonSelfQualified) {
-                            exprToReplace = newName.WithTriviaFrom(maes);
-                        }
-                    }
-                } else if (exprToReplace is IdentifierNameSyntax idn2) {
-                    var newName = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(idn2);
-                    exprToReplace = newName;
+                    exprToReplace = stripThis ? newName.WithTriviaFrom(maes) : maes.WithName(newName);
+                } else if (exprToReplace is IdentifierNameSyntax) {
+                    exprToReplace = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(exprToReplace);
                 }
-                var newArg = SyntaxFactory.Argument(rhs);
-                var newArgs = ies.ArgumentList.Arguments.Add(newArg);
-                var newArgList = ies.ArgumentList.WithArguments(newArgs);
+                var newArgList = ies.ArgumentList.AddArguments(SyntaxFactory.Argument(rhs));
                 var newLhs = ies.WithExpression(exprToReplace).WithArgumentList(newArgList);
-                var invokeAssignment = SyntaxFactory.ExpressionStatement(newLhs);
                 var postAssign = GetPostAssignmentStatements(node);
-                return postAssign.Insert(0, invokeAssignment);
+                return postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs));
             }
             return SingleStatement(lhs);
         }
