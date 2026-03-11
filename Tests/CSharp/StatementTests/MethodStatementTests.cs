@@ -1713,4 +1713,79 @@ public partial class TestClass
     }
 }");
     }
+
+
+    [Fact]
+    public async Task AssignmentOperatorsParameterizedPropertiesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class TestClass
+    Private _items As Integer() = New Integer() {1}
+    Public Property Item(index As Integer) As Integer
+        Get
+            Return _items(index)
+        End Get
+        Set(value As Integer)
+            _items(index) = value
+        End Set
+    End Property
+
+    Private _strItems As String() = New String() {""Hello""}
+    Public Property StrItem(index As Integer) As String
+        Get
+            Return _strItems(index)
+        End Get
+        Set(value As String)
+            _strItems(index) = value
+        End Set
+    End Property
+
+    Public Sub AllAssignmentOperators()
+        Item(0) += 2
+        Item(0) *= 2
+        Item(0) ^= 2
+        Item(0) /= 2
+        Item(0) -= 2
+        Item(0) \= 2
+        Item(0) <<= 2
+        Item(0) >>= 2
+        StrItem(0) &= "" World""
+    End Sub
+End Class", @"using System;
+
+public partial class TestClass
+{
+    private int[] _items = new int[] { 1 };
+    public int get_Item(int index)
+    {
+        return _items[index];
+    }
+    public void set_Item(int index, int value)
+    {
+        _items[index] = value;
+    }
+
+    private string[] _strItems = new string[] { ""Hello"" };
+    public string get_StrItem(int index)
+    {
+        return _strItems[index];
+    }
+    public void set_StrItem(int index, string value)
+    {
+        _strItems[index] = value;
+    }
+
+    public void AllAssignmentOperators()
+    {
+        set_Item(0, get_Item(0) + 2);
+        set_Item(0, get_Item(0) * 2);
+        set_Item(0, (int)Math.Round(Math.Pow(get_Item(0), 2d)));
+        set_Item(0, (int)Math.Round(get_Item(0) / 2d));
+        set_Item(0, get_Item(0) - 2);
+        set_Item(0, get_Item(0) / 2);
+        set_Item(0, get_Item(0) << 2);
+        set_Item(0, get_Item(0) >> 2);
+        set_StrItem(0, get_StrItem(0) + "" World"");
+    }
+}");
+    }
 }
