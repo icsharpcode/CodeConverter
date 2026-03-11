@@ -1,4 +1,4 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -100,6 +100,19 @@ internal class BinaryExpressionConverter
                           && forceLhsTargetType == null;
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
         rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+
+        if (node.Right is VBSyntax.GetTypeExpressionSyntax getTypeExpr) {
+            var isUnboundGeneric = getTypeExpr.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing));
+            if (isUnboundGeneric) {
+                rhs = await node.Right.AcceptAsync<CSSyntax.ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            }
+        }
+        if (node.Left is VBSyntax.GetTypeExpressionSyntax getTypeExprLeft) {
+            var isUnboundGeneric = getTypeExprLeft.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing));
+            if (isUnboundGeneric) {
+                lhs = await node.Left.AcceptAsync<CSSyntax.ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            }
+        }
 
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
         var op = CS.SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));

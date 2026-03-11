@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System.Globalization;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
@@ -76,6 +76,22 @@ internal class VisualBasicEqualityComparison
     public RequiredType GetObjectEqualityType(params TypeInfo[] typeInfos)
     {
         bool requiresVbEqualityCheck = typeInfos.Any(t => t.Type?.SpecialType == SpecialType.System_Object);
+
+        if (typeInfos.Any(t => t.Type?.TypeKind == Microsoft.CodeAnalysis.TypeKind.Error && t.ConvertedType?.TypeKind == Microsoft.CodeAnalysis.TypeKind.Error)) {
+             return RequiredType.None;
+        }
+        if (requiresVbEqualityCheck) {
+            if (typeInfos.Any(t => t.Type?.TypeKind == TypeKind.Error && t.ConvertedType?.SpecialType == SpecialType.None)) {
+                 return RequiredType.None;
+            }
+        }
+
+        if (requiresVbEqualityCheck) {
+            if (typeInfos.Any(t => t.Type?.TypeKind == TypeKind.Error && t.Type.Name == "Nullable")) {
+                 // VB considers GetType(Nullable(Of)) as IErrorTypeSymbol and it falls back to object, avoid equality check
+                 return RequiredType.None;
+            }
+        }
 
         if (typeInfos.All(
                 t => t.Type == null || t.Type.SpecialType == SpecialType.System_String ||

@@ -49,6 +49,9 @@ internal class TypeConversionAnalyzer
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
         if (csNode == null) return null;
+        if (vbNode is VBSyntax.GetTypeExpressionSyntax getTypeExpr && getTypeExpr.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing))) {
+            return csNode;
+        }
 
         var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
         csNode = addParenthesisIfNeeded && conversionKind is TypeConversionKind.DestructiveCast or TypeConversionKind.NonDestructiveCast
@@ -59,6 +62,9 @@ internal class TypeConversionAnalyzer
 
     public (ExpressionSyntax Expr, bool IsConst) AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeConversionKind conversionKind, bool addParenthesisIfNeeded = false, bool requiresConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
+        if (vbNode is VBSyntax.GetTypeExpressionSyntax getTypeExpr2 && getTypeExpr2.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing))) {
+            return (csNode, false);
+        }
         var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
         bool resultConst = false;
 
@@ -142,6 +148,9 @@ internal class TypeConversionAnalyzer
 
     public TypeConversionKind AnalyzeConversion(VBSyntax.ExpressionSyntax vbNode, bool alwaysExplicit = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
+        if (vbNode is VBSyntax.GetTypeExpressionSyntax getTypeExpr && getTypeExpr.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing))) {
+            return TypeConversionKind.NonDestructiveCast;
+        }
         var (vbType, vbConvertedType) = GetTypeInfo(vbNode, forceSourceType, forceTargetType);
 
         if (vbConvertedType is null)

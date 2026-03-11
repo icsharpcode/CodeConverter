@@ -162,6 +162,10 @@ internal class NameExpressionNodeVisitor
     /// <remarks>PERF: This is a hot code path, try to avoid using things like GetOperation except where needed.</remarks>
     public async Task<CSharpSyntaxNode> ConvertIdentifierNameAsync(VBasic.Syntax.IdentifierNameSyntax node)
     {
+        if (node.Identifier.IsMissing && node.Parent is VBasic.Syntax.TypeArgumentListSyntax) {
+            return SyntaxFactory.OmittedTypeArgument();
+        }
+
         var identifier = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Identifier, node.GetAncestor<VBasic.Syntax.AttributeSyntax>() != null));
 
         bool requiresQualification = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) ||
@@ -618,7 +622,13 @@ internal class NameExpressionNodeVisitor
 
     private async Task<TypeArgumentListSyntax> ConvertTypeArgumentListAsync(VBSyntax.GenericNameSyntax node)
     {
-        return await node.TypeArgumentList.AcceptAsync<TypeArgumentListSyntax>(TriviaConvertingExpressionVisitor);
+        var args = await node.TypeArgumentList.Arguments.SelectAsync(async a => {
+            if (a is VBasic.Syntax.IdentifierNameSyntax id && id.Identifier.IsMissing) {
+                return CS.SyntaxFactory.OmittedTypeArgument();
+            }
+            return await a.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor);
+        });
+        return CS.SyntaxFactory.TypeArgumentList(CS.SyntaxFactory.SeparatedList<TypeSyntax>(args));
     }
 
     private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
