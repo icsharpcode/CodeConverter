@@ -1756,7 +1756,6 @@ public partial class TestClass
 {
     private int[] _items = new int[] { 1 };
     public int get_Item(int index)
-
     {
         return _items[index];
     }
@@ -1765,10 +1764,8 @@ public partial class TestClass
         _items[index] = value;
     }
 
-
     private string[] _strItems = new string[] { ""Hello"" };
     public string get_StrItem(int index)
-
     {
         return _strItems[index];
     }
@@ -1776,7 +1773,6 @@ public partial class TestClass
     {
         _strItems[index] = value;
     }
-
 
     public void AllAssignmentOperators()
     {
