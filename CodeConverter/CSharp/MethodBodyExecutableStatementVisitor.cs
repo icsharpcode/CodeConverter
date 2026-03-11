@@ -270,20 +270,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         if (setMethodName != null) {
             if (lhs is InvocationExpressionSyntax ies) {
                 ExpressionSyntax exprToReplace = ies.Expression;
-                if (exprToReplace is MemberAccessExpressionSyntax maes && maes.Name is IdentifierNameSyntax idn) {
+                if (exprToReplace is MemberAccessExpressionSyntax {Name: IdentifierNameSyntax idn} maes) {
                     var newName = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(idn);
                     exprToReplace = maes.WithName(newName);
 
-                    var skipParens = node.Left.SkipIntoParens();
                     if (maes.Expression is ThisExpressionSyntax) {
-                        if (skipParens is VBSyntax.InvocationExpressionSyntax inv && inv.Expression is VBSyntax.IdentifierNameSyntax) {
-                            exprToReplace = newName.WithLeadingTrivia(maes.GetLeadingTrivia()).WithTrailingTrivia(maes.GetTrailingTrivia());
-                        } else if (skipParens is VBSyntax.IdentifierNameSyntax) {
-                            exprToReplace = newName.WithLeadingTrivia(maes.GetLeadingTrivia()).WithTrailingTrivia(maes.GetTrailingTrivia());
-                        } else if (skipParens is VBSyntax.MemberAccessExpressionSyntax vbMaes && vbMaes.Expression is VBSyntax.MyClassExpressionSyntax == false && vbMaes.Expression is VBSyntax.MeExpressionSyntax == false) {
-                            // keep it
-                        } else {
-                            exprToReplace = newName.WithLeadingTrivia(maes.GetLeadingTrivia()).WithTrailingTrivia(maes.GetTrailingTrivia());
+                        var skipParens = node.Left.SkipIntoParens();
+                        var isNonSelfQualified = skipParens is VBSyntax.MemberAccessExpressionSyntax {
+                            Expression: not VBSyntax.MeExpressionSyntax
+                            and not VBSyntax.MyClassExpressionSyntax
+                        };
+                        if (!isNonSelfQualified) {
+                            exprToReplace = newName.WithTriviaFrom(maes);
                         }
                     }
                 } else if (exprToReplace is IdentifierNameSyntax idn2) {
