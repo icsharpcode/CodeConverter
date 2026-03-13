@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.Extensibility;
 using Microsoft.VisualStudio.LanguageServices;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -85,6 +86,9 @@ public sealed class CodeConverterPackage : AsyncPackage
     public const string ConvertableSolutionMenuVisibilityGuid = "8e7192d0-28b7-4fe7-8d84-82c1db98d459";
 
     internal Cancellation PackageCancellation { get; } = new();
+    
+    internal static CodeConversion CodeConversionInstance { get; private set; }
+    internal static CodeConverterPackage Instance { get; private set; }
 
     /// <summary>
     /// Initializes a new instance of package class.
@@ -109,6 +113,8 @@ public sealed class CodeConverterPackage : AsyncPackage
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         var visualStudioWorkspace = componentModel.GetService<VisualStudioWorkspace>();
         var codeConversion = await CodeConversion.CreateAsync(this, visualStudioWorkspace, this.GetDialogPageAsync<ConverterOptionsPage>);
+        CodeConversionInstance = codeConversion;
+        Instance = this;
         ConvertCSToVBCommand.Initialize(this, oleMenuCommandService, codeConversion);
         ConvertVBToCSCommand.Initialize(this, oleMenuCommandService, codeConversion);
         PasteAsVB.Initialize(this, oleMenuCommandService, codeConversion);
