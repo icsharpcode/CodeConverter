@@ -1,4 +1,4 @@
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualBasic.CompilerServices;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
@@ -58,7 +58,7 @@ internal static class VbOperatorConversion
 
                 var equalityCheck = new KnownMethod(nameof(System), nameof(Object), nameof(object.ReferenceEquals))
                     .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives,
-                        ConvertToIfNecessary(node.Left, lhs, SpecialType.System_Object), ConvertToIfNecessary(node.Right, rhs, SpecialType.System_Object));
+                        ConvertTo(node.Left, lhs, SpecialType.System_Object), rhs);
                 return notted
                     ? SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, equalityCheck)
                     : equalityCheck;
@@ -80,14 +80,9 @@ internal static class VbOperatorConversion
             return null;
         }
 
-        private async Task<ExpressionSyntax> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg)
-        {
-            if (binaryExpressionArg is VBSyntax.GetTypeExpressionSyntax getTypeExpr && getTypeExpr.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing))) {
-                return await getTypeExpr.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
-            }
-            return await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
-                ?? await binaryExpressionArg.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
-        }
+        private async Task<ExpressionSyntax> ConvertIsOrIsNotExpressionArgAsync(VBSyntax.ExpressionSyntax binaryExpressionArg) =>
+            await ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(binaryExpressionArg)
+            ?? await binaryExpressionArg.AcceptAsync<ExpressionSyntax>(_triviaConvertingVisitor);
 
         private async Task<ExpressionSyntax> ConvertMyGroupCollectionPropertyGetWithUnderlyingFieldAsync(SyntaxNode node)
         {
@@ -125,17 +120,6 @@ internal static class VbOperatorConversion
         private ExpressionSyntax ConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, SpecialType targetType)
         {
             return _typeConversionAnalyzer.AddExplicitConversion(vbNode, csNode, forceTargetType: _semanticModel.Compilation.GetSpecialType(targetType));
-        }
-
-        private ExpressionSyntax ConvertToIfNecessary(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, SpecialType targetType)
-        {
-            if (vbNode is VBSyntax.GetTypeExpressionSyntax getTypeExpr && getTypeExpr.Type.DescendantNodesAndSelf().OfType<VBSyntax.TypeArgumentListSyntax>().Any(t => t.Arguments.Any(a => a is VBSyntax.IdentifierNameSyntax id && id.Identifier.IsMissing))) {
-                return csNode;
-            }
-            if (csNode is TypeOfExpressionSyntax typeOfExpr && typeOfExpr.Type is GenericNameSyntax gen && gen.TypeArgumentList.Arguments.Any(a => a is OmittedTypeArgumentSyntax)) {
-                return csNode;
-            }
-            return ConvertTo(vbNode, csNode, targetType);
         }
 
         /// <remarks>No need to implement these since this is only called for things that are already decimal and hence will resolve operator in C#</remarks>
