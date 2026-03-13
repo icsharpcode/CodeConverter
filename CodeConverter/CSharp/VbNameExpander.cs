@@ -110,6 +110,9 @@ internal class VbNameExpander : ISyntaxExpander
         if (node.Parent is NameColonEqualsSyntax || node.Parent is NamedFieldInitializerSyntax) return false;
         // Workaround roslyn bug where it duplicates the inferred name
         if (node.Parent is InferredFieldInitializerSyntax) return false;
+        // Roslyn's Simplifier.Expand corrupts open generic type arguments (e.g. Nullable(Of) in GetType(Nullable(Of)))
+        // by replacing them with the error type fallback (Object). Prevent expansion so the missing type arg is preserved.
+        if (node is GenericNameSyntax gns && gns.TypeArgumentList.Arguments.Any(a => a is IdentifierNameSyntax id && id.Identifier.IsMissing)) return false;
         return true;
     }
 

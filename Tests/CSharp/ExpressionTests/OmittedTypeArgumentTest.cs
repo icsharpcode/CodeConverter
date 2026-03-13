@@ -16,9 +16,9 @@ public class OmittedTypeArgumentTest : ConverterTestBase
     End Function
 End Class", @"using System;
 
-public class Test
+public partial class Test
 {
-    public bool IsNullable(Type type)
+    public bool IsNullable(Type @type)
     {
         return type.IsGenericType && ReferenceEquals(type.GetGenericTypeDefinition(), typeof(Nullable<>));
     }
