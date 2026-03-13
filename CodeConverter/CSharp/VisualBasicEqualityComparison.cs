@@ -179,6 +179,12 @@ internal class VisualBasicEqualityComparison
     public bool TryConvertToNullOrEmptyCheck(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs,
         ExpressionSyntax rhs, out CSharpSyntaxNode? visitBinaryExpression)
     {
+        if (OptionCompareTextCaseInsensitive)
+        {
+            visitBinaryExpression = null;
+            return false;
+        }
+
         bool lhsEmpty = IsNothingOrEmpty(node.Left);
         bool rhsEmpty = IsNothingOrEmpty(node.Right);
 
