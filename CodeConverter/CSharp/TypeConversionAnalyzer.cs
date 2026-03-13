@@ -165,9 +165,14 @@ internal class TypeConversionAnalyzer
                 return TypeConversionKind.Identity;
             }
 
-            if (!vbConvertedType.IsEnumType()) {
+            if (vbConvertedType.SpecialType == SpecialType.System_String) {
                 return TypeConversionKind.EnumCastThenConversion;
             }
+
+            if (!vbConvertedType.IsEnumType() && !ExpressionEvaluator.ConversionsTypeFullNames.ContainsKey(vbConvertedType.GetFullMetadataName())) {
+                return TypeConversionKind.EnumCastThenConversion;
+            }
+
             return TypeConversionKind.Conversion;
         }
 

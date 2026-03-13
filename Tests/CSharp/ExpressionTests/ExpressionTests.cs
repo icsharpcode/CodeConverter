@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -2931,7 +2931,6 @@ public partial class CrashTest
     }
 }");
     }
-
     [Fact]
     public async Task Issue1211_EnumToCustomTypeImplicitConversionAsync()
     {
@@ -2999,4 +2998,32 @@ public partial class Class1
 }");
     }
 
+    [Fact]
+    public async Task EnumToBooleanAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class C
+    Public Sub M(e As ESByte)
+        Dim vBooleanSByte As Boolean = e
+    End Sub
+End Class
+
+Public Enum ESByte As Long
+    M1 = 1
+End Enum",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public void M(ESByte e)
+    {
+        bool vBooleanSByte = Conversions.ToBoolean(e);
+    }
+}
+
+public enum ESByte : long
+{
+    M1 = 1L
+}");
+    }
 }
