@@ -578,8 +578,13 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitTypeArgumentList(VBasic.Syntax.TypeArgumentListSyntax node)
     {
-        var args = await node.Arguments.SelectAsync(async a => await a.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor));
-        return CS.SyntaxFactory.TypeArgumentList(CS.SyntaxFactory.SeparatedList(args));
+        var args = await node.Arguments.SelectAsync(async a => {
+            if (a is VBasic.Syntax.IdentifierNameSyntax id && id.Identifier.IsMissing) {
+                return CS.SyntaxFactory.OmittedTypeArgument();
+            }
+            return await a.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor);
+        });
+        return CS.SyntaxFactory.TypeArgumentList(CS.SyntaxFactory.SeparatedList<TypeSyntax>(args));
     }
 
     private async Task<CSharpSyntaxNode> ConvertCastExpressionAsync(VBSyntax.CastExpressionSyntax node,
