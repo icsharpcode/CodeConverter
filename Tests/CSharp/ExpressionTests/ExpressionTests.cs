@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -2929,6 +2929,101 @@ public partial class CrashTest
         }
         return null;
     }
+}");
+    }
+    [Fact]
+    public async Task Issue1211_EnumToCustomTypeImplicitConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Class1
+    Enum MyEnum
+        Value1 = 1
+    End Enum
+
+    Public Structure MyType
+        Public val As Integer
+        Public Shared Widening Operator CType(ByVal p As Integer) As MyType
+            Return New MyType With {.val = p}
+        End Operator
+        Public Shared Operator =(ByVal p As MyType, ByVal q As MyType) As Boolean
+            Return p.val = q.val
+        End Operator
+        Public Shared Operator <>(ByVal p As MyType, ByVal q As MyType) As Boolean
+            Return p.val <> q.val
+        End Operator
+    End Structure
+
+    Public Function Col(name As String) As MyType
+        Return Nothing
+    End Function
+
+    Public Sub Foo()
+        Dim b = Col(""foo"") = MyEnum.Value1
+    End Sub
+End Class",
+            @"
+public partial class Class1
+{
+    public enum MyEnum
+    {
+        Value1 = 1
+    }
+
+    public partial struct MyType
+    {
+        public int val;
+        public static implicit operator MyType(int p)
+        {
+            return new MyType() { val = p };
+        }
+        public static bool operator ==(MyType p, MyType q)
+        {
+            return p.val == q.val;
+        }
+        public static bool operator !=(MyType p, MyType q)
+        {
+            return p.val != q.val;
+        }
+    }
+
+    public MyType Col(string name)
+    {
+        return default;
+    }
+
+    public void Foo()
+    {
+        bool b = Col(""foo"") == (MyType)(int)MyEnum.Value1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task EnumToBooleanAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class C
+    Public Sub M(e As ESByte)
+        Dim vBooleanSByte As Boolean = e
+    End Sub
+End Class
+
+Public Enum ESByte As Long
+    M1 = 1
+End Enum",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public void M(ESByte e)
+    {
+        bool vBooleanSByte = Conversions.ToBoolean(e);
+    }
+}
+
+public enum ESByte : long
+{
+    M1 = 1L
 }");
     }
 }
