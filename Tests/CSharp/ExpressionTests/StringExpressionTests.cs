@@ -208,11 +208,11 @@ public partial class Class1
         {
             throw new Exception();
         }
-        if (string.IsNullOrEmpty(s1))
+        if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1 ?? """", """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
             // 
         }
-        if (string.IsNullOrEmpty(s1))
+        if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1 ?? """", """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
             // 
         }
