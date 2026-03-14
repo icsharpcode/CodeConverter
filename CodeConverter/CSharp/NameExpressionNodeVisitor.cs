@@ -87,8 +87,8 @@ internal class NameExpressionNodeVisitor
             if (IsSubPartOfConditionalAccess(node)) {
                 return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
                     : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
-            } else if (node.IsParentKind(VBasic.SyntaxKind.NamedFieldInitializer)) {
-                return ValidSyntaxFactory.IdentifierName(_tempNameForAnonymousScope[node.Name.Identifier.Text].Peek().TempName);
+            } else if (node.IsParentKind(VBasic.SyntaxKind.NamedFieldInitializer) && _tempNameForAnonymousScope.TryGetValue(node.Name.Identifier.Text, out var stack) && stack.Any()) {
+                return ValidSyntaxFactory.IdentifierName(stack.Peek().TempName);
             }
             left = _withBlockLhs.Peek();
         }
