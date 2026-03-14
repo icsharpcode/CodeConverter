@@ -120,26 +120,13 @@ new XElement(""Catalog"",
         new XElement(""Author"", ""Garghentini, Davide""),
         new XElement(""Title"", ""XML Developer's Guide""),
         new XElement(""Price"", ""44.95""),
-        new XElement(""Description"", @""
-          An in-depth look at creating applications
-          with "", new XElement(""technology"", ""XML""), @"". For
-          "", new XElement(""audience"", ""beginners""), @"" or
-          "", new XElement(""audience"", ""advanced""), @"" developers.
-        "")
+        new XElement(""Description"", ""\n          An in-depth look at creating applications\n          with "", new XElement(""technology"", ""XML""), "". For\n          "", new XElement(""audience"", ""beginners""), "" or\n          "", new XElement(""audience"", ""advanced""), "" developers.\n        "")
     ),
     new XElement(""Book"", new XAttribute(""id"", ""bk331""),
         new XElement(""Author"", ""Spencer, Phil""),
         new XElement(""Title"", ""Developing Applications with Visual Basic .NET""),
         new XElement(""Price"", ""45.95""),
-        new XElement(""Description"", @""
-          Get the expert insights, practical code samples,
-          and best practices you need
-          to advance your expertise with "", new XElement(""technology"", @""Visual
-          Basic .NET""), @"".
-          Learn how to create faster, more reliable applications
-          based on professional,
-          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), @"".
-        "")
+        new XElement(""Description"", ""\n          Get the expert insights, practical code samples,\n          and best practices you need\n          to advance your expertise with "", new XElement(""technology"", ""Visual\n          Basic .NET""), "".\n          Learn how to create faster, more reliable applications\n          based on professional,\n          pragmatic guidance by today's top "", new XElement(""audience"", ""developers""), "".\n        "")
     )
 )
 
@@ -373,19 +360,9 @@ internal partial class TestClass
 {
     private void TestMethod()
     {
-        string processedHtml = new XCData(@""
-<!DOCTYPE html PUBLIC """"-//W3C//DTD XHTML 1.0 Transitional//EN"""" """"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"""">
-<html xmlns=""""http://www.w3.org/1999/xhtml"""">
-	<head>
-		<meta http-equiv=""""Content-Type"""" content=""""text/html; charset=utf-8"""" /><title>
-	</head>
-	<body>
-		<p class=""""cs95E872D0""""><span class=""""cs9D249CCB"""">&nbsp;Regards,</span></p>
-    </body>
-</html>
-    "").Value;
+        string processedHtml = new XCData(""\n<!DOCTYPE html PUBLIC \""-//W3C//DTD XHTML 1.0 Transitional//EN\"" \""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"">\n<html xmlns=\""http://www.w3.org/1999/xhtml\"">\n\t<head>\n\t\t<meta http-equiv=\""Content-Type\"" content=\""text/html; charset=utf-8\"" /><title>\n\t</head>\n\t<body>\n\t\t<p class=\""cs95E872D0\""><span class=\""cs9D249CCB\"">&nbsp;Regards,</span></p>\n    </body>\n</html>\n    "").Value;
     }
-}");
+}", incompatibleWithAutomatedCommentTesting: true);
 
     }
 }
