@@ -2931,4 +2931,50 @@ public partial class CrashTest
     }
 }");
     }
+    [Fact]
+    public async Task LambdaBodyExpressionWithCommentsAsync() {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Imports System.Threading.Tasks
+Imports System.Collections.Generic
+
+Public Class ConversionTest1
+    Public Sub BugRepro()
+        Dim dt As New List(Of Integer)
+
+        Parallel.ForEach(dt, Sub(row)
+                                 If Not String.IsNullOrWhiteSpace("""") Then
+                                     'comment1
+                                     Dim test1 As Boolean = True
+                                     'comment2
+                                     Dim test2 As Boolean = True
+                                     'comment3
+                                     Dim test3 As Boolean = True
+                                 End If
+                             End Sub)
+    End Sub
+End Class
+", @"using System.Collections.Generic;
+using System.Threading.Tasks;
+
+public partial class ConversionTest1
+{
+    public void BugRepro()
+    {
+        var dt = new List<int>();
+
+        Parallel.ForEach(dt, row =>
+        {
+            if (!string.IsNullOrWhiteSpace(""""))
+            {
+                // comment1
+                bool test1 = true;
+                // comment2
+                bool test2 = true;
+                // comment3
+                bool test3 = true;
+            }
+        });
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
