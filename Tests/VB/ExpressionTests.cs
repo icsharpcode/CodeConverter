@@ -588,6 +588,57 @@ End Class");
     }
 
     [Fact]
+    public async Task ObjectInitializerExpressionReferencingOtherPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Drawing
+
+Public Class VisualBasicClass
+    Public Sub M()
+        Dim Shape = New Point() With {
+            .X = 1,
+            .Y = .X
+        }
+    End Sub
+End Class", @"using System.Drawing;
+
+public partial class VisualBasicClass
+{
+    public void M()
+    {
+        Point @init = new Point();
+        var Shape = (@init.X = 1, @init.Y = @init.X, @init).@init;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task AdvancedObjectInitializerExpressionReferencingOtherPropertyAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Drawing
+
+Public Class VisualBasicClass
+    Public Sub M()
+        Dim Shape = New Rectangle() With {
+            .X = 1,
+            .Y = .X + 10,
+            .Width = .X + .Y,
+            .Height = System.Math.Max(.Width, .Y)
+        }
+    End Sub
+End Class", @"using System;
+using System.Drawing;
+
+public partial class VisualBasicClass
+{
+    public void M()
+    {
+        Rectangle @init = new Rectangle();
+        var Shape = (@init.X = 1, @init.Y = @init.X + 10, @init.Width = @init.X + @init.Y, @init.Height = Math.Max(@init.Width, @init.Y), @init).@init;
+    }
+}");
+    }
+
+    [Fact]
     public async Task ObjectInitializerExpression3Async()
     {
         await TestConversionCSharpToVisualBasicAsync(@"using System.Collections.Generic;
