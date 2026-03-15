@@ -75,7 +75,8 @@ internal class LambdaConverter
         BlockSyntax block = null;
         ExpressionSyntax expressionBody = null;
         ArrowExpressionClauseSyntax arrow = null;
-        if (!convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement)) {
+        bool hasComments = vbNode.DescendantTrivia().Any(t => t.IsKind(VBasic.SyntaxKind.CommentTrivia));
+        if (hasComments || !convertedStatements.TryUnpackSingleStatement(out StatementSyntax singleStatement)) {
             convertedStatements = convertedStatements.Select(l => l.WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed)).ToList();
             block = SyntaxFactory.Block(convertedStatements);
         } else if (singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
