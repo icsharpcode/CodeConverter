@@ -80,8 +80,17 @@ internal class LambdaConverter
             convertedStatements = convertedStatements.Select(l => l.WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed)).ToList();
             block = SyntaxFactory.Block(convertedStatements);
         } else if (singleStatement.TryUnpackSingleExpressionFromStatement(out expressionBody)) {
-            arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
+            if (vbNode is VBasic.Syntax.MultiLineLambdaExpressionSyntax && singleStatement is not ExpressionStatementSyntax && singleStatement is not ReturnStatementSyntax) {
+                singleStatement = singleStatement.WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed);
+                block = SyntaxFactory.Block(singleStatement);
+                expressionBody = null;
+            } else {
+                arrow = SyntaxFactory.ArrowExpressionClause(expressionBody);
+            }
         } else {
+            if (vbNode is VBasic.Syntax.MultiLineLambdaExpressionSyntax) {
+                singleStatement = singleStatement.WithTrailingTrivia(SyntaxFactory.ElasticCarriageReturnLineFeed);
+            }
             block = SyntaxFactory.Block(singleStatement);
         }
 
