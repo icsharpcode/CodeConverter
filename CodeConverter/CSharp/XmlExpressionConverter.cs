@@ -64,10 +64,10 @@ internal class XmlExpressionConverter
     }
 
     public async Task<CSharpSyntaxNode> ConvertXmlStringAsync(VBasic.Syntax.XmlStringSyntax node) =>
-        CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text)));
+        CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.ValueText)));
 
     public async Task<CSharpSyntaxNode> ConvertXmlTextAsync(VBSyntax.XmlTextSyntax node) =>
-        CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.Text)));
+        CommonConversions.Literal(string.Join("", node.TextTokens.Select(b => b.ValueText)));
 
     public async Task<CSharpSyntaxNode> ConvertXmlCDataSectionAsync(VBSyntax.XmlCDataSectionSyntax node)
     {
