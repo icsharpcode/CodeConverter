@@ -1,0 +1,20 @@
+--- StringExpressionTests.cs
++++ StringExpressionTests.cs
+@@ -489,5 +489,17 @@
+         b = Operators.ConditionalCompareObjectGreater(str, """", false);
+     }
+ }");
+     }
++
++    [Fact]
++    public async Task CharEqualityEmptyStringAsync()
++    {
++        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
++    Private Sub TestMethod()
++        Dim testChar As Char = Nothing
++        Dim testResult = testChar = """"
++        Dim testResult2 = """" = testChar
++    End Sub
++End Class", @"");
++    }
+ }

@@ -79,6 +79,7 @@ internal class VisualBasicEqualityComparison
 
         if (typeInfos.All(
                 t => t.Type == null || t.Type.SpecialType == SpecialType.System_String ||
+                     t.Type.SpecialType == SpecialType.System_Char ||
                      t.Type.IsArrayOf(SpecialType.System_Char) ) ) {
             return RequiredType.StringOnly;
         }
@@ -177,7 +178,7 @@ internal class VisualBasicEqualityComparison
     }
 
     public bool TryConvertToNullOrEmptyCheck(VBSyntax.BinaryExpressionSyntax node, ExpressionSyntax lhs,
-        ExpressionSyntax rhs, out CSharpSyntaxNode? visitBinaryExpression)
+        ExpressionSyntax rhs, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, out CSharpSyntaxNode? visitBinaryExpression)
     {
         if (OptionCompareTextCaseInsensitive)
         {
@@ -191,6 +192,12 @@ internal class VisualBasicEqualityComparison
         if (lhsEmpty || rhsEmpty)
         {
             var arg = lhsEmpty ? rhs : lhs;
+            var argType = lhsEmpty ? rhsTypeInfo : lhsTypeInfo;
+            if (argType.Type?.SpecialType != SpecialType.System_String && argType.Type?.SpecialType != SpecialType.System_Object) {
+                visitBinaryExpression = null;
+                return false;
+            }
+
             var nullOrEmpty = SyntaxFactory.InvocationExpression(
                 SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword)),
@@ -207,7 +214,7 @@ internal class VisualBasicEqualityComparison
         return false;
     }
 
-    private bool IsNothingOrEmpty(VBSyntax.ExpressionSyntax expressionSyntax)
+    public bool IsNothingOrEmpty(VBSyntax.ExpressionSyntax expressionSyntax)
     {
         expressionSyntax = expressionSyntax.SkipIntoParens();
 
