@@ -844,11 +844,16 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                         caseSwitchLabelSyntax = WrapInCasePatternSwitchLabelSyntax(node, relational.Value, csRelationalValue, false, operatorKind);
                     }
                     else {
-                        var varName = CommonConversions.CsEscapedIdentifier(GetUniqueVariableNameInScope(node, "case"));
-                        ExpressionSyntax csLeft = ValidSyntaxFactory.IdentifierName(varName);
                         csRelationalValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(relational.Value, csRelationalValue);
-                        var binaryExp = SyntaxFactory.BinaryExpression(operatorKind.ConvertToken(), csLeft, csRelationalValue);
-                        caseSwitchLabelSyntax = VarWhen(varName, binaryExp);
+                        PatternSyntax pattern;
+                        if (operatorKind == VBasic.SyntaxKind.CaseEqualsClause) {
+                            pattern = SyntaxFactory.ConstantPattern(csRelationalValue);
+                        } else if (operatorKind == VBasic.SyntaxKind.CaseNotEqualsClause) {
+                            pattern = SyntaxFactory.UnaryPattern(SyntaxFactory.Token(SyntaxKind.NotKeyword), SyntaxFactory.ConstantPattern(csRelationalValue));
+                        } else {
+                            pattern = SyntaxFactory.RelationalPattern(SyntaxFactory.Token(GetRelationalTokenKind(operatorKind)), csRelationalValue);
+                        }
+                        caseSwitchLabelSyntax = SyntaxFactory.CasePatternSwitchLabel(pattern, null, SyntaxFactory.Token(SyntaxKind.ColonToken));
                     }
                     labels.Add(caseSwitchLabelSyntax);
                 } else if (c is VBSyntax.RangeCaseClauseSyntax range) {
@@ -1201,4 +1206,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
     }
+
+    private static SyntaxKind GetRelationalTokenKind(VBasic.SyntaxKind caseClauseKind) => caseClauseKind switch {
+        VBasic.SyntaxKind.CaseLessThanClause => SyntaxKind.LessThanToken,
+        VBasic.SyntaxKind.CaseLessThanOrEqualClause => SyntaxKind.LessThanEqualsToken,
+        VBasic.SyntaxKind.CaseGreaterThanOrEqualClause => SyntaxKind.GreaterThanEqualsToken,
+        VBasic.SyntaxKind.CaseGreaterThanClause => SyntaxKind.GreaterThanToken,
+        _ => throw new ArgumentOutOfRangeException(nameof(caseClauseKind), caseClauseKind, null)
+    };
 }
