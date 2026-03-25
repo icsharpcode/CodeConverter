@@ -1576,4 +1576,43 @@ BC30455: Argument not specified for parameter 'str3' of 'Private Sub OptionalByR
 CS7036: There is no argument given that corresponds to the required parameter 'str1' of 'MissingByRefArgumentWithNoExplicitDefaultValue.ByRefNoDefault(ref string)'
 ");
     }
+    [Fact]
+    public async Task OptionalByRefParameterAsync886()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Issue886
+    Private Shared Sub OptionalParams()
+        FunctionWithOptionalParams()
+    End Sub
+
+    Private Shared Sub FunctionWithOptionalParams(Optional ByRef structParam As TestStruct = Nothing, Optional ByRef decimalParam As Decimal = 0)
+        structParam = New TestStruct
+        decimalParam = 0
+    End Sub
+
+    Friend Structure TestStruct
+        Friend A As Boolean
+    End Structure
+End Class", @"using System.Runtime.InteropServices;
+
+internal partial class Issue886
+{
+    private static void OptionalParams()
+    {
+        TestStruct argstructParam = default;
+        decimal argdecimalParam = 0m;
+        FunctionWithOptionalParams(structParam: ref argstructParam, decimalParam: ref argdecimalParam);
+    }
+
+    private static void FunctionWithOptionalParams([Optional] ref TestStruct structParam, [Optional, DefaultParameterValue(0)] ref decimal decimalParam)
+    {
+        structParam = new TestStruct();
+        decimalParam = 0m;
+    }
+
+    internal partial struct TestStruct
+    {
+        internal bool A;
+    }
+}");
+    }
 }
