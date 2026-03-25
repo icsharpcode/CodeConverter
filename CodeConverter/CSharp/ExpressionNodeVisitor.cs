@@ -471,7 +471,22 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
                 };
                 if (!node.Default.Value.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    optionalAttributes.Add(CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
+                    if (vbSymbol?.Type?.SpecialType == SpecialType.System_Decimal && defaultExpression is CSSyntax.LiteralExpressionSyntax literalExpr) {
+                        var literalValue = literalExpr.Token.Value;
+                        if (literalValue is decimal decimalVal) {
+                            var isInteger = decimalVal == Math.Round(decimalVal);
+                            var newLiteral = isInteger ? CommonConversions.Literal((int)decimalVal) : CommonConversions.Literal((double)decimalVal);
+                            arg = CommonConversions.CreateAttributeArgumentList(CS.SyntaxFactory.AttributeArgument(newLiteral));
+                        }
+                    }
+
+                    if (vbSymbol?.Type?.TypeKind == TypeKind.Struct && vbSymbol?.Type?.SpecialType == SpecialType.None) {
+                        arg = null;
+                    }
+
+                    if (arg != null) {
+                        optionalAttributes.Add(CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
+                    }
                 }
                 attributes.Insert(0,
                     CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalAttributes)));

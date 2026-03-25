@@ -226,10 +226,18 @@ internal class ArgumentConverter
         var type = CommonConversions.GetTypeSyntax(p.Type);
         CSSyntax.ExpressionSyntax initializer;
         if (p.HasExplicitDefaultValue) {
-            initializer = CommonConversions.Literal(p.ExplicitDefaultValue);
+            if (p.ExplicitDefaultValue == null && p.Type.IsValueType && p.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T) {
+                initializer = CS.SyntaxFactory.DefaultExpression(type);
+            } else {
+                initializer = CommonConversions.Literal(p.ExplicitDefaultValue);
+            }
         } else if (HasOptionalAttribute(p)) {
             if (TryGetDefaultParameterValueAttributeValue(p, out var defaultValue)) {
-                initializer = CommonConversions.Literal(defaultValue);
+                if (defaultValue == null && p.Type.IsValueType && p.Type.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T) {
+                    initializer = CS.SyntaxFactory.DefaultExpression(type);
+                } else {
+                    initializer = CommonConversions.Literal(defaultValue);
+                }
             } else {
                 initializer = CS.SyntaxFactory.DefaultExpression(type);
             }
