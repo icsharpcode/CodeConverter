@@ -336,7 +336,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     public override async Task<CSharpSyntaxNode> VisitClassBlock(VBSyntax.ClassBlockSyntax node)
     {
-        _accessorDeclarationNodeConverter.AccessedThroughMyClass = GetMyClassAccessedNames(node);
+        _accessorDeclarationNodeConverter.AccessedThroughMyClass = GetMyClassAccessedNames(node, _semanticModel);
         var classStatement = node.ClassStatement;
         var attributes = await CommonConversions.ConvertAttributesAsync(classStatement.AttributeLists);
         var (parameters, constraints) = await SplitTypeParametersAsync(classStatement.TypeParameterList);
@@ -689,12 +689,23 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return CS.SyntaxFactory.Block(await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>) await s.Accept(methodBodyVisitor)));
     }
 
-    private static HashSet<string> GetMyClassAccessedNames(VBSyntax.ClassBlockSyntax classBlock)
+    private static HashSet<string> GetMyClassAccessedNames(VBSyntax.ClassBlockSyntax classBlock, SemanticModel semanticModel)
     {
         var memberAccesses = classBlock.DescendantNodes().OfType<VBSyntax.MemberAccessExpressionSyntax>();
         var accessedTextNames = new HashSet<string>(memberAccesses
             .Where(mae => mae.Expression is VBSyntax.MyClassExpressionSyntax)
             .Select(mae => mae.Name.Identifier.Text), StringComparer.OrdinalIgnoreCase);
+
+        var identifierNames = classBlock.DescendantNodes().OfType<VBSyntax.IdentifierNameSyntax>().Where(id => id.Identifier.Text.StartsWith("_", StringComparison.OrdinalIgnoreCase));
+        foreach (var id in identifierNames)
+        {
+            var symbolInfo = semanticModel.GetSymbolInfo(id);
+            if (symbolInfo.Symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol != null && fieldSymbol.AssociatedSymbol.IsVirtual && !fieldSymbol.AssociatedSymbol.IsAbstract)
+            {
+                accessedTextNames.Add(fieldSymbol.AssociatedSymbol.Name);
+            }
+        }
+
         return accessedTextNames;
     }
 
