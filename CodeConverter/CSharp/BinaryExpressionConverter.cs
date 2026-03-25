@@ -82,11 +82,24 @@ internal class BinaryExpressionConverter
             case VisualBasicEqualityComparison.RequiredType.StringOnly:
                 if (lhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
                     rhsTypeInfo.ConvertedType?.SpecialType == SpecialType.System_String &&
-                    _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, out CSharpSyntaxNode visitBinaryExpression)) {
+                    _visualBasicEqualityComparison.TryConvertToNullOrEmptyCheck(node, lhs, rhs, lhsTypeInfo, rhsTypeInfo, out CSharpSyntaxNode visitBinaryExpression)) {
                     return visitBinaryExpression;
                 }
-                (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, false, node.Right, rhs, rhsTypeInfo, false);
-                omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
+                if (lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && rhsTypeInfo.Type?.SpecialType == SpecialType.System_Char) {
+                    // Do nothing, char comparison
+                } else if ((lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && rhsTypeInfo.Type?.SpecialType == SpecialType.System_String && _visualBasicEqualityComparison.IsNothingOrEmpty(node.Right)) ||
+                           (rhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && lhsTypeInfo.Type?.SpecialType == SpecialType.System_String && _visualBasicEqualityComparison.IsNothingOrEmpty(node.Left))) {
+                    if (lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char) {
+                        rhs = CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression, CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.CharKeyword)), CS.SyntaxFactory.IdentifierName("MinValue"));
+                        omitConversion = true;
+                    } else {
+                        lhs = CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression, CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.CharKeyword)), CS.SyntaxFactory.IdentifierName("MinValue"));
+                        omitConversion = true;
+                    }
+                } else {
+                    (lhs, rhs) = _visualBasicEqualityComparison.AdjustForVbStringComparison(node.Left, lhs, lhsTypeInfo, false, node.Right, rhs, rhsTypeInfo, false);
+                    omitConversion = true; // Already handled within for the appropriate types (rhs can become int in comparison)
+                }
                 break;
             case VisualBasicEqualityComparison.RequiredType.Object:
                 return _visualBasicEqualityComparison.GetFullExpressionForVbObjectComparison(lhs, rhs, VisualBasicEqualityComparison.ComparisonKind.Equals, node.IsKind(VBasic.SyntaxKind.NotEqualsExpression));

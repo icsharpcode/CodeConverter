@@ -153,11 +153,11 @@ public partial class Class1
         }
         if (string.IsNullOrEmpty(s1))
         {
-            // 
+            //
         }
         if (string.IsNullOrEmpty(s1))
         {
-            // 
+            //
         }
     }
 }");
@@ -210,11 +210,11 @@ public partial class Class1
         }
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1 ?? """", """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
-            // 
+            //
         }
         if (CultureInfo.CurrentCulture.CompareInfo.Compare(s1 ?? """", """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0)
         {
-            // 
+            //
         }
     }
 }");
@@ -233,11 +233,11 @@ Class Issue655
     Dim s5 = Filter(New String() { 1, 2}, ""obj"")
     Dim s6 = StrComp(1, ""obj"")
     Dim s7 = OtherFunction()
-    
+
     Function OtherFunction(Optional c As CompareMethod = CompareMethod.Binary) As Boolean
         Return c = CompareMethod.Binary
     End Function
-End Class", 
+End Class",
             @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -277,11 +277,11 @@ Class Issue655
     Dim s5 = Filter(New String() { 1, 2}, ""obj"")
     Dim s6 = StrComp(1, ""obj"")
     Dim s7 = OtherFunction()
-    
+
     Function OtherFunction(Optional c As CompareMethod = CompareMethod.Binary) As Boolean
         Return c = CompareMethod.Binary
     End Function
-End Class", 
+End Class",
             @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -405,7 +405,7 @@ Namespace Global.InnerNamespace
     Public Class Test
            public function InterStringDateFormat(dt As DateTime) As String
             Dim a As String = $""Soak: {dt: d\.h\:mm\:ss\.f}""
-            return a 
+            return a
             End function
     End Class
 End Namespace",
@@ -540,27 +540,6 @@ public partial class Issue806
     public void Foo()
     {
         string x = Conversions.ToString(DateTime.Parse(""2022-01-01"")) + "" 15:00"";
-    }
-}");
-    }
-
-    [Fact]
-    public async Task CharEqualityEmptyStringAsync()
-    {
-        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod()
-        Dim testChar As Char = Nothing
-        Dim testResult = testChar = """"
-        Dim testResult2 = """" = testChar
-    End Sub
-End Class", @"
-internal partial class TestClass
-{
-    private void TestMethod()
-    {
-        char testChar = default;
-        bool testResult = testChar == char.MinValue;
-        bool testResult2 = char.MinValue == testChar;
     }
 }");
     }
