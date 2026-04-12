@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -1089,13 +1089,13 @@ public partial class TestClass
         {
             case var @case when 0 <= @case && @case <= 3:
             case 4:
-            case var case1 when case1 >= 5:
-            case var case2 when case2 < 6:
-            case var case3 when case3 <= 7:
+            case >= 5:
+            case < 6:
+            case <= 7:
                 {
                     return ""this week"";
                 }
-            case var case4 when case4 > 0:
+            case > 0:
                 {
                     return daysAgo / 7 + "" weeks ago"";
                 }
@@ -1249,7 +1249,7 @@ public partial class TestClass2
         var rand = new Random();
         switch (rand.Next(8))
         {
-            case var @case when @case < 4:
+            case < 4:
                 {
                     break;
                 }
@@ -1257,7 +1257,7 @@ public partial class TestClass2
                 {
                     break;
                 }
-            case var case1 when case1 > 4:
+            case > 4:
                 {
                     break;
                 }
@@ -1268,9 +1268,7 @@ public partial class TestClass2
                 }
         }
     }
-}
-1 target compilation errors:
-CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+}");
     }
 
     [Fact]
@@ -1785,6 +1783,64 @@ public partial class TestClass
         set_Item(0, get_Item(0) << 2);
         set_Item(0, get_Item(0) >> 2);
         set_StrItem(0, get_StrItem(0) + "" World"");
+    }
+}");
+    }
+
+    [Fact]
+    public async Task Issue803_SelectCaseWithRelationalPatternAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(ByVal Breite As Integer)
+        Dim Rollo_FederUmdrehungen_Berechnen As Integer
+        Select Case Breite
+          Case Is < 1000
+            Rollo_FederUmdrehungen_Berechnen = 12
+          Case Is < 1200
+            Rollo_FederUmdrehungen_Berechnen = 15
+          Case Is < 1600
+            Rollo_FederUmdrehungen_Berechnen = 19
+          Case Is < 1800
+            Rollo_FederUmdrehungen_Berechnen = 25
+          Case Else
+            Rollo_FederUmdrehungen_Berechnen = 28
+        End Select
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int Breite)
+    {
+        int Rollo_FederUmdrehungen_Berechnen;
+        switch (Breite)
+        {
+            case < 1000:
+                {
+                    Rollo_FederUmdrehungen_Berechnen = 12;
+                    break;
+                }
+            case < 1200:
+                {
+                    Rollo_FederUmdrehungen_Berechnen = 15;
+                    break;
+                }
+            case < 1600:
+                {
+                    Rollo_FederUmdrehungen_Berechnen = 19;
+                    break;
+                }
+            case < 1800:
+                {
+                    Rollo_FederUmdrehungen_Berechnen = 25;
+                    break;
+                }
+
+            default:
+                {
+                    Rollo_FederUmdrehungen_Berechnen = 28;
+                    break;
+                }
+        }
     }
 }");
     }
