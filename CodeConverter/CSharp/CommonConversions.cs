@@ -294,6 +294,9 @@ internal class CommonConversions
                     text = "value";
                 } else if (normalizedText.StartsWith("_", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol propertyFieldSymbol && propertyFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Property) == true) {
                     text = propertyFieldSymbol.AssociatedSymbol.Name;
+                    if (propertyFieldSymbol.AssociatedSymbol.IsVirtual && !propertyFieldSymbol.AssociatedSymbol.IsAbstract) {
+                        text = "MyClass" + text;
+                    }
                 } else if (normalizedText.EndsWith("Event", StringComparison.OrdinalIgnoreCase) && idSymbol is IFieldSymbol eventFieldSymbol && eventFieldSymbol.AssociatedSymbol?.IsKind(SymbolKind.Event) == true) {
                     text = eventFieldSymbol.AssociatedSymbol.Name;
                 } else if (WinformsConversions.MayNeedToInlinePropertyAccess(id.Parent, idSymbol) && _typeContext.HandledEventsAnalysis.ShouldGeneratePropertyFor(idSymbol.Name)) {

@@ -1495,4 +1495,49 @@ CS0246: The type or namespace name 'IEnumerable<>' could not be found (are you m
 End Class");
     }
 
+
+    [Fact]
+    public async Task TestMyClassPropertyAccess()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"
+Class Foo
+    Overridable Property Prop As Integer = 5
+
+    Sub Test()
+        _Prop = 10 ' This should convert to MyClassProp = 10 not to Prop = 10
+        Dim isCorrect = MyClass.Prop = 10 ' After conversion this will return 5instead of 10 because we wrote to Child.Prop
+    End Sub
+End Class
+Class Child
+    Inherits Foo
+    Overrides Property Prop As Integer = 20
+End Class", @"
+internal partial class Foo
+{
+    public int MyClassProp { get; set; } = 5;
+
+    public virtual int Prop
+    {
+        get
+        {
+            return MyClassProp;
+        }
+
+        set
+        {
+            MyClassProp = value;
+        }
+    }
+
+    public void Test()
+    {
+        MyClassProp = 10; // This should convert to MyClassProp = 10 not to Prop = 10
+        bool isCorrect = MyClassProp == 10; // After conversion this will return 5instead of 10 because we wrote to Child.Prop
+    }
+}
+internal partial class Child : Foo
+{
+    public override int Prop { get; set; } = 20;
+}");
+    }
 }
