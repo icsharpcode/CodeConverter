@@ -1,0 +1,14 @@
+--- BinaryExpressionConverter.cs
++++ BinaryExpressionConverter.cs
+@@ -87,8 +87,9 @@
+                 }
+                 if (lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && rhsTypeInfo.Type?.SpecialType == SpecialType.System_Char) {
+                     // Do nothing, char comparison
+-                } else if ((lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && rhsTypeInfo.Type?.SpecialType == SpecialType.System_String && _visualBasicEqualityComparison.IsNothingOrEmpty(node.Right)) ||
+-                           (rhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && lhsTypeInfo.Type?.SpecialType == SpecialType.System_String && _visualBasicEqualityComparison.IsNothingOrEmpty(node.Left))) {
++                } else if (!_visualBasicEqualityComparison.OptionCompareTextCaseInsensitive &&
++                           ((lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && rhsTypeInfo.Type?.SpecialType == SpecialType.System_String && _visualBasicEqualityComparison.IsNothingOrEmpty(node.Right)) ||
++                            (rhsTypeInfo.Type?.SpecialType == SpecialType.System_Char && lhsTypeInfo.Type?.SpecialType == SpecialType.System_String && _visualBasicEqualityComparison.IsNothingOrEmpty(node.Left)))) {
+                     if (lhsTypeInfo.Type?.SpecialType == SpecialType.System_Char) {
+                         rhs = CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression, CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.CharKeyword)), CS.SyntaxFactory.IdentifierName("MinValue"));
+                         omitConversion = true;
