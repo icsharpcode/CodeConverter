@@ -700,7 +700,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         foreach (var id in identifierNames)
         {
             var symbolInfo = semanticModel.GetSymbolInfo(id);
-            if (symbolInfo.Symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol != null && fieldSymbol.AssociatedSymbol.IsVirtual && !fieldSymbol.AssociatedSymbol.IsAbstract)
+            if (symbolInfo.Symbol is IFieldSymbol fieldSymbol && fieldSymbol.AssociatedSymbol != null && fieldSymbol.AssociatedSymbol.IsVirtual && !fieldSymbol.AssociatedSymbol.IsAbstract && !id.Identifier.Text.StartsWith("MyClass", StringComparison.OrdinalIgnoreCase))
             {
                 accessedTextNames.Add(fieldSymbol.AssociatedSymbol.Name);
             }
