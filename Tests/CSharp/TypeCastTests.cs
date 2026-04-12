@@ -1381,14 +1381,10 @@ internal partial class CharTestClass
         switch (""a"")
         {
             case var @case when ""x"" <= @case && @case <= ""y"":
-                {
-                    break;
-                }
+                break;
 
             case ""b"":
-                {
-                    break;
-                }
+                break;
         }
     }
 }

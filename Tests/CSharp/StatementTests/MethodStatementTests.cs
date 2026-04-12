@@ -1046,21 +1046,15 @@ internal partial class TestClass
             case 0:
             case 1:
             case 2:
-                {
-                    Console.Write(""number is 0, 1, 2"");
-                    break;
-                }
+                Console.Write(""number is 0, 1, 2"");
+                break;
             case 5:
-                {
-                    Console.Write(""section 5"");
-                    break;
-                }
+                Console.Write(""section 5"");
+                break;
 
             default:
-                {
-                    Console.Write(""default section"");
-                    break;
-                }
+                Console.Write(""default section"");
+                break;
         }
     }
 }");
@@ -1092,18 +1086,12 @@ public partial class TestClass
             case >= 5:
             case < 6:
             case <= 7:
-                {
-                    return ""this week"";
-                }
+                return ""this week"";
             case > 0:
-                {
-                    return daysAgo / 7 + "" weeks ago"";
-                }
+                return daysAgo / 7 + "" weeks ago"";
 
             default:
-                {
-                    return ""in the future"";
-                }
+                return ""in the future"";
         }
     }
 }
@@ -1180,22 +1168,14 @@ public partial class TestClass
         {
             case var @case when @case == (Strings.UCase(""a"") ?? """"):
             case var case1 when case1 == (Strings.UCase(""b"") ?? """"):
-                {
-                    return ""ab"";
-                }
+                return ""ab"";
             case var case2 when case2 == (Strings.UCase(""c"") ?? """"):
-                {
-                    return ""c"";
-                }
+                return ""c"";
             case ""d"":
-                {
-                    return ""d"";
-                }
+                return ""d"";
 
             default:
-                {
-                    return ""e"";
-                }
+                return ""e"";
         }
     }
 }
@@ -1238,26 +1218,18 @@ public partial class TestClass2
         switch (true)
         {
             case object _ when DateTime.Today.DayOfWeek == DayOfWeek.Saturday | DateTime.Today.DayOfWeek == DayOfWeek.Sunday:
-                {
-                    // we do not work on weekends
-                    return false;
-                }
+                // we do not work on weekends
+                return false;
             case object _ when !IsSqlAlive():
-                {
-                    // Database unavailable
-                    return false;
-                }
+                // Database unavailable
+                return false;
             case object _ when Something is int:
-                {
-                    // Do something with the Integer
-                    return true;
-                }
+                // Do something with the Integer
+                return true;
 
             default:
-                {
-                    // Do something else
-                    return false;
-                }
+                // Do something else
+                return false;
         }
     }
 
@@ -1293,22 +1265,14 @@ public partial class TestClass2
         switch (rand.Next(8))
         {
             case < 4:
-                {
-                    break;
-                }
+                break;
             case 4:
-                {
-                    break;
-                }
+                break;
             case > 4:
-                {
-                    break;
-                }
+                break;
 
             default:
-                {
-                    throw new Exception();
-                }
+                throw new Exception();
         }
     }
 }");
@@ -1379,18 +1343,12 @@ internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
         switch (astr_Temp ?? """")
         {
             case var @case when CultureInfo.CurrentCulture.CompareInfo.Compare(@case, ""Test"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
-                {
-                    return true;
-                }
+                return true;
             case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
-                {
-                    return false;
-                }
+                return false;
 
             default:
-                {
-                    return default;
-                }
+                return default;
         }
     }
 }
@@ -1422,14 +1380,10 @@ internal partial class Issue707SelectCaseAsyncClass
         {
             case var @case when @case == """":
             case var case1 when case1 == """":
-                {
-                    return false;
-                }
+                return false;
 
             default:
-                {
-                    return true;
-                }
+                return true;
         }
     }
 }
@@ -1557,13 +1511,9 @@ internal static partial class Main
         switch (aWhere)
         {
             case EWhere.None:
-                {
-                    return "" "";
-                }
+                return "" "";
             case EWhere.Bottom:
-                {
-                    return ""_ "";
-                }
+                return ""_ "";
         }
 
         return default;
@@ -1599,14 +1549,10 @@ public partial class NonStringSelect
             switch (CurCol.DataType)
             {
                 case var @case when @case == typeof(string):
-                    {
-                        return false;
-                    }
+                    return false;
 
                 default:
-                    {
-                        return true;
-                    }
+                    return true;
             }
         }
 
@@ -1617,6 +1563,71 @@ public partial class NonStringSelect
 CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
     }
 
+    [Fact]
+    public async Task Issue1244_SelectCaseWithoutLocalDeclarationDoesNotWrapInBlockAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Shared Function d1mach(i As Integer) As Double
+        Select Case i
+            Case 1
+                Return 2.2250738585072014E-308 ' the smallest positive magnitude.
+            Case 2
+                Return Double.MaxValue ' the largest magnitude.
+        End Select
+        Return 0
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private static double d1mach(int i)
+    {
+        switch (i)
+        {
+            case 1:
+                return 2.2250738585072014E-308d; // the smallest positive magnitude.
+            case 2:
+                return double.MaxValue; // the largest magnitude.
+        }
+
+        return 0d;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task Issue1244_SelectCaseWithLocalDeclarationWrapsInBlockAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Shared Function Describe(i As Integer) As String
+        Select Case i
+            Case 1
+                Dim msg As String = ""one""
+                Return msg
+            Case 2
+                Return ""two""
+        End Select
+        Return Nothing
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private static string Describe(int i)
+    {
+        switch (i)
+        {
+            case 1:
+                {
+                    string msg = ""one"";
+                    return msg;
+                }
+            case 2:
+                return ""two"";
+        }
+
+        return default;
+    }
+}");
+    }
 
     [Fact]
     public async Task ExitMethodBlockStatementsAsync()

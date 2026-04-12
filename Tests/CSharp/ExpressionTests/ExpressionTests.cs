@@ -421,17 +421,13 @@ public partial class Class1
         switch (e1)
         {
             case 0:
-                {
-                    break;
-                }
+                break;
         }
 
         switch (e2)
         {
             case (int)E.A:
-                {
-                    break;
-                }
+                break;
         }
 
     }
@@ -464,16 +460,12 @@ internal static partial class Module1
         switch (1)
         {
             case 1:
-                {
-                    Console.WriteLine(""a"");
-                    break;
-                }
+                Console.WriteLine(""a"");
+                break;
 
             case var @case when @case == 1:
-                {
-                    Console.WriteLine(""b"");
-                    break;
-                }
+                Console.WriteLine(""b"");
+                break;
 
         }
 
@@ -2039,10 +2031,8 @@ internal static partial class Module1
         switch (x)
         {
             case (int)E.A:
-                {
-                    Console.WriteLine(""z"");
-                    break;
-                }
+                Console.WriteLine(""z"");
+                break;
         }
     }
 }");
@@ -2088,26 +2078,18 @@ public partial class EnumTest
         switch (ui)
         {
             case object _ when ui is null:
-                {
-                    activity = 1;
-                    break;
-                }
+                activity = 1;
+                break;
             case UserInterface.Spectrum:
-                {
-                    activity = 2;
-                    break;
-                }
+                activity = 2;
+                break;
             case UserInterface.Wisdom:
-                {
-                    activity = 3;
-                    break;
-                }
+                activity = 3;
+                break;
 
             default:
-                {
-                    activity = 4;
-                    break;
-                }
+                activity = 4;
+                break;
         }
     }
 }");
@@ -2206,160 +2188,128 @@ public partial class Test
             switch (x)
             {
                 case 0:
+                    continue;
+                case 1:
+                    x = 1;
+                    break;
+                case 2:
+                    return 2;
+                case 3:
+                    throw new Exception();
+                case 4:
+                    if (true)
+                    {
+                        x = 4;
+                    }
+                    else
+                    {
+                        return x;
+                    }
+
+                    break;
+                case 5:
+                    if (true)
+                    {
+                        return x;
+                    }
+                    else
+                    {
+                        x = 5;
+                    }
+
+                    break;
+                case 6:
+                    if (true)
+                    {
+                        return x;
+                    }
+                    else if (false)
+                    {
+                        x = 6;
+                    }
+                    else
+                    {
+                        return x;
+                    }
+
+                    break;
+                case 7:
+                    if (true)
+                    {
+                        return x;
+                    }
+
+                    break;
+                case 8:
+                    if (true)
+                        return x;
+                    break;
+                case 9:
+                    if (true)
+                        x = 9;
+                    break;
+                case 10:
+                    if (true)
+                        return x;
+                    else
+                        x = 10;
+                    break;
+                case 11:
+                    if (true)
+                        x = 11;
+                    else
+                        return x;
+                    break;
+                case 12:
+                    if (true)
+                        return x;
+                    else
+                        return x;
+                case 13:
+                    if (true)
+                    {
+                        return x;
+                    }
+                    else if (false)
                     {
                         continue;
                     }
-                case 1:
-                    {
-                        x = 1;
-                        break;
-                    }
-                case 2:
-                    {
-                        return 2;
-                    }
-                case 3:
+                    else if (false)
                     {
                         throw new Exception();
                     }
-                case 4:
+                    else if (false)
                     {
-                        if (true)
-                        {
-                            x = 4;
-                        }
-                        else
-                        {
-                            return x;
-                        }
-
                         break;
                     }
-                case 5:
+                    else
                     {
-                        if (true)
-                        {
-                            return x;
-                        }
-                        else
-                        {
-                            x = 5;
-                        }
-
-                        break;
-                    }
-                case 6:
-                    {
-                        if (true)
-                        {
-                            return x;
-                        }
-                        else if (false)
-                        {
-                            x = 6;
-                        }
-                        else
-                        {
-                            return x;
-                        }
-
-                        break;
-                    }
-                case 7:
-                    {
-                        if (true)
-                        {
-                            return x;
-                        }
-
-                        break;
-                    }
-                case 8:
-                    {
-                        if (true)
-                            return x;
-                        break;
-                    }
-                case 9:
-                    {
-                        if (true)
-                            x = 9;
-                        break;
-                    }
-                case 10:
-                    {
-                        if (true)
-                            return x;
-                        else
-                            x = 10;
-                        break;
-                    }
-                case 11:
-                    {
-                        if (true)
-                            x = 11;
-                        else
-                            return x;
-                        break;
-                    }
-                case 12:
-                    {
-                        if (true)
-                            return x;
-                        else
-                            return x;
-                    }
-                case 13:
-                    {
-                        if (true)
-                        {
-                            return x;
-                        }
-                        else if (false)
-                        {
-                            continue;
-                        }
-                        else if (false)
-                        {
-                            throw new Exception();
-                        }
-                        else if (false)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            return x;
-                        }
+                        return x;
                     }
                 case 14:
+                    if (true)
                     {
-                        if (true)
-                        {
-                            return x;
-                        }
-                        else if (false)
-                        {
-                            return x;
-                        }
-                        else if (false)
-                        {
-                            break;
-                        }
-
+                        return x;
+                    }
+                    else if (false)
+                    {
+                        return x;
+                    }
+                    else if (false)
+                    {
                         break;
                     }
 
+                    break;
+
                 default:
+                    if (true)
                     {
-                        if (true)
-                        {
-                            return x;
-                        }
-                        else
-                        {
-                            return x;
-                        }
+                        return x;
+                    }
+                    else
+                    {
+                        return x;
                     }
             }
         }
@@ -2402,31 +2352,21 @@ public partial class SelectObjectCaseIntegerTest
         switch (o)
         {
             case var @case when Operators.ConditionalCompareObjectEqual(@case, 1, false):
-                {
-                    j = 1;
-                    break;
-                }
+                j = 1;
+                break;
             case var case1 when Operators.ConditionalCompareObjectEqual(case1, 2, false):
-                {
-                    j = 2;
-                    break;
-                }
+                j = 2;
+                break;
             case var case2 when Operators.ConditionalCompareObjectLessEqual(3, case2, false) && Operators.ConditionalCompareObjectLessEqual(case2, 4, false):
-                {
-                    j = 3;
-                    break;
-                }
+                j = 3;
+                break;
             case var case3 when Operators.ConditionalCompareObjectGreater(case3, 4, false):
-                {
-                    j = 4;
-                    break;
-                }
+                j = 4;
+                break;
 
             default:
-                {
-                    j = -1;
-                    break;
-                }
+                j = -1;
+                break;
         }
     }
 }
