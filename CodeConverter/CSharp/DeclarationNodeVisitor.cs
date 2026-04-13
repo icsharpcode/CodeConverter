@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
@@ -674,9 +675,57 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
         }
 
+        (methodBlock, convertedStatements) = FixCharDefaultsForStringParams(declaredSymbol, methodBlock, convertedStatements);
+
         var body = _accessorDeclarationNodeConverter.WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
         return methodBlock.WithBody(body);
+    }
+
+    /// <summary>
+    /// In VB, a Char constant can be the default value of a String parameter. In C#, this is invalid.
+    /// Fix: replace the default with null and prepend a null-coalescing assignment in the method body.
+    /// </summary>
+    private static (BaseMethodDeclarationSyntax MethodBlock, BlockSyntax ConvertedStatements) FixCharDefaultsForStringParams(
+        IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements)
+    {
+        var prependedStatements = new List<StatementSyntax>();
+        var updatedParams = methodBlock.ParameterList.Parameters.ToList();
+        var vbParams = declaredSymbol?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+
+        for (int i = 0; i < updatedParams.Count && i < vbParams.Length; i++) {
+            var vbParam = vbParams[i];
+            if (vbParam.Type.SpecialType != SpecialType.System_String
+                || !vbParam.HasExplicitDefaultValue
+                || vbParam.ExplicitDefaultValue is not char) continue;
+
+            var csParam = updatedParams[i];
+            var defaultExpr = csParam.Default?.Value;
+            if (defaultExpr is null) continue;
+
+            // Replace the default value with null
+            updatedParams[i] = csParam.WithDefault(
+                CS.SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.NullExpression));
+
+            // Build: paramName = paramName ?? existingDefaultExpr.ToString();
+            var paramId = ValidSyntaxFactory.IdentifierName(csParam.Identifier.ValueText);
+            var toStringCall = CS.SyntaxFactory.InvocationExpression(
+                CS.SyntaxFactory.MemberAccessExpression(
+                    CS.SyntaxKind.SimpleMemberAccessExpression,
+                    defaultExpr.WithoutTrivia(),
+                    CS.SyntaxFactory.IdentifierName("ToString")));
+            var coalesce = CS.SyntaxFactory.BinaryExpression(CS.SyntaxKind.CoalesceExpression, paramId, toStringCall);
+            var assignment = CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, paramId, coalesce);
+            prependedStatements.Add(CS.SyntaxFactory.ExpressionStatement(assignment));
+        }
+
+        if (prependedStatements.Count == 0) return (methodBlock, convertedStatements);
+
+        var newParamList = methodBlock.ParameterList.WithParameters(CS.SyntaxFactory.SeparatedList(updatedParams, methodBlock.ParameterList.Parameters.GetSeparators()));
+        methodBlock = methodBlock.WithParameterList(newParamList);
+        convertedStatements = convertedStatements.WithStatements(CS.SyntaxFactory.List(prependedStatements.Concat(convertedStatements.Statements)));
+
+        return (methodBlock, convertedStatements);
     }
 
     private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
