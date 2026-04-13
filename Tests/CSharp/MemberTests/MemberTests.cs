@@ -1576,4 +1576,49 @@ BC30455: Argument not specified for parameter 'str3' of 'Private Sub OptionalByR
 CS7036: There is no argument given that corresponds to the required parameter 'str1' of 'MissingByRefArgumentWithNoExplicitDefaultValue.ByRefNoDefault(ref string)'
 ");
     }
+
+    [Fact]
+    public async Task TestCharConstDefaultValueForStringParameterAsync()
+    {
+        // Issue #557: VB allows a Char constant as a default value for a String parameter, but C# does not.
+        // Replace the default with null and prepend a null-coalescing assignment in the method body.
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Module TestModule
+    Friend Const DlM As Char = ""^""c
+
+    Friend Function LeftSideOf(Optional ByVal strDlM As String = DlM) As String
+        Return strDlM
+    End Function
+End Module", @"
+internal static partial class TestModule
+{
+    internal const char DlM = '^';
+
+    internal static string LeftSideOf(string strDlM = null)
+    {
+        strDlM = strDlM ?? DlM.ToString();
+        return strDlM;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestCharLiteralDefaultValueForStringParameterAsync()
+    {
+        // Issue #557: inline char literal as default value for a String parameter.
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Friend Function Foo(Optional s As String = ""^""c) As String
+        Return s
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    internal string Foo(string s = null)
+    {
+        s = s ?? '^'.ToString();
+        return s;
+    }
+}");
+    }
 }
