@@ -675,7 +675,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
         }
 
-        (methodBlock, convertedStatements) = FixCharDefaultsForStringParams(declaredSymbol, methodBlock, convertedStatements);
+        (methodBlock, convertedStatements) = FixCharDefaultsForStringParams(declaredSymbol, methodBlock, convertedStatements, _semanticModel);
 
         var body = _accessorDeclarationNodeConverter.WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
@@ -687,7 +687,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     /// Fix: replace the default with null and prepend a null-coalescing assignment in the method body.
     /// </summary>
     private static (BaseMethodDeclarationSyntax MethodBlock, BlockSyntax ConvertedStatements) FixCharDefaultsForStringParams(
-        IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements)
+        IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements, SemanticModel semanticModel)
     {
         var prependedStatements = new List<StatementSyntax>();
         var updatedParams = methodBlock.ParameterList.Parameters.ToList();
@@ -696,8 +696,13 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         for (int i = 0; i < updatedParams.Count && i < vbParams.Length; i++) {
             var vbParam = vbParams[i];
             if (vbParam.Type.SpecialType != SpecialType.System_String
-                || !vbParam.HasExplicitDefaultValue
-                || vbParam.ExplicitDefaultValue is not char) continue;
+                || !vbParam.HasExplicitDefaultValue) continue;
+            // ExplicitDefaultValue is normalized to the parameter's declared type (String), so we
+            // must inspect the VB syntax to detect when the original expression is Char-typed.
+            var vbSyntaxParam = vbParam.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VBSyntax.ParameterSyntax;
+            var defaultValueNode = vbSyntaxParam?.Default?.Value;
+            if (defaultValueNode == null) continue;
+            if (semanticModel.GetTypeInfo(defaultValueNode).Type?.SpecialType != SpecialType.System_Char) continue;
 
             var csParam = updatedParams[i];
             var defaultExpr = csParam.Default?.Value;
