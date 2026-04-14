@@ -1624,7 +1624,7 @@ internal partial class TestClass
                 return ""two"";
         }
 
-        return default;
+        return null;
     }
 }");
     }
