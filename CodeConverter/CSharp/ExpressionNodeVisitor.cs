@@ -476,7 +476,6 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                 attributes.Insert(0,
                     CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalAttributes)));
             } else {
-                var defaultValue = node.Default.Value.SkipIntoParens();
                 var paramSymbol = _semanticModel.GetDeclaredSymbol(node) as IParameterSymbol;
                 if (paramSymbol?.Type?.SpecialType == SpecialType.System_String &&
                     _semanticModel.GetTypeInfo(defaultValue).Type?.SpecialType == SpecialType.System_Char) {
