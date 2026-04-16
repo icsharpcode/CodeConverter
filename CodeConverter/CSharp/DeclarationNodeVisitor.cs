@@ -684,16 +684,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     /// <summary>
     /// In VB, a Char constant can be the default value of a String parameter. In C#, this is invalid.
-    /// Fix: replace the default with null and prepend a null-coalescing assignment in the method body.
+    /// VisitParameter in ExpressionNodeVisitor sets the default to null for these cases; this method
+    /// prepends a null-coalescing assignment to restore the char default at runtime.
     /// </summary>
     private static (BaseMethodDeclarationSyntax MethodBlock, BlockSyntax ConvertedStatements) FixCharDefaultsForStringParams(
         IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements, SemanticModel semanticModel)
     {
         var prependedStatements = new List<StatementSyntax>();
-        var updatedParams = methodBlock.ParameterList.Parameters.ToList();
         var vbParams = declaredSymbol?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+        var csParams = methodBlock.ParameterList.Parameters;
 
-        for (int i = 0; i < updatedParams.Count && i < vbParams.Length; i++) {
+        for (int i = 0; i < csParams.Count && i < vbParams.Length; i++) {
             var vbParam = vbParams[i];
             if (vbParam.Type.SpecialType != SpecialType.System_String
                 || !vbParam.HasExplicitDefaultValue) continue;
@@ -704,20 +705,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             if (defaultValueNode == null) continue;
             if (semanticModel.GetTypeInfo(defaultValueNode).Type?.SpecialType != SpecialType.System_Char) continue;
 
-            var csParam = updatedParams[i];
-            var defaultExpr = csParam.Default?.Value;
-            if (defaultExpr is null) continue;
+            var csParam = csParams[i];
+            // The default was set to null at point of creation in VisitParameter (ExpressionNodeVisitor).
+            // Reconstruct the char expression from VB syntax to avoid depending on the already-converted value.
+            var charExpr = BuildCharExpressionFromVbSyntax(defaultValueNode, semanticModel);
 
-            // Replace the default value with null
-            updatedParams[i] = csParam.WithDefault(
-                CS.SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.NullExpression));
-
-            // Build: paramName = paramName ?? existingDefaultExpr.ToString();
+            // Build: paramName = paramName ?? charExpr.ToString();
             var paramId = ValidSyntaxFactory.IdentifierName(csParam.Identifier.ValueText);
             var toStringCall = CS.SyntaxFactory.InvocationExpression(
                 CS.SyntaxFactory.MemberAccessExpression(
                     CS.SyntaxKind.SimpleMemberAccessExpression,
-                    defaultExpr.WithoutTrivia(),
+                    charExpr,
                     CS.SyntaxFactory.IdentifierName("ToString")));
             var coalesce = CS.SyntaxFactory.BinaryExpression(CS.SyntaxKind.CoalesceExpression, paramId, toStringCall);
             var assignment = CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, paramId, coalesce);
@@ -726,11 +724,18 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
         if (prependedStatements.Count == 0) return (methodBlock, convertedStatements);
 
-        var newParamList = methodBlock.ParameterList.WithParameters(CS.SyntaxFactory.SeparatedList(updatedParams, methodBlock.ParameterList.Parameters.GetSeparators()));
-        methodBlock = methodBlock.WithParameterList(newParamList);
-        convertedStatements = convertedStatements.WithStatements(CS.SyntaxFactory.List(prependedStatements.Concat(convertedStatements.Statements)));
+        return (methodBlock, convertedStatements.WithStatements(CS.SyntaxFactory.List(prependedStatements.Concat(convertedStatements.Statements))));
+    }
 
-        return (methodBlock, convertedStatements);
+    private static ExpressionSyntax BuildCharExpressionFromVbSyntax(VBSyntax.ExpressionSyntax defaultValueNode, SemanticModel semanticModel)
+    {
+        // For constant char literals (e.g. "^"c), reconstruct directly from the constant value
+        var constant = semanticModel.GetConstantValue(defaultValueNode);
+        if (constant.HasValue && constant.Value is char c) {
+            return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.CharacterLiteralExpression, CS.SyntaxFactory.Literal(c));
+        }
+        // For named constant references (e.g. DlM), use the VB expression text as-is
+        return ValidSyntaxFactory.IdentifierName(defaultValueNode.ToString());
     }
 
     private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
