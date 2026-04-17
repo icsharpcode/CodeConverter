@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Simplification;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
@@ -729,13 +730,19 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
 
     private static ExpressionSyntax BuildCharExpressionFromVbSyntax(VBSyntax.ExpressionSyntax defaultValueNode, SemanticModel semanticModel)
     {
-        // For constant char literals (e.g. "^"c), reconstruct directly from the constant value
-        var constant = semanticModel.GetConstantValue(defaultValueNode);
-        if (constant.HasValue && constant.Value is char c) {
-            return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.CharacterLiteralExpression, CS.SyntaxFactory.Literal(c));
+        // For char literal expressions (e.g. "^"c), use the constant value directly
+        if (defaultValueNode.IsKind(VBasic.SyntaxKind.CharacterLiteralExpression)) {
+            var constant = semanticModel.GetConstantValue(defaultValueNode);
+            if (constant.HasValue && constant.Value is char c) {
+                return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.CharacterLiteralExpression, CS.SyntaxFactory.Literal(c));
+            }
         }
-        // For named constant references (e.g. DlM), use the VB expression text as-is
-        return ValidSyntaxFactory.IdentifierName(defaultValueNode.ToString());
+        // For named constant references (e.g. DlM or Module.DlM), build a member access expression.
+        // Strip VB's "Global." prefix (VB global namespace qualifier, has no C# identifier equivalent).
+        // Annotate for simplification so Roslyn reduces e.g. TestModule.DlM → DlM within TestModule.
+        var parts = defaultValueNode.ToString().Trim().Split('.');
+        if (parts.Length > 1 && parts[0] == "Global") parts = parts.Skip(1).ToArray();
+        return ValidSyntaxFactory.MemberAccess(parts).WithAdditionalAnnotations(Simplifier.Annotation);
     }
 
     private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
