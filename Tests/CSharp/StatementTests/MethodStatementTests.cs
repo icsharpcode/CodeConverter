@@ -1339,7 +1339,6 @@ internal partial class Issue579SelectCaseWithCaseInsensitiveTextCompare
                 return true;
             case var case1 when CultureInfo.CurrentCulture.CompareInfo.Compare(case1, astr_Temp ?? """", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0:
                 return false;
-
             default:
                 return default;
         }
@@ -1374,7 +1373,6 @@ internal partial class Issue707SelectCaseAsyncClass
             case var @case when @case == """":
             case var case1 when case1 == """":
                 return false;
-
             default:
                 return true;
         }
@@ -1543,7 +1541,6 @@ public partial class NonStringSelect
             {
                 case var @case when @case == typeof(string):
                     return false;
-
                 default:
                     return true;
             }
