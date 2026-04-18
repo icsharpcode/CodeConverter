@@ -1621,4 +1621,47 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task TestCharConstInSameClassDefaultValueForStringParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Friend Const Sep As Char = "",""c
+
+    Friend Function Join(Optional s As String = Sep) As String
+        Return s
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    internal const char Sep = ',';
+
+    internal string Join(string s = null)
+    {
+        s = s ?? Sep.ToString();
+        return s;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TestMultipleCharDefaultValuesForStringParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Friend Function Format(Optional prefix As String = ""[""c, Optional suffix As String = ""]""c) As String
+        Return prefix & suffix
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    internal string Format(string prefix = null, string suffix = null)
+    {
+        prefix = prefix ?? '['.ToString();
+        suffix = suffix ?? ']'.ToString();
+        return prefix + suffix;
+    }
+}");
+    }
 }
