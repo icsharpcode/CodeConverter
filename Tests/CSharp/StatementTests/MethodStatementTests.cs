@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -1051,7 +1051,6 @@ internal partial class TestClass
             case 5:
                 Console.Write(""section 5"");
                 break;
-
             default:
                 Console.Write(""default section"");
                 break;
@@ -1089,7 +1088,6 @@ public partial class TestClass
                 return ""this week"";
             case > 0:
                 return daysAgo / 7 + "" weeks ago"";
-
             default:
                 return ""in the future"";
         }
@@ -1131,9 +1129,7 @@ public partial class TestClass
         switch (level)
         {
             case var @case when (int)UserLevel.City_Staff <= (int)@case && (int)@case <= (int)UserLevel.Fixity_ROOT:
-                {
-                    return true;
-                }
+                return true;
         }
         return false;
     }
@@ -1173,7 +1169,6 @@ public partial class TestClass
                 return ""c"";
             case ""d"":
                 return ""d"";
-
             default:
                 return ""e"";
         }
@@ -1226,7 +1221,6 @@ public partial class TestClass2
             case object _ when Something is int:
                 // Do something with the Integer
                 return true;
-
             default:
                 // Do something else
                 return false;
@@ -1270,7 +1264,6 @@ public partial class TestClass2
                 break;
             case > 4:
                 break;
-
             default:
                 throw new Exception();
         }
@@ -1588,7 +1581,6 @@ internal partial class TestClass
             case 2:
                 return double.MaxValue; // the largest magnitude.
         }
-
         return 0d;
     }
 }");
@@ -1623,7 +1615,6 @@ internal partial class TestClass
             case 2:
                 return ""two"";
         }
-
         return null;
     }
 }");

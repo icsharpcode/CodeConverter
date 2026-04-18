@@ -2086,7 +2086,6 @@ public partial class EnumTest
             case UserInterface.Wisdom:
                 activity = 3;
                 break;
-
             default:
                 activity = 4;
                 break;
@@ -2301,7 +2300,6 @@ public partial class Test
                     }
 
                     break;
-
                 default:
                     if (true)
                     {
@@ -2363,7 +2361,6 @@ public partial class SelectObjectCaseIntegerTest
             case var case3 when Operators.ConditionalCompareObjectGreater(case3, 4, false):
                 j = 4;
                 break;
-
             default:
                 j = -1;
                 break;
