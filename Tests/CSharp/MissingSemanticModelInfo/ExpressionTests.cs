@@ -294,7 +294,6 @@ public partial class CastToSameTypeTest
             case '.':
                 Console.WriteLine(1);
                 break;
-
             case ',':
                 Console.WriteLine(2);
                 break;
