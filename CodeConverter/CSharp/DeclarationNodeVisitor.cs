@@ -675,7 +675,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
         }
 
-        (methodBlock, convertedStatements) = FixCharDefaultsForStringParams(declaredSymbol, methodBlock, convertedStatements, _semanticModel);
+        (methodBlock, convertedStatements) = await FixCharDefaultsForStringParamsAsync(declaredSymbol, methodBlock, convertedStatements, _semanticModel, _triviaConvertingExpressionVisitor);
 
         var body = _accessorDeclarationNodeConverter.WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
@@ -687,8 +687,9 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     /// VisitParameter in ExpressionNodeVisitor sets the default to null for these cases; this method
     /// prepends a null-coalescing assignment to restore the char default at runtime.
     /// </summary>
-    private static (BaseMethodDeclarationSyntax MethodBlock, BlockSyntax ConvertedStatements) FixCharDefaultsForStringParams(
-        IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements, SemanticModel semanticModel)
+    private static async Task<(BaseMethodDeclarationSyntax MethodBlock, BlockSyntax ConvertedStatements)> FixCharDefaultsForStringParamsAsync(
+        IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements, SemanticModel semanticModel,
+        CommentConvertingVisitorWrapper expressionVisitor)
     {
         var prependedStatements = new List<StatementSyntax>();
         var vbParams = declaredSymbol?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
@@ -700,15 +701,13 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 || !vbParam.HasExplicitDefaultValue) continue;
             // ExplicitDefaultValue is normalized to the parameter's declared type (String), so we
             // must inspect the VB syntax to detect when the original expression is Char-typed.
-            var vbSyntaxParam = vbParam.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as VBSyntax.ParameterSyntax;
+            var vbSyntaxParam = await vbParam.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntaxAsync() as VBSyntax.ParameterSyntax;
             var defaultValueNode = vbSyntaxParam?.Default?.Value;
             if (defaultValueNode == null) continue;
             if (semanticModel.GetTypeInfo(defaultValueNode).Type?.SpecialType != SpecialType.System_Char) continue;
 
             var csParam = csParams[i];
-            // The default was set to null at point of creation in VisitParameter (ExpressionNodeVisitor).
-            // Reconstruct the char expression from VB syntax to avoid depending on the already-converted value.
-            var charExpr = BuildCharExpressionFromVbSyntax(defaultValueNode, semanticModel);
+            var charExpr = await defaultValueNode.AcceptAsync<ExpressionSyntax>(expressionVisitor);
 
             // Build: paramName = paramName ?? charExpr.ToString();
             var paramId = ValidSyntaxFactory.IdentifierName(csParam.Identifier.ValueText);
@@ -725,41 +724,6 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         if (prependedStatements.Count == 0) return (methodBlock, convertedStatements);
 
         return (methodBlock, convertedStatements.WithStatements(CS.SyntaxFactory.List(prependedStatements.Concat(convertedStatements.Statements))));
-    }
-
-    private static ExpressionSyntax BuildCharExpressionFromVbSyntax(VBSyntax.ExpressionSyntax defaultValueNode, SemanticModel semanticModel)
-    {
-        // For char literal expressions (e.g. "^"c), use the constant value directly
-        if (defaultValueNode.IsKind(VBasic.SyntaxKind.CharacterLiteralExpression)) {
-            var constant = semanticModel.GetConstantValue(defaultValueNode);
-            if (constant.HasValue && constant.Value is char c)
-                return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.CharacterLiteralExpression, CS.SyntaxFactory.Literal(c));
-        }
-        return VbNameExprToCsExpr(defaultValueNode);
-    }
-
-    private static ExpressionSyntax VbNameExprToCsExpr(VBSyntax.ExpressionSyntax vbExpr)
-    {
-        switch (vbExpr) {
-            case VBSyntax.IdentifierNameSyntax identifier:
-                return CS.SyntaxFactory.IdentifierName(identifier.Identifier.Text);
-            case VBSyntax.MemberAccessExpressionSyntax memberAccess:
-                // Skip VB's "Global." qualifier — it's VB's global namespace prefix, has no direct C# identifier equivalent
-                if (memberAccess.Expression.IsKind(VBasic.SyntaxKind.GlobalName))
-                    return CS.SyntaxFactory.IdentifierName(memberAccess.Name.Identifier.Text);
-                return CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression,
-                    VbNameExprToCsExpr(memberAccess.Expression),
-                    CS.SyntaxFactory.IdentifierName(memberAccess.Name.Identifier.Text));
-            case VBSyntax.QualifiedNameSyntax qualifiedName:
-                // Qualified names (e.g. Global.TestModule) appear in name/type context within default values
-                if (qualifiedName.Left.IsKind(VBasic.SyntaxKind.GlobalName))
-                    return CS.SyntaxFactory.IdentifierName(qualifiedName.Right.Identifier.Text);
-                return CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression,
-                    VbNameExprToCsExpr(qualifiedName.Left),
-                    CS.SyntaxFactory.IdentifierName(qualifiedName.Right.Identifier.Text));
-            default:
-                throw new NotSupportedException($"Unexpected VB expression in char default value: {vbExpr}");
-        }
     }
 
     private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
