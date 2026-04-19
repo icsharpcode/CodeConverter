@@ -238,7 +238,6 @@ public partial class EnumAndValTest
             case ""1"":
                 tPos = (PositionEnum)1;
                 break;
-
             default:
                 Ratio = (float)Conversion.Val(pS);
                 break;
@@ -256,7 +255,6 @@ public partial class EnumAndValTest
             case (PositionEnum)1:
                 tS = ""LEFTTOP"";
                 break;
-
             default:
                 tS = ((int)pS).ToString();
                 break;

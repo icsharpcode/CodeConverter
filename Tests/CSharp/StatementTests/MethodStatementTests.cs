@@ -1293,18 +1293,11 @@ public partial class TestClass
         switch (Breite)
         {
             case < 1000:
-                {
-                    return 12;
-                }
+                return 12;
             case < 1200:
-                {
-                    return 15;
-                }
-
+                return 15;
             default:
-                {
-                    return 28;
-                }
+                return 28;
         }
     }
 }");
