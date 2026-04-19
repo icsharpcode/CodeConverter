@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
-using Microsoft.CodeAnalysis.Simplification;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
@@ -733,16 +732,34 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         // For char literal expressions (e.g. "^"c), use the constant value directly
         if (defaultValueNode.IsKind(VBasic.SyntaxKind.CharacterLiteralExpression)) {
             var constant = semanticModel.GetConstantValue(defaultValueNode);
-            if (constant.HasValue && constant.Value is char c) {
+            if (constant.HasValue && constant.Value is char c)
                 return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.CharacterLiteralExpression, CS.SyntaxFactory.Literal(c));
-            }
         }
-        // For named constant references (e.g. DlM or Module.DlM), build a member access expression.
-        // Strip VB's "Global." prefix (VB global namespace qualifier, has no C# identifier equivalent).
-        // Annotate for simplification so Roslyn reduces e.g. TestModule.DlM → DlM within TestModule.
-        var parts = defaultValueNode.ToString().Trim().Split('.');
-        if (parts.Length > 1 && parts[0] == "Global") parts = parts.Skip(1).ToArray();
-        return ValidSyntaxFactory.MemberAccess(parts).WithAdditionalAnnotations(Simplifier.Annotation);
+        return VbNameExprToCsExpr(defaultValueNode);
+    }
+
+    private static ExpressionSyntax VbNameExprToCsExpr(VBSyntax.ExpressionSyntax vbExpr)
+    {
+        switch (vbExpr) {
+            case VBSyntax.IdentifierNameSyntax identifier:
+                return CS.SyntaxFactory.IdentifierName(identifier.Identifier.Text);
+            case VBSyntax.MemberAccessExpressionSyntax memberAccess:
+                // Skip VB's "Global." qualifier — it's VB's global namespace prefix, has no direct C# identifier equivalent
+                if (memberAccess.Expression.IsKind(VBasic.SyntaxKind.GlobalName))
+                    return CS.SyntaxFactory.IdentifierName(memberAccess.Name.Identifier.Text);
+                return CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression,
+                    VbNameExprToCsExpr(memberAccess.Expression),
+                    CS.SyntaxFactory.IdentifierName(memberAccess.Name.Identifier.Text));
+            case VBSyntax.QualifiedNameSyntax qualifiedName:
+                // Qualified names (e.g. Global.TestModule) appear in name/type context within default values
+                if (qualifiedName.Left.IsKind(VBasic.SyntaxKind.GlobalName))
+                    return CS.SyntaxFactory.IdentifierName(qualifiedName.Right.Identifier.Text);
+                return CS.SyntaxFactory.MemberAccessExpression(CS.SyntaxKind.SimpleMemberAccessExpression,
+                    VbNameExprToCsExpr(qualifiedName.Left),
+                    CS.SyntaxFactory.IdentifierName(qualifiedName.Right.Identifier.Text));
+            default:
+                throw new NotSupportedException($"Unexpected VB expression in char default value: {vbExpr}");
+        }
     }
 
     private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
