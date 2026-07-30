@@ -953,4 +953,95 @@ public partial class Form1 : System.Windows.Forms.Form
     }
 }");
     }
+
+    [Fact]
+    public async Task HandlesSubPropertyOfWithEventsFieldAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.ComponentModel
+
+Public Class EditorProperties
+    Public Event Click As EventHandler
+End Class
+
+Public Class Editor
+    Private ReadOnly _properties As New EditorProperties()
+
+    ' DesignerSerializationVisibility.Content is what makes this property usable in a Handles clause
+    <DesignerSerializationVisibility(DesignerSerializationVisibility.Content)>
+    Public ReadOnly Property Properties As EditorProperties
+        Get
+            Return _properties
+        End Get
+    End Property
+
+    Public Event Click As EventHandler
+End Class
+
+<Microsoft.VisualBasic.CompilerServices.DesignerGenerated>
+Partial Public Class Form1
+    Private Sub InitializeComponent()
+        Me.Editor1 = New Editor()
+    End Sub
+    Friend WithEvents Editor1 As Editor
+End Class
+
+Partial Public Class Form1
+    Private Sub Editor1_Properties_Click(sender As Object, e As EventArgs) Handles Editor1.Properties.Click
+    End Sub
+
+    Private Sub Editor1_Click(sender As Object, e As EventArgs) Handles Editor1.Click
+    End Sub
+End Class", @"using System;
+using System.ComponentModel;
+
+public partial class EditorProperties
+{
+    public event EventHandler Click;
+}
+
+public partial class Editor
+{
+    private readonly EditorProperties _properties = new EditorProperties();
+
+    // DesignerSerializationVisibility.Content is what makes this property usable in a Handles clause
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+    public EditorProperties Properties
+    {
+        get
+        {
+            return _properties;
+        }
+    }
+
+    public event EventHandler Click;
+}
+
+[Microsoft.VisualBasic.CompilerServices.DesignerGenerated]
+public partial class Form1
+{
+    public Form1()
+    {
+        InitializeComponent();
+    }
+    private void InitializeComponent()
+    {
+        Editor1 = new Editor();
+        Editor1.Properties.Click += new EventHandler(Editor1_Properties_Click);
+        Editor1.Click += new EventHandler(Editor1_Click);
+    }
+    internal Editor Editor1;
+}
+
+public partial class Form1
+{
+    private void Editor1_Properties_Click(object sender, EventArgs e)
+    {
+    }
+
+    private void Editor1_Click(object sender, EventArgs e)
+    {
+    }
+}
+");
+    }
 }
