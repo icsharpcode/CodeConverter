@@ -323,18 +323,12 @@ public partial class ParameterizedPropertiesAndEnumTest
         switch (m)
         {
             case (MyEnum)(-1):
-                {
-                    return;
-                }
+                return;
             case MyEnum.First:
-                {
-                    return;
-                }
+                return;
             case (MyEnum)3:
-                {
-                    set_MyProp(4, enumerableThing.ToArray()[(int)m]);
-                    return;
-                }
+                set_MyProp(4, enumerableThing.ToArray()[(int)m]);
+                return;
         }
     }
 }");

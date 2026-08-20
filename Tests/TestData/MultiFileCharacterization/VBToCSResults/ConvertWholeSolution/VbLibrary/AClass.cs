@@ -35,13 +35,9 @@ namespace VbLibrary
             switch (m)
             {
                 case (AnEnum)(-1):
-                    {
-                        return;
-                    }
+                    return;
                 case AnEnum.AnEnumMember:
-                    {
-                        return;
-                    }
+                    return;
             }
         }
     }
