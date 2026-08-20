@@ -85,6 +85,8 @@ At the moment there's just a very small amount of first draft documentation. Con
 LLM-written code is totally fine if it meets the same standards as a human, for a start: no *superfluous* comments and doesn't infringe copyright.
 In the world of LLMs it's more important to articulate in the PR your understanding of the issue and fix. e.g. "the semantic model was empty here due to a syntax error, so this is a fallback for that case". If you have the LLM write that bit too, please be clear about that in particular.
 
+Some issues I think will work well for a coding agent are labelled: [Good for coding agent](https://github.com/icsharpcode/CodeConverter/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22Good%20for%20coding%20agent%22)
+
 Tips:
 * It'd be good to put the LLM model you used so we can see what works well with different models.
 * The closer it is to fully AI generated, the more wortwhile it is showing the prompts used.
