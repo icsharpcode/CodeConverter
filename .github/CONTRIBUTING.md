@@ -80,6 +80,24 @@ At the moment there's just a very small amount of first draft documentation. Con
 * The worst part of the code is the query syntax conversion. It's just evolved messily to cover basic cases. To comprehensively cover the syntax would need a proper architecture defined to match how the queries are formed. For an example of other code that solves a similar query syntax problem, see ILSpy's [`CSharpDecompiler`](https://github.com/icsharpcode/ILSpy/blob/e189ad9ca301142b9134c2839e416199cbd3360e/ICSharpCode.Decompiler/CSharp/Transforms/IntroduceQueryExpressions.cs)
 * There are a few areas where different special cases collide which are incredibly difficult to reason about all cases. Function hoisting and select case statements are some examples which need care. If major work is required, they'll need some extra test cases adding and refactoring to separate the concerns.
 
+## LLM use
+
+LLM-written code is totally fine if it meets the same standards as a human, for a start: no *superfluous* comments and doesn't infringe copyright.
+In the world of LLMs it's more important to articulate in the PR your understanding of the issue and fix. e.g. "the semantic model was empty here due to a syntax error, so this is a fallback for that case". If you have the LLM write that bit too, please be clear about that in particular.
+
+Tips:
+* It'd be good to put the LLM model you used so we can see what works well with different models.
+* The closer it is to fully AI generated, the more wortwhile it is showing the prompts used.
+
+Example most basic prompt:
+```
+Issue #803: Add a unit test in the existing style for this bug and fix it. Think carefully about the root cause and the optimal way to meet the project's contributing.md guidelines before solving. Iterate solely based on the guidance in the repository as much as possible, taking decisions and documenting them rather than asking for help.
+
+Always run the tests when you think you're done. If your changes fix the targeted test, but some others fail, the key thing is to understand whether the test failures have valid output that just textually differs. If so, we can update the expectation. But we must be sure it's a good conversion by the contributing guidelines. Issue link: https://github.com/icsharpcode/CodeConverter/issues/803
+```
+
+If you find you're repeating bits of a prompt, I'm also open to PRs for a agents.md/claude.md (or other project files) that consistently produces good results with minimal rework for the model you use.
+
 ## Roslyn versions
 
 The core library and Visual Studio extension target the Roslyn version matching the oldest supported version of VS. This avoids introducing compatibility issues. If there are newer APIs needed though, we'll weigh up the pros and cons. 
