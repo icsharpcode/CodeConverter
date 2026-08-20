@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
@@ -674,9 +675,55 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             convertedStatements = convertedStatements.InsertNodesBefore(firstResumeLayout, _typeContext.HandledEventsAnalysis.GetInitializeComponentClassEventHandlers());
         }
 
+        (methodBlock, convertedStatements) = await FixCharDefaultsForStringParamsAsync(declaredSymbol, methodBlock, convertedStatements, _semanticModel, _triviaConvertingExpressionVisitor);
+
         var body = _accessorDeclarationNodeConverter.WithImplicitReturnStatements(node, convertedStatements, csReturnVariableOrNull);
 
         return methodBlock.WithBody(body);
+    }
+
+    /// <summary>
+    /// In VB, a Char constant can be the default value of a String parameter. In C#, this is invalid.
+    /// VisitParameter in ExpressionNodeVisitor sets the default to null for these cases; this method
+    /// prepends a null-coalescing assignment to restore the char default at runtime.
+    /// </summary>
+    private static async Task<(BaseMethodDeclarationSyntax MethodBlock, BlockSyntax ConvertedStatements)> FixCharDefaultsForStringParamsAsync(
+        IMethodSymbol declaredSymbol, BaseMethodDeclarationSyntax methodBlock, BlockSyntax convertedStatements, SemanticModel semanticModel,
+        CommentConvertingVisitorWrapper expressionVisitor)
+    {
+        var prependedStatements = new List<StatementSyntax>();
+        var vbParams = declaredSymbol?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+        var csParams = methodBlock.ParameterList.Parameters;
+
+        for (int i = 0; i < csParams.Count && i < vbParams.Length; i++) {
+            var vbParam = vbParams[i];
+            if (vbParam.Type.SpecialType != SpecialType.System_String
+                || !vbParam.HasExplicitDefaultValue) continue;
+            // ExplicitDefaultValue is normalized to the parameter's declared type (String), so we
+            // must inspect the VB syntax to detect when the original expression is Char-typed.
+            var vbSyntaxParam = await vbParam.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntaxAsync() as VBSyntax.ParameterSyntax;
+            var defaultValueNode = vbSyntaxParam?.Default?.Value;
+            if (defaultValueNode == null) continue;
+            if (semanticModel.GetTypeInfo(defaultValueNode).Type?.SpecialType != SpecialType.System_Char) continue;
+
+            var csParam = csParams[i];
+            var charExpr = await defaultValueNode.AcceptAsync<ExpressionSyntax>(expressionVisitor);
+
+            // Build: paramName = paramName ?? charExpr.ToString();
+            var paramId = ValidSyntaxFactory.IdentifierName(csParam.Identifier.ValueText);
+            var toStringCall = CS.SyntaxFactory.InvocationExpression(
+                CS.SyntaxFactory.MemberAccessExpression(
+                    CS.SyntaxKind.SimpleMemberAccessExpression,
+                    charExpr,
+                    CS.SyntaxFactory.IdentifierName("ToString")));
+            var coalesce = CS.SyntaxFactory.BinaryExpression(CS.SyntaxKind.CoalesceExpression, paramId, toStringCall);
+            var assignment = CS.SyntaxFactory.AssignmentExpression(CS.SyntaxKind.SimpleAssignmentExpression, paramId, coalesce);
+            prependedStatements.Add(CS.SyntaxFactory.ExpressionStatement(assignment));
+        }
+
+        if (prependedStatements.Count == 0) return (methodBlock, convertedStatements);
+
+        return (methodBlock, convertedStatements.WithStatements(CS.SyntaxFactory.List(prependedStatements.Concat(convertedStatements.Statements))));
     }
 
     private static bool IsThisResumeLayoutInvocation(StatementSyntax s)
