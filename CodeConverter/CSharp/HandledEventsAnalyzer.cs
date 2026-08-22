@@ -93,9 +93,16 @@ internal class HandledEventsAnalyzer
         return mbb.Where(mss => mss.HandlesClause?.Events.Any() == true)
             .SelectMany(mss => mss.HandlesClause.Events, (_, e) => {
                 var eventSymbol = semanticModel.GetSymbolInfo(e.EventMember).Symbol as IEventSymbol;
-                return (CreateEventContainer(e.EventContainer, semanticModel), new EventDescriptor(e.EventMember, eventSymbol), HandlingMethod: methodSymbol);
+                return (CreateEventContainer(e.EventContainer, semanticModel), new EventDescriptor(e.EventMember, eventSymbol, SubPropertyName(e.EventContainer, semanticModel)), HandlingMethod: methodSymbol);
             });
     }
+
+    private static string SubPropertyName(EventContainerSyntax container, SemanticModel semanticModel)
+    {
+        if (container is not WithEventsPropertyEventContainerSyntax wepecs) return null;
+        return semanticModel.GetSymbolInfo(wepecs.Property).Symbol?.Name ?? wepecs.Property.Identifier.Text;
+    }
+
     private static HandledEventsAnalysis.EventContainer CreateEventContainer(EventContainerSyntax p, SemanticModel semanticModel)
     {
         switch (p) {
@@ -109,7 +116,9 @@ internal class HandledEventsAnalyzer
                 var name = symbol?.Name ?? weecs.Identifier.Text;
                 return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, name);
             case WithEventsPropertyEventContainerSyntax wepecs:
-                return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, wepecs.Property.Identifier.Text);
+                var containerSymbol = semanticModel.GetSymbolInfo(wepecs.WithEventsContainer).Symbol;
+                var containerName = containerSymbol?.Name ?? wepecs.WithEventsContainer.Identifier.Text;
+                return new HandledEventsAnalysis.EventContainer(HandledEventsAnalysis.EventContainerKind.Property, containerName);
             default:
                 throw new ArgumentOutOfRangeException(nameof(p), p, $"Unrecognized event container: `{p}`");
         }
