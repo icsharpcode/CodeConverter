@@ -232,22 +232,15 @@ public partial class EnumAndValTest
         {
             case ""NONE"":
             case ""0"":
-                {
-                    tPos = 0;
-                    break;
-                }
+                tPos = 0;
+                break;
             case ""LEFTTOP"":
             case ""1"":
-                {
-                    tPos = (PositionEnum)1;
-                    break;
-                }
-
+                tPos = (PositionEnum)1;
+                break;
             default:
-                {
-                    Ratio = (float)Conversion.Val(pS);
-                    break;
-                }
+                Ratio = (float)Conversion.Val(pS);
+                break;
         }
         return tPos;
     }
@@ -257,21 +250,14 @@ public partial class EnumAndValTest
         switch (pS)
         {
             case 0:
-                {
-                    tS = ""NONE"";
-                    break;
-                }
+                tS = ""NONE"";
+                break;
             case (PositionEnum)1:
-                {
-                    tS = ""LEFTTOP"";
-                    break;
-                }
-
+                tS = ""LEFTTOP"";
+                break;
             default:
-                {
-                    tS = ((int)pS).ToString();
-                    break;
-                }
+                tS = ((int)pS).ToString();
+                break;
         }
         return tS;
     }
@@ -306,16 +292,11 @@ public partial class CastToSameTypeTest
         switch (c)
         {
             case '.':
-                {
-                    Console.WriteLine(1);
-                    break;
-                }
-
+                Console.WriteLine(1);
+                break;
             case ',':
-                {
-                    Console.WriteLine(2);
-                    break;
-                }
+                Console.WriteLine(2);
+                break;
         }
     }
 }") ;
