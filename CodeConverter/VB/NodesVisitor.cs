@@ -11,6 +11,7 @@ using ArgumentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArgumentSyntax;
 using ArrayRankSpecifierSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ArrayRankSpecifierSyntax;
 using AttributeListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeListSyntax;
 using AttributeSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.AttributeSyntax;
+using BinaryExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax;
 using ExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.ExpressionSyntax;
 using IdentifierNameSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.IdentifierNameSyntax;
 using InterpolatedStringContentSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.InterpolatedStringContentSyntax;
@@ -30,6 +31,7 @@ using SyntaxFacts = Microsoft.CodeAnalysis.VisualBasic.SyntaxFacts;
 using SyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
 using TupleElementSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TupleElementSyntax;
 using TypeArgumentListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeArgumentListSyntax;
+using TypeOfExpressionSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeOfExpressionSyntax;
 using TypeParameterConstraintClauseSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterConstraintClauseSyntax;
 using TypeParameterListSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterListSyntax;
 using TypeParameterSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax.TypeParameterSyntax;
@@ -348,7 +350,17 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     public override VisualBasicSyntaxNode VisitIsPatternExpression(CSSyntax.IsPatternExpressionSyntax node)
     {
         ExpressionSyntax lhs = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
-        switch (node.Pattern) {
+        return ConvertPattern(node, lhs, _semanticModel.GetTypeInfo(node.Expression).Type, node.Pattern);
+    }
+
+    /// <remarks>
+    /// Separate from the visitor so that a negated pattern can convert the pattern it wraps.
+    /// The type of the value under test travels along because a nested pattern is applied to a
+    /// member of it, and picking the right equality operator depends on that member's type.
+    /// </remarks>
+    private ExpressionSyntax ConvertPattern(CSSyntax.IsPatternExpressionSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, CSSyntax.PatternSyntax pattern)
+    {
+        switch (pattern) {
             case CSSyntax.DeclarationPatternSyntax d: {
                 var left = (ExpressionSyntax)d.Designation.Accept(TriviaConvertingVisitor);
                 ExpressionSyntax right = SyntaxFactory.TryCastExpression(
@@ -360,11 +372,77 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                     SyntaxFactory.Token(SyntaxKind.NothingKeyword));
                 return SyntaxFactory.IsNotExpression(tryCast, nothingExpression);
             }
-            case CSSyntax.ConstantPatternSyntax cps:
-                return SyntaxFactory.IsExpression(lhs,
-                    (ExpressionSyntax)cps.Expression.Accept(TriviaConvertingVisitor));
+            case CSSyntax.TypePatternSyntax tp:
+                return SyntaxFactory.TypeOfIsExpression(lhs, (TypeSyntax)tp.Type.Accept(TriviaConvertingVisitor));
+            case CSSyntax.UnaryPatternSyntax u when u.OperatorToken.IsKind(CS.SyntaxKind.NotKeyword):
+                return NegatePattern(ConvertPattern(node, lhs, lhsType, u.Pattern));
+            case CSSyntax.RelationalPatternSyntax rel:
+                return ConvertRelationalPattern(lhs, rel);
+            case CSSyntax.ConstantPatternSyntax cps: {
+                // an identifier bound to a type is a type test, not a comparison against a value
+                if (_semanticModel.GetSymbolInfo(cps.Expression).ExtractBestMatch<ITypeSymbol>() is { } typeSymbol) {
+                    return SyntaxFactory.TypeOfIsExpression(lhs,
+                        (TypeSyntax)_commonConversions.VbSyntaxGenerator.TypeExpression(typeSymbol));
+                }
+
+                var constant = (ExpressionSyntax)cps.Expression.Accept(TriviaConvertingVisitor);
+
+                if (cps.Expression.IsKind(CS.SyntaxKind.NullLiteralExpression)) {
+                    return SyntaxFactory.IsExpression(lhs, constant);
+                }
+
+                // A constant pattern compares by value. VB's = does that on a value type, but on an
+                // Object it goes through late binding and throws where C# would answer False, so
+                // anything not known to be a value type is compared through Equals instead.
+                if (lhsType != null && lhsType.IsValueType) {
+                    return SyntaxFactory.EqualsExpression(lhs, constant);
+                }
+
+                return SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(nameof(Equals)),
+                    ExpressionSyntaxExtensions.CreateArgList(lhs, constant));
+            }
             default:
-                throw new ArgumentOutOfRangeException(nameof(node), node.Pattern, null);
+                throw new ArgumentOutOfRangeException(nameof(node), pattern, null);
+        }
+    }
+
+    /// <remarks>
+    /// "x is &gt; 0" and its siblings are plain comparisons once the value under test is known.
+    /// </remarks>
+    private ExpressionSyntax ConvertRelationalPattern(ExpressionSyntax lhs, CSSyntax.RelationalPatternSyntax pattern)
+    {
+        var value = (ExpressionSyntax)pattern.Expression.Accept(TriviaConvertingVisitor);
+        var op = pattern.OperatorToken;
+
+        if (op.IsKind(CS.SyntaxKind.GreaterThanToken)) {
+            return SyntaxFactory.GreaterThanExpression(lhs, value);
+        }
+        if (op.IsKind(CS.SyntaxKind.GreaterThanEqualsToken)) {
+            return SyntaxFactory.GreaterThanOrEqualExpression(lhs, value);
+        }
+        if (op.IsKind(CS.SyntaxKind.LessThanToken)) {
+            return SyntaxFactory.LessThanExpression(lhs, value);
+        }
+        if (op.IsKind(CS.SyntaxKind.LessThanEqualsToken)) {
+            return SyntaxFactory.LessThanOrEqualExpression(lhs, value);
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(pattern), op.Text, null);
+    }
+
+    /// <remarks>
+    /// Visual Basic can negate a type test and a Nothing test in place, which reads far better
+    /// than wrapping the whole condition in Not.
+    /// </remarks>
+    private static ExpressionSyntax NegatePattern(ExpressionSyntax converted)
+    {
+        switch (converted) {
+            case TypeOfExpressionSyntax typeOf when typeOf.IsKind(SyntaxKind.TypeOfIsExpression):
+                return SyntaxFactory.TypeOfIsNotExpression(typeOf.Expression, typeOf.Type);
+            case BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.IsNotExpression):
+                return SyntaxFactory.IsExpression(binary.Left, binary.Right);
+            default:
+                return SyntaxFactory.NotExpression(SyntaxFactory.ParenthesizedExpression(converted));
         }
     }
 
@@ -991,7 +1069,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         var right = (ExpressionSyntax)node.Right.Accept(TriviaConvertingVisitor);
         if (IsReturnValueDiscarded(node)) {
             if (_semanticModel.GetTypeInfo(node.Right).ConvertedType.IsDelegateType()) {
-                if (_semanticModel.GetSymbolInfo(node.Left).Symbol.Kind != SymbolKind.Event) {
+                if (_semanticModel.GetSymbolInfo(node.Left).Symbol?.Kind != SymbolKind.Event) {
                     var kind = node.GetAncestor<CSSyntax.AccessorDeclarationSyntax>()?.Kind();
                     if (kind != null && (kind.Value == CS.SyntaxKind.AddAccessorDeclaration || kind.Value == CS.SyntaxKind.RemoveAccessorDeclaration)) {
                         var methodName = kind.Value == CS.SyntaxKind.AddAccessorDeclaration ? "Combine" : "Remove";
@@ -1386,6 +1464,27 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         return SyntaxFactory.ObjectCreationExpression(
             SyntaxFactory.List<AttributeListSyntax>(),
             (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor),
+            (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor),
+            (ObjectCreationInitializerSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
+        );
+    }
+
+    /// <remarks>
+    /// "new(...)" takes its type from what it is assigned to, which Visual Basic cannot do, so the
+    /// type the compiler settled on is written out.
+    /// </remarks>
+    public override VisualBasicSyntaxNode VisitImplicitObjectCreationExpression(CSSyntax.ImplicitObjectCreationExpressionSyntax node)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(node);
+        var typeSymbol = typeInfo.Type ?? typeInfo.ConvertedType;
+
+        if (typeSymbol == null) {
+            throw new NotSupportedException("The type of an implicit object creation could not be resolved.");
+        }
+
+        return SyntaxFactory.ObjectCreationExpression(
+            SyntaxFactory.List<AttributeListSyntax>(),
+            (TypeSyntax)_commonConversions.VbSyntaxGenerator.TypeExpression(typeSymbol),
             (ArgumentListSyntax)node.ArgumentList?.Accept(TriviaConvertingVisitor),
             (ObjectCreationInitializerSyntax)node.Initializer?.Accept(TriviaConvertingVisitor)
         );

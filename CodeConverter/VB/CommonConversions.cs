@@ -157,7 +157,12 @@ internal class CommonConversions
 
     private VariableDeclaratorSyntax ConvertToVariableDeclaratorOrNull(CSSyntax.IsPatternExpressionSyntax node)
     {
-        switch (node.Pattern) {
+        return ConvertPatternToVariableDeclaratorOrNull(node.Pattern);
+    }
+
+    private VariableDeclaratorSyntax ConvertPatternToVariableDeclaratorOrNull(CSSyntax.PatternSyntax pattern)
+    {
+        switch (pattern) {
             case CSSyntax.DeclarationPatternSyntax d: {
                 var id = ((IdentifierNameSyntax)d.Designation.Accept(_nodesVisitor)).Identifier;
                 var ids = SyntaxFactory.SingletonSeparatedList(SyntaxFactory.ModifiedIdentifier(id));
@@ -169,10 +174,12 @@ internal class CommonConversions
                         SyntaxFactory.Token(SyntaxKind.NothingKeyword)));
                 return SyntaxFactory.VariableDeclarator(ids, simpleAsClauseSyntax, equalsValueSyntax);
             }
-            case CSSyntax.ConstantPatternSyntax _:
-                return null;
+            case CSSyntax.UnaryPatternSyntax u:
+                // "x is not T v" declares v just the same, so the negated pattern is hoisted too
+                return ConvertPatternToVariableDeclaratorOrNull(u.Pattern);
             default:
-                throw new ArgumentOutOfRangeException(nameof(node), node.Pattern, null);
+                // no other pattern introduces a variable, and the caller already filters nulls out
+                return null;
         }
     }
 

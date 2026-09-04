@@ -254,6 +254,148 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
     }
 
     [Fact]
+    public async Task NegatedTypePatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsNotString(object node)
+    {
+        return node is not string;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsNotString(node As Object) As Boolean
+        Return TypeOf node IsNot String
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NegatedNamedTypePatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class Picture
+{
+}
+
+class TestClass
+{
+    private static bool IsNotPicture(object node)
+    {
+        return node is not Picture;
+    }
+}", @"Friend Class Picture
+End Class
+
+Friend Class TestClass
+    Private Shared Function IsNotPicture(node As Object) As Boolean
+        Return TypeOf node IsNot Picture
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NegatedDeclarationPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static int GetLength(object node)
+    {
+        if (node is not string s)
+        {
+            return -1;
+        }
+
+        return s.Length;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function GetLength(node As Object) As Integer
+        Dim s As String = Nothing
+
+        If CSharpImpl.__Assign(s, TryCast(node, String)) Is Nothing Then
+            Return -1
+        End If
+
+        Return s.Length
+    End Function
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
+    }
+
+    [Fact]
+    public async Task RelationalPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsPositive(int i)
+    {
+        return i is > 0;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsPositive(i As Integer) As Boolean
+        Return i > 0
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task ConstantPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool ValueTypeConstant(int i)
+    {
+        return i is 5;
+    }
+
+    private static bool ObjectConstant(object o)
+    {
+        return o is 5;
+    }
+
+    private static bool StringConstant(string s)
+    {
+        return s is ""abc"";
+    }
+}", @"Friend Class TestClass
+    Private Shared Function ValueTypeConstant(i As Integer) As Boolean
+        Return i = 5
+    End Function
+
+    Private Shared Function ObjectConstant(o As Object) As Boolean
+        Return Equals(o, 5)
+    End Function
+
+    Private Shared Function StringConstant(s As String) As Boolean
+        Return Equals(s, ""abc"")
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task ImplicitObjectCreationExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"using System.Text;
+
+class TestClass
+{
+    private StringBuilder builder = new(16);
+}", @"Imports System.Text
+
+Friend Class TestClass
+    Private builder As StringBuilder = New StringBuilder(16)
+End Class");
+    }
+
+    [Fact]
     public async Task DeclarationExpressionAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"using System.Collections.Generic;
