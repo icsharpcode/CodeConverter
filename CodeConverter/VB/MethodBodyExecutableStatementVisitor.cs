@@ -583,7 +583,7 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
         if (vbExpression.IsKind(SyntaxKind.EmptyStatement)) {
             var report = vbExpression.GetLeadingTrivia()
                 .AddRange(vbExpression.GetTrailingTrivia())
-                .Add(SyntaxFactory.CarriageReturnLineFeed);
+                .Add(SyntaxFactory.EndOfLine(Environment.NewLine));
 
             return SyntaxFactory.ReturnStatement().WithLeadingTrivia(report);
         }

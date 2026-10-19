@@ -624,9 +624,11 @@ class TestClass
     }
 }");
 
-        Assert.Contains("Cannot convert IsPatternExpressionSyntax", convertedCode);
         var lines = convertedCode.Split('\n').Select(l => l.Trim()).ToList();
-        Assert.Contains("Return ' trailing comment", lines);
+        var errorStart = lines.FindIndex(l => l.StartsWith("''' Cannot convert IsPatternExpressionSyntax"));
+        var returnLine = lines.IndexOf("Return ' trailing comment");
+        Assert.True(errorStart >= 0 && returnLine > errorStart, convertedCode);
+        Assert.All(lines.Skip(errorStart).Take(returnLine - errorStart), l => Assert.StartsWith("'''", l));
         Assert.Single(lines, l => l.Contains("leading comment"));
         Assert.Single(lines, l => l.Contains("trailing comment"));
     }

@@ -540,7 +540,9 @@ internal static class SyntaxNodeExtensions
         this T dummyDestNode, CSharpSyntaxNode problematicSourceNode, Exception exception) where T : VisualBasicSyntaxNode
     {
         var errorDescription = problematicSourceNode.DescribeConversionError(exception);
-        var commentedText = "''' " + errorDescription.Replace("\r\n", "\r\n''' ");
+        // Split on either line ending, since the description mixes Environment.NewLine with source text and stack traces
+        var lines = errorDescription.TrimEnd('\r', '\n').Split(new[] {"\r\n", "\n"}, StringSplitOptions.None);
+        var commentedText = string.Join(Environment.NewLine, lines.Select(line => "''' " + line));
         return dummyDestNode
             .WithTrailingTrivia(VBSyntaxFactory.CommentTrivia(commentedText).WithConversionErrorAnnotation())
             .WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, exception.ToString()));
