@@ -381,6 +381,22 @@ End Class");
     }
 
     [Fact]
+    public async Task NullableConstantPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool NullableConstant(int? i)
+    {
+        return i is 5;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function NullableConstant(i As Integer?) As Boolean
+        Return Equals(i, 5)
+    End Function
+End Class");
+    }
+
+    [Fact]
     public async Task ImplicitObjectCreationExpressionAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"using System.Text;

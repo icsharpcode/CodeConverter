@@ -393,8 +393,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
                 // A constant pattern compares by value. VB's = does that on a value type, but on an
                 // Object it goes through late binding and throws where C# would answer False, so
-                // anything not known to be a value type is compared through Equals instead.
-                if (lhsType != null && lhsType.IsValueType) {
+                // anything not known to be a value type is compared through Equals instead. A nullable
+                // value type is excluded too: = lifts to Boolean?, which throws when narrowed from Nothing.
+                if (lhsType != null && lhsType.IsValueType && !lhsType.IsNullable()) {
                     return SyntaxFactory.EqualsExpression(lhs, constant);
                 }
 
