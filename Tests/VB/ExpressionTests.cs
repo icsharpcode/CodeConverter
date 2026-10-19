@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.VB;
@@ -344,6 +345,25 @@ BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to it
         Return i > 0
     End Function
 End Class");
+    }
+
+    [Fact]
+    public async Task RelationalPatternOnNonValueTypeIsNotConvertedAsync()
+    {
+        // A plain comparison would drop the type test (late binding on Object) or the HasValue test (lifted Boolean?)
+        var convertedCode = await ConvertAsync<CSToVBConversion>(@"class TestClass
+{
+    private static void IsPositive(object o, int? i)
+    {
+        bool objectPositive = o is > 0;
+        bool nullablePositive = i is > 0;
+    }
+}");
+
+        Assert.Contains("o is > 0", convertedCode);
+        Assert.Contains("i is > 0", convertedCode);
+        Assert.DoesNotContain("o > 0", convertedCode);
+        Assert.DoesNotContain("i > 0", convertedCode);
     }
 
     [Fact]

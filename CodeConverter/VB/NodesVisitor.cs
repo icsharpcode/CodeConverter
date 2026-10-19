@@ -377,7 +377,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             case CSSyntax.UnaryPatternSyntax u when u.OperatorToken.IsKind(CS.SyntaxKind.NotKeyword):
                 return NegatePattern(ConvertPattern(node, lhs, lhsType, u.Pattern));
             case CSSyntax.RelationalPatternSyntax rel:
-                return ConvertRelationalPattern(lhs, rel);
+                return ConvertRelationalPattern(lhs, lhsType, rel);
             case CSSyntax.ConstantPatternSyntax cps: {
                 // an identifier bound to a type is a type test, not a comparison against a value
                 if (_semanticModel.GetSymbolInfo(cps.Expression).ExtractBestMatch<ITypeSymbol>() is { } typeSymbol) {
@@ -409,9 +409,15 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     /// <remarks>
     /// "x is &gt; 0" and its siblings are plain comparisons once the value under test is known.
+    /// On anything but a non-nullable value type, the pattern also tests the type or that a value is
+    /// present, which a plain comparison would silently drop (late binding, or a lifted Boolean?).
     /// </remarks>
-    private ExpressionSyntax ConvertRelationalPattern(ExpressionSyntax lhs, CSSyntax.RelationalPatternSyntax pattern)
+    private ExpressionSyntax ConvertRelationalPattern(ExpressionSyntax lhs, ITypeSymbol lhsType, CSSyntax.RelationalPatternSyntax pattern)
     {
+        if (lhsType == null || !lhsType.IsValueType || lhsType.IsNullable()) {
+            throw new NotSupportedException("A relational pattern is only converted when the value under test is a non-nullable value type.");
+        }
+
         var value = (ExpressionSyntax)pattern.Expression.Accept(TriviaConvertingVisitor);
         var op = pattern.OperatorToken;
 
