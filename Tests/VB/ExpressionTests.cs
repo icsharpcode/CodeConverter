@@ -477,6 +477,40 @@ End Class");
     }
 
     [Fact]
+    public async Task NaNConstantPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool DoubleIsNaN(double d)
+    {
+        return d is double.NaN;
+    }
+
+    private static bool SingleIsNaN(float f)
+    {
+        return f is not float.NaN;
+    }
+
+    private static bool ObjectIsNaN(object o)
+    {
+        return o is double.NaN;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function DoubleIsNaN(d As Double) As Boolean
+        Return Double.IsNaN(d)
+    End Function
+
+    Private Shared Function SingleIsNaN(f As Single) As Boolean
+        Return Not Single.IsNaN(f)
+    End Function
+
+    Private Shared Function ObjectIsNaN(o As Object) As Boolean
+        Return Equals(o, Double.NaN)
+    End Function
+End Class");
+    }
+
+    [Fact]
     public async Task NullablePatternAgainstNullAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"class TestClass

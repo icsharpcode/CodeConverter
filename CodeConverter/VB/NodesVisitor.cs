@@ -399,6 +399,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                     throw new NotSupportedException("A constant pattern on a nullable value type is not converted.");
                 }
 
+                // NaN matches NaN in a pattern, but = never does
+                if (lhsType != null && lhsType.IsValueType && _semanticModel.GetConstantValue(cps.Expression).Value is double.NaN or float.NaN) {
+                    var isNaN = SyntaxFactory.SimpleMemberAccessExpression(
+                        (ExpressionSyntax)_commonConversions.VbSyntaxGenerator.TypeExpression(lhsType),
+                        SyntaxFactory.Token(SyntaxKind.DotToken), SyntaxFactory.IdentifierName(nameof(double.IsNaN)));
+                    return SyntaxFactory.InvocationExpression(isNaN, ExpressionSyntaxExtensions.CreateArgList(lhs));
+                }
+
                 // A constant pattern compares by value. VB's = does that on a value type, but on an
                 // Object it goes through late binding and throws where C# would answer False, so
                 // anything not known to be a value type is compared through Equals instead.
