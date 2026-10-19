@@ -393,11 +393,16 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                     return SyntaxFactory.IsExpression(lhs, constant);
                 }
 
+                // On a nullable value type, = lifts to Boolean? (which throws when narrowed from Nothing), and
+                // Equals compares the boxed types, so a Long? holding 5 is never Equals to the Integer 5
+                if (lhsType.IsNullable()) {
+                    throw new NotSupportedException("A constant pattern on a nullable value type is not converted.");
+                }
+
                 // A constant pattern compares by value. VB's = does that on a value type, but on an
                 // Object it goes through late binding and throws where C# would answer False, so
-                // anything not known to be a value type is compared through Equals instead. A nullable
-                // value type is excluded too: = lifts to Boolean?, which throws when narrowed from Nothing.
-                if (lhsType != null && lhsType.IsValueType && !lhsType.IsNullable()) {
+                // anything not known to be a value type is compared through Equals instead.
+                if (lhsType != null && lhsType.IsValueType) {
                     return SyntaxFactory.EqualsExpression(lhs, constant);
                 }
 

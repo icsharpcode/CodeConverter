@@ -460,17 +460,43 @@ End Class");
     }
 
     [Fact]
-    public async Task NullableConstantPatternExpressionAsync()
+    public async Task NullableConstantPatternIsNotConvertedAsync()
+    {
+        // "=" lifts to Boolean? (throws when narrowed from Nothing), and Equals compares boxed types (a Long? is never Equals to an Integer constant)
+        var convertedCode = await ConvertAsync<CSToVBConversion>(@"class TestClass
+{
+    private static void NullableConstant(long? l)
+    {
+        bool isFive = l is 5;
+    }
+}");
+
+        Assert.Contains("l is 5", convertedCode);
+        Assert.DoesNotContain("l = 5", convertedCode);
+        Assert.DoesNotContain("Equals(l, 5)", convertedCode);
+    }
+
+    [Fact]
+    public async Task NullablePatternAgainstNullAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"class TestClass
 {
-    private static bool NullableConstant(int? i)
+    private static bool IsNull(int? i)
     {
-        return i is 5;
+        return i is null;
+    }
+
+    private static bool IsNotNull(int? i)
+    {
+        return i is not null;
     }
 }", @"Friend Class TestClass
-    Private Shared Function NullableConstant(i As Integer?) As Boolean
-        Return Equals(i, 5)
+    Private Shared Function IsNull(i As Integer?) As Boolean
+        Return i Is Nothing
+    End Function
+
+    Private Shared Function IsNotNull(i As Integer?) As Boolean
+        Return i IsNot Nothing
     End Function
 End Class");
     }
