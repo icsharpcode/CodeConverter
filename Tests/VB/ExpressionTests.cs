@@ -417,6 +417,49 @@ End Class");
     }
 
     [Fact]
+    public async Task PatternInsideComparisonKeepsPrecedenceAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool ConstantPattern(bool flag, int x)
+    {
+        return flag == x is 5;
+    }
+
+    private static bool RelationalPattern(bool flag, int x)
+    {
+        return flag != x is > 0;
+    }
+
+    private static bool NullPattern(bool flag, object o)
+    {
+        return flag == o is null;
+    }
+
+    private static bool LogicalOperator(bool flag, object o)
+    {
+        return flag && o is not null;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function ConstantPattern(flag As Boolean, x As Integer) As Boolean
+        Return flag = (x = 5)
+    End Function
+
+    Private Shared Function RelationalPattern(flag As Boolean, x As Integer) As Boolean
+        Return flag <> (x > 0)
+    End Function
+
+    Private Shared Function NullPattern(flag As Boolean, o As Object) As Boolean
+        Return flag = (o Is Nothing)
+    End Function
+
+    Private Shared Function LogicalOperator(flag As Boolean, o As Object) As Boolean
+        Return flag AndAlso o IsNot Nothing
+    End Function
+End Class");
+    }
+
+    [Fact]
     public async Task NullableConstantPatternExpressionAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"class TestClass

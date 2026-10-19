@@ -350,7 +350,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     public override VisualBasicSyntaxNode VisitIsPatternExpression(CSSyntax.IsPatternExpressionSyntax node)
     {
         ExpressionSyntax lhs = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
-        return ConvertPattern(node, lhs, _semanticModel.GetTypeInfo(node.Expression).Type, node.Pattern);
+        var converted = ConvertPattern(node, lhs, _semanticModel.GetTypeInfo(node.Expression).Type, node.Pattern);
+        // In C# "is" binds tighter than ==, but VB's comparison operators (including Is) share one precedence level
+        return node.Parent is CSSyntax.BinaryExpressionSyntax ? SyntaxFactory.ParenthesizedExpression(converted) : converted;
     }
 
     /// <remarks>
