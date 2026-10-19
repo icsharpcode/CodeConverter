@@ -12,7 +12,10 @@ internal class VbNameExpander : ISyntaxExpander
     public static ISyntaxExpander Instance { get; } = new VbNameExpander();
 
     public bool ShouldExpandWithinNode(SyntaxNode node, SemanticModel semanticModel) =>
-        !ShouldExpandNode(node, semanticModel) && !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax);
+        !ShouldExpandNode(node, semanticModel) && !IsRoslynInstanceExpressionBug(node as MemberAccessExpressionSyntax)
+        && !IsHandlesClause(node);
+
+    private static bool IsHandlesClause(SyntaxNode node) => node is HandlesClauseSyntax;
 
     public bool ShouldExpandNode(SyntaxNode node, SemanticModel semanticModel) =>
         ShouldExpandName(node) || ShouldExpandMemberAccess(node, semanticModel);

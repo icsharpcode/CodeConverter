@@ -2,4 +2,4 @@
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
-internal record EventDescriptor(IdentifierNameSyntax VBEventName, IEventSymbol SymbolOrNull);
+internal record EventDescriptor(IdentifierNameSyntax VBEventName, IEventSymbol SymbolOrNull, string SubPropertyName = null);

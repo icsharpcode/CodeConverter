@@ -246,6 +246,10 @@ internal class HandledEventsAnalysis
     private ExpressionSyntax MemberAccess(ExpressionSyntax eventContainer, EventDescriptor e)
     {
         var csEventName = ValidSyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(e.VBEventName.Identifier).WithoutSourceMapping());
+        // `Handles WithEventsField.SubProperty.SomeEvent` subscribes on the sub-property, so add that hop back in
+        if (e.SubPropertyName != null) {
+            eventContainer = ValidSyntaxFactory.MemberAccess(eventContainer, e.SubPropertyName);
+        }
         return SyntaxFactory.MemberAccessExpression(
             SyntaxKind.SimpleMemberAccessExpression,
             eventContainer, csEventName);
