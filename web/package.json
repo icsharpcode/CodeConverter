@@ -13,23 +13,23 @@
     },
     "dependencies": {
         "@monaco-editor/react": "^4.7.0",
-        "axios": "^1.15.0",
+        "axios": "^1.20.0",
         "bootstrap": "^5.3.8",
-        "monaco-editor": "^0.55.1",
-        "react": "^19.2.4",
-        "react-dom": "^19.2.4",
+        "monaco-editor": "^0.57.0",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1",
         "react-router-bootstrap": "^0.26.3",
-        "react-router-dom": "^7.13.0",
+        "react-router-dom": "^7.18.4",
         "reactstrap": "^9.2.3"
     },
     "devDependencies": {
-        "@types/node": "^22.10.5",
-        "@types/react": "^19.2.13",
-        "@types/react-dom": "^19.2.3",
+        "@types/node": "^22.20.5",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^4.3.4",
-        "jsdom": "^27.0.1",
-        "typescript": "~5.7.2",
-        "vite": "^6.4.2",
-        "vitest": "^5.0.4"
+        "jsdom": "^27.4.0",
+        "typescript": "~5.9.3",
+        "vite": "^6.4.4",
+        "vitest": "^5.0.5"
     }
 }
