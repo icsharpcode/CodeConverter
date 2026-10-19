@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using ICSharpCode.CodeConverter.VB;
 using Xunit;
@@ -603,6 +604,31 @@ End Class");
         Assert.Contains("UnsafeStatementSyntax", convertedCode);
         Assert.Contains("If b = 2 Then", convertedCode);
         Assert.Contains("End If", convertedCode);
+    }
+
+    [Fact]
+    public async Task ReturnOfUnconvertibleExpressionKeepsConversionErrorAsync()
+    {
+        // Property patterns aren't supported, so the returned expression fails to convert
+        var convertedCode = await ConvertAsync<CSToVBConversion>(@"class Person
+{
+    public string Name { get; set; }
+}
+
+class TestClass
+{
+    private static bool IsX(Person p)
+    {
+        // leading comment
+        return p is { Name: ""x"" }; // trailing comment
+    }
+}");
+
+        Assert.Contains("Cannot convert IsPatternExpressionSyntax", convertedCode);
+        var lines = convertedCode.Split('\n').Select(l => l.Trim()).ToList();
+        Assert.Contains("Return ' trailing comment", lines);
+        Assert.Single(lines, l => l.Contains("leading comment"));
+        Assert.Single(lines, l => l.Contains("trailing comment"));
     }
 
     [Fact]
