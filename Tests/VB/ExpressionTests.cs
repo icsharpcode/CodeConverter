@@ -271,6 +271,22 @@ End Class");
     }
 
     [Fact]
+    public async Task NegatedNullPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsNotNull(object node)
+    {
+        return node is not null;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsNotNull(node As Object) As Boolean
+        Return node IsNot Nothing
+    End Function
+End Class");
+    }
+
+    [Fact]
     public async Task NegatedNamedTypePatternExpressionAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(@"class Picture

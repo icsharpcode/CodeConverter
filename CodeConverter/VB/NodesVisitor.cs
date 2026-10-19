@@ -448,6 +448,8 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 return SyntaxFactory.TypeOfIsNotExpression(typeOf.Expression, typeOf.Type);
             case BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.IsNotExpression):
                 return SyntaxFactory.IsExpression(binary.Left, binary.Right);
+            case BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.IsExpression):
+                return SyntaxFactory.IsNotExpression(binary.Left, binary.Right);
             default:
                 return SyntaxFactory.NotExpression(SyntaxFactory.ParenthesizedExpression(converted));
         }
