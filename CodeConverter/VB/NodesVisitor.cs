@@ -357,8 +357,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     /// <remarks>
     /// Separate from the visitor so that a negated pattern can convert the pattern it wraps.
-    /// The type of the value under test travels along because a nested pattern is applied to a
-    /// member of it, and picking the right equality operator depends on that member's type.
+    /// The type of the value under test travels along because picking the right comparison depends on it.
     /// </remarks>
     private ExpressionSyntax ConvertPattern(CSSyntax.IsPatternExpressionSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, CSSyntax.PatternSyntax pattern)
     {
