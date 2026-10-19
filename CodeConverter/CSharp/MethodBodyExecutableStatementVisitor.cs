@@ -892,7 +892,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             if (!DefinitelyExits(csBlockStatements.LastOrDefault())) {
                 csBlockStatements.Add(SyntaxFactory.BreakStatement());
             }
-            var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
+            var hasLocalDeclaration = csBlockStatements.Any(s => s.IsKind(SyntaxKind.LocalDeclarationStatement));
+            var list = hasLocalDeclaration
+                ? SingleStatement(SyntaxFactory.Block(csBlockStatements))
+                : SyntaxFactory.List(csBlockStatements);
             sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
         }
 
