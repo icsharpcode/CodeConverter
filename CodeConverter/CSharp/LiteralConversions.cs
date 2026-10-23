@@ -102,7 +102,7 @@ internal static class LiteralConversions
             return EscapeVerbatimQuotes(valueTextForCompiler);
         }
 
-        return unquotedTextForUser.Replace("\"\"", "\\\"");
+        return SymbolDisplay.FormatLiteral(valueTextForCompiler, false).Replace("\"", "\\\"");
     }
 
     public static string EscapeVerbatimQuotes(string valueTextForCompiler)
