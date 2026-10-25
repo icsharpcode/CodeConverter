@@ -125,7 +125,10 @@ internal class XmlExpressionConverter
         _extraUsingDirectives.Add("System.Linq");
         if (receiver != null) {
             _extraUsingDirectives.Add("System");
-            receiver = SyntaxFactory.ParenthesizedExpression(SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression, SyntaxFactory.ParenthesizedExpression(receiver),
+            _extraUsingDirectives.Add("System.Collections.Generic");
+            var sequenceType = _semanticModel.Compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1").Construct(xElementType);
+            var sequence = SyntaxFactory.ParenthesizedExpression(SyntaxFactory.CastExpression(_commonConversions.GetTypeSyntax(sequenceType), receiver));
+            receiver = SyntaxFactory.ParenthesizedExpression(SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression, sequence,
                 SyntaxFactory.ThrowExpression(SyntaxFactory.ObjectCreationExpression(_commonConversions.GetTypeSyntax(
                         _semanticModel.Compilation.GetTypeByMetadataName("System.NullReferenceException")))
                     .WithArgumentList(SyntaxFactory.ArgumentList()))));

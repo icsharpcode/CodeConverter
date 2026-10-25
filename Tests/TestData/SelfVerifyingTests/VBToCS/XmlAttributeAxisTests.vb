@@ -139,6 +139,19 @@ Public Class XmlAttributeAxisTests
     End Sub
 
     <Fact>
+    Sub ExplicitCallAfterConditionalAttributeAccess()
+        Dim element = <item id="abc"/>
+        Dim chars(2) As Char
+        Call element?.@id.CopyTo(0, chars, 0, 3)
+        Call element?.@id.ToUpperInvariant()
+        Assert.Equal("abc", New String(chars))
+        element = Nothing
+        Call element?.@id.CopyTo(0, chars, 0, 3)
+        Call element?.@id.ToUpperInvariant()
+        Assert.Equal("abc", New String(chars))
+    End Sub
+
+    <Fact>
     Sub ConditionalIntermediateSequenceAndNestedConditionalAccess()
         Dim holder = New ElementHolder()
         Assert.Throws(Of NullReferenceException)(Function() holder?.Items.@id)
@@ -156,6 +169,12 @@ Public Class XmlAttributeAxisTests
         Dim elements = New ElementList() From {<item id="first"/>}
         Assert.Equal("first", elements.@id)
         Assert.Equal("first", elements?.@id)
+    End Sub
+
+    <Fact>
+    Sub ValueTypeSequenceUsesEnumerableSemantics()
+        Dim elements = New ElementSequence()
+        Assert.Equal("first", elements.@id)
     End Sub
 
     <Fact>
@@ -201,6 +220,18 @@ Public Class XmlAttributeAxisTests
     Private Class ElementHolder
         Public Property Items As IEnumerable(Of XElement)
     End Class
+
+    Private Structure ElementSequence
+        Implements IEnumerable(Of XElement)
+
+        Public Function GetEnumerator() As IEnumerator(Of XElement) Implements IEnumerable(Of XElement).GetEnumerator
+            Return New List(Of XElement) From {<item id="first"/>}.GetEnumerator()
+        End Function
+
+        Private Function GetUntypedEnumerator() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+            Return GetEnumerator()
+        End Function
+    End Structure
 
     Private Class ElementList
         Inherits List(Of XElement)

@@ -1225,7 +1225,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node)
     {
-        return SingleStatement(await node.Invocation.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+        var converted = await node.Invocation.AcceptAsync<CSharpSyntaxNode>(_expressionVisitor);
+        return converted is StatementSyntax statement ? SingleStatement(statement) : SingleStatement((ExpressionSyntax)converted);
     }
 
     private static SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
