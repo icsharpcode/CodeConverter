@@ -1,4 +1,7 @@
 ﻿using System.Threading.Tasks;
+using System.IO;
+using ICSharpCode.CodeConverter.Common;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -9,6 +12,15 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 /// </summary>
 public class XmlExpressionTests : ConverterTestBase
 {
+    [Fact]
+    public async Task AttributeAxisRuntimeEquivalenceAsync()
+    {
+        var path = Path.Combine(TestConstants.GetTestDataDirectory(), "SelfVerifyingTests/VBToCS/XmlAttributeAxisTests.vb");
+        foreach (var test in SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>(path)) {
+            await test.Execute();
+        }
+    }
+
     [Fact]
     public async Task NestedXmlEchoSimpleAsync()
     {
