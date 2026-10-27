@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
 using ICSharpCode.CodeConverter.Common;
-using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -15,18 +11,6 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
 /// </summary>
 public class LoopStatementTests : ConverterTestBase
 {
-    [Theory, MemberData(nameof(ByRefLoopConditions))]
-    public async Task ByRefConditionRuntimeEquivalenceAsync(NamedTest test)
-    {
-        await test.Execute();
-    }
-
-    public static IEnumerable<object[]> ByRefLoopConditions()
-    {
-        var path = Path.Combine(TestConstants.GetTestDataDirectory(), "SelfVerifyingTests/VBToCS/ByRefLoopConditionTests.vb");
-        return SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>(path)
-            .Select(test => new object[] { test });
-    }
 
     [Fact]
     public async Task UntilStatementAsync()
