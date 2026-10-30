@@ -19,6 +19,7 @@ internal class NameExpressionNodeVisitor
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope;
     private readonly Stack<ExpressionSyntax> _withBlockLhs;
+    private readonly Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> _conditionalAccessReceivers;
     private readonly ArgumentConverter _argumentConverter;
 
     public CommonConversions CommonConversions { get; }
@@ -27,7 +28,8 @@ internal class NameExpressionNodeVisitor
     public NameExpressionNodeVisitor(SemanticModel semanticModel, HashSet<string> generatedNames, ITypeContext typeContext, HashSet<string> extraUsingDirectives,
         Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> tempNameForAnonymousScope, Stack<ExpressionSyntax> withBlockLhs, CommonConversions commonConversions,
         ArgumentConverter argumentConverter,
-        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
+        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor,
+        Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> conditionalAccessReceivers)
     {
         _semanticModel = semanticModel;
         _generatedNames = generatedNames;
@@ -35,6 +37,7 @@ internal class NameExpressionNodeVisitor
         _extraUsingDirectives = extraUsingDirectives;
         _tempNameForAnonymousScope = tempNameForAnonymousScope;
         _withBlockLhs = withBlockLhs;
+        _conditionalAccessReceivers = conditionalAccessReceivers;
         _argumentConverter = argumentConverter;
         CommonConversions = commonConversions;
         TriviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
@@ -84,13 +87,15 @@ internal class NameExpressionNodeVisitor
             }
         }
         if (left == null) {
-            if (IsSubPartOfConditionalAccess(node)) {
-                return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
-                    : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+            if (GetConditionalAccess(node) is { } conditional) {
+                if (!_conditionalAccessReceivers.TryGetValue(conditional, out left)) {
+                    return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
+                        : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+                }
             } else if (node.IsParentKind(VBasic.SyntaxKind.NamedFieldInitializer) && _tempNameForAnonymousScope.TryGetValue(node.Name.Identifier.Text, out var stack) && stack.Any()) {
                 return ValidSyntaxFactory.IdentifierName(stack.Peek().TempName);
             }
-            left = _withBlockLhs.Peek();
+            left ??= _withBlockLhs.Peek();
         }
 
         if (node.IsKind(VBasic.SyntaxKind.DictionaryAccessExpression)) {
@@ -207,7 +212,10 @@ internal class NameExpressionNodeVisitor
 
             if (node.Expression is null) {
                 var convertArgumentListOrEmptyAsync = await _argumentConverter.ConvertArgumentsAsync(node.ArgumentList);
-                return SyntaxFactory.ElementBindingExpression(SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(convertArgumentListOrEmptyAsync)));
+                var arguments = SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(convertArgumentListOrEmptyAsync));
+                return GetConditionalAccess(node) is { } conditional && _conditionalAccessReceivers.TryGetValue(conditional, out var receiver)
+                    ? SyntaxFactory.ElementAccessExpression(receiver, arguments)
+                    : SyntaxFactory.ElementBindingExpression(arguments);
             }
 
             var convertedInvocation = await ConvertOrReplaceInvocationAsync(node, invocationSymbol);
@@ -708,21 +716,21 @@ internal class NameExpressionNodeVisitor
             (SimpleNameSyntax)toBeQualified);
     }
 
-    private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
-    {
-        static bool IsMemberAccessChain(SyntaxNode exp) =>
-            exp?.IsKind(VBasic.SyntaxKind.InvocationExpression,
-                VBasic.SyntaxKind.SimpleMemberAccessExpression,
-                VBasic.SyntaxKind.ParenthesizedExpression,
-                VBasic.SyntaxKind.ConditionalAccessExpression) == true;
+    internal static bool IsMemberAccessChain(SyntaxNode exp) =>
+        exp is VBSyntax.XmlMemberAccessExpressionSyntax || exp?.IsKind(VBasic.SyntaxKind.InvocationExpression,
+            VBasic.SyntaxKind.SimpleMemberAccessExpression,
+            VBasic.SyntaxKind.ParenthesizedExpression,
+            VBasic.SyntaxKind.ConditionalAccessExpression) == true;
 
+    internal static VBSyntax.ConditionalAccessExpressionSyntax GetConditionalAccess(SyntaxNode node)
+    {
         for (SyntaxNode child = node, parent = node.Parent; IsMemberAccessChain(parent); child = parent, parent = parent.Parent) {
             if (parent is VBSyntax.ConditionalAccessExpressionSyntax cae && cae.WhenNotNull == child) {
-                return true; // On right hand side of a ?. conditional access
+                return cae;
             }
         }
 
-        return false;
+        return null;
     }
 
     private static CSharpSyntaxNode ReplaceRightmostIdentifierText(CSharpSyntaxNode expr, SyntaxToken idToken, string overrideIdentifier)
