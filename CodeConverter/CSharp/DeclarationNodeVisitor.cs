@@ -974,7 +974,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             CS.SyntaxFactory.List(attributes),
             modifiers, 
             CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier).WithoutSourceMapping(), //TODO Use semantic model for this name
-            await block.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),
+            await block.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList(),
             ctorCall,
             CS.SyntaxFactory.Block(convertedBodyStatements)
         );
