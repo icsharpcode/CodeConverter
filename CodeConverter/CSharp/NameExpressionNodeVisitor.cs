@@ -413,7 +413,7 @@ internal class NameExpressionNodeVisitor
     /// This should be equivalent but keep closer to the look of the original source code.
     /// See https://github.com/icsharpcode/CodeConverter/issues/310 and https://github.com/icsharpcode/CodeConverter/issues/324
     /// </summary>
-    private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
+    private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
     {
         const string retVariableName = "ret";
         var localFuncName = $"local{invocationSymbol.Name}";
@@ -427,27 +427,16 @@ internal class NameExpressionNodeVisitor
         );
         var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
 
-        //any argument that's a ByRef parameter of the parent method needs to be passed as a ref parameter to the local function (to avoid error CS1628)
-        var refParametersOfParent = GetRefParameters(invocation.ArgumentList);
+        // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
+        var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
+        var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
+            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
+            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
+            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
         var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
 
         var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
         return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
-
-        List<IParameterSymbol> GetRefParameters(VBSyntax.ArgumentListSyntax argumentList)
-        {
-            var result = new List<IParameterSymbol>();
-            if (argumentList is null) return result;
-
-            foreach (var arg in argumentList.Arguments) {
-                if (_semanticModel.GetSymbolInfo(arg.GetExpression()).Symbol is not IParameterSymbol p) continue;
-                if (p.RefKind != RefKind.None) {
-                    result.Add(p);
-                }
-            }
-
-            return result;
-        }
 
         (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
         {
@@ -465,6 +454,17 @@ internal class NameExpressionNodeVisitor
 
     private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
     {
+        if (IsLoopCondition(invocation)) {
+            // A loop condition needs fresh argument temporaries and copy-back on every evaluation.
+            return invocationSymbol.ReducedFrom?.Parameters.FirstOrDefault() is { RefKind: not RefKind.None } &&
+                   invocation.Expression is VBSyntax.MemberAccessExpressionSyntax member &&
+                   _semanticModel.GetRefConversionForExpression(member.Expression) != RefConversion.Inline ||
+                   invocation.ArgumentList?.Arguments.Any(a =>
+                       CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) != RefConversion.Inline) == true ||
+                   _semanticModel.GetOperation(invocation) is IInvocationOperation operation && operation.Arguments.Any(a =>
+                       a.ArgumentKind == ArgumentKind.DefaultValue && a.Parameter.RefKind != RefKind.None);
+        }
+
         if (invocation.ArgumentList == null) return false;
         var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
         var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation);
@@ -481,6 +481,12 @@ internal class NameExpressionNodeVisitor
             if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
             return !_semanticModel.GetConstantValue(argExpression).HasValue;
         }
+    }
+
+    private static bool IsLoopCondition(SyntaxNode node)
+    {
+        var containingStatement = node.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax);
+        return containingStatement is VBSyntax.WhileStatementSyntax or VBSyntax.DoStatementSyntax or VBSyntax.LoopStatementSyntax;
     }
 
     /// <summary>
@@ -598,7 +604,7 @@ internal class NameExpressionNodeVisitor
             return invocation;
         }
 
-        return AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
+        return await AddEmptyArgumentListIfImplicitAsync(node, qualifiedIdentifier);
     }
 
 
@@ -643,10 +649,21 @@ internal class NameExpressionNodeVisitor
         return await node.TypeArgumentList.AcceptAsync<TypeArgumentListSyntax>(TriviaConvertingExpressionVisitor);
     }
 
-    private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
+    private async Task<CSharpSyntaxNode> AddEmptyArgumentListIfImplicitAsync(SyntaxNode node, ExpressionSyntax id)
     {
         if (_semanticModel.SyntaxTree != node.SyntaxTree) return id;
-        return _semanticModel.GetOperation(node) switch {
+        var operation = _semanticModel.GetOperation(node);
+        if (IsLoopCondition(node) && operation is IInvocationOperation implicitInvocation &&
+            implicitInvocation.TargetMethod.Parameters.Any(p => p.RefKind != RefKind.None)) {
+            _typeContext.PerScopeState.PushScope();
+            try {
+                var call = SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(implicitInvocation.TargetMethod));
+                return await HoistAndCallLocalFunctionAsync((VBasic.VisualBasicSyntaxNode)node, implicitInvocation.TargetMethod, call);
+            } finally {
+                _typeContext.PerScopeState.PopExpressionScope();
+            }
+        }
+        return operation switch {
             IInvocationOperation invocation => SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(invocation.TargetMethod)),
             IPropertyReferenceOperation propReference when propReference.Property.Parameters.Any() => SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(propReference.Property)),
             _ => id
