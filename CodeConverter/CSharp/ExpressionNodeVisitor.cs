@@ -20,6 +20,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly IOperatorConverter _operatorConverter;
     private readonly Stack<ExpressionSyntax> _withBlockLhs = new();
+    private readonly Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> _conditionalAccessReceivers = new();
     private readonly ITypeContext _typeContext;
     private readonly QueryConverter _queryConverter;
     private readonly LambdaConverter _lambdaConverter;
@@ -44,8 +45,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
         _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
-        _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, TriviaConvertingExpressionVisitor);
-        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor);
+        _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, commonConversions, semanticModel, _withBlockLhs, _generatedNames, _conditionalAccessReceivers);
+        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers);
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         _binaryExpressionConverter = new BinaryExpressionConverter(semanticModel, _operatorConverter, visualBasicEqualityComparison, visualBasicNullableTypesConverter, commonConversions);
     }
@@ -212,6 +213,27 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override async Task<CSharpSyntaxNode> VisitConditionalAccessExpression(VBasic.Syntax.ConditionalAccessExpressionSyntax node)
     {
         var leftExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor) ?? _withBlockLhs.Peek();
+        if (node.WhenNotNull.DescendantNodesAndSelf().OfType<VBSyntax.XmlMemberAccessExpressionSyntax>()
+            .Any(axis => axis.Token2.Text == "@" && axis.Ancestors().TakeWhile(NameExpressionNodeVisitor.IsMemberAccessChain).Contains(node))) {
+            // Attribute reads need a cast or a sequence null guard, neither of which can wrap a member binding.
+            var receiver = ValidSyntaxFactory.IdentifierName(NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, "xmlReceiver"));
+            _conditionalAccessReceivers.Add(node, receiver);
+            try {
+                var whenNotNull = await node.WhenNotNull.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
+                var condition = CS.SyntaxFactory.IsPatternExpression(leftExpression,
+                    CS.SyntaxFactory.RecursivePattern().WithPropertyPatternClause(CS.SyntaxFactory.PropertyPatternClause())
+                        .WithDesignation(CS.SyntaxFactory.SingleVariableDesignation(receiver.Identifier)));
+                if (whenNotNull is StatementSyntax || node.Parent is VBSyntax.ExpressionStatementSyntax ||
+                    _semanticModel.GetTypeInfo(node).Type?.SpecialType == SpecialType.System_Void) {
+                    return CS.SyntaxFactory.IfStatement(condition, CS.SyntaxFactory.Block(
+                        whenNotNull as StatementSyntax ?? CS.SyntaxFactory.ExpressionStatement((ExpressionSyntax)whenNotNull)));
+                }
+                return CS.SyntaxFactory.ParenthesizedExpression(CS.SyntaxFactory.ConditionalExpression(condition, (ExpressionSyntax)whenNotNull,
+                    CS.SyntaxFactory.DefaultExpression(CommonConversions.GetTypeSyntax(_semanticModel.GetTypeInfo(node).Type))));
+            } finally {
+                _conditionalAccessReceivers.Remove(node);
+            }
+        }
         return CS.SyntaxFactory.ConditionalAccessExpression(leftExpression, await node.WhenNotNull.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
     }
 
