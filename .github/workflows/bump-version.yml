@@ -1,8 +1,6 @@
 name: Bump version
 
 on:
-  push:
-    branches: [ claude/fix-asyncinterfaces-vs-compatibility-lIFLk ]
   workflow_dispatch:
     inputs:
       part:
