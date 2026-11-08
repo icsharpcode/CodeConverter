@@ -14,6 +14,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [10.0.2] - 2026-11-08
+
+
+### Vsix
+
+
+### VB -> C#
+
+
+### C# -> VB
+
+
 ## [10.0.1] - 2026-02-28
 
 * Reintroduce tentative legacy support for dotnet 8 and VS2022
