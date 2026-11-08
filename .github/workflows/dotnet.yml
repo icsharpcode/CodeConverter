@@ -7,9 +7,6 @@ on:
     branches: [ master, main ]
   workflow_dispatch:
 
-env:
-  BuildVersion: '10.0.1'
-  
 jobs:
   build:
     runs-on: windows-2022
@@ -20,13 +17,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Update project version
-      uses: roryprimrose/set-vs-sdk-project-version@v1.0.6
-      with:
-        projectFilter: 'Directory.Build.props'
-        version: ${{ env.BuildVersion }}.${{ github.run_number }}
-        assemblyVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
-        fileVersion: ${{ env.BuildVersion }}.${{ github.run_number }}
+    - name: Read build version
+      shell: pwsh
+      run: |
+        $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.VersionPrefix
+        "BuildVersion=$version" >> $env:GITHUB_ENV
 
     - name: Setup .NET for main build
       uses: actions/setup-dotnet@v4
