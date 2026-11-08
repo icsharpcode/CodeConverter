@@ -1,0 +1,53 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      part:
+        description: "Version part to increment"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Checkout 🛎️ # zizmor: ignore[artipacked] credentials are needed to push the bump commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Increment version
+        shell: pwsh
+        env:
+          PART: ${{ inputs.part }}
+        run: |
+          switch ($env:PART) {
+            'major' { ./IncrementVersion.ps1 -major }
+            'minor' { ./IncrementVersion.ps1 -minor }
+            default { ./IncrementVersion.ps1 }
+          }
+
+      - name: Commit and push to the current branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(grep -oP "BuildVersion: '\K[0-9.]+" .github/workflows/dotnet.yml)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Bump version to $version"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+
+      # Pushes made with GITHUB_TOKEN don't trigger the push-based build, so start it explicitly.
+      - name: Start build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run dotnet.yml --ref "$GITHUB_REF_NAME"
