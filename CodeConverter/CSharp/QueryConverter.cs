@@ -30,7 +30,7 @@ internal class QueryConverter
         var originalIsWithinExpressionTree = tracker.IsWithinExpressionTree;
         tracker.IsWithinExpressionTree |= new ExpressionTreeDetector(_semanticModel, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T).IsExpressionTree(query);
         try {
-            var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders);
+            var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders, originalIsWithinExpressionTree);
             return await converter.ConvertAsync();
         } finally {
             tracker.IsWithinExpressionTree = originalIsWithinExpressionTree;

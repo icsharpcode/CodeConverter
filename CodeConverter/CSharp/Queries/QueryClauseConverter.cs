@@ -21,11 +21,15 @@ internal partial class QueryClauseConverter
     private readonly FlatJoinPlanner _joinPlanner;
     private SubstitutionRules _substitution;
     private readonly ExpressionTreeDetector _expressionTrees;
+    private readonly bool _isWithinExpressionTreeOutsideQuery;
 
     /// <param name="activeBuilders">Builders for the queries being converted, the innermost of which encloses this query</param>
+    /// <param name="isWithinExpressionTreeOutsideQuery">For the parts of the query that run as ordinary code even when its lambdas are an expression tree</param>
     public QueryClauseConverter(VBSyntax.QueryExpressionSyntax vbQuery, SemanticModel semanticModel, CommonConversions commonConversions,
-        CommentConvertingVisitorWrapper visitor, RangeVariableReplacements replacements, HashSet<string> generatedNames, Stack<CsQueryBuilder> activeBuilders)
+        CommentConvertingVisitorWrapper visitor, RangeVariableReplacements replacements, HashSet<string> generatedNames, Stack<CsQueryBuilder> activeBuilders,
+        bool isWithinExpressionTreeOutsideQuery)
     {
+        _isWithinExpressionTreeOutsideQuery = isWithinExpressionTreeOutsideQuery;
         _vbQuery = vbQuery;
         _semanticModel = semanticModel;
         _commonConversions = commonConversions;
@@ -33,7 +37,7 @@ internal partial class QueryClauseConverter
         _replacements = replacements;
         _generatedNames = generatedNames;
         _activeBuilders = activeBuilders;
-        _sources = new QuerySourceConverter(semanticModel, commonConversions, ConvertAsync);
+        _sources = new QuerySourceConverter(semanticModel, commonConversions, ConvertSourceAsync);
         _joinPlanner = new FlatJoinPlanner(semanticModel);
         _substitution = SubstitutionRules.ForQuery(vbQuery, semanticModel);
         _expressionTrees = new ExpressionTreeDetector(semanticModel, commonConversions.KnownTypes.System_Linq_Expressions_Expression_T);
@@ -137,7 +141,7 @@ internal partial class QueryClauseConverter
     private async Task ConvertPartitionAsync(CsQueryBuilder builder, VBSyntax.PartitionClauseSyntax partition)
     {
         var methodName = partition.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.Skip) : nameof(Enumerable.Take);
-        builder.ApplyMethod(methodName, await ConvertAsync(partition.Count));
+        builder.ApplyMethod(methodName, await ConvertOutsideExpressionTreeAsync(partition.Count));
     }
 
     private async Task ConvertPartitionWhileAsync(CsQueryBuilder builder, VBSyntax.PartitionWhileClauseSyntax partitionWhile)
@@ -207,6 +211,26 @@ internal partial class QueryClauseConverter
     }
 
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
+
+    /// <summary>
+    /// A provider is passed the first source and a join's inner source as they are, whereas later sources are within lambdas
+    /// </summary>
+    private Task<ExpressionSyntax> ConvertSourceAsync(VBSyntax.ExpressionSyntax collection) =>
+        collection.Parent is VBSyntax.CollectionRangeVariableSyntax variable &&
+        (variable.Parent is VBSyntax.JoinClauseSyntax || _vbQuery.Clauses.First() is VBSyntax.FromClauseSyntax from && from.Variables.First() == variable)
+            ? ConvertOutsideExpressionTreeAsync(collection)
+            : ConvertAsync(collection);
+
+    private async Task<ExpressionSyntax> ConvertOutsideExpressionTreeAsync(VBSyntax.ExpressionSyntax expression)
+    {
+        var isWithinExpressionTree = _visitor.IsWithinExpressionTree;
+        _visitor.IsWithinExpressionTree = _isWithinExpressionTreeOutsideQuery;
+        try {
+            return await ConvertAsync(expression);
+        } finally {
+            _visitor.IsWithinExpressionTree = isWithinExpressionTree;
+        }
+    }
 
     /// <summary>
     /// VB treats a null Boolean? condition as false
