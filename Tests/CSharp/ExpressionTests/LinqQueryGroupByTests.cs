@@ -339,4 +339,31 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task AggregationUsedOnceInWhereIsSubstitutedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(xs As String())
+        Dim q = From x In xs Group By x.Length Into Count() Where Count > 1 Select Length
+        Dim r = From x In xs Group By x.Length Into Count() Order By Count Descending Select Length
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+public partial class C
+{
+    public void M(string[] xs)
+    {
+        var q = from x in xs
+                group x by x.Length into Group
+                where Group.Count() > 1
+                select Group.Key;
+        var r = from x in xs
+                group x by x.Length into Group
+                orderby Group.Count() descending
+                select Group.Key;
+    }
+}");
+    }
 }

@@ -94,8 +94,14 @@ internal partial class QueryClauseConverter
                 var (type, collection) = await _sources.ConvertAsync(vbVariable);
                 builder.AddFrom(RegisterVariable(vbVariable), type, collection);
             }
-            foreach (var clause in aggregate.AdditionalQueryOperators) {
-                await ConvertClauseAsync(builder, clause);
+            var enclosingSubstitution = _substitution;
+            _substitution = SubstitutionRules.ForAggregateSource(_vbQuery, aggregate, _semanticModel);
+            try {
+                foreach (var clause in aggregate.AdditionalQueryOperators) {
+                    await ConvertClauseAsync(builder, clause);
+                }
+            } finally {
+                _substitution = enclosingSubstitution;
             }
             return (builder.Materialize(), builder.Scope);
         });

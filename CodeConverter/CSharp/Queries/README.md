@@ -63,16 +63,17 @@ Since the element comes from `Scope`, C# can keep variables in scope that VB has
 A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`SubstitutionRules`):
 * Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause, in declaration order. Substituted, it's evaluated:
   * where the element is next materialized, if it has no references before then;
-  * or at a single reference in the final `Select`, if that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`), and the final `Select` evaluates nothing before it but earlier values and expressions without calls (including VB calls without parentheses).
+  * or at a single reference in the final `Select`, a `Where`, a `Let` or the first `Order By` key, if that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`), the clause evaluates nothing before it but earlier values and expressions without calls (including VB calls without parentheses), and the element isn't later built from the scope (`Group By`, or no final `Select`). So `Group By ... Into Count() Where Count > 1` becomes `where Group.Count() > 1`.
 
-  Only `Let` clauses may come in between: others filter, reorder or repeat elements, or (`Select`) drop the value. Values declared in between must be cheap or substituted too, or they'd be evaluated first. An unused value with nowhere to be evaluated stays a `let`.
-* Lambdas stay in a `let`, typed as their delegate (`new Predicate<int>(...)`, or `Func<...>` for VB's anonymous delegates), since C# can't infer a lambda's type there.
+  Only `Let` clauses may come in between: others filter, reorder or repeat elements, or (`Select`) drop the value. Values declared in between must be cheap or substituted too, or they'd be evaluated first. An unused value with nowhere to be evaluated stays a `let`. The clauses within an `Aggregate` clause are a separate query with their own rules.
+* Even a cheap value that could change (a local, field or property) stays a `let` if it's referenced in a lambda or nested query in a `Let` or `Select`, since that may run after VB would have read the value.
+* Delegates (lambdas and `AddressOf`) stay in a `let`, typed as their delegate (`new Predicate<int>(...)`, or `Func<...>` for VB's anonymous delegates), since C# can't infer the type there.
 * `NameOf` of a range variable (or its member) becomes the name as a string, since there may be no C# variable to name.
 * No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a field or local (`Select v = field Let field = 1 Select v`), though range variables clashing with each other are renamed instead.
 
 ### Types
 
-C# infers a range variable's type from its value, so values get VB's declared type (`Let s As String = x`) where it differs, `Nothing` is cast to its type, and lambdas are created as their delegate type. `Where` and `Skip`/`Take While` conditions are converted to `Boolean` as in `If` statements, so a null `Boolean?` is false. Aggregation function arguments are converted to the function's lambda return type as VB does, so a null `Boolean?` predicate in `Count(...)` throws.
+C# infers a range variable's type from its value, so values get VB's declared type (`Let s As String = x`, `Let o As Object = x`) where it differs, `From x As Object In ints` becomes `from object x in ints`, `Nothing` is cast to its type, and lambdas are created as their delegate type. `Where` and `Skip`/`Take While` conditions are converted to `Boolean` as in `If` statements, so a null `Boolean?` is false. Aggregation function arguments are converted to the function's lambda return type as VB does, so a null `Boolean?` predicate in `Count(...)` throws.
 
 ### Names
 

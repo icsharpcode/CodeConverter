@@ -510,5 +510,32 @@ Public Class LinqExpressionTests
         Dim q = From x In {1, 2} Group By k = x Mod 2 Into Count() Select NameOf(k)
         Assert.Equal("k|k", Show(q))
     End Sub
+    Private Shared Function BoxAll(ints As Integer()) As IEnumerable(Of Object)
+        Return From x As Object In ints
+    End Function
+
+    <Fact>
+    Sub TestFromAsObjectBoxes()
+        Assert.Equal("1|2", Show(BoxAll({1, 2})))
+    End Sub
+
+    Private Shared Function ToNullables(ints As Integer()) As IEnumerable(Of Integer?)
+        Return From x In ints Let o As Integer? = x Select o
+    End Function
+
+    <Fact>
+    Sub TestLetAsNullable()
+        Assert.Equal("1|2", Show(ToNullables({1, 2})))
+    End Sub
+
+    Private Function Five() As Integer
+        Return 5
+    End Function
+
+    <Fact>
+    Sub TestLetAddressOf()
+        Dim q = From x In {1} Let f As Func(Of Integer) = AddressOf Five Where f() > 0 Select f
+        Assert.Equal(5, q.Single()())
+    End Sub
 
 End Class

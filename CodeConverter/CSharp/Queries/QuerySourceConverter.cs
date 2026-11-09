@@ -1,3 +1,4 @@
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -61,7 +62,9 @@ internal class QuerySourceConverter
     private bool IsSameAsCast(ITypeSymbol sourceType, ITypeSymbol targetType)
     {
         var conversion = VBasic.VisualBasicExtensions.ClassifyConversion(_semanticModel.Compilation, sourceType, targetType);
-        return conversion.IsReference && !conversion.IsUserDefined && targetType.SpecialType != SpecialType.System_String;
+        var isBoxingOrNullableWrapping = sourceType.IsValueType && (targetType.SpecialType == SpecialType.System_Object ||
+                                                                    targetType.IsNullable(out var underlying) && SymbolEqualityComparer.Default.Equals(underlying, sourceType));
+        return conversion.IsReference && !conversion.IsUserDefined && targetType.SpecialType != SpecialType.System_String || isBoxingOrNullableWrapping;
     }
 
     private static ExpressionSyntax CallCast(ExpressionSyntax source, TypeSyntax type)

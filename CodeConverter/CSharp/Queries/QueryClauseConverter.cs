@@ -19,7 +19,7 @@ internal partial class QueryClauseConverter
     private readonly Stack<CsQueryBuilder> _activeBuilders;
     private readonly QuerySourceConverter _sources;
     private readonly FlatJoinPlanner _joinPlanner;
-    private readonly SubstitutionRules _substitution;
+    private SubstitutionRules _substitution;
     private readonly ExpressionTreeDetector _expressionTrees;
 
     /// <param name="activeBuilders">Builders for the queries being converted, the innermost of which encloses this query</param>
@@ -35,7 +35,7 @@ internal partial class QueryClauseConverter
         _activeBuilders = activeBuilders;
         _sources = new QuerySourceConverter(semanticModel, commonConversions, ConvertAsync);
         _joinPlanner = new FlatJoinPlanner(semanticModel);
-        _substitution = new SubstitutionRules(vbQuery, semanticModel);
+        _substitution = SubstitutionRules.ForQuery(vbQuery, semanticModel);
         _expressionTrees = new ExpressionTreeDetector(semanticModel, commonConversions.KnownTypes.System_Linq_Expressions_Expression_T);
     }
 
@@ -191,11 +191,17 @@ internal partial class QueryClauseConverter
     {
         var value = withoutParentheses ? await ConvertWithoutParenthesesAsync(vbVariable.Expression) : await ConvertAsync(vbVariable.Expression);
         if (_semanticModel.GetTypeInfo(vbVariable.Expression).ConvertedType is not { } type) return value;
-        if (vbVariable.Expression is VBSyntax.LambdaExpressionSyntax && _semanticModel.GetSymbolInfo(vbVariable.Expression).Symbol is IMethodSymbol lambda) {
-            var delegateType = type.IsAnonymousType ? _commonConversions.GetFuncTypeSyntax(type, lambda) : _commonConversions.GetTypeSyntax(type);
-            return SyntaxFactory.ObjectCreationExpression(delegateType, ExpressionSyntaxExtensions.CreateArgList(value), null);
+        var delegateMethod = vbVariable.Expression switch {
+            VBSyntax.LambdaExpressionSyntax lambda => _semanticModel.GetSymbolInfo(lambda).Symbol,
+            VBSyntax.UnaryExpressionSyntax addressOf when addressOf.IsKind(VBasic.SyntaxKind.AddressOfExpression) => _semanticModel.GetSymbolInfo(addressOf.Operand).Symbol,
+            _ => null
+        };
+        if (delegateMethod is IMethodSymbol method) {
+            var delegateType = type.IsAnonymousType ? _commonConversions.GetFuncTypeSyntax(type, method) : _commonConversions.GetTypeSyntax(type);
+            return SyntaxFactory.ObjectCreationExpression(delegateType, ExpressionSyntaxExtensions.CreateArgList(value.SkipIntoParens()), null)
+                .WithAdditionalAnnotations(SubstitutionRules.DelegateCreationAnnotation);
         }
-        if (vbVariable.NameEquals?.AsClause != null) value = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, value);
+        if (vbVariable.NameEquals?.AsClause != null) value = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, value, defaultToCast: true);
         if (value.IsKind(SyntaxKind.NullLiteralExpression)) return SyntaxFactory.CastExpression(_commonConversions.GetTypeSyntax(type), value);
         return value;
     }

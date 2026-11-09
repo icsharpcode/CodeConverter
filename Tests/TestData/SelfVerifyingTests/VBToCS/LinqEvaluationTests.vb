@@ -169,4 +169,33 @@ Public Class LinqEvaluationTests
         Assert.Equal("ToString", q.Single())
         Assert.Equal("a1", Logged)
     End Sub
+
+    <Fact>
+    Sub TestLetInAggregateBeforeWhereIsEvaluatedForEachElement()
+        Dim c = Aggregate y In {1, 2, 3} Let z = Log("z", y) Where y > 1 Into Count()
+        Assert.Equal(2, c)
+        Assert.Equal("z1,z2,z3", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetInAggregateBeforeOrderByIsEvaluatedInSourceOrder()
+        Dim c = Aggregate y In {3, 1, 2} Let z = Log("z", y) Order By y Into Count()
+        Assert.Equal("z3,z1,z2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetOfLocalIsReadWhenQueryIsEvaluatedNotWhenLambdaRuns()
+        Dim i = 0
+        Dim q = (From x In {1} Let v = i Select f = New Func(Of Integer)(Function() v)).ToList()
+        i = 5
+        Assert.Equal(0, q(0).Invoke())
+    End Sub
+
+    <Fact>
+    Sub TestLetOfLocalIsReadWhenQueryIsEvaluatedNotWhenNestedQueryRuns()
+        Dim i = 0
+        Dim q = (From x In {1} Let v = i Select items = From z In {1, 2} Where z > v).ToList()
+        i = 5
+        Assert.Equal(2, q(0).Count())
+    End Sub
 End Class
