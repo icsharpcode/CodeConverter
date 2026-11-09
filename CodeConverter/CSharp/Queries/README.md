@@ -61,8 +61,8 @@ Since the element comes from `Scope`, C# can keep variables in scope that VB has
 ### Substitute or `let`
 
 A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`SubstitutionRules`):
-* Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause. Substituted, it's evaluated where the element is next materialized if it has no references before then, or at a single reference in the final `Select`. Only `Let` and `Select` clauses may come in between, since others filter, reorder or repeat elements. An unused value with nowhere to be evaluated stays a `let`.
-* No name it references may be captured by a later lambda parameter. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`.
+* Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause. Substituted, it's evaluated where the element is next materialized if it has no references before then, or at a single reference in the final `Select` that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`). Only `Let` and `Select` clauses may come in between, since others filter, reorder or repeat elements. An unused value with nowhere to be evaluated stays a `let`.
+* No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a field or local (`Select v = field Let field = 1 Select v`), though range variables clashing with each other are renamed instead.
 
 ### Names
 

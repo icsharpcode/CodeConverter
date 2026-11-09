@@ -415,4 +415,22 @@ Public Class LinqExpressionTests
         Assert.Equal("{ x = 2, y = 1 }|{ x = 4, y = 2 }", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestDroppedVariableNotCapturedByLambdaLocal()
+        Dim zs = {1}
+        Dim q = (From x In {3} Select y = x Select zs.Select(Function(z)
+                                                            Dim x = z * 10
+                                                            Return x + y
+                                                        End Function).Single()).Single()
+        Assert.Equal(13, q)
+    End Sub
+
+    Private ReadOnly _field As Integer = 7
+
+    <Fact>
+    Sub TestSubstitutedMemberNotCapturedByLaterRangeVariable()
+        Dim q = (From x In {3} Select v = _field, w = x Let _field = w * 5 Select v).Single()
+        Assert.Equal(7, q)
+    End Sub
+
 End Class

@@ -30,7 +30,7 @@ internal class SubstitutionRules
     public bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
         if (IsShadowedLater(value, declaration)) return false;
-        if (variable.Symbol == null || CsQueryBuilder.IsCheapToRepeat(value)) return true;
+        if (CsQueryBuilder.IsCheapToRepeat(value)) return true;
         return GetOnlyEvaluationPosition(variable, declaration) is { } evaluatedAt && HasOneToOneClausesBetween(declaration, evaluatedAt);
     }
 
@@ -55,12 +55,17 @@ internal class SubstitutionRules
     }
 
     private IEnumerable<VBSyntax.IdentifierNameSyntax> GetReferences(QueryRangeVariable variable, TextSpan span) =>
-        _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
+        variable.Symbol == null ? Enumerable.Empty<VBSyntax.IdentifierNameSyntax>() : _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
             .Where(id => span.Contains(id.Span) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol));
 
     private static bool IsOnlyEvaluationInFinalSelect(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference) =>
         finalSelect != null && finalSelect.Span.Contains(reference.Span) &&
-        !reference.Ancestors().TakeWhile(a => a != finalSelect).Any(a => a is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax);
+        !reference.Ancestors().TakeWhile(a => a != finalSelect).Any(IsConditionallyOrRepeatedlyEvaluated);
+
+    private static bool IsConditionallyOrRepeatedlyEvaluated(SyntaxNode node) =>
+        node is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax
+            or VBSyntax.TernaryConditionalExpressionSyntax or VBSyntax.BinaryConditionalExpressionSyntax or VBSyntax.ConditionalAccessExpressionSyntax ||
+        node.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression);
 
     /// <summary>
     /// Declarations within joins nested in a join are part of a subquery, which is materialized before the outer join's conditions
@@ -69,17 +74,22 @@ internal class SubstitutionRules
         declaration.Ancestors().OfType<VBSyntax.JoinClauseSyntax>().LastOrDefault(j => j.AdditionalJoins.Any(a => a.Span.Contains(declaration.Span)));
 
     /// <summary>
-    /// C# keeps range variables VB has dropped (e.g. `x` after `Select y = x`), which a substituted value may reference.
-    /// A later VB lambda can reuse that name for a parameter (`Where ys.Any(Function(x) x > y)`), which would capture it.
-    /// Later range variables don't need checking since clashing ones are renamed.
+    /// A name declared later in the VB query could capture a name in the substituted value:
+    /// * C# keeps range variables VB has dropped (e.g. `x` after `Select y = x`), which a later lambda parameter or local can reuse (`Where ys.Any(Function(x) x > y)`).
+    /// * A later range variable can reuse the name of a field or local the value references (`Select v = field Let field = 1 Select v`).
+    ///   Clashes between range variables don't matter since those are renamed.
     /// </summary>
     public bool IsShadowedLater(ExpressionSyntax value, VisualBasicSyntaxNode declaration)
     {
-        var referencedNames = new HashSet<string>(value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
+        var csNames = new HashSet<string>(value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
             .Where(id => id.Parent is not MemberAccessExpressionSyntax { Name: var name } || name != id)
             .Select(id => id.Identifier.ValueText), StringComparer.OrdinalIgnoreCase);
-        return _vbQuery.DescendantNodes().OfType<VBSyntax.ParameterSyntax>()
-            .Any(p => p.SpanStart >= declaration.Span.End && referencedNames.Contains(p.Identifier.Identifier.ValueText));
+        var namesOutsideQuery = new HashSet<string>(declaration.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>()
+            .Where(id => id.Parent is not VBSyntax.MemberAccessExpressionSyntax { Name: var name } || name != id)
+            .Where(id => _semanticModel.GetSymbolInfo(id).Symbol is not IRangeVariableSymbol)
+            .Select(id => id.Identifier.ValueText), StringComparer.OrdinalIgnoreCase);
+        return QueryDeclarations.Get(_vbQuery, _semanticModel)
+            .Any(d => d.Position >= declaration.Span.End && (d.IsRangeVariable ? namesOutsideQuery : csNames).Contains(d.Name));
     }
 
     /// <summary>

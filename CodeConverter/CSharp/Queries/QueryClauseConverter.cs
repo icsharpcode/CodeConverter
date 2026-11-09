@@ -176,19 +176,10 @@ internal partial class QueryClauseConverter
 
     private Func<string, bool> CreateIsNameFreeOutsideQuery()
     {
-        var namesDeclaredWithinQuery = new HashSet<string>(GetNamesDeclaredWithinQuery(), StringComparer.OrdinalIgnoreCase);
+        var namesDeclaredWithinQuery = new HashSet<string>(QueryDeclarations.Get(_vbQuery, _semanticModel).Select(d => d.Name), StringComparer.OrdinalIgnoreCase);
         return name => !namesDeclaredWithinQuery.Contains(name) && _semanticModel.LookupSymbols(_vbQuery.SpanStart, name: name).IsEmpty &&
                        NameGenerator.CS.IsNameFreeInScope(_semanticModel, _generatedNames, _vbQuery, name);
     }
-
-    private IEnumerable<string> GetNamesDeclaredWithinQuery() =>
-        _vbQuery.DescendantNodes().Select(n => n switch {
-            VBSyntax.ModifiedIdentifierSyntax x => x.Identifier.ValueText,
-            VBSyntax.CollectionRangeVariableSyntax x => x.Identifier.Identifier.ValueText,
-            VBSyntax.ExpressionRangeVariableSyntax x => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, x)?.Name,
-            VBSyntax.AggregationRangeVariableSyntax x => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, x)?.Name,
-            _ => null
-        });
 
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
 

@@ -72,4 +72,23 @@ Public Class LinqEvaluationTests
         Dim q = (From x In {3, 1, 2} Select y = Log("y", x) Order By y).ToList()
         Assert.Equal("y3,y1,y2", Logged)
     End Sub
+
+    <Fact>
+    Sub TestLetUsedInConditionalInFinalSelectIsEvaluatedForEachElement()
+        Dim q = (From x In {3, 1, 2} Let y = Log("y", x) Select If(x > 1, y, 0)).ToList()
+        Assert.Equal("y3,y1,y2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetUsedInShortCircuitInFinalSelectIsEvaluatedForEachElement()
+        Dim q = (From x In {3, 1, 2} Let y = Log("y", x > 2) Select x > 1 AndAlso y).ToList()
+        Assert.Equal("yTrue,yFalse,yFalse", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestUnnamedSelectBeforeWhereIsEvaluatedForEachElement()
+        Dim flag = False
+        Dim q = (From x In {3, 1, 2} Select Log("y", x) Where flag Distinct).ToList()
+        Assert.Equal("y3,y1,y2", Logged)
+    End Sub
 End Class
