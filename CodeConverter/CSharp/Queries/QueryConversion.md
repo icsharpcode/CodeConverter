@@ -57,7 +57,7 @@ From the [C# spec](https://learn.microsoft.com/dotnet/csharp/language-reference/
 * `join x in xs on outer equals inner`: the outer key may only use earlier variables, the inner key only `x` (CS1937/CS1938). Multiple conditions must be combined into one key, e.g. matching anonymous types.
 * No clauses for `Distinct`/`Skip`/`Take`/`SkipWhile`/`TakeWhile`/aggregates: these need method calls.
 * `from T x in xs` means `xs.Cast<T>()`, which only does reference/unboxing conversions, unlike VB's `CType`.
-* A query must end in `select` or `group`; a trailing `select x` where `x` is the only `from` variable is a no-op that can be dropped.
+* A query must end in `select` or `group`. A generated trailing `select x` where `x` is the only `from` variable can be dropped (VB adds one to a bare `From x In xs`), but an explicit `Select x` is kept: it changes the result's type from e.g. an array to `IEnumerable`, in both languages.
 
 ## Design
 
@@ -96,6 +96,7 @@ Because the element is always constructed from the VB scope, the C# query is fre
 * its only reference is in the final `Select` and not inside a nested lambda/query,
 
 counting only references before the next method boundary (after which the variable is read from the materialized element).
+Substitution is never used if a lambda parameter written later in the query has the same name as an identifier in the expression: C# keeps variables in scope that VB has dropped, so in `Select y = x Where ys.Any(Function(x) x > y)`, substituting `x` for `y` would be captured by the lambda's `x`.
 This is what turns `Group By ... Into Summary = Sum(t.A) Where Summary > 0 Select ..., Summary` into `let Summary = Group.Sum(t => t.A)`, but `Into ValueMax = Max(item.Value) Select ..., ValueMax` into `ValueMax = Group.Max(item => item.Value)` directly in the select.
 
 ### Progressive fallback
@@ -112,7 +113,7 @@ Output gets less idiomatic only as the input requires it:
 ### Names
 
 VB-declared names are used as-is unless they clash with a C# range variable still in scope (e.g. VB's `Select x = x * 2` makes the old `x` inaccessible, C# doesn't), in which case a number is appended.
-Generated names (`Group` for groups VB doesn't name, `x` for compound element parameters) avoid anything visible from the query, every name used earlier in it, and names in enclosing queries (tracked via the stack of active builders, which also lets nested `Aggregate` queries avoid clashes).
+Generated names (`Group` for groups VB doesn't name, `x` for compound element parameters) avoid anything visible from the query (including enclosing lambda parameters), anything declared within it (e.g. lambda parameters), every name used earlier in it, and names in enclosing queries (tracked via the stack of active builders, which also lets nested `Aggregate` queries avoid clashes).
 Where VB infers an anonymous type member name (`New With {ValueMax}`), the C# member is named explicitly if the substituted expression would infer a different name.
 
 ### Comments and line mapping
@@ -122,7 +123,7 @@ Clause expressions keep their source mapping. Inlined values are moved, so their
 ### Cross-cutting: comparisons, nullables and Option Compare Text
 
 Inside queries `IQueryTracker.IsWithinQuery` makes comparisons simple (`==`, no VB null/empty-string coercion) so that expression-tree providers like EF can translate them; this predates this change and is deliberately applied to all queries.
-The exception is `Option Compare Text` for queries that run as delegates: dropping it would change which strings match, so equality stays case-insensitive. Whether a query is an expression tree comes from the VB compiler's translation (`ITranslatedQueryOperation`): if any lambda argument is an `Expression<T>`, it is. In an expression tree, VB emits `CompareString(..., TextCompare:=True)` which providers translate to plain equality anyway, so `==` is kept there (consistent with how expression lambdas were already converted, see `Issue316_LambdaExpressionEqualityCheckAsync`).
+The exception is `Option Compare Text` for queries that run as delegates: dropping it would change which strings match, so equality stays case-insensitive. Whether a query is an expression tree comes from the VB compiler's translation (`ITranslatedQueryOperation`): if any lambda argument is an `Expression<T>`, it is. Only the operator calls the compiler generates count, not user lambdas within the query, and a query nested within an expression tree is part of it. In an expression tree, VB emits `CompareString(..., TextCompare:=True)` which providers translate to plain equality anyway, so `==` is kept there (consistent with how expression lambdas were already converted, see `Issue316_LambdaExpressionEqualityCheckAsync`).
 
 ## Known limitations and trade-offs
 

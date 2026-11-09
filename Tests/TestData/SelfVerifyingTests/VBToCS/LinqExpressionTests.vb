@@ -286,4 +286,49 @@ Public Class LinqExpressionTests
         Assert.Equal("1|a", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestAggregateReusingNameOfDroppedVariable()
+        Dim q = From x In {1, 2} Select y = x Aggregate x In {10, 20} Into Sum(x + y)
+        Assert.Equal("{ y = 1, Sum = 32 }|{ y = 2, Sum = 34 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestGroupJoinReusingNameOfDroppedVariable()
+        Dim q = From x In {1, 2} Select y = x Group Join x In {1, 1, 2} On y Equals x Into s = Sum(x + y)
+        Assert.Equal("{ y = 1, s = 4 }|{ y = 2, s = 4 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestNestedQueryReusingNameOfDroppedVariable()
+        Dim q = From x In {1, 3} Select y = x Select Inner = (From x In {1, 2, 3, 4} Skip While x < y).Count()
+        Assert.Equal("4|2", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestLambdaParameterReusingNameOfDroppedVariable()
+        Dim ys = {2, 3}
+        Dim q = From x In {1, 5} Select y = x Where ys.Any(Function(x) x > y)
+        Assert.Equal("1", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestLambdaParameterNamedLikeGeneratedElementParameter()
+        Dim zs = {1, 2}
+        Dim q = From a In {1, 2}, b In {3} Distinct Where zs.Any(Function(x) x = a)
+        Assert.Equal("{ a = 1, b = 3 }|{ a = 2, b = 3 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestQueryInLambdaWithParameterNamedLikeGeneratedName()
+        Dim f = Function(x As Integer) (From a In {1, 2}, b In {3} Distinct Where a > x).Count()
+        Assert.Equal(1, f(1))
+    End Sub
+
+    <Fact>
+    Sub TestTypedJoinVariable()
+        Dim objs = New Object() {New Entity("a", "x", 1D)}
+        Dim q = From x In {"a", "b"} Join e As Entity In objs On x Equals e.P1 Select e.Value
+        Assert.Equal("1", Show(q))
+    End Sub
+
 End Class

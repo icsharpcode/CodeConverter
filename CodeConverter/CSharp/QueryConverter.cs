@@ -30,7 +30,7 @@ internal class QueryConverter
         var tracker = _triviaConvertingVisitor;
         var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
         tracker.IsWithinQuery = true;
-        tracker.IsWithinExpressionTree = IsExpressionTree(_semanticModel.GetOperation(query));
+        tracker.IsWithinExpressionTree |= IsExpressionTree(_semanticModel.GetOperation(query));
         try {
             var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders);
             return await converter.ConvertAsync();
@@ -40,9 +40,10 @@ internal class QueryConverter
     }
 
     /// <summary>
-    /// The VB compiler's translation of the query shows whether its lambdas are passed as expression trees, e.g. to IQueryable
+    /// The VB compiler's translation of the query shows whether its lambdas are passed as expression trees, e.g. to IQueryable.
+    /// Only the query operator calls the compiler generates are relevant, not lambdas the user wrote within the query.
     /// </summary>
     private bool IsExpressionTree(IOperation operation) =>
-        operation is IArgumentOperation { Parameter.Type: var type } && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T)
+        operation is IArgumentOperation { IsImplicit: true, Parent: IInvocationOperation { IsImplicit: true }, Parameter.Type: var type } && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T)
         || operation?.ChildOperations.Where(c => c is not ITranslatedQueryOperation).Any(IsExpressionTree) == true;
 }

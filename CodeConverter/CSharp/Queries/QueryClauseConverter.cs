@@ -99,7 +99,7 @@ internal class QueryClauseConverter
         var group = source;
         if (aggregate.AggregationVariables.Count > 1) {
             var groupVariable = new QueryRangeVariable(null, GroupName);
-            builder.Define(groupVariable, source, canInline: false, isUsedInPlace: false);
+            builder.Define(groupVariable, source, CsQueryBuilder.IsCheapToRepeat(source) && !IsShadowedLater(source, aggregate), isUsedInPlace: false);
             group = groupVariable.CsExpression;
         }
         foreach (var aggregation in await ConvertAggregationsAsync(builder, aggregate, aggregate.AggregationVariables, group, element)) {
@@ -158,7 +158,7 @@ internal class QueryClauseConverter
         foreach (var vbVariable in let.Variables) {
             var value = await ConvertAsync(vbVariable.Expression);
             var variable = DeclareVariable(vbVariable);
-            builder.Define(variable, value, CanInline(variable, vbVariable), IsElementUsedNext(let));
+            builder.Define(variable, value, CanInline(variable, vbVariable, value), IsElementUsedNext(let));
             builder.AddToScope(variable);
         }
     }
@@ -181,7 +181,7 @@ internal class QueryClauseConverter
         var values = await select.Variables.SelectAsync(v => ConvertAsync(v.Expression));
         var variables = select.Variables.Select(DeclareVariable).ToList();
         for (int i = 0; i < variables.Count; i++) {
-            builder.Define(variables[i], values[i], CanInline(variables[i], select.Variables[i]), IsElementUsedNext(select));
+            builder.Define(variables[i], values[i], CanInline(variables[i], select.Variables[i], values[i]), IsElementUsedNext(select));
         }
         builder.SetScope(variables);
     }
@@ -227,7 +227,7 @@ internal class QueryClauseConverter
         var joinedSymbols = joins.Select(j => (ISymbol)VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, j.JoinedVariables.Single())).ToList();
         var inScope = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
         foreach (var vbJoin in joins) {
-            var (variable, identifier, collection) = await DeclareJoinedVariableAsync(builder, vbJoin);
+            var (variable, identifier, type, collection) = await DeclareJoinedVariableAsync(builder, vbJoin);
             inScope.Add(variable.Symbol);
             var conditions = unplacedConditions.Where(c => {
                 var referenced = GetReferencedSymbols(c, joinedSymbols);
@@ -236,7 +236,7 @@ internal class QueryClauseConverter
             unplacedConditions.RemoveAll(conditions.Contains);
             var (outerKey, innerKey) = await ConvertJoinConditionsAsync(conditions, variable.Symbol);
             if (joins.Count > 1) (outerKey, innerKey) = (outerKey.WithoutSourceMapping(), innerKey.WithoutSourceMapping()); // Conditions have been reordered
-            builder.AddClause(SyntaxFactory.JoinClause(null, identifier, collection, outerKey, innerKey, null));
+            builder.AddClause(SyntaxFactory.JoinClause(type, identifier, collection, outerKey, innerKey, null));
             builder.AddToScope(variable);
         }
         if (unplacedConditions.Any()) throw new NotImplementedException("Join condition that doesn't reference the joined variable not implemented");
@@ -245,13 +245,13 @@ internal class QueryClauseConverter
     private async Task ConvertGroupJoinAsync(CsQueryBuilder builder, VBSyntax.GroupJoinClauseSyntax groupJoin)
     {
         if (groupJoin.AdditionalJoins.Any()) throw new NotImplementedException("Join nested within Group Join not implemented");
-        var (joinedVariable, identifier, collection) = await DeclareJoinedVariableAsync(builder, groupJoin);
+        var (joinedVariable, identifier, type, collection) = await DeclareJoinedVariableAsync(builder, groupJoin);
         var (outerKey, innerKey) = await ConvertJoinConditionsAsync(groupJoin.JoinConditions, joinedVariable.Symbol);
         builder.RemoveRangeVariable(identifier);
 
         var groupVariable = GetGroupVariable(groupJoin.AggregationVariables);
         var into = builder.DeclareRangeVariable(groupVariable);
-        builder.AddClause(SyntaxFactory.JoinClause(null, identifier, collection, outerKey, innerKey, SyntaxFactory.JoinIntoClause(into)));
+        builder.AddClause(SyntaxFactory.JoinClause(type, identifier, collection, outerKey, innerKey, SyntaxFactory.JoinIntoClause(into)));
         foreach (var aggregation in await ConvertAggregationsAsync(builder, groupJoin, groupJoin.AggregationVariables, groupVariable.CsExpression, new[] { joinedVariable })) {
             builder.AddToScope(aggregation);
         }
@@ -290,12 +290,12 @@ internal class QueryClauseConverter
         return variables;
     }
 
-    private async Task<(QueryRangeVariable Variable, SyntaxToken Identifier, ExpressionSyntax Collection)> DeclareJoinedVariableAsync(CsQueryBuilder builder, VBSyntax.JoinClauseSyntax join)
+    private async Task<(QueryRangeVariable Variable, SyntaxToken Identifier, TypeSyntax Type, ExpressionSyntax Collection)> DeclareJoinedVariableAsync(CsQueryBuilder builder, VBSyntax.JoinClauseSyntax join)
     {
         var vbVariable = join.JoinedVariables.Single();
-        var (_, collection) = await ConvertCollectionAsync(vbVariable);
+        var (type, collection) = await ConvertCollectionAsync(vbVariable);
         var variable = DeclareVariable(vbVariable);
-        return (variable, builder.DeclareRangeVariable(variable), collection);
+        return (variable, builder.DeclareRangeVariable(variable), type, collection);
     }
 
     /// <summary>
@@ -347,7 +347,7 @@ internal class QueryClauseConverter
             var variable = DeclareVariable(vbAggregation);
             if (vbAggregation.Aggregation is VBSyntax.FunctionAggregationSyntax function) {
                 var value = await ConvertAggregationFunctionAsync(builder, function, group, groupElement);
-                builder.Define(variable, value, CanInline(variable, vbAggregation), IsElementUsedNext(clause));
+                builder.Define(variable, value, CanInline(variable, vbAggregation, value), IsElementUsedNext(clause));
             } else {
                 variable.CsExpression = group;
             }
@@ -409,16 +409,17 @@ internal class QueryClauseConverter
     }
 
     /// <summary>
-    /// Substituting an expression for each reference must not change how many times it's evaluated (with the exception of cheap expressions)
+    /// Substituting an expression for each reference must not change what it refers to, or how many times it's evaluated (with the exception of cheap expressions)
     /// </summary>
     /// <remarks>
     /// When it's not referenced, it can only be evaluated as part of the element the next time the element is constructed (if it survives that long).
     /// After a method boundary, the variable refers to a member of the constructed element, so later references don't evaluate it again.
     /// When it's referenced once from the final select (and not from a nested lambda/query), that's the only place it will be evaluated.
     /// </remarks>
-    private bool CanInline(QueryRangeVariable variable, VisualBasicSyntaxNode declaration)
+    private bool CanInline(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
-        if (variable.Symbol == null) return true;
+        if (IsShadowedLater(value, declaration)) return false;
+        if (variable.Symbol == null || CsQueryBuilder.IsCheapToRepeat(value)) return true;
         var boundary = _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && IsMethodBoundary(c));
         var searchEnd = boundary?.SpanStart ?? _vbQuery.Span.End;
         var references = _vbQuery.DescendantNodes(TextSpan.FromBounds(declaration.Span.End, searchEnd)).OfType<VBSyntax.IdentifierNameSyntax>()
@@ -431,6 +432,29 @@ internal class QueryClauseConverter
             _ => false
         };
     }
+
+    /// <summary>
+    /// A C# range variable that VB has dropped from scope (e.g. `x` after `Select y = x`) can still be referenced by a substituted expression,
+    /// but VB code may reuse its name for a lambda parameter, e.g. `Where ys.Any(Function(x) x > y)`, which would capture the reference.
+    /// Other names declared later are C# range variables, which are renamed to avoid clashes anyway.
+    /// </summary>
+    private bool IsShadowedLater(ExpressionSyntax value, VisualBasicSyntaxNode declaration)
+    {
+        var referencedNames = new HashSet<string>(value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
+            .Where(id => id.Parent is not MemberAccessExpressionSyntax { Name: var name } || name != id)
+            .Select(id => id.Identifier.ValueText), StringComparer.OrdinalIgnoreCase);
+        return _vbQuery.DescendantNodes().OfType<VBSyntax.ParameterSyntax>()
+            .Any(p => p.SpanStart >= declaration.Span.End && referencedNames.Contains(p.Identifier.Identifier.ValueText));
+    }
+
+    private IEnumerable<string> GetNamesDeclaredWithinQuery(int startPosition = 0) =>
+        _vbQuery.DescendantNodes().Where(n => n.SpanStart >= startPosition).Select(n => n switch {
+            VBSyntax.ModifiedIdentifierSyntax x => x.Identifier.ValueText,
+            VBSyntax.CollectionRangeVariableSyntax x => x.Identifier.Identifier.ValueText,
+            VBSyntax.ExpressionRangeVariableSyntax x => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, x)?.Name,
+            VBSyntax.AggregationRangeVariableSyntax x => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, x)?.Name,
+            _ => null
+        }).Where(n => n != null);
 
     /// <summary>
     /// When the element will be used straight after this clause, values inlined into it stay in the same order relative to other clauses
@@ -460,7 +484,11 @@ internal class QueryClauseConverter
     private async Task<T> WithBuilderAsync<T>(Func<CsQueryBuilder, Task<T>> useBuilder)
     {
         var enclosing = _activeBuilders.Count > 0 ? _activeBuilders.Peek() : null;
-        var builder = new CsQueryBuilder(name => NameGenerator.CS.IsNameFreeInScope(_semanticModel, _generatedNames, _vbQuery, name), enclosing);
+        var namesDeclaredWithinQuery = new HashSet<string>(GetNamesDeclaredWithinQuery(), StringComparer.OrdinalIgnoreCase);
+        bool IsNameFreeOutsideQuery(string name) =>
+            !namesDeclaredWithinQuery.Contains(name) && _semanticModel.LookupSymbols(_vbQuery.SpanStart, name: name).IsEmpty &&
+            NameGenerator.CS.IsNameFreeInScope(_semanticModel, _generatedNames, _vbQuery, name);
+        var builder = new CsQueryBuilder(IsNameFreeOutsideQuery, enclosing);
         _activeBuilders.Push(builder);
         try {
             return await useBuilder(builder);

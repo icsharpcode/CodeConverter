@@ -271,4 +271,70 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ExplicitIdentitySelectIsKeptAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(arr As Integer())
+        Dim q = From x In arr Select x
+        q = q.Where(Function(v) v > 1)
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M(int[] arr)
+    {
+        var q = from x in arr
+                select x;
+        q = q.Where(v => v > 1);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task GeneratedNamesAvoidEnclosingLambdaParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M()
+        Dim f = Function(x As Integer) (From a In {1, 2}
+                                        From b In {3}
+                                        Distinct
+                                        Where a > x).Count()
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+public partial class C
+{
+    public void M()
+    {
+        int f(int x) => (from x1 in (from a in new[] { 1, 2 } from b in new[] { 3 } select new { a, b }).Distinct() where x1.a > x select x1).Count();
+    }
+}");
+    }
+
+    [Fact]
+    public async Task SubstitutionAvoidsLambdaParameterWithSameNameAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(ys As Integer())
+        Dim q = From x In {1, 5}
+                Select y = x
+                Where ys.Any(Function(x) x > y)
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M(int[] ys)
+    {
+        var q = from x in new[] { 1, 5 }
+                let y = x
+                where ys.Any(x => x > y)
+                select y;
+    }
+}");
+    }
 }

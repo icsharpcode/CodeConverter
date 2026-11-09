@@ -354,4 +354,26 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task TypedJoinVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Id As Integer
+    Private Shared Sub M(xs As Integer(), objs As Object())
+        Dim q = From x In xs Join c As C In objs On x Equals c.Id Select x, c
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public int Id;
+    private static void M(int[] xs, object[] objs)
+    {
+        var q = from x in xs
+                join C c in objs on x equals c.Id
+                select new { x, c };
+    }
+}");
+    }
 }

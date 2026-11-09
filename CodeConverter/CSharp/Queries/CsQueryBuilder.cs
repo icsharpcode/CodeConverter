@@ -26,8 +26,9 @@ internal class CsQueryBuilder
     private List<QueryClauseSyntax> _clauses = new();
     private ExpressionSyntax _source;
     private List<QueryRangeVariable> _scope = new();
+    private (List<QueryRangeVariable> Scope, List<ExpressionSyntax> Expressions, IdentifierNameSyntax Parameter)? _resumedElement;
 
-    /// <param name="isNameFreeOutsideQuery">Whether a generated name would clash with anything visible from outside any query, e.g. locals</param>
+    /// <param name="isNameFreeOutsideQuery">Whether a generated name would clash with anything visible to the query, e.g. locals, or declared within it, e.g. lambda parameters</param>
     /// <param name="enclosingQuery">A query this one is nested within, whose range variables are in scope</param>
     public CsQueryBuilder(Func<string, bool> isNameFreeOutsideQuery, CsQueryBuilder enclosingQuery)
     {
@@ -40,7 +41,7 @@ internal class CsQueryBuilder
     /// <summary>
     /// Avoids reusing names from earlier in the query even where it'd be valid, since it's confusing to read
     /// </summary>
-    public bool IsNameFree(string name) => !_allDeclaredNames.Contains(name) && (_enclosingQuery?.IsNameFree(name) ?? _isNameFreeOutsideQuery(name));
+    public bool IsNameFree(string name) => !_allDeclaredNames.Contains(name) && _isNameFreeOutsideQuery(name) && _enclosingQuery?.IsNameFree(name) != false;
 
     public string GenerateName(string baseName)
     {
@@ -89,12 +90,12 @@ internal class CsQueryBuilder
     /// <summary>
     /// Makes the variable evaluate to the given expression, either by substituting the expression wherever it's used, or by introducing a let clause.
     /// </summary>
-    /// <param name="canInline">True if substituting the expression won't evaluate it more often than VB would</param>
+    /// <param name="canInline">True if substituting the expression is safe: it won't be evaluated more often than VB would, and nothing it references is shadowed where it's used</param>
     /// <param name="isUsedInPlace">True if the next use of the expression is at the same point in the query, so its source mapping (and hence comments) can stay with it</param>
     /// <remarks>An inlined expression is stored without parentheses, they're added where needed when it's substituted</remarks>
     public void Define(QueryRangeVariable variable, ExpressionSyntax value, bool canInline, bool isUsedInPlace)
     {
-        if (canInline || IsCheapToRepeat(value)) {
+        if (canInline) {
             var unparenthesized = value is ParenthesizedExpressionSyntax p ? p.Expression : value;
             variable.CsExpression = isUsedInPlace ? unparenthesized : unparenthesized.WithoutSourceMapping();
         } else {
@@ -131,6 +132,7 @@ internal class CsQueryBuilder
         var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ParenthesizeIfNeeded(target), ValidSyntaxFactory.IdentifierName(methodName));
         _source = SyntaxFactory.InvocationExpression(memberAccess, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments.Select(SyntaxFactory.Argument))));
         _from = null;
+        _resumedElement = null;
         _completedBodies.Clear();
         _clauses = new List<QueryClauseSyntax>();
         _csRangeVariableNames.Clear();
@@ -142,14 +144,15 @@ internal class CsQueryBuilder
     public ExpressionSyntax Materialize(VisualBasicSyntaxNode vbSourceMapping = null)
     {
         if (_from == null) return _source;
-        var select = SyntaxFactory.SelectClause(CreateElement(Scope));
-        return Build(vbSourceMapping == null || HasSourceMapping(select) ? select : select.WithVbSourceMappingFrom(vbSourceMapping));
+        var select = SyntaxFactory.SelectClause(IsResumedElementUnchanged() ? _resumedElement.Value.Parameter : CreateElement(Scope));
+        return Build(vbSourceMapping == null || HasSourceMapping(select) ? select : select.WithVbSourceMappingFrom(vbSourceMapping), isGenerated: true);
     }
 
-    public ExpressionSyntax Build(SelectOrGroupClauseSyntax selectOrGroup)
+    /// <param name="isGenerated">A generated identity select can be dropped (VB adds one to a bare `From x In xs`), but an explicit one changes the result's type, like it does in VB</param>
+    public ExpressionSyntax Build(SelectOrGroupClauseSyntax selectOrGroup, bool isGenerated = false)
     {
         EnsureQuery();
-        if (IsIdentitySelect(selectOrGroup)) return _from.Expression;
+        if (isGenerated && IsIdentitySelect(selectOrGroup)) return _from.Expression;
 
         var body = SyntaxFactory.QueryBody(SyntaxFactory.List(_clauses), selectOrGroup, null);
         for (int i = _completedBodies.Count - 1; i >= 0; i--) {
@@ -222,12 +225,22 @@ internal class CsQueryBuilder
         _from = SyntaxFactory.FromClause(parameterName, _source);
         _source = null;
         ReferToElementVia(Scope, parameterName);
+        _resumedElement = (Scope.ToList(), Scope.Select(v => v.CsExpression).ToList(), SyntaxFactory.IdentifierName(parameterName));
     }
 
+    /// <remarks>
+    /// A single variable keeps its name unless that's still a C# range variable that VB has dropped, which other substituted expressions may refer to
+    /// </remarks>
     private SyntaxToken GetElementParameterName(IReadOnlyList<QueryRangeVariable> element) =>
-        element.Count == 1 && element[0].Symbol != null
+        element.Count == 1 && element[0].Symbol != null && !IsRangeVariableInScope(element[0].Name)
             ? CommonConversions.CsEscapedIdentifier(element[0].Name)
             : CommonConversions.CsEscapedIdentifier(GenerateName(GeneratedVariableName, n => IsNameFree(n) && element.All(v => !string.Equals(v.Name, n, StringComparison.OrdinalIgnoreCase))));
+
+    /// <summary>
+    /// After resuming from a method call, the element is the from variable itself until the scope changes
+    /// </summary>
+    private bool IsResumedElementUnchanged() =>
+        _resumedElement is var (scope, expressions, _) && scope.SequenceEqual(Scope) && expressions.SequenceEqual(Scope.Select(v => v.CsExpression));
 
     private static bool HasSourceMapping(SyntaxNode node) =>
         node.DescendantNodesAndSelf().Any(n => n.HasAnnotations(AnnotationConstants.SourceStartLineAnnotationKind));

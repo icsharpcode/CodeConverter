@@ -1,4 +1,4 @@
-Option Compare Text
+﻿Option Compare Text
 
 Imports System
 Imports System.Linq
@@ -50,6 +50,12 @@ Public Class LinqOptionCompareTextTests
     <Fact>
     Sub TestOrderByUsesDefaultComparer()
         Assert.Equal("a,A,b,B", String.Join(",", From w In {"b", "A", "a", "B"} Order By w))
+    End Sub
+
+    <Fact>
+    Sub TestQueryContainingExpressionTreeLambdaIgnoresCase()
+        Dim queryable = Words.AsQueryable()
+        Assert.Equal(2, (From w In Words Where w = "a" AndAlso queryable.Any(Function(z) z.Length = w.Length)).Count())
     End Sub
 
 End Class
