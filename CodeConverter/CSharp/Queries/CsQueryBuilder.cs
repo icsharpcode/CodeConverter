@@ -175,9 +175,10 @@ internal class CsQueryBuilder
     /// <summary>
     /// For example the argument of an aggregate function, which is a lambda over the group's element
     /// </summary>
-    public async Task<LambdaExpressionSyntax> CreateElementLambdaAsync(IReadOnlyList<QueryRangeVariable> element, Func<Task<ExpressionSyntax>> convertBody)
+    /// <param name="isOutsideQuery">For a method applied to the query's result, where its range variables aren't in scope</param>
+    public async Task<LambdaExpressionSyntax> CreateElementLambdaAsync(IReadOnlyList<QueryRangeVariable> element, Func<Task<ExpressionSyntax>> convertBody, bool isOutsideQuery = false)
     {
-        var parameter = ChooseElementIdentifier(element);
+        var parameter = ChooseElementIdentifier(element, isOutsideQuery);
         var originalExpressions = element.Select(v => v.CsExpression).ToArray();
         try {
             ReferToElementVia(element, parameter);
@@ -227,9 +228,10 @@ internal class CsQueryBuilder
     /// <remarks>
     /// A single variable keeps its name unless that's still a C# range variable that VB has dropped, since substituted expressions may refer to it
     /// </remarks>
-    private SyntaxToken ChooseElementIdentifier(IReadOnlyList<QueryRangeVariable> element)
+    private SyntaxToken ChooseElementIdentifier(IReadOnlyList<QueryRangeVariable> element, bool isOutsideQuery = false)
     {
-        var name = element.Count == 1 && element[0].Symbol != null && !IsRangeVariableInScope(element[0].Name)
+        var isRangeVariableInScope = isOutsideQuery ? _enclosingQuery?.IsRangeVariableInScope(element[0].Name) == true : IsRangeVariableInScope(element[0].Name);
+        var name = element.Count == 1 && element[0].Symbol != null && !isRangeVariableInScope
             ? element[0].Name
             : NameGenerator.Generic.GenerateUniqueName(GeneratedElementName, IsNameFree);
         return CommonConversions.CsEscapedIdentifier(name);

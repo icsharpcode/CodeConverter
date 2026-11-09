@@ -800,4 +800,25 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task PartitionWhileLambdaKeepsVariableNameAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(xs As Integer())
+        Dim data = From x In xs Order By x Skip While x < 3 Select x + 1
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M(int[] xs)
+    {
+        var data = from x in (from x in xs
+                              orderby x
+                              select x).SkipWhile(x => x < 3)
+                   select x + 1;
+    }
+}");
+    }
 }

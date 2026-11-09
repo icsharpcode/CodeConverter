@@ -143,7 +143,7 @@ internal partial class QueryClauseConverter
     private async Task ConvertPartitionWhileAsync(CsQueryBuilder builder, VBSyntax.PartitionWhileClauseSyntax partitionWhile)
     {
         var methodName = partitionWhile.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.SkipWhile) : nameof(Enumerable.TakeWhile);
-        var predicate = await builder.CreateElementLambdaAsync(builder.Scope, () => ConvertAsync(partitionWhile.Condition));
+        var predicate = await builder.CreateElementLambdaAsync(builder.Scope, () => ConvertConditionAsync(partitionWhile.Condition), isOutsideQuery: true);
         builder.ApplyMethod(methodName, predicate);
     }
 
