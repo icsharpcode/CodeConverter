@@ -1,4 +1,4 @@
-﻿using ICSharpCode.CodeConverter.CSharp.Queries;
+using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;

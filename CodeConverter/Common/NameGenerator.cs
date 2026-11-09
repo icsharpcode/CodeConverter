@@ -23,7 +23,7 @@ internal class NameGenerator
     }
 
     public bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string name) =>
-        !generatedNames.Contains(name) && !GetScopeStarts(node).SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name)).Any();
+        IsNameFreeInScope(semanticModel, generatedNames, GetScopeStarts(node), name);
 
     public string GenerateUniqueVariableName(HashSet<string> generatedNames, string variableNameBase)
     {
@@ -35,15 +35,13 @@ internal class NameGenerator
     private string GenerateUniqueVariableNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames,
         string variableNameBase, List<int> scopeStarts)
     {
-        string uniqueName = GenerateUniqueName(variableNameBase, string.Empty,
-            n => {
-                var matchingSymbols =
-                    scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: n));
-                return !generatedNames.Contains(n) && !matchingSymbols.Any();
-            });
+        string uniqueName = GenerateUniqueName(variableNameBase, string.Empty, n => IsNameFreeInScope(semanticModel, generatedNames, scopeStarts, n));
         generatedNames.Add(uniqueName);
         return uniqueName;
     }
+
+    private static bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, List<int> scopeStarts, string name) =>
+        !generatedNames.Contains(name) && !scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name)).Any();
 
     private string GenerateUniqueName(string baseName, string extension, Func<string, bool> canUse)
     {

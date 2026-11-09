@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Globalization;
 using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
