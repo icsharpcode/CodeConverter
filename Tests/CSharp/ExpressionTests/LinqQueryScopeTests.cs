@@ -235,7 +235,7 @@ public partial class C
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class C
     Public Function M(ints As Integer()) As IEnumerable(Of Long)
-        Return From x As Long In ints Select x * 2
+        Return From n As Long In ints Select n * 2
     End Function
 End Class", @"using System.Collections.Generic;
 using System.Linq;
@@ -244,8 +244,8 @@ public partial class C
 {
     public IEnumerable<long> M(int[] ints)
     {
-        return from x in ints.Select(x => (long)x)
-               select x * 2L;
+        return from n in ints.Select(n => (long)n)
+               select n * 2L;
     }
 }");
     }
@@ -706,5 +706,32 @@ public partial class C
                select x;
     }
 }", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task NestedQueryGeneratedNameAvoidsRenamedEnclosingRangeVariablesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(xs As Integer())
+        Dim q = From x In xs
+                Select x = x * 2
+                Where (From a In xs, b In xs Distinct Where a < x).Any()
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M(int[] xs)
+    {
+        var q = from x in xs
+                let x1 = x * 2
+                where (from x2 in (from a in xs
+                                   from b in xs
+                                   select new { a, b }).Distinct()
+                       where x2.a < x1
+                       select x2).Any()
+                select x1;
+    }
+}");
     }
 }

@@ -508,4 +508,59 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task TwoJoinSubqueriesGetDistinctNamesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private Shared Sub M(xs As Integer(), ys As Integer(), zs As Integer())
+        Dim q = From x In xs
+                Join y In ys
+                    Join z In zs On z Equals y
+                On x Equals y + z
+                Join v In ys
+                    Join w In zs On w Equals v
+                On x Equals v + w
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    private static void M(int[] xs, int[] ys, int[] zs)
+    {
+        var q = from x in xs
+                join x1 in from y in ys
+                           join z in zs on y equals z
+                           select new { y, z } on x equals x1.y + x1.z
+                join x2 in from v in ys
+                           join w in zs on v equals w
+                           select new { v, w } on x equals x2.v + x2.w
+                select new { x, x1.y, x1.z, x2.v, x2.w };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TypedGroupJoinVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Id As Integer
+    Private Shared Sub M(xs As Integer(), objs As Object())
+        Dim q = From x In xs
+                Group Join c As C In objs On x Equals c.Id Into Count()
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+public partial class C
+{
+    public int Id;
+    private static void M(int[] xs, object[] objs)
+    {
+        var q = from x in xs
+                join C c in objs on x equals c.Id into Group
+                select new { x, Count = Group.Count() };
+    }
+}");
+    }
 }
