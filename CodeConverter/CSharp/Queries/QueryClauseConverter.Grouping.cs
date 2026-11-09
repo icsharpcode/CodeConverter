@@ -63,14 +63,18 @@ internal partial class QueryClauseConverter
     /// <summary>
     /// Several aggregations share one evaluation of the nested query, as in VB's translation
     /// </summary>
+    /// <summary>
+    /// The Aggregate clause's own query runs within the enclosing query's lambda, so that decides what runs outside its expression tree
+    /// </summary>
     private async Task ConvertAggregateClauseAsync(CsQueryBuilder builder, VBSyntax.AggregateClauseSyntax aggregate)
     {
-        var originalIsWithinExpressionTree = _visitor.IsWithinExpressionTree;
+        var (enclosingIsWithinExpressionTree, enclosingOutsideQuery) = (_visitor.IsWithinExpressionTree, _isWithinExpressionTreeOutsideQuery);
+        _isWithinExpressionTreeOutsideQuery = enclosingIsWithinExpressionTree;
         _visitor.IsWithinExpressionTree |= _expressionTrees.IsExpressionTree(aggregate);
         try {
             await ConvertAggregateClauseWithinTrackedScopeAsync(builder, aggregate);
         } finally {
-            _visitor.IsWithinExpressionTree = originalIsWithinExpressionTree;
+            (_visitor.IsWithinExpressionTree, _isWithinExpressionTreeOutsideQuery) = (enclosingIsWithinExpressionTree, enclosingOutsideQuery);
         }
     }
 

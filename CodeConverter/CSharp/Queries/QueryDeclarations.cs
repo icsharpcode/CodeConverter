@@ -10,6 +10,7 @@ internal static class QueryDeclarations
     public static IEnumerable<Declaration> Get(VBSyntax.QueryExpressionSyntax query, SemanticModel semanticModel) =>
         query.DescendantNodes().Select(n => n switch {
             VBSyntax.ModifiedIdentifierSyntax { Parent: VBSyntax.CollectionRangeVariableSyntax } x => new Declaration(x.Identifier.ValueText, x.SpanStart, true),
+            VBSyntax.ModifiedIdentifierSyntax { Parent: VBSyntax.VariableNameEqualsSyntax } => null, // The range variable's own declaration below
             VBSyntax.ModifiedIdentifierSyntax x => new Declaration(x.Identifier.ValueText, x.SpanStart, false),
             VBSyntax.ExpressionRangeVariableSyntax x => FromSymbol(VBasic.VisualBasicExtensions.GetDeclaredSymbol(semanticModel, x), x),
             VBSyntax.AggregationRangeVariableSyntax x => FromSymbol(VBasic.VisualBasicExtensions.GetDeclaredSymbol(semanticModel, x), x),

@@ -537,5 +537,23 @@ Public Class LinqExpressionTests
         Dim q = From x In {1} Let f As Func(Of Integer) = AddressOf Five Where f() > 0 Select f
         Assert.Equal(5, q.Single()())
     End Sub
+    <Fact>
+    Sub TestPartitionCountsConvertedToInteger()
+        Dim n As Long = 1
+        Dim q = From x In {1, 2, 3} Skip n Take 1.5 Select x
+        Assert.Equal("2|3", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestFromNullableOfWiderType()
+        Dim q = From x As Long? In New Integer() {1, 2} Select x
+        Assert.Equal("1|2", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestAggregateFunctionInDifferentCase()
+        Dim total = Aggregate x In {1, 2} Into t = sum(x)
+        Assert.Equal(3, total)
+    End Sub
 
 End Class

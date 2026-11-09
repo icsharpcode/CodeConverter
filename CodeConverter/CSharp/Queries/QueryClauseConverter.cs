@@ -21,7 +21,7 @@ internal partial class QueryClauseConverter
     private readonly FlatJoinPlanner _joinPlanner;
     private SubstitutionRules _substitution;
     private readonly ExpressionTreeDetector _expressionTrees;
-    private readonly bool _isWithinExpressionTreeOutsideQuery;
+    private bool _isWithinExpressionTreeOutsideQuery;
 
     /// <param name="activeBuilders">Builders for the queries being converted, the innermost of which encloses this query</param>
     /// <param name="isWithinExpressionTreeOutsideQuery">For the parts of the query that run as ordinary code even when its lambdas are an expression tree</param>
@@ -141,7 +141,9 @@ internal partial class QueryClauseConverter
     private async Task ConvertPartitionAsync(CsQueryBuilder builder, VBSyntax.PartitionClauseSyntax partition)
     {
         var methodName = partition.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.Skip) : nameof(Enumerable.Take);
-        builder.ApplyMethod(methodName, await ConvertOutsideExpressionTreeAsync(partition.Count));
+        var count = await ConvertOutsideExpressionTreeAsync(partition.Count);
+        builder.ApplyMethod(methodName, _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(partition.Count, count,
+            forceTargetType: _semanticModel.Compilation.GetSpecialType(SpecialType.System_Int32)));
     }
 
     private async Task ConvertPartitionWhileAsync(CsQueryBuilder builder, VBSyntax.PartitionWhileClauseSyntax partitionWhile)
@@ -213,11 +215,14 @@ internal partial class QueryClauseConverter
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
 
     /// <summary>
-    /// A provider is passed the first source and a join's inner source as they are, whereas later sources are within lambdas
+    /// A provider is passed the first source (of the query, or of an Aggregate clause's own query) and a join's inner source as they are,
+    /// whereas later sources are within lambdas
     /// </summary>
     private Task<ExpressionSyntax> ConvertSourceAsync(VBSyntax.ExpressionSyntax collection) =>
         collection.Parent is VBSyntax.CollectionRangeVariableSyntax variable &&
-        (variable.Parent is VBSyntax.JoinClauseSyntax || _vbQuery.Clauses.First() is VBSyntax.FromClauseSyntax from && from.Variables.First() == variable)
+        (variable.Parent is VBSyntax.JoinClauseSyntax ||
+         variable.Parent is VBSyntax.AggregateClauseSyntax aggregate && aggregate.Variables.First() == variable ||
+         variable.Parent is VBSyntax.FromClauseSyntax from && from == _vbQuery.Clauses.First() && from.Variables.First() == variable)
             ? ConvertOutsideExpressionTreeAsync(collection)
             : ConvertAsync(collection);
 

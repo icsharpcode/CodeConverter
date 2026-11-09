@@ -840,4 +840,70 @@ public partial class C
     }
 }");
     }
+
+    /// <summary>
+    /// Names declared later, values declared in between, and conditional evaluation in the final select
+    /// </summary>
+    [Fact]
+    public async Task SubstitutionEdgeCasesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+Public Class C
+    Shared Count As Integer = 5
+    Function Foo(i As Integer) As Integer
+        Return i
+    End Function
+    Sub M(xs As Integer(), ys As Integer(), ss As String(), longs As Long())
+        Dim g1 = From x In xs Select y = x Let x = Foo(1) Select y, x
+        Dim g8 = From x In xs Select y = x From x In ys Select y, x
+        Dim g9 = From x In ss Select y = x.Length Where ss.Any(Function(x) x.Length > y) Select y
+        Dim g10 = From x In ss Let y = Foo(x.Length) Let z = x.Length Where y > z + z Select x
+        Dim g11 = From x In xs Let y = Foo(x) Select a = If(x > 0, 1, 2), y
+        Dim g12 = From a In xs, b In ys Distinct Select a + b Where True Select 1
+        Dim g13 = From x In xs Join y In longs On x Equals y Select x
+        Dim g15 = From x In xs Select v = Count Aggregate y In ys Into Count() Select v
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+public partial class C
+{
+    private static int Count = 5;
+    public int Foo(int i)
+    {
+        return i;
+    }
+    public void M(int[] xs, int[] ys, string[] ss, long[] longs)
+    {
+        var g1 = from x in xs
+                 select new { y = x, x = Foo(1) };
+        var g8 = from x in xs
+                 from x1 in ys
+                 select new { y = x, x = x1 };
+        var g9 = from x in ss
+                 let y = x.Length
+                 where ss.Any(x => x.Length > y)
+                 select y;
+        var g10 = from x in ss
+                  where Foo(x.Length) > x.Length + x.Length
+                  select x;
+        var g11 = from x in xs
+                  let y = Foo(x)
+                  select new { a = x > 0 ? 1 : 2, y };
+        var g12 = from x in (from a in xs
+                             from b in ys
+                             select new { a, b }).Distinct()
+                  let x1 = x.a + x.b
+                  where true
+                  select 1;
+        var g13 = from x in xs
+                  join y in longs on x equals y
+                  select x;
+        var g15 = from x in xs
+                  let v = Count
+                  let Count = ys.Count()
+                  select v;
+    }
+}");
+    }
 }

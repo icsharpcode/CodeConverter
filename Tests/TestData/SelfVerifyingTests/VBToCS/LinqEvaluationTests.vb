@@ -228,4 +228,10 @@ Public Class LinqEvaluationTests
         _field = 100
         Assert.Equal(11, q(0).Group.Single().Single())
     End Sub
+
+    <Fact>
+    Sub TestLetBeforeWhereAndGroupByIsEvaluatedForEachElement()
+        Dim q = (From x In {3, 1} Let y = Log("y", x) Where y > 0 Group By k = x Mod 2 Into Count() Select k).ToList()
+        Assert.Equal("y3,y1", Logged)
+    End Sub
 End Class

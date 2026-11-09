@@ -152,4 +152,21 @@ Public Class LinqComparisonTests
         Dim q = From x In If(s = "", q1, q2) Where x > 0 Take If(s = "", 1, 2)
         Assert.Equal(1, q.Count())
     End Sub
+
+    <Fact>
+    Sub TestAggregateQueryableSourceKeepsVbComparison()
+        Dim s As String = Nothing
+        Dim q1 = {1, 2}.AsQueryable()
+        Dim q2 = {1, 2, 3}.AsQueryable()
+        Dim r = Aggregate o In If(s = "", q1, q2) Into Count(o > 0)
+        Assert.Equal(2, r)
+    End Sub
+
+    <Fact>
+    Sub TestLaterAggregateQueryableSourceKeepsVbComparison()
+        Dim q1 = {1, 2}.AsQueryable()
+        Dim q2 = {1, 2, 3}.AsQueryable()
+        Dim q = From s In New String() {Nothing} Aggregate o In If(s = "", q1, q2) Into Count(o > 0) Select Count
+        Assert.Equal(2, q.Single())
+    End Sub
 End Class
