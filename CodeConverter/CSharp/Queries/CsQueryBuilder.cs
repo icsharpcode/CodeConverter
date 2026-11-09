@@ -75,11 +75,13 @@ internal class CsQueryBuilder
     /// Makes the variable evaluate to the given expression, either by substituting the expression wherever it's used, or by introducing a let clause.
     /// </summary>
     /// <param name="canInline">True if substituting the expression won't evaluate it more often than VB would</param>
-    /// <remarks>An inlined expression is stored without parentheses (they're added where needed when it's substituted), and without source mapping since it moves elsewhere</remarks>
-    public void Define(QueryRangeVariable variable, ExpressionSyntax value, bool canInline)
+    /// <param name="isUsedInPlace">True if the next use of the expression is at the same point in the query, so its source mapping (and hence comments) can stay with it</param>
+    /// <remarks>An inlined expression is stored without parentheses, they're added where needed when it's substituted</remarks>
+    public void Define(QueryRangeVariable variable, ExpressionSyntax value, bool canInline, bool isUsedInPlace)
     {
         if (canInline || IsCheapToRepeat(value)) {
-            variable.CsExpression = (value is ParenthesizedExpressionSyntax p ? p.Expression : value).WithoutSourceMapping();
+            var unparenthesized = value is ParenthesizedExpressionSyntax p ? p.Expression : value;
+            variable.CsExpression = isUsedInPlace ? unparenthesized : unparenthesized.WithoutSourceMapping();
         } else {
             AddClause(SyntaxFactory.LetClause(DeclareRangeVariable(variable), value));
         }
@@ -126,7 +128,7 @@ internal class CsQueryBuilder
     {
         if (_from == null) return _source;
         var select = SyntaxFactory.SelectClause(CreateElement(Scope));
-        return Build(vbSourceMapping == null ? select : select.WithVbSourceMappingFrom(vbSourceMapping));
+        return Build(vbSourceMapping == null || HasSourceMapping(select) ? select : select.WithVbSourceMappingFrom(vbSourceMapping));
     }
 
     public ExpressionSyntax Build(SelectOrGroupClauseSyntax selectOrGroup)
@@ -211,6 +213,9 @@ internal class CsQueryBuilder
         element.Count == 1 && element[0].Symbol != null
             ? CommonConversions.CsEscapedIdentifier(element[0].Name)
             : CommonConversions.CsEscapedIdentifier(GenerateName(GeneratedVariableName, n => IsNameFree(n) && element.All(v => !string.Equals(v.Name, n, StringComparison.OrdinalIgnoreCase))));
+
+    private static bool HasSourceMapping(SyntaxNode node) =>
+        node.DescendantNodesAndSelf().Any(n => n.HasAnnotations(AnnotationConstants.SourceStartLineAnnotationKind));
 
     private static void ReferToElementVia(IReadOnlyList<QueryRangeVariable> element, SyntaxToken parameterName)
     {

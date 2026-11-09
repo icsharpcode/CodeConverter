@@ -435,26 +435,6 @@ End Sub", @"private static void ASub()
 }");
     }
 
-    [Fact(Skip = "Issue #29 - Group join not supported")]
-    public async Task LinqGroupJoinAsync()
-    {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
-    Dim customerList = From cust In customers
-                       Group Join ord In orders On
-                       cust.CustomerID Equals ord.CustomerID
-                       Into CustomerOrders = Group,
-                            OrderTotal = Sum(ord.Total)
-                       Select cust.CompanyName, cust.CustomerID,
-                              CustomerOrders, OrderTotal
-End Sub", @"private static void ASub()
-{
-    var customerList = from cust in customers
-                       join ord in orders on cust.CustomerID equals ord.CustomerID into CustomerOrders
-                       let OrderTotal = Sum(ord.Total) //TODO Figure out exact C# syntax for this query
-                       select new { cust.CompanyName, cust.CustomerID, CustomerOrders, OrderTotal };
-}");
-    }
-
     [Fact]
     public async Task LinqJoinReorderExpressionsAsync()
     {

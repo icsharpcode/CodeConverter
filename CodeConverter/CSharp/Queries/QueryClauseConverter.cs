@@ -38,7 +38,8 @@ internal class QueryClauseConverter
     public static bool IsSupported(VBSyntax.QueryExpressionSyntax query) =>
         query.Clauses.First() is VBSyntax.FromClauseSyntax &&
         query.Clauses.All(c => c is VBSyntax.FromClauseSyntax or VBSyntax.LetClauseSyntax or VBSyntax.WhereClauseSyntax or VBSyntax.OrderByClauseSyntax
-            or VBSyntax.SelectClauseSyntax or VBSyntax.DistinctClauseSyntax or VBSyntax.PartitionClauseSyntax or VBSyntax.PartitionWhileClauseSyntax);
+            or VBSyntax.SelectClauseSyntax or VBSyntax.DistinctClauseSyntax or VBSyntax.PartitionClauseSyntax or VBSyntax.PartitionWhileClauseSyntax
+            or VBSyntax.JoinClauseSyntax);
 
     public async Task<ExpressionSyntax> ConvertAsync()
     {
@@ -69,6 +70,8 @@ internal class QueryClauseConverter
             VBSyntax.DistinctClauseSyntax x => ConvertDistinctAsync(builder, x),
             VBSyntax.PartitionClauseSyntax x => ConvertPartitionAsync(builder, x),
             VBSyntax.PartitionWhileClauseSyntax x => ConvertPartitionWhileAsync(builder, x),
+            VBSyntax.SimpleJoinClauseSyntax x => ConvertJoinAsync(builder, x),
+            VBSyntax.GroupJoinClauseSyntax x => ConvertGroupJoinAsync(builder, x),
             _ => throw new NotImplementedException($"Conversion for query clause with kind '{clause.Kind()}' not implemented")
         };
     }
@@ -92,7 +95,7 @@ internal class QueryClauseConverter
         foreach (var vbVariable in let.Variables) {
             var value = await ConvertAsync(vbVariable.Expression);
             var variable = DeclareVariable(vbVariable);
-            builder.Define(variable, value, CanInline(variable, vbVariable));
+            builder.Define(variable, value, CanInline(variable, vbVariable), IsElementUsedNext(let));
             builder.AddToScope(variable);
         }
     }
@@ -115,7 +118,7 @@ internal class QueryClauseConverter
         var values = await select.Variables.SelectAsync(v => ConvertAsync(v.Expression));
         var variables = select.Variables.Select(DeclareVariable).ToList();
         for (int i = 0; i < variables.Count; i++) {
-            builder.Define(variables[i], values[i], CanInline(variables[i], select.Variables[i]));
+            builder.Define(variables[i], values[i], CanInline(variables[i], select.Variables[i]), IsElementUsedNext(select));
         }
         builder.SetScope(variables);
     }
@@ -145,6 +148,126 @@ internal class QueryClauseConverter
         var methodName = partitionWhile.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.SkipWhile) : nameof(Enumerable.TakeWhile);
         var predicate = await builder.CreateElementLambdaAsync(builder.Scope, () => ConvertAsync(partitionWhile.Condition));
         builder.ApplyMethod(partitionWhile, methodName, predicate);
+    }
+
+    /// <summary>
+    /// VB allows joins to be nested within a join, e.g. `Join y In ys Join z In zs On z Equals y On x Equals y`.
+    /// For inner joins, the result is the same as a flat sequence of joins, so each condition is attached to the earliest join where everything it references is in scope.
+    /// </summary>
+    private async Task ConvertJoinAsync(CsQueryBuilder builder, VBSyntax.SimpleJoinClauseSyntax join)
+    {
+        var joins = FlattenJoins(join).ToList();
+        if (joins.Skip(1).Any(j => j is not VBSyntax.SimpleJoinClauseSyntax)) {
+            throw new NotImplementedException("Group Join nested within Join not implemented");
+        }
+        var unplacedConditions = joins.SelectMany(j => j.JoinConditions).ToList();
+        var joinedSymbols = joins.Select(j => (ISymbol)VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, j.JoinedVariables.Single())).ToList();
+        var inScope = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        foreach (var vbJoin in joins) {
+            var (variable, identifier, collection) = await DeclareJoinedVariableAsync(builder, vbJoin);
+            inScope.Add(variable.Symbol);
+            var conditions = unplacedConditions.Where(c => {
+                var referenced = GetReferencedSymbols(c, joinedSymbols);
+                return referenced.Contains(variable.Symbol) && referenced.All(inScope.Contains);
+            }).ToList();
+            unplacedConditions.RemoveAll(conditions.Contains);
+            var (outerKey, innerKey) = await ConvertJoinConditionsAsync(conditions, variable.Symbol);
+            if (joins.Count > 1) (outerKey, innerKey) = (outerKey.WithoutSourceMapping(), innerKey.WithoutSourceMapping()); // Conditions have been reordered
+            builder.AddClause(SyntaxFactory.JoinClause(null, identifier, collection, outerKey, innerKey, null));
+            builder.AddToScope(variable);
+        }
+        if (unplacedConditions.Any()) throw new NotImplementedException("Join condition that doesn't reference the joined variable not implemented");
+    }
+
+    private async Task ConvertGroupJoinAsync(CsQueryBuilder builder, VBSyntax.GroupJoinClauseSyntax groupJoin)
+    {
+        if (groupJoin.AdditionalJoins.Any()) throw new NotImplementedException("Join nested within Group Join not implemented");
+        var (joinedVariable, identifier, collection) = await DeclareJoinedVariableAsync(builder, groupJoin);
+        var (outerKey, innerKey) = await ConvertJoinConditionsAsync(groupJoin.JoinConditions, joinedVariable.Symbol);
+        builder.RemoveRangeVariable(identifier);
+
+        var groupVariable = GetGroupVariable(groupJoin.AggregationVariables);
+        var into = builder.DeclareRangeVariable(groupVariable);
+        builder.AddClause(SyntaxFactory.JoinClause(null, identifier, collection, outerKey, innerKey, SyntaxFactory.JoinIntoClause(into)));
+        foreach (var aggregation in await ConvertAggregationsAsync(builder, groupJoin, groupJoin.AggregationVariables, groupVariable.CsExpression, new[] { joinedVariable })) {
+            builder.AddToScope(aggregation);
+        }
+    }
+
+    private async Task<(QueryRangeVariable Variable, SyntaxToken Identifier, ExpressionSyntax Collection)> DeclareJoinedVariableAsync(CsQueryBuilder builder, VBSyntax.JoinClauseSyntax join)
+    {
+        var vbVariable = join.JoinedVariables.Single();
+        var (_, collection) = await ConvertCollectionAsync(vbVariable);
+        var variable = DeclareVariable(vbVariable);
+        return (variable, builder.DeclareRangeVariable(variable), collection);
+    }
+
+    /// <summary>
+    /// C# requires the outer key on the left of equals, and multiple conditions to be combined into a single key
+    /// </summary>
+    private async Task<(ExpressionSyntax Outer, ExpressionSyntax Inner)> ConvertJoinConditionsAsync(IReadOnlyCollection<VBSyntax.JoinConditionSyntax> conditions, IRangeVariableSymbol joinedSymbol)
+    {
+        if (!conditions.Any()) throw new NotImplementedException("Join without a condition referencing the joined variable not implemented");
+        var keys = await conditions.SelectAsync(async c => {
+            var (vbOuter, vbInner) = References(c.Left, joinedSymbol) ? (c.Right, c.Left) : (c.Left, c.Right);
+            if (References(vbOuter, joinedSymbol)) throw new NotImplementedException("Join condition referencing the joined variable on both sides not implemented");
+            return (Outer: await ConvertKeyAsync(vbOuter), Inner: await ConvertKeyAsync(vbInner));
+        });
+        if (keys.Length == 1) return keys[0];
+        return (CreateJoinKey(keys.Select(k => k.Outer)), CreateJoinKey(keys.Select(k => k.Inner)));
+
+        async Task<ExpressionSyntax> ConvertKeyAsync(VBSyntax.ExpressionSyntax vbKey) =>
+            _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbKey, await ConvertAsync(vbKey));
+        static ExpressionSyntax CreateJoinKey(IEnumerable<ExpressionSyntax> keys) =>
+            CsQueryBuilder.CreateAnonymousObject(keys.Select((k, i) => ("key" + i, k)));
+    }
+
+    private static IEnumerable<VBSyntax.JoinClauseSyntax> FlattenJoins(VBSyntax.JoinClauseSyntax join) =>
+        join.AdditionalJoins.SelectMany(FlattenJoins).Prepend(join);
+
+    private bool References(SyntaxNode node, ISymbol symbol) => GetReferencedSymbols(node, new[] { symbol }).Any();
+
+    private HashSet<ISymbol> GetReferencedSymbols(SyntaxNode node, IReadOnlyCollection<ISymbol> candidates) =>
+        new(node.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>()
+            .Select(id => _semanticModel.GetSymbolInfo(id).Symbol)
+            .Where(s => s != null && candidates.Contains(s, SymbolEqualityComparer.Default)), SymbolEqualityComparer.Default);
+
+    /// <summary>
+    /// The C# variable for a group, named after VB's `Group` aggregation if there is one
+    /// </summary>
+    private QueryRangeVariable GetGroupVariable(SeparatedSyntaxList<VBSyntax.AggregationRangeVariableSyntax> aggregations) =>
+        aggregations.FirstOrDefault(a => a.Aggregation is VBSyntax.GroupAggregationSyntax) is { } groupAggregation
+            ? DeclareVariable(groupAggregation)
+            : new QueryRangeVariable(null, "Group");
+
+    /// <summary>
+    /// Each aggregation is a method call on the group, e.g. `Sum(x.Total)` => `group.Sum(x => x.Total)`
+    /// </summary>
+    private async Task<List<QueryRangeVariable>> ConvertAggregationsAsync(CsQueryBuilder builder, VBSyntax.QueryClauseSyntax clause, SeparatedSyntaxList<VBSyntax.AggregationRangeVariableSyntax> vbAggregations,
+        ExpressionSyntax group, IReadOnlyList<QueryRangeVariable> groupElement)
+    {
+        var aggregations = new List<QueryRangeVariable>();
+        foreach (var vbAggregation in vbAggregations) {
+            var variable = DeclareVariable(vbAggregation);
+            if (vbAggregation.Aggregation is VBSyntax.FunctionAggregationSyntax function) {
+                var value = await ConvertAggregationFunctionAsync(builder, function, group, groupElement);
+                builder.Define(variable, value, CanInline(variable, vbAggregation), IsElementUsedNext(clause));
+            } else {
+                variable.CsExpression = group;
+            }
+            aggregations.Add(variable);
+        }
+        return aggregations;
+    }
+
+    private async Task<ExpressionSyntax> ConvertAggregationFunctionAsync(CsQueryBuilder builder, VBSyntax.FunctionAggregationSyntax function, ExpressionSyntax group, IReadOnlyList<QueryRangeVariable> groupElement)
+    {
+        var methodName = _semanticModel.GetSymbolInfo(function).Symbol?.Name ?? function.FunctionName.ValueText;
+        var arguments = function.Argument == null
+            ? Array.Empty<ArgumentSyntax>()
+            : new[] { SyntaxFactory.Argument(await builder.CreateElementLambdaAsync(groupElement, () => ConvertAsync(function.Argument))) };
+        var method = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, CsQueryBuilder.ParenthesizeIfNeeded(group), ValidSyntaxFactory.IdentifierName(methodName));
+        return SyntaxFactory.InvocationExpression(method, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
     }
 
     private async Task<(TypeSyntax Type, ExpressionSyntax Expression)> ConvertCollectionAsync(VBSyntax.CollectionRangeVariableSyntax vbVariable)
@@ -180,6 +303,16 @@ internal class QueryClauseConverter
                  !references[0].Ancestors().TakeWhile(a => a != finalSelect).Any(a => a is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax),
             _ => false
         };
+    }
+
+    /// <summary>
+    /// When the element will be used straight after this clause, values inlined into it stay in the same order relative to other clauses
+    /// </summary>
+    private bool IsElementUsedNext(VBSyntax.QueryClauseSyntax clause)
+    {
+        var clauses = _vbQuery.Clauses;
+        var index = clauses.IndexOf(clause);
+        return index < 0 || index == clauses.Count - 1 || IsMethodBoundary(clauses[index + 1]);
     }
 
     private QueryRangeVariable DeclareVariable(VBSyntax.CollectionRangeVariableSyntax vbDeclaration) => DeclareVariable(VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbDeclaration));
