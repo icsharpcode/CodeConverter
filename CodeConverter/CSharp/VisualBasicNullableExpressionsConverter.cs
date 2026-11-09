@@ -47,8 +47,8 @@ internal class VisualBasicNullableExpressionsConverter
 
     public ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
-        if (IsWithinExpressionTree ||
-            !IsSupported(vbNode.Kind()) || 
+        if (IsWithinExpressionTree) return ForExpressionTree(vbNode, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        if (!IsSupported(vbNode.Kind()) || 
             !lhsTypeInfo.ConvertedType.IsNullable() ||
             !rhsTypeInfo.ConvertedType.IsNullable()) {
             return csBinExp;
@@ -58,6 +58,19 @@ internal class VisualBasicNullableExpressionsConverter
         if (!isLhsNullable && !isRhsNullable) return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation);
 
         return WithBinaryExpressionLogicForNullableTypes(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable);
+    }
+
+    /// <summary>
+    /// Providers translate plain C# operators, but C# only allows a bool? operand of &amp;&amp; or || as `x == true`, which is right where VB treats Nothing as False
+    /// </summary>
+    private ExpressionSyntax ForExpressionTree(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
+    {
+        if (!vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression) || !vbNode.IsOnlyTestedForTrue()) return csBinExp;
+        var isLhsNullable = IsNullable(vbNode.Left, lhs, lhsTypeInfo);
+        var isRhsNullable = IsNullable(vbNode.Right, rhs, rhsTypeInfo);
+        if (isLhsNullable) lhs = lhs.AddParens().EqualsTrue();
+        if (isRhsNullable) rhs = rhs.AddParens().EqualsTrue();
+        return csBinExp.WithLeft(lhs).WithRight(rhs).WithAdditionalAnnotations(IsNotNullableAnnotation);
     }
 
     private ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax vbNode, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs, bool isLhsNullable,

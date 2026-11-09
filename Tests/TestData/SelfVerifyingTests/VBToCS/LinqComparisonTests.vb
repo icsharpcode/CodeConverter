@@ -77,4 +77,21 @@ Public Class LinqComparisonTests
         Assert.Equal("True,False,", String.Join(",", q))
     End Sub
 
+
+    Private Shared ReadOnly Flags As Boolean?() = {True, Nothing, True}
+
+    <Fact>
+    Sub TestTakeWhileNullableBoolean()
+        Assert.Equal(1, (From f In Flags Take While f).Count())
+    End Sub
+
+    <Fact>
+    Sub TestNullableBooleanAndAlso()
+        Assert.Equal(2, (From f In Flags Where f AndAlso True).Count())
+    End Sub
+
+    <Fact>
+    Sub TestNullableBooleanOrElse()
+        Assert.Equal(2, (From f In Flags Where f OrElse False).Count())
+    End Sub
 End Class

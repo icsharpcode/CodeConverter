@@ -28,7 +28,7 @@ internal static class VbSyntaxNodeExtensions
                parent is VBSyntax.IfStatementSyntax ifStatement && ifStatement.Condition == vbNode ||
                parent is VBSyntax.ElseIfStatementSyntax elseIfStatement && elseIfStatement.Condition == vbNode ||
                parent is VBSyntax.TernaryConditionalExpressionSyntax ternary && ternary.Condition == vbNode ||
-               parent is VBSyntax.WhereClauseSyntax;
+               parent is VBSyntax.WhereClauseSyntax or VBSyntax.PartitionWhileClauseSyntax;
     }
 
     /// <summary>
