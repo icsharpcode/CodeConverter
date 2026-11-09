@@ -12,7 +12,6 @@ internal class QueryConverter
     private readonly CommentConvertingVisitorWrapper _triviaConvertingVisitor;
     private readonly RangeVariableReplacements _rangeVariableReplacements;
     private readonly HashSet<string> _generatedNames;
-    private readonly LegacyQueryConverter _legacyQueryConverter;
     private readonly Stack<CsQueryBuilder> _activeBuilders = new();
 
     public QueryConverter(CommonConversions commonConversions, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor,
@@ -23,13 +22,10 @@ internal class QueryConverter
         _triviaConvertingVisitor = triviaConvertingExpressionVisitor;
         _rangeVariableReplacements = rangeVariableReplacements;
         _generatedNames = generatedNames;
-        _legacyQueryConverter = new LegacyQueryConverter(commonConversions, semanticModel, triviaConvertingExpressionVisitor);
     }
 
     public async Task<CSharpSyntaxNode> ConvertQueryAsync(VBSyntax.QueryExpressionSyntax query)
     {
-        if (!QueryClauseConverter.IsSupported(query)) return await _legacyQueryConverter.ConvertClausesAsync(query.Clauses);
-
         bool originalIsWithinQuery = _triviaConvertingVisitor.IsWithinQuery;
         _triviaConvertingVisitor.IsWithinQuery = true;
         try {

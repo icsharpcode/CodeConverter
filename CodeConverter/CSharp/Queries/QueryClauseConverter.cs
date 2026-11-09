@@ -43,8 +43,6 @@ internal class QueryClauseConverter
         _generatedNames = generatedNames;
     }
 
-    public static bool IsSupported(VBSyntax.QueryExpressionSyntax query) => true;
-
     public async Task<ExpressionSyntax> ConvertAsync()
     {
         try {
