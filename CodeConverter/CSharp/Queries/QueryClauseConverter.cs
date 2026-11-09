@@ -51,7 +51,7 @@ internal partial class QueryClauseConverter
             foreach (var clause in finalSelect == null ? clauses : clauses.Take(clauses.Count - 1)) {
                 await ConvertClauseAsync(builder, clause);
             }
-            if (finalSelect == null) return builder.Materialize();
+            if (finalSelect == null) return builder.MaterializeResult();
             builder.EnsureQueryOpen();
             return builder.BuildQuery(await ConvertFinalSelectAsync(finalSelect));
         });
@@ -190,11 +190,12 @@ internal partial class QueryClauseConverter
     {
         var value = withoutParentheses ? await ConvertWithoutParenthesesAsync(vbVariable.Expression) : await ConvertAsync(vbVariable.Expression);
         if (_semanticModel.GetTypeInfo(vbVariable.Expression).ConvertedType is not { } type) return value;
+        if (vbVariable.Expression is VBSyntax.LambdaExpressionSyntax && _semanticModel.GetSymbolInfo(vbVariable.Expression).Symbol is IMethodSymbol lambda) {
+            var delegateType = type.IsAnonymousType ? _commonConversions.GetFuncTypeSyntax(type, lambda) : _commonConversions.GetTypeSyntax(type);
+            return SyntaxFactory.ObjectCreationExpression(delegateType, ExpressionSyntaxExtensions.CreateArgList(value), null);
+        }
         if (vbVariable.NameEquals?.AsClause != null) value = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, value);
         if (value.IsKind(SyntaxKind.NullLiteralExpression)) return SyntaxFactory.CastExpression(_commonConversions.GetTypeSyntax(type), value);
-        if (vbVariable.Expression is VBSyntax.LambdaExpressionSyntax && _semanticModel.GetSymbolInfo(vbVariable.Expression).Symbol is IMethodSymbol lambda) {
-            return SyntaxFactory.ObjectCreationExpression(_commonConversions.GetFuncTypeSyntax(type, lambda), ExpressionSyntaxExtensions.CreateArgList(value), null);
-        }
         return value;
     }
 

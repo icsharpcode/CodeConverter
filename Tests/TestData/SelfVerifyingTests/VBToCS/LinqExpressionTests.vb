@@ -470,4 +470,45 @@ Public Class LinqExpressionTests
         Assert.Equal(1, q.Count())
     End Sub
 
+    <Fact>
+    Sub TestQueryOfOnlyFromIsNotTheSourceItself()
+        Dim list As New List(Of Integer) From {1, 2}
+        Dim q = From x In list
+        q = q.Where(Function(y) y > 1)
+        Assert.Equal("2", Show(q))
+    End Sub
+
+    Public Class Bag
+        Public Function AsEnumerable() As IEnumerable(Of Integer)
+            Return {1, 2}
+        End Function
+    End Class
+
+    <Fact>
+    Sub TestConditionalSourceWithImplicitAsEnumerable()
+        Dim flag = True
+        Dim q = From i In If(flag, New Bag(), Nothing) Select i
+        Assert.Equal("1|2", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestNestedAggregate()
+        Dim xs = {1, 2, 3}
+        Dim total = Aggregate x In xs Aggregate y In xs Where y > x Into c = Count() Into Sum(c)
+        Assert.Equal(3, total)
+    End Sub
+
+    <Fact>
+    Sub TestLetWithDeclaredDelegateType()
+        Dim xs = {1, 2, 3}
+        Dim q = From x In {1} Let f As Predicate(Of Integer) = Function(a) a > x Select Array.FindAll(xs, f).Length
+        Assert.Equal("2", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestNameOfGroupKey()
+        Dim q = From x In {1, 2} Group By k = x Mod 2 Into Count() Select NameOf(k)
+        Assert.Equal("k|k", Show(q))
+    End Sub
+
 End Class

@@ -132,12 +132,19 @@ internal class CsQueryBuilder
         _rangeVariableNamesInScope.Clear();
     }
 
-    /// <returns>The sequence of elements, i.e. the result if the query ended here</returns>
-    public ExpressionSyntax Materialize()
+    /// <returns>The sequence of elements, for something else to consume</returns>
+    public ExpressionSyntax Materialize() => Materialize(canDropIdentitySelect: true);
+
+    /// <summary>
+    /// The query's result has the query's type even if it selects the source's elements unchanged, e.g. IEnumerable rather than List
+    /// </summary>
+    public ExpressionSyntax MaterializeResult() => Materialize(canDropIdentitySelect: false);
+
+    private ExpressionSyntax Materialize(bool canDropIdentitySelect)
     {
         if (!IsQueryOpen) return _methodCallResult;
         var select = SyntaxFactory.SelectClause(IsResumedElementUnchanged() ? _resumedElement.Identifier : CreateElement(Scope));
-        return BuildQuery(select, canDropIdentitySelect: true);
+        return BuildQuery(select, canDropIdentitySelect);
     }
 
     public ExpressionSyntax BuildQuery(SelectOrGroupClauseSyntax finalClause) => BuildQuery(finalClause, canDropIdentitySelect: false);

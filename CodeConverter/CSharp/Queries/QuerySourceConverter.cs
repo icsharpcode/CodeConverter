@@ -30,7 +30,7 @@ internal class QuerySourceConverter
         TypeSyntax castType = null;
         if (GetImplicitQueryableCall(vbVariable.Expression) is { } implicitCall) {
             if (implicitCall.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
-                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression, nameof(Enumerable.AsEnumerable)), SyntaxFactory.ArgumentList());
+                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(CsQueryBuilder.ParenthesizeIfNeeded(expression), nameof(Enumerable.AsEnumerable)), SyntaxFactory.ArgumentList());
             } else if (implicitCall.TargetMethod.Name == nameof(Enumerable.Cast)) {
                 sourceElementType = implicitCall.TargetMethod.TypeArguments.Single();
                 castType = _commonConversions.GetTypeSyntax(sourceElementType);
@@ -52,7 +52,7 @@ internal class QuerySourceConverter
     {
         var parent = _semanticModel.GetOperation(collection)?.Parent;
         while (parent is IConversionOperation { IsImplicit: true }) parent = parent.Parent;
-        return parent is IInvocationOperation { IsImplicit: true, TargetMethod.MethodKind: MethodKind.ReducedExtension } invocation ? invocation : null;
+        return parent is IInvocationOperation { IsImplicit: true } invocation ? invocation : null;
     }
 
     /// <summary>

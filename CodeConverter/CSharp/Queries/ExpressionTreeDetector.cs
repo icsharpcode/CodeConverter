@@ -23,7 +23,7 @@ internal class ExpressionTreeDetector
         HasExpressionTreeArgument(_semanticModel.GetOperation(query), syntax => !IsWithinLaterAggregateClause(syntax, query));
 
     public bool IsExpressionTree(VBSyntax.AggregateClauseSyntax aggregate) =>
-        HasExpressionTreeArgument(_semanticModel.GetOperation((VBSyntax.QueryExpressionSyntax)aggregate.Parent), syntax => aggregate.Span.Contains(syntax.Span));
+        HasExpressionTreeArgument(_semanticModel.GetOperation(aggregate.FirstAncestorOrSelf<VBSyntax.QueryExpressionSyntax>()), syntax => aggregate.Span.Contains(syntax.Span));
 
     /// <remarks>
     /// Nested queries and lambdas the user wrote within the query aren't relevant
