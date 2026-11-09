@@ -18,33 +18,48 @@ internal class SubstitutionRules
     }
 
     /// <summary>
-    /// Substituting must not change what the value refers to, or how many times it's evaluated (unless that's cheap)
+    /// Substituting must not change what the value refers to, or (unless it's cheap) which elements it's evaluated for, how many times, or in what order
     /// </summary>
     /// <remarks>
-    /// An unreferenced value is evaluated at most once, as part of the element the next time it's materialized.
-    /// After that (at a method call or the end of a join subquery), references read the materialized element instead.
+    /// VB evaluates the value once per element where it's declared.
+    /// An unreferenced value is evaluated as part of the element the next time it's materialized (at a method call, the end of a join subquery, or the end of a query without a final select).
+    /// After that, references read the materialized element instead.
     /// A single reference from the final select (outside any nested lambda/query) is the only place it's evaluated.
+    /// Clauses in between other than Let and Select could filter, reorder or repeat elements.
     /// </remarks>
     public bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
         if (IsShadowedLater(value, declaration)) return false;
         if (variable.Symbol == null || CsQueryBuilder.IsCheapToRepeat(value)) return true;
+        return GetOnlyEvaluationPosition(variable, declaration) is { } evaluatedAt && HasOneToOneClausesBetween(declaration, evaluatedAt);
+    }
+
+    private int? GetOnlyEvaluationPosition(QueryRangeVariable variable, VisualBasicSyntaxNode declaration)
+    {
         var materializedAt = GetJoinWithSubqueryContaining(declaration)?.OnKeyword.SpanStart
             ?? _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && QueryClauseConverter.IsConvertedToMethodCall(c))?.SpanStart;
+        var finalSelect = _vbQuery.Clauses.Last() as VBSyntax.SelectClauseSyntax;
         var referencesBeforeMaterialized = GetReferences(variable, TextSpan.FromBounds(declaration.Span.End, materializedAt ?? _vbQuery.Span.End)).Take(2).ToList();
         return referencesBeforeMaterialized.Count switch {
-            0 => true,
-            1 => materializedAt == null && IsOnlyEvaluationInFinalSelect(referencesBeforeMaterialized[0]),
-            _ => false
+            0 => materializedAt ?? (finalSelect == null ? _vbQuery.Span.End : null),
+            1 when materializedAt == null && IsOnlyEvaluationInFinalSelect(finalSelect, referencesBeforeMaterialized[0]) => finalSelect.SpanStart,
+            _ => null
         };
+    }
+
+    private bool HasOneToOneClausesBetween(VisualBasicSyntaxNode declaration, int position)
+    {
+        var declaringClause = declaration.AncestorsAndSelf().OfType<VBSyntax.QueryClauseSyntax>().First();
+        return _vbQuery.Clauses.Where(c => c.SpanStart > declaringClause.SpanStart && c.SpanStart < position)
+            .All(c => c is VBSyntax.LetClauseSyntax or VBSyntax.SelectClauseSyntax);
     }
 
     private IEnumerable<VBSyntax.IdentifierNameSyntax> GetReferences(QueryRangeVariable variable, TextSpan span) =>
         _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
             .Where(id => span.Contains(id.Span) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol));
 
-    private bool IsOnlyEvaluationInFinalSelect(VBSyntax.IdentifierNameSyntax reference) =>
-        _vbQuery.Clauses.Last() is VBSyntax.SelectClauseSyntax finalSelect && finalSelect.Span.Contains(reference.Span) &&
+    private static bool IsOnlyEvaluationInFinalSelect(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference) =>
+        finalSelect != null && finalSelect.Span.Contains(reference.Span) &&
         !reference.Ancestors().TakeWhile(a => a != finalSelect).Any(a => a is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax);
 
     /// <summary>

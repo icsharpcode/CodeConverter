@@ -59,8 +59,9 @@ public partial class C
     public void M()
     {
         var fields = (from v in _DisplayFields
+                      let Name = Enum.GetName(typeof(Field), v)
                       orderby v ascending
-                      select new { Value = v, Name = Enum.GetName(typeof(Field), v) }).ToArray();
+                      select new { Value = v, Name }).ToArray();
     }
 }");
     }
@@ -95,6 +96,27 @@ public partial class C
     Public Sub M()
         Dim data = From x In {1, 2, 3}
                    Let y = x * 2
+                   Select y
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M()
+    {
+        var data = from x in new[] { 1, 2, 3 }
+                   select x * 2;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ValueOnlyUsedInFinalSelectAfterOrderByIsKeptInLetToKeepEvaluationOrderAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M()
+        Dim data = From x In {1, 2, 3}
+                   Let y = x * 2
                    Order By x Descending
                    Select y
     End Sub
@@ -105,8 +127,31 @@ public partial class C
     public void M()
     {
         var data = from x in new[] { 1, 2, 3 }
+                   let y = x * 2
                    orderby x descending
-                   select x * 2;
+                   select y;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task UnusedValueIsKeptInLetSinceVbEvaluatesItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M()
+        Dim data = From x In {1, 2, 3}
+                   Let y = x.ToString()
+                   Select x
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M()
+    {
+        var data = from x in new[] { 1, 2, 3 }
+                   let y = x.ToString()
+                   select x;
     }
 }");
     }

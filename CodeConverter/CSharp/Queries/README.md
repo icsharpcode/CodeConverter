@@ -61,7 +61,7 @@ Since the element comes from `Scope`, C# can keep variables in scope that VB has
 ### Substitute or `let`
 
 A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`SubstitutionRules`):
-* It must be evaluated the same number of times, unless it's cheap to repeat. It's evaluated at most once if it has no references before the element is next materialized, or a single reference in the final `Select`.
+* Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause. Substituted, it's evaluated where the element is next materialized if it has no references before then, or at a single reference in the final `Select`. Only `Let` and `Select` clauses may come in between, since others filter, reorder or repeat elements. An unused value with nowhere to be evaluated stays a `let`.
 * No name it references may be captured by a later lambda parameter. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`.
 
 ### Names
@@ -74,7 +74,7 @@ Comparisons in queries skip VB's null/empty string and nullable logic so express
 
 ## Limitations
 
-* Side-effecting expressions may run at a different point relative to sorting/filtering, though the same number of times. Queries translated to SQL can't promise this anyway.
+* Values that are cheap to repeat (names, member accesses and literals) are always substituted, so a property getter with side effects could run a different number of times.
 * LINQ to objects comparisons other than `Option Compare Text` don't reproduce VB's `Nothing = ""` or three-valued nullable logic.
 
 ## Tests
