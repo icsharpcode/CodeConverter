@@ -6,30 +6,34 @@ using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 namespace ICSharpCode.CodeConverter.CSharp.Queries;
 
 /// <summary>
-/// Builds a C# query left to right while tracking the VB range variables in scope (<see cref="Scope"/>) and the C# expression for each.
+/// Builds a C# query left to right while tracking the VB range variables in <see cref="Scope"/> and the C# expression that evaluates each.
 /// </summary>
 /// <remarks>
-/// The VB "element" of a query at any point is the set of range variables in scope: a single variable is the value itself, multiple form an anonymous type.
-/// C# keeps variables in scope that VB has dropped (e.g. after a VB Select), so the element is only ever produced from <see cref="Scope"/>, never from the C# query's own variables.
-/// When an operator has no C# query clause (e.g. Distinct), the element is materialized with a select, the operator applied as a method call, and the query resumed with a new from clause.
-/// See QueryConversion.md for the full design.
+/// C# keeps range variables in scope that VB has dropped, so the element (the value flowing through the query) is always built from <see cref="Scope"/>, never from the C# range variables.
+/// See README.md.
 /// </remarks>
 internal class CsQueryBuilder
 {
-    private const string GeneratedVariableName = "x";
+    private const string GeneratedElementName = "x";
     private readonly Func<string, bool> _isNameFreeOutsideQuery;
     private readonly CsQueryBuilder _enclosingQuery;
-    private readonly List<(List<QueryClauseSyntax> Clauses, SelectOrGroupClauseSyntax SelectOrGroup, SyntaxToken Into)> _completedBodies = new();
-    private readonly HashSet<string> _csRangeVariableNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<ContinuedBody> _continuedBodies = new();
+    private readonly HashSet<string> _rangeVariableNamesInScope = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _allDeclaredNames = new(StringComparer.OrdinalIgnoreCase);
     private FromClauseSyntax _from;
     private List<QueryClauseSyntax> _clauses = new();
-    private ExpressionSyntax _source;
+    private ExpressionSyntax _methodCallResult;
     private List<QueryRangeVariable> _scope = new();
-    private (List<QueryRangeVariable> Scope, List<ExpressionSyntax> Expressions, IdentifierNameSyntax Parameter)? _resumedElement;
+    private ResumedElement _resumedElement;
 
-    /// <param name="isNameFreeOutsideQuery">Whether a generated name would clash with anything visible to the query, e.g. locals, or declared within it, e.g. lambda parameters</param>
-    /// <param name="enclosingQuery">A query this one is nested within, whose range variables are in scope</param>
+    private sealed record ContinuedBody(List<QueryClauseSyntax> Clauses, SelectOrGroupClauseSyntax SelectOrGroup, SyntaxToken Into);
+
+    /// <summary>
+    /// After resuming from a method call, the element is the from variable itself until the scope changes
+    /// </summary>
+    private sealed record ResumedElement(List<QueryRangeVariable> Scope, List<ExpressionSyntax> Expressions, IdentifierNameSyntax Identifier);
+
+    /// <param name="isNameFreeOutsideQuery">Whether a generated name would clash with anything visible to the query (e.g. locals) or declared within it (e.g. lambda parameters)</param>
     public CsQueryBuilder(Func<string, bool> isNameFreeOutsideQuery, CsQueryBuilder enclosingQuery)
     {
         _isNameFreeOutsideQuery = isNameFreeOutsideQuery;
@@ -38,19 +42,19 @@ internal class CsQueryBuilder
 
     public IReadOnlyList<QueryRangeVariable> Scope => _scope;
 
-    /// <summary>
-    /// Avoids reusing names from earlier in the query even where it'd be valid, since it's confusing to read
-    /// </summary>
+    private bool IsQueryOpen => _from != null;
+
+    /// <remarks>
+    /// Names from earlier in the query aren't reused even where it'd be valid, since it's confusing to read
+    /// </remarks>
     public bool IsNameFree(string name) => !_allDeclaredNames.Contains(name) && _isNameFreeOutsideQuery(name) && _enclosingQuery?.IsNameFree(name) != false;
 
     public string GenerateName(string baseName)
     {
-        var name = GenerateName(baseName, IsNameFree);
+        var name = NameGenerator.Generic.GenerateUniqueName(baseName, IsNameFree);
         _allDeclaredNames.Add(name);
         return name;
     }
-
-    private bool IsRangeVariableInScope(string name) => _csRangeVariableNames.Contains(name) || _enclosingQuery?.IsRangeVariableInScope(name) == true;
 
     public void SetScope(IEnumerable<QueryRangeVariable> variables) => _scope = variables.ToList();
 
@@ -58,58 +62,48 @@ internal class CsQueryBuilder
 
     public void AddFrom(QueryRangeVariable variable, TypeSyntax type, ExpressionSyntax collection)
     {
-        if (_from == null && _source == null) {
-            _from = SyntaxFactory.FromClause(type, DeclareVariableName(variable), collection);
+        var isFirstClause = !IsQueryOpen && _methodCallResult == null;
+        var fromClause = SyntaxFactory.FromClause(type, isFirstClause ? ChooseIdentifier(variable) : DeclareRangeVariable(variable), collection);
+        if (isFirstClause) {
+            _from = fromClause;
         } else {
-            AddClause(SyntaxFactory.FromClause(type, DeclareRangeVariable(variable), collection));
+            AddClause(fromClause);
         }
         AddToScope(variable);
     }
 
-    /// <summary>
-    /// Adds the variable as a C# range variable, and returns its identifier which may have been renamed to avoid clashes.
-    /// </summary>
+    /// <returns>The identifier, which is only renamed if it clashes</returns>
     public SyntaxToken DeclareRangeVariable(QueryRangeVariable variable)
     {
-        EnsureQuery();
-        return DeclareVariableName(variable);
-    }
-
-    private SyntaxToken DeclareVariableName(QueryRangeVariable variable)
-    {
-        var identifier = DeclareName(variable.Name, variable.Symbol == null);
-        variable.CsExpression = SyntaxFactory.IdentifierName(identifier);
-        return identifier;
+        EnsureQueryOpen();
+        return ChooseIdentifier(variable);
     }
 
     /// <summary>
-    /// Adds a C# range variable for a whole element, e.g. one joined from a subquery, and makes each VB variable refer to it
+    /// Makes each VB variable a member of a single C# range variable, e.g. one joined from a subquery
     /// </summary>
     public SyntaxToken DeclareElementRangeVariable(IReadOnlyList<QueryRangeVariable> element)
     {
-        EnsureQuery();
-        var identifier = GetElementParameterName(element);
-        AddName(identifier.ValueText);
+        EnsureQueryOpen();
+        var identifier = ChooseElementIdentifier(element);
+        RecordName(identifier.ValueText);
         ReferToElementVia(element, identifier);
         return identifier;
     }
 
     /// <summary>
-    /// For example the joined variable of a C# join...into goes out of scope
+    /// For example the joined variable of a C# join...into, which C# then lets you redeclare
     /// </summary>
-    public void RemoveRangeVariable(SyntaxToken identifier) => _csRangeVariableNames.Remove(identifier.ValueText);
+    public void RemoveRangeVariable(SyntaxToken identifier) => _rangeVariableNamesInScope.Remove(identifier.ValueText);
 
-    /// <summary>
-    /// Makes the variable evaluate to the given expression, either by substituting the expression wherever it's used, or by introducing a let clause.
-    /// </summary>
-    /// <param name="canInline">True if substituting the expression is safe: it won't be evaluated more often than VB would, and nothing it references is shadowed where it's used</param>
-    /// <param name="isUsedInPlace">True if the next use of the expression is at the same point in the query, so its source mapping (and hence comments) can stay with it</param>
-    /// <remarks>An inlined expression is stored without parentheses, they're added where needed when it's substituted</remarks>
-    public void Define(QueryRangeVariable variable, ExpressionSyntax value, bool canInline, bool isUsedInPlace)
+    /// <param name="canSubstitute">If true, the variable evaluates to the value directly rather than via a let clause</param>
+    /// <param name="keepSourceMapping">Only true if a substituted value stays in the same place relative to other clauses, otherwise its comments would be out of order</param>
+    public void DefineVariable(QueryRangeVariable variable, ExpressionSyntax value, bool canSubstitute, bool keepSourceMapping)
     {
-        if (canInline) {
+        if (canSubstitute) {
+            // Parentheses are added where needed when it's substituted
             var unparenthesized = value is ParenthesizedExpressionSyntax p ? p.Expression : value;
-            variable.CsExpression = isUsedInPlace ? unparenthesized : unparenthesized.WithoutSourceMapping();
+            variable.CsExpression = keepSourceMapping ? unparenthesized : unparenthesized.WithoutSourceMapping();
         } else {
             AddClause(SyntaxFactory.LetClause(DeclareRangeVariable(variable), value));
         }
@@ -117,74 +111,75 @@ internal class CsQueryBuilder
 
     public void AddClause(QueryClauseSyntax clause)
     {
-        EnsureQuery();
+        EnsureQueryOpen();
         _clauses.Add(clause);
     }
 
     /// <summary>
-    /// Ends the current query body with a select or group, and continues the query with a new range variable referring to the result.
+    /// Ends the query body with <paramref name="selectOrGroup"/>, leaving only <paramref name="continuationVariable"/> in C# scope
     /// </summary>
-    public SyntaxToken ContinueInto(SelectOrGroupClauseSyntax selectOrGroup, string preferredName, bool isGeneratedName)
+    public void ContinueInto(SelectOrGroupClauseSyntax selectOrGroup, QueryRangeVariable continuationVariable)
     {
-        EnsureQuery();
-        _csRangeVariableNames.Clear();
-        var into = DeclareName(preferredName, isGeneratedName);
-        _completedBodies.Add((_clauses, selectOrGroup, into));
+        EnsureQueryOpen();
+        _rangeVariableNamesInScope.Clear();
+        var into = ChooseIdentifier(continuationVariable);
+        _continuedBodies.Add(new ContinuedBody(_clauses, selectOrGroup, into));
         _clauses = new List<QueryClauseSyntax>();
-        return into;
     }
 
     /// <summary>
-    /// Applies a method (e.g. Distinct) to the sequence of elements, the next clause will resume the query from the result
+    /// For operators with no query clause, e.g. Distinct. The next clause resumes the query from the result.
     /// </summary>
-    /// <param name="vbClause">Used to place the generated select on the same line as the method call</param>
+    /// <param name="vbClause">Places the generated select on the same line as the method call</param>
     public void ApplyMethod(VisualBasicSyntaxNode vbClause, string methodName, params ExpressionSyntax[] arguments)
     {
         var target = Materialize(vbClause);
         var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ParenthesizeIfNeeded(target), ValidSyntaxFactory.IdentifierName(methodName));
-        _source = SyntaxFactory.InvocationExpression(memberAccess, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments.Select(SyntaxFactory.Argument))));
+        _methodCallResult = SyntaxFactory.InvocationExpression(memberAccess, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments.Select(SyntaxFactory.Argument))));
         _from = null;
         _resumedElement = null;
-        _completedBodies.Clear();
+        _continuedBodies.Clear();
         _clauses = new List<QueryClauseSyntax>();
-        _csRangeVariableNames.Clear();
+        _rangeVariableNamesInScope.Clear();
     }
 
-    /// <summary>
-    /// The sequence of VB elements as a C# expression, i.e. the result of the query if it ended here.
-    /// </summary>
+    /// <returns>The sequence of elements, i.e. the result if the query ended here</returns>
     public ExpressionSyntax Materialize(VisualBasicSyntaxNode vbSourceMapping = null)
     {
-        if (_from == null) return _source;
-        var select = SyntaxFactory.SelectClause(IsResumedElementUnchanged() ? _resumedElement.Value.Parameter : CreateElement(Scope));
-        return Build(vbSourceMapping == null || HasSourceMapping(select) ? select : select.WithVbSourceMappingFrom(vbSourceMapping), isGenerated: true);
+        if (!IsQueryOpen) return _methodCallResult;
+        var select = SyntaxFactory.SelectClause(IsResumedElementUnchanged() ? _resumedElement.Identifier : CreateElement(Scope));
+        var mappedSelect = vbSourceMapping == null || HasSourceMapping(select) ? select : select.WithVbSourceMappingFrom(vbSourceMapping);
+        return BuildQuery(mappedSelect, canDropIdentitySelect: true);
     }
 
-    /// <param name="isGenerated">A generated identity select can be dropped (VB adds one to a bare `From x In xs`), but an explicit one changes the result's type, like it does in VB</param>
-    public ExpressionSyntax Build(SelectOrGroupClauseSyntax selectOrGroup, bool isGenerated = false)
+    public ExpressionSyntax BuildQuery(SelectOrGroupClauseSyntax finalClause)
     {
-        EnsureQuery();
-        if (isGenerated && IsIdentitySelect(selectOrGroup)) return _from.Expression;
+        EnsureQueryOpen();
+        return BuildQuery(finalClause, canDropIdentitySelect: false);
+    }
 
-        var body = SyntaxFactory.QueryBody(SyntaxFactory.List(_clauses), selectOrGroup, null);
-        for (int i = _completedBodies.Count - 1; i >= 0; i--) {
-            var (clauses, completedSelectOrGroup, into) = _completedBodies[i];
-            body = SyntaxFactory.QueryBody(SyntaxFactory.List(clauses), completedSelectOrGroup, SyntaxFactory.QueryContinuation(into, body));
+    /// <param name="canDropIdentitySelect">VB adds an identity select to a bare `From x In xs` which can be dropped, but an explicit one changes the result's type</param>
+    private ExpressionSyntax BuildQuery(SelectOrGroupClauseSyntax finalClause, bool canDropIdentitySelect)
+    {
+        if (canDropIdentitySelect && IsIdentitySelect(finalClause)) return _from.Expression;
+
+        var body = SyntaxFactory.QueryBody(SyntaxFactory.List(_clauses), finalClause, null);
+        foreach (var continued in Enumerable.Reverse(_continuedBodies)) {
+            body = SyntaxFactory.QueryBody(SyntaxFactory.List(continued.Clauses), continued.SelectOrGroup, SyntaxFactory.QueryContinuation(continued.Into, body));
         }
         return SyntaxFactory.QueryExpression(_from, body);
     }
 
     /// <summary>
-    /// Creates a lambda whose parameter is an element made of the given variables, e.g. for the argument of an aggregate function
+    /// For example the argument of an aggregate function, which is a lambda over the group's element
     /// </summary>
     public async Task<LambdaExpressionSyntax> CreateElementLambdaAsync(IReadOnlyList<QueryRangeVariable> element, Func<Task<ExpressionSyntax>> convertBody)
     {
-        var parameterName = GetElementParameterName(element);
+        var parameter = ChooseElementIdentifier(element);
         var originalExpressions = element.Select(v => v.CsExpression).ToArray();
         try {
-            ReferToElementVia(element, parameterName);
-            var body = await convertBody();
-            return SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(parameterName), body);
+            ReferToElementVia(element, parameter);
+            return SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(parameter), await convertBody());
         } finally {
             for (int i = 0; i < element.Count; i++) element[i].CsExpression = originalExpressions[i];
         }
@@ -202,14 +197,14 @@ internal class CsQueryBuilder
         return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
     }
 
-    public static string GetInferredMemberName(ExpressionSyntax expression) => expression switch {
+    private static string GetInferredMemberName(ExpressionSyntax expression) => expression switch {
         IdentifierNameSyntax id => id.Identifier.ValueText,
         MemberAccessExpressionSyntax { Name: var name } => name.Identifier.ValueText,
         _ => null
     };
 
     /// <summary>
-    /// Repeating these is about as cheap as referencing a range variable, so a let clause isn't worthwhile
+    /// About as cheap as referencing a range variable, so a let clause isn't worthwhile
     /// </summary>
     public static bool IsCheapToRepeat(ExpressionSyntax expression) => expression switch {
         IdentifierNameSyntax or ThisExpressionSyntax or LiteralExpressionSyntax => true,
@@ -226,68 +221,72 @@ internal class CsQueryBuilder
     };
 
     /// <summary>
-    /// After a method call boundary there's no query open, so start a new one from the sequence of elements.
-    /// Must be called before converting expressions that may reference range variables, since it changes how they're referenced.
+    /// Resumes the query after a method call. Call this before converting expressions that reference range variables, since it changes how they're referenced.
     /// </summary>
-    public void EnsureQuery()
+    public void EnsureQueryOpen()
     {
-        if (_from != null || _source == null) return;
-        var parameterName = GetElementParameterName(Scope);
-        AddName(parameterName.ValueText);
-        _from = SyntaxFactory.FromClause(parameterName, _source);
-        _source = null;
-        ReferToElementVia(Scope, parameterName);
-        _resumedElement = (Scope.ToList(), Scope.Select(v => v.CsExpression).ToList(), SyntaxFactory.IdentifierName(parameterName));
+        if (IsQueryOpen || _methodCallResult == null) return;
+        var identifier = ChooseElementIdentifier(Scope);
+        RecordName(identifier.ValueText);
+        _from = SyntaxFactory.FromClause(identifier, _methodCallResult);
+        _methodCallResult = null;
+        ReferToElementVia(Scope, identifier);
+        _resumedElement = new ResumedElement(Scope.ToList(), Scope.Select(v => v.CsExpression).ToList(), SyntaxFactory.IdentifierName(identifier));
     }
 
     /// <remarks>
-    /// A single variable keeps its name unless that's still a C# range variable that VB has dropped, which other substituted expressions may refer to
+    /// A single variable keeps its name unless that's still a C# range variable that VB has dropped, since substituted expressions may refer to it
     /// </remarks>
-    private SyntaxToken GetElementParameterName(IReadOnlyList<QueryRangeVariable> element) =>
-        element.Count == 1 && element[0].Symbol != null && !IsRangeVariableInScope(element[0].Name)
-            ? CommonConversions.CsEscapedIdentifier(element[0].Name)
-            : CommonConversions.CsEscapedIdentifier(GenerateName(GeneratedVariableName, n => IsNameFree(n) && element.All(v => !string.Equals(v.Name, n, StringComparison.OrdinalIgnoreCase))));
+    private SyntaxToken ChooseElementIdentifier(IReadOnlyList<QueryRangeVariable> element)
+    {
+        var name = element.Count == 1 && element[0].Symbol != null && !IsRangeVariableInScope(element[0].Name)
+            ? element[0].Name
+            : NameGenerator.Generic.GenerateUniqueName(GeneratedElementName, n => IsNameFree(n) && element.All(v => !string.Equals(v.Name, n, StringComparison.OrdinalIgnoreCase)));
+        return CommonConversions.CsEscapedIdentifier(name);
+    }
 
-    /// <summary>
-    /// After resuming from a method call, the element is the from variable itself until the scope changes
-    /// </summary>
+    /// <remarks>
+    /// VB has already checked the names it declares don't clash with anything outside the query, but C# keeps range variables in scope that VB doesn't
+    /// </remarks>
+    private SyntaxToken ChooseIdentifier(QueryRangeVariable variable)
+    {
+        var isGeneratedName = variable.Symbol == null;
+        var name = isGeneratedName || IsRangeVariableInScope(variable.Name)
+            ? NameGenerator.Generic.GenerateUniqueName(variable.Name, IsNameFree)
+            : variable.Name;
+        RecordName(name);
+        var identifier = CommonConversions.CsEscapedIdentifier(name);
+        variable.CsExpression = SyntaxFactory.IdentifierName(identifier);
+        return identifier;
+    }
+
+    private bool IsRangeVariableInScope(string name) => _rangeVariableNamesInScope.Contains(name) || _enclosingQuery?.IsRangeVariableInScope(name) == true;
+
+    private void RecordName(string name)
+    {
+        _rangeVariableNamesInScope.Add(name);
+        _allDeclaredNames.Add(name);
+    }
+
     private bool IsResumedElementUnchanged() =>
-        _resumedElement is var (scope, expressions, _) && scope.SequenceEqual(Scope) && expressions.SequenceEqual(Scope.Select(v => v.CsExpression));
+        _resumedElement != null && _resumedElement.Scope.SequenceEqual(Scope) && _resumedElement.Expressions.SequenceEqual(Scope.Select(v => v.CsExpression));
 
     private static bool HasSourceMapping(SyntaxNode node) =>
         node.DescendantNodesAndSelf().Any(n => n.HasAnnotations(AnnotationConstants.SourceStartLineAnnotationKind));
 
-    private static void ReferToElementVia(IReadOnlyList<QueryRangeVariable> element, SyntaxToken parameterName)
+    private static void ReferToElementVia(IReadOnlyList<QueryRangeVariable> element, SyntaxToken identifier)
     {
-        var parameter = SyntaxFactory.IdentifierName(parameterName);
+        var elementName = SyntaxFactory.IdentifierName(identifier);
         if (element.Count == 1) {
-            element[0].CsExpression = parameter;
-        } else {
-            foreach (var variable in element) {
-                variable.CsExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, parameter, ValidSyntaxFactory.IdentifierName(variable.Name));
-            }
+            element[0].CsExpression = elementName;
+            return;
+        }
+        foreach (var variable in element) {
+            variable.CsExpression = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, elementName, ValidSyntaxFactory.IdentifierName(variable.Name));
         }
     }
 
-    /// <param name="isGeneratedName">VB has already checked names it declares don't clash with names outside the query, so they only need checking against the C# range variables</param>
-    private SyntaxToken DeclareName(string preferredName, bool isGeneratedName)
-    {
-        var name = isGeneratedName || IsRangeVariableInScope(preferredName)
-            ? GenerateName(preferredName, IsNameFree)
-            : preferredName;
-        AddName(name);
-        return CommonConversions.CsEscapedIdentifier(name);
-    }
-
-    private void AddName(string name)
-    {
-        _csRangeVariableNames.Add(name);
-        _allDeclaredNames.Add(name);
-    }
-
-    private static string GenerateName(string baseName, Func<string, bool> canUse) => NameGenerator.Generic.GenerateUniqueName(baseName, canUse);
-
     private bool IsIdentitySelect(SelectOrGroupClauseSyntax selectOrGroup) =>
-        _completedBodies.Count == 0 && _clauses.Count == 0 && _from.Type == null &&
+        _continuedBodies.Count == 0 && _clauses.Count == 0 && _from.Type == null &&
         selectOrGroup is SelectClauseSyntax { Expression: IdentifierNameSyntax id } && id.Identifier.ValueText == _from.Identifier.ValueText;
 }

@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace ICSharpCode.CodeConverter.CSharp.Queries;
 
 /// <summary>
-/// A VB range variable that is in scope at some point of a query, together with the C# expression that currently evaluates it.
+/// A VB range variable and the C# expression that currently evaluates it
 /// </summary>
 /// <remarks>
-/// The C# expression changes as the C# query is built, e.g. `x` might become `g.Key.x` after a group by, or `e.x` after a method call boundary.
-/// An unnamed variable (from a single-expression VB Select such as `Select x * 2`) has no symbol and can't be referenced by VB code, but still forms the query's element.
+/// <see cref="CsExpression"/> changes as the C# query is built, e.g. `x` becomes `g.Key.x` after a group by.
+/// <see cref="Symbol"/> is null for a generated variable, or VB's unnamed `Select x * 2`, which can't be referenced but is still part of the element.
 /// </remarks>
 internal sealed class QueryRangeVariable
 {

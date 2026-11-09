@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace ICSharpCode.CodeConverter.CSharp;
 
 /// <summary>
-/// Converts VB query expressions to C#. See <see cref="QueryClauseConverter"/> and Queries/QueryConversion.md
+/// See Queries/README.md
 /// </summary>
 internal class QueryConverter
 {
@@ -40,10 +40,15 @@ internal class QueryConverter
     }
 
     /// <summary>
-    /// The VB compiler's translation of the query shows whether its lambdas are passed as expression trees, e.g. to IQueryable.
-    /// Only the query operator calls the compiler generates are relevant, not lambdas the user wrote within the query.
+    /// The VB compiler's translation of the query shows whether its lambdas become expression trees, e.g. for IQueryable
     /// </summary>
     private bool IsExpressionTree(IOperation operation) =>
-        operation is IArgumentOperation { IsImplicit: true, Parent: IInvocationOperation { IsImplicit: true }, Parameter.Type: var type } && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T)
-        || operation?.ChildOperations.Where(c => c is not ITranslatedQueryOperation).Any(IsExpressionTree) == true;
+        IsGeneratedOperatorExpressionTreeArgument(operation) || operation?.ChildOperations.Where(c => c is not ITranslatedQueryOperation).Any(IsExpressionTree) == true;
+
+    /// <remarks>
+    /// Lambdas the user wrote within the query aren't relevant
+    /// </remarks>
+    private bool IsGeneratedOperatorExpressionTreeArgument(IOperation operation) =>
+        operation is IArgumentOperation { IsImplicit: true, Parent: IInvocationOperation { IsImplicit: true }, Parameter.Type: var type } &&
+        SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T);
 }
