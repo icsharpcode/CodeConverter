@@ -18,6 +18,7 @@ internal class CsQueryBuilder
 {
     private const string GeneratedVariableName = "x";
     private readonly Func<string, bool> _isNameFreeOutsideQuery;
+    private readonly CsQueryBuilder _enclosingQuery;
     private readonly List<(List<QueryClauseSyntax> Clauses, SelectOrGroupClauseSyntax SelectOrGroup, SyntaxToken Into)> _completedBodies = new();
     private readonly HashSet<string> _csRangeVariableNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _allDeclaredNames = new(StringComparer.OrdinalIgnoreCase);
@@ -26,15 +27,29 @@ internal class CsQueryBuilder
     private ExpressionSyntax _source;
     private List<QueryRangeVariable> _scope = new();
 
-    /// <param name="isNameFreeOutsideQuery">Whether a generated name would clash with anything else visible, e.g. locals or the range variables of an enclosing query</param>
-    public CsQueryBuilder(Func<string, bool> isNameFreeOutsideQuery) => _isNameFreeOutsideQuery = isNameFreeOutsideQuery;
+    /// <param name="isNameFreeOutsideQuery">Whether a generated name would clash with anything visible from outside any query, e.g. locals</param>
+    /// <param name="enclosingQuery">A query this one is nested within, whose range variables are in scope</param>
+    public CsQueryBuilder(Func<string, bool> isNameFreeOutsideQuery, CsQueryBuilder enclosingQuery)
+    {
+        _isNameFreeOutsideQuery = isNameFreeOutsideQuery;
+        _enclosingQuery = enclosingQuery;
+    }
 
     public IReadOnlyList<QueryRangeVariable> Scope => _scope;
 
     /// <summary>
     /// Avoids reusing names from earlier in the query even where it'd be valid, since it's confusing to read
     /// </summary>
-    public bool IsNameFree(string name) => !_allDeclaredNames.Contains(name) && _isNameFreeOutsideQuery(name);
+    public bool IsNameFree(string name) => !_allDeclaredNames.Contains(name) && (_enclosingQuery?.IsNameFree(name) ?? _isNameFreeOutsideQuery(name));
+
+    public string GenerateName(string baseName)
+    {
+        var name = GenerateName(baseName, IsNameFree);
+        _allDeclaredNames.Add(name);
+        return name;
+    }
+
+    private bool IsRangeVariableInScope(string name) => _csRangeVariableNames.Contains(name) || _enclosingQuery?.IsRangeVariableInScope(name) == true;
 
     public void SetScope(IEnumerable<QueryRangeVariable> variables) => _scope = variables.ToList();
 
@@ -232,7 +247,7 @@ internal class CsQueryBuilder
     /// <param name="isGeneratedName">VB has already checked names it declares don't clash with names outside the query, so they only need checking against the C# range variables</param>
     private SyntaxToken DeclareName(string preferredName, bool isGeneratedName)
     {
-        var name = isGeneratedName || _csRangeVariableNames.Contains(preferredName)
+        var name = isGeneratedName || IsRangeVariableInScope(preferredName)
             ? GenerateName(preferredName, IsNameFree)
             : preferredName;
         AddName(name);

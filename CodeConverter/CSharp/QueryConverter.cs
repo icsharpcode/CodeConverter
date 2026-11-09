@@ -13,6 +13,7 @@ internal class QueryConverter
     private readonly RangeVariableReplacements _rangeVariableReplacements;
     private readonly HashSet<string> _generatedNames;
     private readonly LegacyQueryConverter _legacyQueryConverter;
+    private readonly Stack<CsQueryBuilder> _activeBuilders = new();
 
     public QueryConverter(CommonConversions commonConversions, SemanticModel semanticModel, CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor,
         RangeVariableReplacements rangeVariableReplacements, HashSet<string> generatedNames)
@@ -32,7 +33,7 @@ internal class QueryConverter
         bool originalIsWithinQuery = _triviaConvertingVisitor.IsWithinQuery;
         _triviaConvertingVisitor.IsWithinQuery = true;
         try {
-            var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames);
+            var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders);
             return await converter.ConvertAsync();
         } finally {
             _triviaConvertingVisitor.IsWithinQuery = originalIsWithinQuery;

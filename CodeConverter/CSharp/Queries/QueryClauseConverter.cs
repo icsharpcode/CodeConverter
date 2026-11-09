@@ -16,17 +16,25 @@ namespace ICSharpCode.CodeConverter.CSharp.Queries;
 /// </remarks>
 internal class QueryClauseConverter
 {
+    /// <summary>
+    /// Base name for a generated group variable, matching the name VB gives the group in an Into clause
+    /// </summary>
+    private const string GroupName = "Group";
+
     private readonly VBSyntax.QueryExpressionSyntax _vbQuery;
     private readonly SemanticModel _semanticModel;
     private readonly CommonConversions _commonConversions;
     private readonly CommentConvertingVisitorWrapper _visitor;
     private readonly RangeVariableReplacements _replacements;
     private readonly HashSet<string> _generatedNames;
+    private readonly Stack<CsQueryBuilder> _activeBuilders;
     private readonly List<QueryRangeVariable> _declaredVariables = new();
 
+    /// <param name="activeBuilders">The builders for queries currently being converted, the innermost of which encloses this query</param>
     public QueryClauseConverter(VBSyntax.QueryExpressionSyntax vbQuery, SemanticModel semanticModel, CommonConversions commonConversions,
-        CommentConvertingVisitorWrapper visitor, RangeVariableReplacements replacements, HashSet<string> generatedNames)
+        CommentConvertingVisitorWrapper visitor, RangeVariableReplacements replacements, HashSet<string> generatedNames, Stack<CsQueryBuilder> activeBuilders)
     {
+        _activeBuilders = activeBuilders;
         _vbQuery = vbQuery;
         _semanticModel = semanticModel;
         _commonConversions = commonConversions;
@@ -35,28 +43,83 @@ internal class QueryClauseConverter
         _generatedNames = generatedNames;
     }
 
-    public static bool IsSupported(VBSyntax.QueryExpressionSyntax query) =>
-        query.Clauses.First() is VBSyntax.FromClauseSyntax &&
-        query.Clauses.All(c => c is VBSyntax.FromClauseSyntax or VBSyntax.LetClauseSyntax or VBSyntax.WhereClauseSyntax or VBSyntax.OrderByClauseSyntax
-            or VBSyntax.SelectClauseSyntax or VBSyntax.DistinctClauseSyntax or VBSyntax.PartitionClauseSyntax or VBSyntax.PartitionWhileClauseSyntax
-            or VBSyntax.JoinClauseSyntax or VBSyntax.GroupByClauseSyntax);
+    public static bool IsSupported(VBSyntax.QueryExpressionSyntax query) => true;
 
     public async Task<ExpressionSyntax> ConvertAsync()
     {
         try {
-            var builder = CreateBuilder(_ => true);
             var clauses = _vbQuery.Clauses;
-            var finalSelect = clauses.Last() as VBSyntax.SelectClauseSyntax;
-            foreach (var clause in finalSelect == null ? clauses : clauses.Take(clauses.Count - 1)) {
-                await ConvertClauseAsync(builder, clause);
+            if (clauses.First() is VBSyntax.AggregateClauseSyntax aggregate) {
+                if (clauses.Count > 1) throw new NotImplementedException("Query operators after an initial Aggregate clause not implemented");
+                return await ConvertAggregateQueryAsync(aggregate);
             }
-            if (finalSelect == null) return builder.Materialize();
-            builder.EnsureQuery();
-            return builder.Build(await ConvertFinalSelectAsync(finalSelect));
+            return await WithBuilderAsync(async builder => {
+                var finalSelect = clauses.Last() as VBSyntax.SelectClauseSyntax;
+                foreach (var clause in finalSelect == null ? clauses : clauses.Take(clauses.Count - 1)) {
+                    await ConvertClauseAsync(builder, clause);
+                }
+                if (finalSelect == null) return builder.Materialize();
+                builder.EnsureQuery();
+                return builder.Build(await ConvertFinalSelectAsync(finalSelect));
+            });
         } finally {
             foreach (var variable in _declaredVariables) _replacements.Unregister(variable);
         }
     }
+
+    /// <summary>
+    /// An initial Aggregate produces a single value rather than a sequence: the aggregation, or an anonymous type when there are several
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertAggregateQueryAsync(VBSyntax.AggregateClauseSyntax aggregate)
+    {
+        var (source, element) = await ConvertAggregateSourceAsync(aggregate);
+        return await WithBuilderAsync(async builder => {
+            var functions = aggregate.AggregationVariables.Select(a => (VBSyntax.FunctionAggregationSyntax)a.Aggregation).ToList();
+            if (functions.Count == 1) return await ConvertAggregationFunctionAsync(builder, functions[0], source, element);
+
+            var group = CsQueryBuilder.IsCheapToRepeat(source) ? source : ValidSyntaxFactory.IdentifierName(builder.GenerateName(GroupName));
+            var values = await functions.SelectAsync(f => ConvertAggregationFunctionAsync(builder, f, group, element));
+            var names = aggregate.AggregationVariables.Select(a => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, a).Name);
+            var result = CsQueryBuilder.CreateAnonymousObject(names.Zip(values, (n, v) => (n, v)));
+            if (group == source) return result;
+
+            // VB evaluates the source once for all the aggregations
+            var sourceArray = SyntaxFactory.ImplicitArrayCreationExpression(SyntaxFactory.InitializerExpression(SyntaxKind.ArrayInitializerExpression, SyntaxFactory.SingletonSeparatedList(source)));
+            var select = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(sourceArray, nameof(Enumerable.Select)),
+                SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(((IdentifierNameSyntax)group).Identifier), result)))));
+            return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(select, nameof(Enumerable.Single)), SyntaxFactory.ArgumentList());
+        });
+    }
+
+    /// <summary>
+    /// Within a query, Aggregate adds a range variable for each aggregation over a nested query.
+    /// When there are several, the nested query is evaluated once into a group variable, mirroring VB's translation.
+    /// </summary>
+    private async Task ConvertAggregateClauseAsync(CsQueryBuilder builder, VBSyntax.AggregateClauseSyntax aggregate)
+    {
+        var (source, element) = await ConvertAggregateSourceAsync(aggregate);
+        var group = source;
+        if (aggregate.AggregationVariables.Count > 1) {
+            var groupVariable = new QueryRangeVariable(null, GroupName);
+            builder.Define(groupVariable, source, canInline: false, isUsedInPlace: false);
+            group = groupVariable.CsExpression;
+        }
+        foreach (var aggregation in await ConvertAggregationsAsync(builder, aggregate, aggregate.AggregationVariables, group, element)) {
+            builder.AddToScope(aggregation);
+        }
+    }
+
+    private Task<(ExpressionSyntax Source, IReadOnlyList<QueryRangeVariable> Element)> ConvertAggregateSourceAsync(VBSyntax.AggregateClauseSyntax aggregate) =>
+        WithBuilderAsync(async builder => {
+            foreach (var vbVariable in aggregate.Variables) {
+                var (type, collection) = await ConvertCollectionAsync(vbVariable);
+                builder.AddFrom(DeclareVariable(vbVariable), type, collection);
+            }
+            foreach (var clause in aggregate.AdditionalQueryOperators) {
+                await ConvertClauseAsync(builder, clause);
+            }
+            return (builder.Materialize(), builder.Scope);
+        });
 
     private Task ConvertClauseAsync(CsQueryBuilder builder, VBSyntax.QueryClauseSyntax clause)
     {
@@ -73,6 +136,7 @@ internal class QueryClauseConverter
             VBSyntax.SimpleJoinClauseSyntax x => ConvertJoinAsync(builder, x),
             VBSyntax.GroupJoinClauseSyntax x => ConvertGroupJoinAsync(builder, x),
             VBSyntax.GroupByClauseSyntax x => ConvertGroupByAsync(builder, x),
+            VBSyntax.AggregateClauseSyntax x => ConvertAggregateClauseAsync(builder, x),
             _ => throw new NotImplementedException($"Conversion for query clause with kind '{clause.Kind()}' not implemented")
         };
     }
@@ -272,7 +336,7 @@ internal class QueryClauseConverter
     private QueryRangeVariable GetGroupVariable(SeparatedSyntaxList<VBSyntax.AggregationRangeVariableSyntax> aggregations) =>
         aggregations.FirstOrDefault(a => a.Aggregation is VBSyntax.GroupAggregationSyntax) is { } groupAggregation
             ? DeclareVariable(groupAggregation)
-            : new QueryRangeVariable(null, "Group");
+            : new QueryRangeVariable(null, GroupName);
 
     /// <summary>
     /// Each aggregation is a method call on the group, e.g. `Sum(x.Total)` => `group.Sum(x => x.Total)`
@@ -364,8 +428,17 @@ internal class QueryClauseConverter
     private string GetName(VBSyntax.ExpressionRangeVariableSyntax vbVariable) =>
         VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbVariable)?.Name ?? vbVariable.Expression.ExtractAnonymousTypeMemberName()?.Text ?? "x";
 
-    private CsQueryBuilder CreateBuilder(Func<string, bool> isNameFreeInEnclosingQuery) =>
-        new(name => isNameFreeInEnclosingQuery(name) && NameGenerator.CS.IsNameFreeInScope(_semanticModel, _generatedNames, _vbQuery, name));
+    private async Task<T> WithBuilderAsync<T>(Func<CsQueryBuilder, Task<T>> useBuilder)
+    {
+        var enclosing = _activeBuilders.Count > 0 ? _activeBuilders.Peek() : null;
+        var builder = new CsQueryBuilder(name => NameGenerator.CS.IsNameFreeInScope(_semanticModel, _generatedNames, _vbQuery, name), enclosing);
+        _activeBuilders.Push(builder);
+        try {
+            return await useBuilder(builder);
+        } finally {
+            _activeBuilders.Pop();
+        }
+    }
 
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
 }

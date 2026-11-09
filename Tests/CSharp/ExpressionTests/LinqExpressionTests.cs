@@ -379,7 +379,7 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
 }");
     }
 
-    [Fact(Skip = "Issue #29 - Aggregate not supported")]
+    [Fact]
     public async Task LinqAggregateSumAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
@@ -387,8 +387,8 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
     Dim totalExpense = Aggregate expense In expenses Into Sum()
 End Sub", @"private static void ASub()
 {
-    double[] expenses = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0};
-    var totalExpense = expenses.Sum();
+    double[] expenses = new double[] { 560.0d, 300.0d, 1080.5d, 29.95d, 64.75d, 200.0d };
+    double totalExpense = expenses.Sum();
 }");
     }
 
