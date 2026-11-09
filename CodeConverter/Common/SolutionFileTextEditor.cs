@@ -16,19 +16,9 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         foreach (var relativeProjPath in relativeProjPaths)
         {
             // Add replacements for both backslash and forward-slash variants so .slnx files using either separator are handled
-            var nativeVariant = relativeProjPath;
-            var altVariant = relativeProjPath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-
-            // native (likely backslashes on Windows)
-            var escapedNative = Regex.Escape(nativeVariant);
-            var newNative = PathConverter.TogglePathExtension(nativeVariant);
-            projectReferenceReplacements.Add((escapedNative, newNative, false));
-
-            // alternate (forward slashes)
-            if (altVariant != nativeVariant) {
-                var escapedAlt = Regex.Escape(altVariant);
-                var newAlt = PathConverter.TogglePathExtension(altVariant);
-                projectReferenceReplacements.Add((escapedAlt, newAlt, false));
+            var variants = new[] { relativeProjPath.Replace('/', '\\'), relativeProjPath.Replace('\\', '/') }.Distinct();
+            foreach (var variant in variants) {
+                projectReferenceReplacements.Add((Regex.Escape(variant), PathConverter.TogglePathExtension(variant), false));
             }
         }
 
@@ -44,8 +34,9 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
         foreach ((string name, string relativeProjPath) in projTuples)
         {
-            var newProjPath = @"""" + PathConverter.TogglePathExtension(relativeProjPath) + @""", ";
-            var projPathEscaped = @"""" + Regex.Escape(relativeProjPath);
+            // Solution files always use backslashes, whatever the OS we're running on
+            var newProjPath = @"""" + PathConverter.TogglePathExtension(relativeProjPath.Replace('/', '\\')) + @""", ";
+            var projPathEscaped = @"""" + EscapeSeparatorAgnostic(relativeProjPath);
             var projName = GetProjNameWithoutFramework(name);
 
             (string oldType, string newType) = GetProjectTypeReplacement(projTypeGuidMappings, projName, projPathEscaped,
@@ -70,14 +61,16 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
         foreach ((string _, string relativeProjPath, string projContents) in projTuples)
         {
-            var escapedProjPath = Regex.Escape(relativeProjPath);
-            var projRefRegex = new Regex(@"(\\|"")" + escapedProjPath);
+            var escapedProjPath = EscapeSeparatorAgnostic(relativeProjPath);
+            var projRefRegex = new Regex(@"(\\|"")(" + escapedProjPath + ")");
 
             var projRefMatch = projRefRegex.Match(projContents);
             var characterBeforePath = projRefMatch.Groups[1].Value;
+            // Keep whichever separators the project file already uses
+            var pathAsWritten = projRefMatch.Success ? projRefMatch.Groups[2].Value : relativeProjPath;
 
             var extendedEscProjPath = Regex.Escape(characterBeforePath) + escapedProjPath;
-            var newProjPath = characterBeforePath + PathConverter.TogglePathExtension(relativeProjPath);
+            var newProjPath = characterBeforePath + PathConverter.TogglePathExtension(pathAsWritten);
 
             projectReferenceReplacements.Add((extendedEscProjPath, newProjPath, false));
             if (string.IsNullOrWhiteSpace(sourceSolutionContents)) {
@@ -89,6 +82,10 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
 
         return projectReferenceReplacements;
     }
+
+    /// <summary>Regex-escapes a path, allowing either directory separator wherever the path has one</summary>
+    private static string EscapeSeparatorAgnostic(string path) =>
+        Regex.Replace(Regex.Escape(path), @"\\\\|/", @"[\\/]");
 
     // Gets the project name without the framework specifier (in case of multiple target frameworks)
     private static string GetProjNameWithoutFramework(string projName)

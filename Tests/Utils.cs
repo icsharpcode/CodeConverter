@@ -1,10 +1,24 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Linq;
+using System.Text;
 using ICSharpCode.CodeConverter.Util;
 
 namespace ICSharpCode.CodeConverter.Tests;
 
 internal static class Utils
 {
+    private static readonly string FileSystemRoot = Path.GetPathRoot(Path.GetTempPath());
+
+    /// <summary>
+    /// Builds an absolute path that is valid on the current OS (e.g. C:\a\b on Windows, /a/b on Linux) for fake files that needn't exist.
+    /// Segments may use either separator.
+    /// </summary>
+    internal static string RootedPath(params string[] segments)
+    {
+        var normalized = segments.Select(s => s.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar));
+        return Path.Combine(new[] { FileSystemRoot }.Concat(normalized).ToArray());
+    }
+
     internal static string HomogenizeEol(string str)
     {
         var sb = new StringBuilder();

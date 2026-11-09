@@ -77,7 +77,7 @@ public class ConverterTestBase
         string sourceWithComments = string.Join(Environment.NewLine, sourceLinesWithComments);
         var convertedCode = await ConvertAsync<TLanguageConversion>(sourceWithComments, conversion);
         var convertedCommentLineNumbers = convertedCode.Split(new[] { AutoTestCommentPrefix }, StringSplitOptions.None)
-            .Skip(1).Select(afterPrefix => afterPrefix.Split('\n')[0].TrimEnd()).ToList();
+            .Skip(1).Select(afterPrefix => new string(afterPrefix.TakeWhile(char.IsDigit).ToArray())).ToList();
         var missingSourceLineNumbers = lineNumbersAdded.Except(convertedCommentLineNumbers);
         if (missingSourceLineNumbers.Any()) {
             Assert.Fail("Comments not converted from source lines: " + string.Join(", ", missingSourceLineNumbers) + GetSourceAndConverted(sourceWithComments, convertedCode));
