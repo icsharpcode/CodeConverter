@@ -14,6 +14,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### C# -> VB
 
 
+## [10.0.2] - 2026-11-08
+
+
+### Vsix
+
+
+### VB -> C#
+* Fix lost event subscription for `Handles` clause on a sub-property of a `WithEvents` member, e.g. `Handles TextEdit1.Properties.Click` - [#1273](https://github.com/icsharpcode/CodeConverter/issues/1273)
+* Fix name qualification being skipped for a whole file containing such a `Handles` clause - [#1273](https://github.com/icsharpcode/CodeConverter/issues/1273)
+
+
+### C# -> VB
+
+
 ## [10.0.1] - 2026-02-28
 
 * Reintroduce tentative legacy support for dotnet 8 and VS2022

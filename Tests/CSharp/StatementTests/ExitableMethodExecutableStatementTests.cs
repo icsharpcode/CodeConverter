@@ -357,9 +357,7 @@ internal partial class A
         switch (x)
         {
             case 1:
-                {
-                    break;
-                }
+                break;
         }
         return 3;
     }
@@ -406,10 +404,8 @@ public partial class VisualBasicClass
             switch (CurVal)
             {
                 case 6:
-                    {
-                        exitFor = true;
-                        break;
-                    }
+                    exitFor = true;
+                    break;
             }
 
             if (exitFor)
@@ -465,15 +461,11 @@ public partial class VisualBasicClass
             switch (CurVal)
             {
                 case 6:
-                    {
-                        exitFor = true;
-                        break;
-                    }
+                    exitFor = true;
+                    break;
                 case 7:
-                    {
-                        exitFor = true;
-                        break;
-                    }
+                    exitFor = true;
+                    break;
             }
 
             if (exitFor)
@@ -631,9 +623,7 @@ public partial class VisualBasicClass
             switch (CurVal)
             {
                 case 6:
-                    {
-                        continue;
-                    }
+                    continue;
             }
             Console.WriteLine();
         }
@@ -697,10 +687,8 @@ public partial class VisualBasicClass
                 switch (CurVal)
                 {
                     case 6:
-                        {
-                            continueFor = breakFor = true;
-                            break;
-                        }
+                        continueFor = breakFor = true;
+                        break;
                 }
 
                 if (breakFor)
@@ -722,15 +710,11 @@ public partial class VisualBasicClass
                 switch (CurVal)
                 {
                     case 7:
-                        {
-                            continueFor1 = breakFor1 = true;
-                            break;
-                        }
+                        continueFor1 = breakFor1 = true;
+                        break;
                     case 8:
-                        {
-                            exitFor1 = exitFor = true;
-                            break;
-                        }
+                        exitFor1 = exitFor = true;
+                        break;
                 }
 
                 if (breakFor1)

@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
+using ICSharpCode.CodeConverter.VB;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.VB;
@@ -251,6 +252,302 @@ End Class
 
 1 target compilation errors:
 BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
+    }
+
+    [Fact]
+    public async Task NegatedTypePatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsNotString(object node)
+    {
+        return node is not string;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsNotString(node As Object) As Boolean
+        Return TypeOf node IsNot String
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NegatedNullPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsNotNull(object node)
+    {
+        return node is not null;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsNotNull(node As Object) As Boolean
+        Return node IsNot Nothing
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NegatedNamedTypePatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class Picture
+{
+}
+
+class TestClass
+{
+    private static bool IsNotPicture(object node)
+    {
+        return node is not Picture;
+    }
+}", @"Friend Class Picture
+End Class
+
+Friend Class TestClass
+    Private Shared Function IsNotPicture(node As Object) As Boolean
+        Return TypeOf node IsNot Picture
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NegatedDeclarationPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static int GetLength(object node)
+    {
+        if (node is not string s)
+        {
+            return -1;
+        }
+
+        return s.Length;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function GetLength(node As Object) As Integer
+        Dim s As String = Nothing
+
+        If CSharpImpl.__Assign(s, TryCast(node, String)) Is Nothing Then
+            Return -1
+        End If
+
+        Return s.Length
+    End Function
+
+    Private Class CSharpImpl
+        <Obsolete(""Please refactor calling code to use normal Visual Basic assignment"")>
+        Shared Function __Assign(Of T)(ByRef target As T, value As T) As T
+            target = value
+            Return value
+        End Function
+    End Class
+End Class
+
+1 target compilation errors:
+BC30451: 'CSharpImpl.__Assign' is not declared. It may be inaccessible due to its protection level.");
+    }
+
+    [Fact]
+    public async Task RelationalPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsPositive(int i)
+    {
+        return i is > 0;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsPositive(i As Integer) As Boolean
+        Return i > 0
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task RelationalPatternOnNonValueTypeIsNotConvertedAsync()
+    {
+        // A plain comparison would drop the type test (late binding on Object) or the HasValue test (lifted Boolean?)
+        var convertedCode = await ConvertAsync<CSToVBConversion>(@"class TestClass
+{
+    private static void IsPositive(object o, int? i)
+    {
+        bool objectPositive = o is > 0;
+        bool nullablePositive = i is > 0;
+    }
+}");
+
+        Assert.Contains("o is > 0", convertedCode);
+        Assert.Contains("i is > 0", convertedCode);
+        Assert.DoesNotContain("o > 0", convertedCode);
+        Assert.DoesNotContain("i > 0", convertedCode);
+    }
+
+    [Fact]
+    public async Task ConstantPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool ValueTypeConstant(int i)
+    {
+        return i is 5;
+    }
+
+    private static bool ObjectConstant(object o)
+    {
+        return o is 5;
+    }
+
+    private static bool StringConstant(string s)
+    {
+        return s is ""abc"";
+    }
+}", @"Friend Class TestClass
+    Private Shared Function ValueTypeConstant(i As Integer) As Boolean
+        Return i = 5
+    End Function
+
+    Private Shared Function ObjectConstant(o As Object) As Boolean
+        Return Equals(o, 5)
+    End Function
+
+    Private Shared Function StringConstant(s As String) As Boolean
+        Return Equals(s, ""abc"")
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task PatternInsideComparisonKeepsPrecedenceAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool ConstantPattern(bool flag, int x)
+    {
+        return flag == x is 5;
+    }
+
+    private static bool RelationalPattern(bool flag, int x)
+    {
+        return flag != x is > 0;
+    }
+
+    private static bool NullPattern(bool flag, object o)
+    {
+        return flag == o is null;
+    }
+
+    private static bool LogicalOperator(bool flag, object o)
+    {
+        return flag && o is not null;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function ConstantPattern(flag As Boolean, x As Integer) As Boolean
+        Return flag = (x = 5)
+    End Function
+
+    Private Shared Function RelationalPattern(flag As Boolean, x As Integer) As Boolean
+        Return flag <> (x > 0)
+    End Function
+
+    Private Shared Function NullPattern(flag As Boolean, o As Object) As Boolean
+        Return flag = (o Is Nothing)
+    End Function
+
+    Private Shared Function LogicalOperator(flag As Boolean, o As Object) As Boolean
+        Return flag AndAlso o IsNot Nothing
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NullableConstantPatternIsNotConvertedAsync()
+    {
+        // "=" lifts to Boolean? (throws when narrowed from Nothing), and Equals compares boxed types (a Long? is never Equals to an Integer constant)
+        var convertedCode = await ConvertAsync<CSToVBConversion>(@"class TestClass
+{
+    private static void NullableConstant(long? l)
+    {
+        bool isFive = l is 5;
+    }
+}");
+
+        Assert.Contains("l is 5", convertedCode);
+        Assert.DoesNotContain("l = 5", convertedCode);
+        Assert.DoesNotContain("Equals(l, 5)", convertedCode);
+    }
+
+    [Fact]
+    public async Task NaNConstantPatternExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool DoubleIsNaN(double d)
+    {
+        return d is double.NaN;
+    }
+
+    private static bool SingleIsNaN(float f)
+    {
+        return f is not float.NaN;
+    }
+
+    private static bool ObjectIsNaN(object o)
+    {
+        return o is double.NaN;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function DoubleIsNaN(d As Double) As Boolean
+        Return Double.IsNaN(d)
+    End Function
+
+    Private Shared Function SingleIsNaN(f As Single) As Boolean
+        Return Not Single.IsNaN(f)
+    End Function
+
+    Private Shared Function ObjectIsNaN(o As Object) As Boolean
+        Return Equals(o, Double.NaN)
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NullablePatternAgainstNullAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"class TestClass
+{
+    private static bool IsNull(int? i)
+    {
+        return i is null;
+    }
+
+    private static bool IsNotNull(int? i)
+    {
+        return i is not null;
+    }
+}", @"Friend Class TestClass
+    Private Shared Function IsNull(i As Integer?) As Boolean
+        Return i Is Nothing
+    End Function
+
+    Private Shared Function IsNotNull(i As Integer?) As Boolean
+        Return i IsNot Nothing
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task ImplicitObjectCreationExpressionAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(@"using System.Text;
+
+class TestClass
+{
+    private StringBuilder builder = new(16);
+}", @"Imports System.Text
+
+Friend Class TestClass
+    Private builder As StringBuilder = New StringBuilder(16)
+End Class");
     }
 
     [Fact]

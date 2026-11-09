@@ -19,6 +19,7 @@ internal class NameExpressionNodeVisitor
     private readonly HashSet<string> _extraUsingDirectives;
     private readonly Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> _tempNameForAnonymousScope;
     private readonly Stack<ExpressionSyntax> _withBlockLhs;
+    private readonly Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> _conditionalAccessReceivers;
     private readonly ArgumentConverter _argumentConverter;
 
     public CommonConversions CommonConversions { get; }
@@ -27,7 +28,8 @@ internal class NameExpressionNodeVisitor
     public NameExpressionNodeVisitor(SemanticModel semanticModel, HashSet<string> generatedNames, ITypeContext typeContext, HashSet<string> extraUsingDirectives,
         Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> tempNameForAnonymousScope, Stack<ExpressionSyntax> withBlockLhs, CommonConversions commonConversions,
         ArgumentConverter argumentConverter,
-        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor)
+        CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor,
+        Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> conditionalAccessReceivers)
     {
         _semanticModel = semanticModel;
         _generatedNames = generatedNames;
@@ -35,6 +37,7 @@ internal class NameExpressionNodeVisitor
         _extraUsingDirectives = extraUsingDirectives;
         _tempNameForAnonymousScope = tempNameForAnonymousScope;
         _withBlockLhs = withBlockLhs;
+        _conditionalAccessReceivers = conditionalAccessReceivers;
         _argumentConverter = argumentConverter;
         CommonConversions = commonConversions;
         TriviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
@@ -84,13 +87,15 @@ internal class NameExpressionNodeVisitor
             }
         }
         if (left == null) {
-            if (IsSubPartOfConditionalAccess(node)) {
-                return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
-                    : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+            if (GetConditionalAccess(node) is { } conditional) {
+                if (!_conditionalAccessReceivers.TryGetValue(conditional, out left)) {
+                    return isDefaultProperty ? SyntaxFactory.ElementBindingExpression()
+                        : await AdjustForImplicitInvocationAsync(node, SyntaxFactory.MemberBindingExpression(simpleNameSyntax));
+                }
             } else if (node.IsParentKind(VBasic.SyntaxKind.NamedFieldInitializer) && _tempNameForAnonymousScope.TryGetValue(node.Name.Identifier.Text, out var stack) && stack.Any()) {
                 return ValidSyntaxFactory.IdentifierName(stack.Peek().TempName);
             }
-            left = _withBlockLhs.Peek();
+            left ??= _withBlockLhs.Peek();
         }
 
         if (node.IsKind(VBasic.SyntaxKind.DictionaryAccessExpression)) {
@@ -207,7 +212,10 @@ internal class NameExpressionNodeVisitor
 
             if (node.Expression is null) {
                 var convertArgumentListOrEmptyAsync = await _argumentConverter.ConvertArgumentsAsync(node.ArgumentList);
-                return SyntaxFactory.ElementBindingExpression(SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(convertArgumentListOrEmptyAsync)));
+                var arguments = SyntaxFactory.BracketedArgumentList(SyntaxFactory.SeparatedList(convertArgumentListOrEmptyAsync));
+                return GetConditionalAccess(node) is { } conditional && _conditionalAccessReceivers.TryGetValue(conditional, out var receiver)
+                    ? SyntaxFactory.ElementAccessExpression(receiver, arguments)
+                    : SyntaxFactory.ElementBindingExpression(arguments);
             }
 
             var convertedInvocation = await ConvertOrReplaceInvocationAsync(node, invocationSymbol);
@@ -413,7 +421,7 @@ internal class NameExpressionNodeVisitor
     /// This should be equivalent but keep closer to the look of the original source code.
     /// See https://github.com/icsharpcode/CodeConverter/issues/310 and https://github.com/icsharpcode/CodeConverter/issues/324
     /// </summary>
-    private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
+    private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
     {
         const string retVariableName = "ret";
         var localFuncName = $"local{invocationSymbol.Name}";
@@ -427,27 +435,16 @@ internal class NameExpressionNodeVisitor
         );
         var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
 
-        //any argument that's a ByRef parameter of the parent method needs to be passed as a ref parameter to the local function (to avoid error CS1628)
-        var refParametersOfParent = GetRefParameters(invocation.ArgumentList);
+        // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
+        var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
+        var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
+            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
+            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
+            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
         var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
 
         var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
         return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
-
-        List<IParameterSymbol> GetRefParameters(VBSyntax.ArgumentListSyntax argumentList)
-        {
-            var result = new List<IParameterSymbol>();
-            if (argumentList is null) return result;
-
-            foreach (var arg in argumentList.Arguments) {
-                if (_semanticModel.GetSymbolInfo(arg.GetExpression()).Symbol is not IParameterSymbol p) continue;
-                if (p.RefKind != RefKind.None) {
-                    result.Add(p);
-                }
-            }
-
-            return result;
-        }
 
         (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
         {
@@ -465,6 +462,17 @@ internal class NameExpressionNodeVisitor
 
     private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
     {
+        if (IsLoopCondition(invocation)) {
+            // A loop condition needs fresh argument temporaries and copy-back on every evaluation.
+            return invocationSymbol.ReducedFrom?.Parameters.FirstOrDefault() is { RefKind: not RefKind.None } &&
+                   invocation.Expression is VBSyntax.MemberAccessExpressionSyntax member &&
+                   _semanticModel.GetRefConversionForExpression(member.Expression) != RefConversion.Inline ||
+                   invocation.ArgumentList?.Arguments.Any(a =>
+                       CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) != RefConversion.Inline) == true ||
+                   _semanticModel.GetOperation(invocation) is IInvocationOperation operation && operation.Arguments.Any(a =>
+                       a.ArgumentKind == ArgumentKind.DefaultValue && a.Parameter.RefKind != RefKind.None);
+        }
+
         if (invocation.ArgumentList == null) return false;
         var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
         var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation);
@@ -481,6 +489,12 @@ internal class NameExpressionNodeVisitor
             if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
             return !_semanticModel.GetConstantValue(argExpression).HasValue;
         }
+    }
+
+    private static bool IsLoopCondition(SyntaxNode node)
+    {
+        var containingStatement = node.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax);
+        return containingStatement is VBSyntax.WhileStatementSyntax or VBSyntax.DoStatementSyntax or VBSyntax.LoopStatementSyntax;
     }
 
     /// <summary>
@@ -598,7 +612,7 @@ internal class NameExpressionNodeVisitor
             return invocation;
         }
 
-        return AddEmptyArgumentListIfImplicit(node, qualifiedIdentifier);
+        return await AddEmptyArgumentListIfImplicitAsync(node, qualifiedIdentifier);
     }
 
 
@@ -643,10 +657,21 @@ internal class NameExpressionNodeVisitor
         return await node.TypeArgumentList.AcceptAsync<TypeArgumentListSyntax>(TriviaConvertingExpressionVisitor);
     }
 
-    private CSharpSyntaxNode AddEmptyArgumentListIfImplicit(SyntaxNode node, ExpressionSyntax id)
+    private async Task<CSharpSyntaxNode> AddEmptyArgumentListIfImplicitAsync(SyntaxNode node, ExpressionSyntax id)
     {
         if (_semanticModel.SyntaxTree != node.SyntaxTree) return id;
-        return _semanticModel.GetOperation(node) switch {
+        var operation = _semanticModel.GetOperation(node);
+        if (IsLoopCondition(node) && operation is IInvocationOperation implicitInvocation &&
+            implicitInvocation.TargetMethod.Parameters.Any(p => p.RefKind != RefKind.None)) {
+            _typeContext.PerScopeState.PushScope();
+            try {
+                var call = SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(implicitInvocation.TargetMethod));
+                return await HoistAndCallLocalFunctionAsync((VBasic.VisualBasicSyntaxNode)node, implicitInvocation.TargetMethod, call);
+            } finally {
+                _typeContext.PerScopeState.PopExpressionScope();
+            }
+        }
+        return operation switch {
             IInvocationOperation invocation => SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(invocation.TargetMethod)),
             IPropertyReferenceOperation propReference when propReference.Property.Parameters.Any() => SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(propReference.Property)),
             _ => id
@@ -708,21 +733,21 @@ internal class NameExpressionNodeVisitor
             (SimpleNameSyntax)toBeQualified);
     }
 
-    private static bool IsSubPartOfConditionalAccess(VBasic.Syntax.MemberAccessExpressionSyntax node)
-    {
-        static bool IsMemberAccessChain(SyntaxNode exp) =>
-            exp?.IsKind(VBasic.SyntaxKind.InvocationExpression,
-                VBasic.SyntaxKind.SimpleMemberAccessExpression,
-                VBasic.SyntaxKind.ParenthesizedExpression,
-                VBasic.SyntaxKind.ConditionalAccessExpression) == true;
+    internal static bool IsMemberAccessChain(SyntaxNode exp) =>
+        exp is VBSyntax.XmlMemberAccessExpressionSyntax || exp?.IsKind(VBasic.SyntaxKind.InvocationExpression,
+            VBasic.SyntaxKind.SimpleMemberAccessExpression,
+            VBasic.SyntaxKind.ParenthesizedExpression,
+            VBasic.SyntaxKind.ConditionalAccessExpression) == true;
 
+    internal static VBSyntax.ConditionalAccessExpressionSyntax GetConditionalAccess(SyntaxNode node)
+    {
         for (SyntaxNode child = node, parent = node.Parent; IsMemberAccessChain(parent); child = parent, parent = parent.Parent) {
             if (parent is VBSyntax.ConditionalAccessExpressionSyntax cae && cae.WhenNotNull == child) {
-                return true; // On right hand side of a ?. conditional access
+                return cae;
             }
         }
 
-        return false;
+        return null;
     }
 
     private static CSharpSyntaxNode ReplaceRightmostIdentifierText(CSharpSyntaxNode expr, SyntaxToken idToken, string overrideIdentifier)

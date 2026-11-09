@@ -1,4 +1,4 @@
-name: Deploy CodeConverter
+name: Deploy last CodeConverter build
 
 on:
   workflow_dispatch:

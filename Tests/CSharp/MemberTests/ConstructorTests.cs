@@ -7,6 +7,21 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.MemberTests;
 public class ConstructorTests : ConverterTestBase
 {
     [Fact]
+    public async Task TestConstructorWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class Class1
+    Sub New
+    End Sub
+End Class", @"
+internal partial class Class1
+{
+    public Class1()
+    {
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestConstructorVisibilityAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class Class1

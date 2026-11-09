@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Web front end: one weekly PR sweeping every non-major bump, including transitive deps,
+  # so most security fixes land here rather than as individual PRs.
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "all"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      npm-weekly:
+        applies-to: version-updates
+        patterns: ["*"]
+      npm-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  # NuGet versions (Roslyn, VS SDK) are pinned deliberately for host compatibility,
+  # so no version updates - only group any security fixes into a single PR.
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      nuget-security:
+        applies-to: security-updates
+        patterns: ["*"]

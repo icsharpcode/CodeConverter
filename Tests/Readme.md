@@ -11,6 +11,7 @@
   * When there are several test files that could accomodate a new test, pick the most specifically named one that covers what you're aiming to test.
 * Multi file characterization tests (e.g. MultiFileSolutionAndProjectTests.cs)
 * Single file self-verifying tests (e.g. EnumTests.vb)
+  * VB-to-C# fixtures in `TestData/SelfVerifyingTests/VBToCS/*.vb` are discovered automatically by [the shared theory](CSharp/SelfVerifyingTests.cs); no extra C# runner is needed. Include `SelfVerifyingTests.VisualBasicToCSharpAsync` when filtering tests to run these fixtures.
   * These are the only tests where the output is not in the repository.
   * They convert a test method, and ensure it still passes.
   * These can give great confidence that the conversion is correct.

@@ -572,11 +572,23 @@ internal class MethodBodyExecutableStatementVisitor : CS.CSharpSyntaxVisitor<Syn
 
     private static StatementSyntax ReturnStatement(VisualBasicSyntaxNode vbExpression)
     {
-        return vbExpression == null
-            ? SyntaxFactory.ReturnStatement()
-            : vbExpression.IsKind(SyntaxKind.EmptyStatement)
-                ? SyntaxFactory.ReturnStatement()
-                : SyntaxFactory.ReturnStatement((ExpressionSyntax)vbExpression);
+        if (vbExpression == null) {
+            return SyntaxFactory.ReturnStatement();
+        }
+
+        // A failed conversion comes back as an empty statement carrying the report as trivia. The
+        // expression cannot be returned, but the report has to travel with the statement or the
+        // return silently loses its value and nothing says so. It goes ahead of the statement
+        // because a comment runs to the end of its line and would otherwise swallow the Return.
+        if (vbExpression.IsKind(SyntaxKind.EmptyStatement)) {
+            var report = vbExpression.GetLeadingTrivia()
+                .AddRange(vbExpression.GetTrailingTrivia())
+                .Add(SyntaxFactory.EndOfLine(Environment.NewLine));
+
+            return SyntaxFactory.ReturnStatement().WithLeadingTrivia(report);
+        }
+
+        return SyntaxFactory.ReturnStatement((ExpressionSyntax)vbExpression);
     }
 
     public override SyntaxList<StatementSyntax> VisitYieldStatement(CSSyntax.YieldStatementSyntax node)

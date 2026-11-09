@@ -41,18 +41,13 @@ function Increment-Version($version) {
 }
 
 #Regex must contain 3 groups. 1: Text preceding version to replace, 2: Version number part to replace, 3: Text after version to replace
-function Increment-VersionInFile($filePath, $find, $allowNoMatch=$false) {
+function Increment-VersionInFile($filePath, $find) {
     if (-not [System.IO.Path]::IsPathRooted($filePath)) { $filePath = Join-Path $PSScriptRoot $filePath }
     $contents = [System.IO.File]::ReadAllText($filePath)
     $fileName = [System.IO.Path]::GetFileName($filePath)
 
     $match = [RegEx]::Match($contents, $find)
-    
-    if (-not $match.Success -and $allowNoMatch) {
-        Write-Host "Nothing to update for $fileName using $find"
-        return;
-    }
-    
+
     $version = [Version] $match.groups["2"].Value
     $newVersion = Increment-Version $version
 
@@ -89,12 +84,8 @@ function Update-Changelog($filePath, $newVersion) {
     WriteAllText-PreservingEncoding $filePath $contents
 }
 
-$newVersion = Increment-VersionInFile '.github\workflows\dotnet.yml' "(BuildVersion: ')(\d+\.\d+\.\d+)()"
+$newVersion = Increment-VersionInFile 'Directory.Build.props' '(\n    <VersionPrefix>)(\d+\.\d+\.\d+)(<)'
 Increment-VersionInFile 'Vsix\source.extension.vsixmanifest' '(7e2a69d6-193b-4cdf-878d-3370d5931942" Version=")(\d+\.\d+\.\d+)(\.)' | Out-Null
-$buildProps = 'Directory.Build.props'
-Increment-VersionInFile $buildProps '(\n    <Version>)(\d+\.\d+\.\d+)(<)' $true | Out-Null
-Increment-VersionInFile $buildProps '(\n    <FileVersion>)(\d+\.\d+\.\d+)(\.)'  $true | Out-Null
-Increment-VersionInFile $buildProps '(\n    <AssemblyVersion>)(\d+\.\d+\.\d+)(\.)' $true | Out-Null
 
 $newVersionString = $newVersion.ToString(3)
 Update-Changelog 'CHANGELOG.md' $newVersionString

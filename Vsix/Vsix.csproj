@@ -6,6 +6,7 @@
     <LangVersion>12</LangVersion>
     <UseWPF>true</UseWPF>
 
+    <AssemblyName>ICSharpCode.CodeConverter.VsExtension</AssemblyName>
     <VssdkCompatibleExtension>true</VssdkCompatibleExtension>
     <GeneratePkgDefFile>true</GeneratePkgDefFile>
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>

@@ -194,7 +194,10 @@ internal class LineTriviaMapper
             if (errorTrivia.Any()) {
                 targetTrivia.Trailing.Add(errorTrivia);
             }
-            errorTrivia = toReplace.LeadingTrivia.Where(t => t.HasAnnotations(AnnotationConstants.ConversionErrorAnnotationKind)).ToArray();
+            // A leading error comment keeps the line break after it, or it would comment out the token it precedes
+            var leading = toReplace.LeadingTrivia;
+            errorTrivia = leading.Where((t, i) => t.HasAnnotations(AnnotationConstants.ConversionErrorAnnotationKind) ||
+                                                  t.IsEndOfLine() && i > 0 && leading[i - 1].HasAnnotations(AnnotationConstants.ConversionErrorAnnotationKind)).ToArray();
             if (errorTrivia.Any()) {
                 targetTrivia.Leading.Add(errorTrivia);
             }

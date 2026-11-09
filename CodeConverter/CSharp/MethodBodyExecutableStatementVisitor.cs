@@ -199,7 +199,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return new SyntaxList<StatementSyntax>();
         }
 
-        return SingleStatement(await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+        return SingleStatement(await node.Expression.AcceptAsync<CSharpSyntaxNode>(_expressionVisitor));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitAssignmentStatement(VBSyntax.AssignmentStatementSyntax node)
@@ -892,7 +892,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             if (!DefinitelyExits(csBlockStatements.LastOrDefault())) {
                 csBlockStatements.Add(SyntaxFactory.BreakStatement());
             }
-            var list = SingleStatement(SyntaxFactory.Block(csBlockStatements));
+            var hasLocalDeclaration = csBlockStatements.Any(s => s.IsKind(SyntaxKind.LocalDeclarationStatement));
+            var list = hasLocalDeclaration
+                ? SingleStatement(SyntaxFactory.Block(csBlockStatements))
+                : SyntaxFactory.List(csBlockStatements);
             sections.Add(SyntaxFactory.SwitchSection(SyntaxFactory.List(labels), list));
         }
 
@@ -1221,7 +1224,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node)
     {
-        return SingleStatement(await node.Invocation.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+        return SingleStatement(await node.Invocation.AcceptAsync<CSharpSyntaxNode>(_expressionVisitor));
     }
 
     private static SyntaxList<StatementSyntax> SingleStatement(StatementSyntax statement)
@@ -1229,8 +1232,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SyntaxFactory.SingletonList(statement);
     }
 
-    private static SyntaxList<StatementSyntax> SingleStatement(ExpressionSyntax expression)
+    private static SyntaxList<StatementSyntax> SingleStatement(CSharpSyntaxNode node)
     {
-        return SyntaxFactory.SingletonList<StatementSyntax>(SyntaxFactory.ExpressionStatement(expression));
+        return SingleStatement(node is StatementSyntax statement
+            ? statement
+            : SyntaxFactory.ExpressionStatement((ExpressionSyntax)node));
     }
 }

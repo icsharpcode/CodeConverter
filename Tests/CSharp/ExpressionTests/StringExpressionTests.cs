@@ -1,4 +1,7 @@
 ﻿using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Common;
+using ICSharpCode.CodeConverter.CSharp;
+using ICSharpCode.CodeConverter.Tests.Compilation;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -6,6 +9,62 @@ namespace ICSharpCode.CodeConverter.Tests.CSharp.ExpressionTests;
 
 public class StringExpressionTests : ConverterTestBase
 {
+    [Fact]
+    public async Task NewlineOnlyStringAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            "Class TestClass\r\n    Private Sub TestMethod()\r\n" +
+            "        Dim tmp = \"\r\n\"\r\n    End Sub\r\nEnd Class", @"
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        string tmp = ""\r\n"";
+    }
+}");
+    }
+
+    [Theory]
+    [InlineData("\r\n")]
+    [InlineData("\n")]
+    [InlineData("\r")]
+    [InlineData("\r\n\r\n")]
+    [InlineData("first\nsecond")]
+    [InlineData("first\rsecond")]
+    [InlineData("quote \" and backslash \\\nend")]
+    [InlineData("quote \" and backslash \\\r\nend")]
+    [InlineData("")]
+    [InlineData("plain \"quoted\" text")]
+    [InlineData(@"C:\new\folder")]
+    public async Task StringLiteralPreservesValueAsync(string value)
+    {
+        var source = "Public Class C\r\n    Public Const Value As String = \"" +
+                     value.Replace("\"", "\"\"") + "\"\r\nEnd Class";
+        var converted = await ConvertAsync<VBToCSConversion>(source);
+        var compiler = new CSharpCompiler();
+        var assembly = compiler.AssemblyFromCode(compiler.CreateTree(converted));
+        Assert.Equal(value, assembly.GetType("C").GetField("Value").GetRawConstantValue());
+    }
+
+    [Theory]
+    [InlineData("\r\n")]
+    [InlineData("\n")]
+    [InlineData("\r")]
+    [InlineData("\r\n\r\n")]
+    [InlineData("\"{braces}\\\n")]
+    public async Task InterpolatedMultilineStringPreservesValueAsync(string value)
+    {
+        var source = "Public Class C\r\n    Public Shared Function GetValue() As String\r\n" +
+                     "        Dim v1 = 1\r\n        Dim v2 = 2\r\n" +
+                     "        Return $\"What's up with {v1}" +
+                     value.Replace("\"", "\"\"").Replace("{", "{{").Replace("}", "}}") +
+                     "{v2}\"\r\n    End Function\r\nEnd Class";
+        var converted = await ConvertAsync<VBToCSConversion>(source);
+        var compiler = new CSharpCompiler();
+        var assembly = compiler.AssemblyFromCode(compiler.CreateTree(converted));
+        Assert.Equal("What's up with 1" + value + "2", assembly.GetType("C").GetMethod("GetValue").Invoke(null, null));
+    }
+
     [Fact]
     public async Task MultilineStringAsync()
     {
