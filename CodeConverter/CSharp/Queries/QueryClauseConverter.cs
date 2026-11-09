@@ -215,11 +215,19 @@ internal class QueryClauseConverter
 
     /// <summary>
     /// VB allows joins to be nested within a join, e.g. `Join y In ys Join z In zs On z Equals y On x Equals y`.
-    /// For inner joins, the result is the same as a flat sequence of joins, so each condition is attached to the earliest join where everything it references is in scope.
+    /// For inner joins, the result is usually the same as a flat sequence of joins, so each condition is attached to the earliest join where everything it references is in scope.
+    /// Otherwise, the nested joins become a subquery to join against.
     /// </summary>
     private async Task ConvertJoinAsync(CsQueryBuilder builder, VBSyntax.SimpleJoinClauseSyntax join)
     {
-        var plan = PlanFlattenedJoins(join) ?? throw new NotImplementedException("Group Join nested within Join not implemented");
+        var plan = PlanFlattenedJoins(join);
+        if (plan == null) {
+            var joined = await DeclareJoinedSubqueryAsync(builder, join);
+            var (outerKey, innerKey) = await ConvertJoinConditionsAsync(join.JoinConditions, GetSymbols(joined.Element));
+            builder.AddClause(SyntaxFactory.JoinClause(joined.Type, joined.Identifier, joined.Collection, outerKey, innerKey, null));
+            foreach (var variable in joined.Element) builder.AddToScope(variable);
+            return;
+        }
         foreach (var (vbJoin, conditions) in plan) {
             var joined = await DeclareJoinedVariableAsync(builder, vbJoin);
             var (outerKey, innerKey) = await ConvertJoinConditionsAsync(conditions, GetSymbols(joined.Element));
@@ -229,7 +237,7 @@ internal class QueryClauseConverter
         }
     }
 
-    /// <returns>Each join with the conditions to attach to it, or null if they can't be flattened</returns>
+    /// <returns>Each join with the conditions to attach to it, or null if they can't be flattened, e.g. a condition's inner side references several joined variables</returns>
     private List<(VBSyntax.JoinClauseSyntax Join, List<VBSyntax.JoinConditionSyntax> Conditions)> PlanFlattenedJoins(VBSyntax.SimpleJoinClauseSyntax join)
     {
         var joins = FlattenJoins(join).ToList();
@@ -245,16 +253,27 @@ internal class QueryClauseConverter
                 var referenced = GetReferencedSymbols(c, joinedSymbols);
                 return referenced.Contains(joinedSymbol) && referenced.All(inScope.Contains);
             }).ToList();
+            if (!conditions.Any() || !conditions.All(c => IsJoinableOn(c, joinedSymbol, joinedSymbols))) return null;
             unplacedConditions.RemoveAll(conditions.Contains);
             plan.Add((vbJoin, conditions));
         }
         return unplacedConditions.Any() ? null : plan;
     }
 
+    /// <summary>
+    /// One side must reference only the joined variable (out of those joined so far), and the other side must not reference it
+    /// </summary>
+    private bool IsJoinableOn(VBSyntax.JoinConditionSyntax condition, ISymbol joinedSymbol, IReadOnlyCollection<ISymbol> joinedSymbols)
+    {
+        var (left, right) = (GetReferencedSymbols(condition.Left, joinedSymbols), GetReferencedSymbols(condition.Right, joinedSymbols));
+        var inner = left.Contains(joinedSymbol) ? left : right;
+        var outer = left.Contains(joinedSymbol) ? right : left;
+        return inner.All(s => SymbolEqualityComparer.Default.Equals(s, joinedSymbol)) && !outer.Contains(joinedSymbol);
+    }
+
     private async Task ConvertGroupJoinAsync(CsQueryBuilder builder, VBSyntax.GroupJoinClauseSyntax groupJoin)
     {
-        if (groupJoin.AdditionalJoins.Any()) throw new NotImplementedException("Join nested within Group Join not implemented");
-        var joined = await DeclareJoinedVariableAsync(builder, groupJoin);
+        var joined = groupJoin.AdditionalJoins.Any() ? await DeclareJoinedSubqueryAsync(builder, groupJoin) : await DeclareJoinedVariableAsync(builder, groupJoin);
         var (outerKey, innerKey) = await ConvertJoinConditionsAsync(groupJoin.JoinConditions, GetSymbols(joined.Element));
         builder.RemoveRangeVariable(joined.Identifier);
 
@@ -310,6 +329,21 @@ internal class QueryClauseConverter
         var (type, collection) = await ConvertCollectionAsync(vbVariable);
         var variable = DeclareVariable(vbVariable);
         return new JoinedElement(new[] { variable }, builder.DeclareRangeVariable(variable), type, collection);
+    }
+
+    /// <summary>
+    /// The joined variable and its nested joins form a query of their own, whose element is joined against, mirroring VB's translation `xs.Join(ys.Join(zs, ...), ...)`
+    /// </summary>
+    private async Task<JoinedElement> DeclareJoinedSubqueryAsync(CsQueryBuilder builder, VBSyntax.JoinClauseSyntax join)
+    {
+        var (collection, element) = await WithBuilderAsync(async subquery => {
+            var vbVariable = join.JoinedVariables.Single();
+            var (type, source) = await ConvertCollectionAsync(vbVariable);
+            subquery.AddFrom(DeclareVariable(vbVariable), type, source);
+            foreach (var nestedJoin in join.AdditionalJoins) await ConvertClauseAsync(subquery, nestedJoin);
+            return (subquery.Materialize(), subquery.Scope.ToList());
+        });
+        return new JoinedElement(element, builder.DeclareElementRangeVariable(element), null, collection);
     }
 
     private IRangeVariableSymbol GetJoinedSymbol(VBSyntax.JoinClauseSyntax join) => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, join.JoinedVariables.Single());
@@ -429,25 +463,32 @@ internal class QueryClauseConverter
     /// </summary>
     /// <remarks>
     /// When it's not referenced, it can only be evaluated as part of the element the next time the element is constructed (if it survives that long).
-    /// After a method boundary, the variable refers to a member of the constructed element, so later references don't evaluate it again.
+    /// After a method boundary or the end of a join subquery, the variable refers to a member of the constructed element, so later references don't evaluate it again.
     /// When it's referenced once from the final select (and not from a nested lambda/query), that's the only place it will be evaluated.
     /// </remarks>
     private bool CanInline(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
         if (IsShadowedLater(value, declaration)) return false;
         if (variable.Symbol == null || CsQueryBuilder.IsCheapToRepeat(value)) return true;
-        var boundary = _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && IsMethodBoundary(c));
-        var searchEnd = boundary?.SpanStart ?? _vbQuery.Span.End;
+        var boundaryPosition = GetEnclosingJoinSubquery(declaration)?.OnKeyword.SpanStart
+            ?? _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && IsMethodBoundary(c))?.SpanStart;
+        var searchEnd = boundaryPosition ?? _vbQuery.Span.End;
         var references = _vbQuery.DescendantNodes(TextSpan.FromBounds(declaration.Span.End, searchEnd)).OfType<VBSyntax.IdentifierNameSyntax>()
             .Where(id => id.SpanStart >= declaration.Span.End && id.Span.End <= searchEnd && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol))
             .Take(2).ToList();
         return references.Count switch {
             0 => true,
-            1 => boundary == null && _vbQuery.Clauses.Last() is VBSyntax.SelectClauseSyntax finalSelect && finalSelect.Span.Contains(references[0].Span) &&
+            1 => boundaryPosition == null && _vbQuery.Clauses.Last() is VBSyntax.SelectClauseSyntax finalSelect && finalSelect.Span.Contains(references[0].Span) &&
                  !references[0].Ancestors().TakeWhile(a => a != finalSelect).Any(a => a is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax),
             _ => false
         };
     }
+
+    /// <summary>
+    /// A declaration within joins nested in a join is part of a subquery, whose element is materialized before the outer join's conditions
+    /// </summary>
+    private static VBSyntax.JoinClauseSyntax GetEnclosingJoinSubquery(SyntaxNode declaration) =>
+        declaration.Ancestors().OfType<VBSyntax.JoinClauseSyntax>().LastOrDefault(j => j.AdditionalJoins.Any(a => a.Span.Contains(declaration.Span)));
 
     /// <summary>
     /// A C# range variable that VB has dropped from scope (e.g. `x` after `Select y = x`) can still be referenced by a substituted expression,

@@ -81,7 +81,8 @@ Because the element is always constructed from the VB scope, the C# query is fre
 | `Select` (last) | `select e` / `select new { ... }` |
 | `Select` (not last) | no clause: each selected value is defined (see below) and the scope replaced; clashing names are renamed (`let x1 = x * 2`) |
 | `Join` | `join`, with the inner side chosen by which side references the joined variable's symbol; nested joins flattened, each condition attached to the earliest join where all it references is in scope |
-| `Group Join` | `join ... into g`, aggregations defined over `g` with the joined variable as the element |
+| `Join`/`Group Join` with nested joins that can't be flattened | the joined variable and nested joins become a subquery (VB's own translation is `xs.Join(ys.Join(zs, ...), ...)`), joined as one compound variable whose members the VB variables refer to, e.g. `join x1 in (from y in ys join z in zs ... select new { y, z }) on x equals x1.y + x1.z` |
+| `Group Join` | `join ... into g`, aggregations defined over `g` with the joined element |
 | `Group By` | `group element by key into g`; keys become `g.Key` / `g.Key.Name`, aggregations `g.F(element => ...)` |
 | `Distinct`, `Skip`, `Take`, `Skip While`, `Take While` | **method boundary**: materialize the element with `select`, call the method, and if more clauses follow, resume with `from e in (...).Method()` mapping each variable to `e` / `e.Name` |
 | `Aggregate` (within) | aggregations defined over the nested query (held in a `let` when several share it) |
@@ -95,7 +96,7 @@ Because the element is always constructed from the VB scope, the C# query is fre
 * it isn't referenced by later clauses (so it's at most evaluated as part of the element, once), or
 * its only reference is in the final `Select` and not inside a nested lambda/query,
 
-counting only references before the next method boundary (after which the variable is read from the materialized element).
+counting only references before the next method boundary or the end of a join subquery (after which the variable is read from the materialized element).
 Substitution is never used if a lambda parameter written later in the query has the same name as an identifier in the expression: C# keeps variables in scope that VB has dropped, so in `Select y = x Where ys.Any(Function(x) x > y)`, substituting `x` for `y` would be captured by the lambda's `x`.
 This is what turns `Group By ... Into Summary = Sum(t.A) Where Summary > 0 Select ..., Summary` into `let Summary = Group.Sum(t => t.A)`, but `Into ValueMax = Max(item.Value) Select ..., ValueMax` into `ValueMax = Group.Max(item => item.Value)` directly in the select.
 
@@ -108,7 +109,8 @@ Output gets less idiomatic only as the input requires it:
 3. `group ... into` continuation for `Group By`.
 4. Method calls wrapped round a query for operators with no clause, resuming with `from` only if needed (`xs.Skip(1)` stays `xs.Skip(1)` when nothing else happens).
 5. For the rare whole-query `Aggregate` with several aggregations over a non-trivial source: `new[] { source }.Select(Group => new { ... }).Single()` so the source is evaluated once.
-6. Anything unrepresentable (e.g. a join condition that doesn't involve the joined variable, a `Group Join` nested in a `Join`) throws `NotImplementedException`, which becomes a compile error comment in the output.
+6. Nested joins that can't be flattened (a `Group Join` among them, or a condition whose inner side uses several joined variables) join against a subquery of the nested joins.
+7. Anything unrepresentable throws `NotImplementedException`, which becomes a compile error comment in the output.
 
 ### Names
 
@@ -128,9 +130,8 @@ The exception is `Option Compare Text` for queries that run as delegates: droppi
 ## Known limitations and trade-offs
 
 * Expressions with side effects can be evaluated at a different point relative to sorting/filtering (e.g. an inlined `Let` evaluated after `Order By`), but the same number of times per element. Queries generally can't guarantee this anyway (they may be translated to SQL).
-* `Group Join` nested within `Join`, and join conditions that don't reference the joined variable, aren't converted.
-* Clauses after an initial `Aggregate ... Into` aren't converted.
 * Comparisons in queries other than Option Compare Text keep the simple expression-tree-friendly form, so VB's `Nothing = ""` string semantics and three-valued nullable logic aren't reproduced in LINQ to objects queries (unlike method-syntax lambdas). This was an existing deliberate trade-off; `IsWithinExpressionTree` now makes it possible to revisit.
+* Clauses after an initial `Aggregate ... Into` aren't converted.
 * A comma separated `From x In {1}, y In ...` gets a blank line after the first variable, a trivia mapping quirk that predates this change.
 
 ## Tests

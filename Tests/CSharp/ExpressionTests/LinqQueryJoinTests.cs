@@ -376,4 +376,84 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task NestedJoinWithConditionOnBothJoinedVariablesJoinsSubqueryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private Shared Sub M(xs As Integer(), ys As Integer(), zs As Integer())
+        Dim q = From x In xs
+                Join y In ys
+                    Join z In zs On z Equals y
+                On x Equals y + z
+                Select x, y, z
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    private static void M(int[] xs, int[] ys, int[] zs)
+    {
+        var q = from x in xs
+                join x1 in from y in ys
+                           join z in zs on y equals z
+                           select new { y, z } on x equals x1.y + x1.z
+                select new { x, x1.y, x1.z };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task JoinNestedWithinGroupJoinJoinsSubqueryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private Shared Sub M(xs As Integer(), ys As Integer(), zs As Integer())
+        Dim q = From x In xs
+                Group Join y In ys
+                    Join z In zs On z Equals y
+                On x Equals y
+                Into Group, Total = Sum(y + z)
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    private static void M(int[] xs, int[] ys, int[] zs)
+    {
+        var q = from x in xs
+                join x1 in from y in ys
+                           join z in zs on y equals z
+                           select new { y, z } on x equals x1.y into Group
+                select new { x, Group, Total = Group.Sum(x2 => x2.y + x2.z) };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task GroupJoinNestedWithinJoinJoinsSubqueryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private Shared Sub M(xs As Integer(), ys As Integer(), zs As Integer())
+        Dim q = From x In xs
+                Join y In ys
+                    Group Join z In zs On z Equals y Into c = Count()
+                On x Equals y
+                Where c > 0
+    End Sub
+End Class", @"using System;
+using System.Linq;
+
+public partial class C
+{
+    private static void M(int[] xs, int[] ys, int[] zs)
+    {
+        var q = from x in xs
+                join x1 in from y in ys
+                           join z in zs on y equals z into Group
+                           select new { y, c = Group.Count() } on x equals x1.y
+                where x1.c > 0
+                select new { x, x1.y, x1.c };
+    }
+}");
+    }
 }

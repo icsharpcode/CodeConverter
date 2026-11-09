@@ -331,4 +331,34 @@ Public Class LinqExpressionTests
         Assert.Equal("1", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestNestedJoinWithConditionOnBothJoinedVariables()
+        Dim q = From x In {2, 4, 6}
+                Join y In {1, 2, 3}
+                    Join z In {1, 2, 3} On z Equals y
+                On x Equals y + z
+                Select x, y, z
+        Assert.Equal("{ x = 2, y = 1, z = 1 }|{ x = 4, y = 2, z = 2 }|{ x = 6, y = 3, z = 3 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestJoinNestedWithinGroupJoin()
+        Dim q = From x In {1, 2, 3}
+                Group Join y In {1, 1, 2}
+                    Join z In {1, 2, 2} On z Equals y
+                On x Equals y
+                Into Group, Total = Sum(y + z)
+        Assert.Equal("1:2:4|2:2:8|3:0:0", Show(q.Select(Function(r) r.x & ":" & r.Group.Count() & ":" & r.Total)))
+    End Sub
+
+    <Fact>
+    Sub TestGroupJoinNestedWithinJoin()
+        Dim q = From x In {1, 2, 3}
+                Join y In {1, 2, 3}
+                    Group Join z In {1, 1, 3} On z Equals y Into c = Count()
+                On x Equals y
+                Where c > 0
+        Assert.Equal("{ x = 1, y = 1, c = 2 }|{ x = 3, y = 3, c = 1 }", Show(q))
+    End Sub
+
 End Class

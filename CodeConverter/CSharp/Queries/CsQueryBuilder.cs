@@ -83,6 +83,18 @@ internal class CsQueryBuilder
     }
 
     /// <summary>
+    /// Adds a C# range variable for a whole element, e.g. one joined from a subquery, and makes each VB variable refer to it
+    /// </summary>
+    public SyntaxToken DeclareElementRangeVariable(IReadOnlyList<QueryRangeVariable> element)
+    {
+        EnsureQuery();
+        var identifier = GetElementParameterName(element);
+        AddName(identifier.ValueText);
+        ReferToElementVia(element, identifier);
+        return identifier;
+    }
+
+    /// <summary>
     /// For example the joined variable of a C# join...into goes out of scope
     /// </summary>
     public void RemoveRangeVariable(SyntaxToken identifier) => _csRangeVariableNames.Remove(identifier.ValueText);
