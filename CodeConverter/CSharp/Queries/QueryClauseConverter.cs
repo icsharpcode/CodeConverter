@@ -17,7 +17,6 @@ internal partial class QueryClauseConverter
     private readonly RangeVariableReplacements _replacements;
     private readonly HashSet<string> _generatedNames;
     private readonly Stack<CsQueryBuilder> _activeBuilders;
-    private readonly List<QueryRangeVariable> _registeredVariables = new();
     private readonly QuerySourceConverter _sources;
     private readonly FlatJoinPlanner _joinPlanner;
     private readonly SubstitutionRules _substitution;
@@ -40,24 +39,20 @@ internal partial class QueryClauseConverter
 
     public async Task<ExpressionSyntax> ConvertAsync()
     {
-        try {
-            var clauses = _vbQuery.Clauses;
-            if (clauses.First() is VBSyntax.AggregateClauseSyntax aggregate) {
-                if (clauses.Count > 1) throw new NotSupportedException("Query operators after an initial Aggregate clause aren't valid VB");
-                return await ConvertAggregateQueryAsync(aggregate);
-            }
-            return await WithBuilderAsync(async builder => {
-                var finalSelect = clauses.Last() as VBSyntax.SelectClauseSyntax;
-                foreach (var clause in finalSelect == null ? clauses : clauses.Take(clauses.Count - 1)) {
-                    await ConvertClauseAsync(builder, clause);
-                }
-                if (finalSelect == null) return builder.Materialize();
-                builder.EnsureQueryOpen();
-                return builder.BuildQuery(await ConvertFinalSelectAsync(finalSelect));
-            });
-        } finally {
-            foreach (var variable in _registeredVariables) _replacements.Unregister(variable);
+        var clauses = _vbQuery.Clauses;
+        if (clauses.First() is VBSyntax.AggregateClauseSyntax aggregate) {
+            if (clauses.Count > 1) throw new NotSupportedException("Query operators after an initial Aggregate clause aren't valid VB");
+            return await ConvertAggregateQueryAsync(aggregate);
         }
+        return await WithBuilderAsync(async builder => {
+            var finalSelect = clauses.Last() as VBSyntax.SelectClauseSyntax;
+            foreach (var clause in finalSelect == null ? clauses : clauses.Take(clauses.Count - 1)) {
+                await ConvertClauseAsync(builder, clause);
+            }
+            if (finalSelect == null) return builder.Materialize();
+            builder.EnsureQueryOpen();
+            return builder.BuildQuery(await ConvertFinalSelectAsync(finalSelect));
+        });
     }
 
     private Task ConvertClauseAsync(CsQueryBuilder builder, VBSyntax.QueryClauseSyntax clause)
@@ -69,7 +64,7 @@ internal partial class QueryClauseConverter
             VBSyntax.WhereClauseSyntax x => ConvertWhereAsync(builder, x),
             VBSyntax.OrderByClauseSyntax x => ConvertOrderByAsync(builder, x),
             VBSyntax.SelectClauseSyntax x => ConvertSelectAsync(builder, x),
-            VBSyntax.DistinctClauseSyntax x => ConvertDistinctAsync(builder, x),
+            VBSyntax.DistinctClauseSyntax => ConvertDistinctAsync(builder),
             VBSyntax.PartitionClauseSyntax x => ConvertPartitionAsync(builder, x),
             VBSyntax.PartitionWhileClauseSyntax x => ConvertPartitionWhileAsync(builder, x),
             VBSyntax.SimpleJoinClauseSyntax x => ConvertJoinAsync(builder, x),
@@ -131,23 +126,23 @@ internal partial class QueryClauseConverter
         return SyntaxFactory.SelectClause(CsQueryBuilder.CreateAnonymousObject(names.Zip(values, (n, v) => (n, v))));
     }
 
-    private static Task ConvertDistinctAsync(CsQueryBuilder builder, VBSyntax.DistinctClauseSyntax distinct)
+    private static Task ConvertDistinctAsync(CsQueryBuilder builder)
     {
-        builder.ApplyMethod(distinct, nameof(Enumerable.Distinct));
+        builder.ApplyMethod(nameof(Enumerable.Distinct));
         return Task.CompletedTask;
     }
 
     private async Task ConvertPartitionAsync(CsQueryBuilder builder, VBSyntax.PartitionClauseSyntax partition)
     {
         var methodName = partition.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.Skip) : nameof(Enumerable.Take);
-        builder.ApplyMethod(partition, methodName, await ConvertAsync(partition.Count));
+        builder.ApplyMethod(methodName, await ConvertAsync(partition.Count));
     }
 
     private async Task ConvertPartitionWhileAsync(CsQueryBuilder builder, VBSyntax.PartitionWhileClauseSyntax partitionWhile)
     {
         var methodName = partitionWhile.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.SkipWhile) : nameof(Enumerable.TakeWhile);
         var predicate = await builder.CreateElementLambdaAsync(builder.Scope, () => ConvertAsync(partitionWhile.Condition));
-        builder.ApplyMethod(partitionWhile, methodName, predicate);
+        builder.ApplyMethod(methodName, predicate);
     }
 
     private QueryRangeVariable RegisterVariable(VBSyntax.CollectionRangeVariableSyntax vbDeclaration) => RegisterVariable(VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbDeclaration));
@@ -158,7 +153,6 @@ internal partial class QueryClauseConverter
     {
         var variable = new QueryRangeVariable(symbol, symbol?.Name ?? "x");
         _replacements.Register(variable);
-        _registeredVariables.Add(variable);
         return variable;
     }
 
@@ -194,7 +188,7 @@ internal partial class QueryClauseConverter
             VBSyntax.ExpressionRangeVariableSyntax x => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, x)?.Name,
             VBSyntax.AggregationRangeVariableSyntax x => VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, x)?.Name,
             _ => null
-        }).Where(n => n != null);
+        });
 
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
 

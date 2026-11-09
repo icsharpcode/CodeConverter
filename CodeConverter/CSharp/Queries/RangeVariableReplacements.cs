@@ -6,7 +6,8 @@ namespace ICSharpCode.CodeConverter.CSharp.Queries;
 /// Lets expression conversion substitute the current C# expression for a reference to a VB range variable
 /// </summary>
 /// <remarks>
-/// Keyed by symbol since the VB binder has resolved which declaration each reference refers to, including through shadowing and nested queries
+/// Keyed by symbol since the VB binder has resolved which declaration each reference refers to, including through shadowing and nested queries.
+/// Range variable symbols only occur within their query, so they don't need removing afterwards.
 /// </remarks>
 internal class RangeVariableReplacements
 {
@@ -23,8 +24,4 @@ internal class RangeVariableReplacements
         if (variable.Symbol != null) _variables[variable.Symbol] = variable;
     }
 
-    public void Unregister(QueryRangeVariable variable)
-    {
-        if (variable.Symbol != null) _variables.Remove(variable.Symbol);
-    }
 }

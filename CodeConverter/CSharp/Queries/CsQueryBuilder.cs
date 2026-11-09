@@ -62,7 +62,6 @@ internal class CsQueryBuilder
 
     public void AddFrom(QueryRangeVariable variable, TypeSyntax type, ExpressionSyntax collection)
     {
-        EnsureQueryOpen();
         var fromClause = SyntaxFactory.FromClause(type, ChooseIdentifier(variable), collection);
         if (IsQueryOpen) {
             _clauses.Add(fromClause);
@@ -73,18 +72,13 @@ internal class CsQueryBuilder
     }
 
     /// <returns>The identifier, which is only renamed if it clashes</returns>
-    public SyntaxToken DeclareRangeVariable(QueryRangeVariable variable)
-    {
-        EnsureQueryOpen();
-        return ChooseIdentifier(variable);
-    }
+    public SyntaxToken DeclareRangeVariable(QueryRangeVariable variable) => ChooseIdentifier(variable);
 
     /// <summary>
     /// Makes each VB variable a member of a single C# range variable, e.g. one joined from a subquery
     /// </summary>
     public SyntaxToken DeclareElementRangeVariable(IReadOnlyList<QueryRangeVariable> element)
     {
-        EnsureQueryOpen();
         var identifier = ChooseElementIdentifier(element);
         RecordName(identifier.ValueText);
         ReferToElementVia(element, identifier);
@@ -109,18 +103,13 @@ internal class CsQueryBuilder
         }
     }
 
-    public void AddClause(QueryClauseSyntax clause)
-    {
-        EnsureQueryOpen();
-        _clauses.Add(clause);
-    }
+    public void AddClause(QueryClauseSyntax clause) => _clauses.Add(clause);
 
     /// <summary>
     /// Ends the query body with <paramref name="selectOrGroup"/>, leaving only <paramref name="continuationVariable"/> in C# scope
     /// </summary>
     public void ContinueInto(SelectOrGroupClauseSyntax selectOrGroup, QueryRangeVariable continuationVariable)
     {
-        EnsureQueryOpen();
         _rangeVariableNamesInScope.Clear();
         var into = ChooseIdentifier(continuationVariable);
         _continuedBodies.Add(new ContinuedBody(_clauses, selectOrGroup, into));
@@ -130,10 +119,9 @@ internal class CsQueryBuilder
     /// <summary>
     /// For operators with no query clause, e.g. Distinct. The next clause resumes the query from the result.
     /// </summary>
-    /// <param name="vbClause">Places the generated select on the same line as the method call</param>
-    public void ApplyMethod(VisualBasicSyntaxNode vbClause, string methodName, params ExpressionSyntax[] arguments)
+    public void ApplyMethod(string methodName, params ExpressionSyntax[] arguments)
     {
-        var target = Materialize(vbClause);
+        var target = Materialize();
         var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ParenthesizeIfNeeded(target), ValidSyntaxFactory.IdentifierName(methodName));
         _methodCallResult = SyntaxFactory.InvocationExpression(memberAccess, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments.Select(SyntaxFactory.Argument))));
         _from = null;
@@ -144,19 +132,14 @@ internal class CsQueryBuilder
     }
 
     /// <returns>The sequence of elements, i.e. the result if the query ended here</returns>
-    public ExpressionSyntax Materialize(VisualBasicSyntaxNode vbSourceMapping = null)
+    public ExpressionSyntax Materialize()
     {
         if (!IsQueryOpen) return _methodCallResult;
         var select = SyntaxFactory.SelectClause(IsResumedElementUnchanged() ? _resumedElement.Identifier : CreateElement(Scope));
-        var mappedSelect = vbSourceMapping == null || HasSourceMapping(select) ? select : select.WithVbSourceMappingFrom(vbSourceMapping);
-        return BuildQuery(mappedSelect, canDropIdentitySelect: true);
+        return BuildQuery(select, canDropIdentitySelect: true);
     }
 
-    public ExpressionSyntax BuildQuery(SelectOrGroupClauseSyntax finalClause)
-    {
-        EnsureQueryOpen();
-        return BuildQuery(finalClause, canDropIdentitySelect: false);
-    }
+    public ExpressionSyntax BuildQuery(SelectOrGroupClauseSyntax finalClause) => BuildQuery(finalClause, canDropIdentitySelect: false);
 
     /// <param name="canDropIdentitySelect">VB adds an identity select to a bare `From x In xs` which can be dropped, but an explicit one changes the result's type</param>
     private ExpressionSyntax BuildQuery(SelectOrGroupClauseSyntax finalClause, bool canDropIdentitySelect)
@@ -221,7 +204,7 @@ internal class CsQueryBuilder
     };
 
     /// <summary>
-    /// Resumes the query after a method call. Call this before converting expressions that reference range variables, since it changes how they're referenced.
+    /// Resumes the query after a method call. Call this before converting each clause (other than one converted to a method call), since it changes how range variables are referenced.
     /// </summary>
     public void EnsureQueryOpen()
     {
@@ -241,7 +224,7 @@ internal class CsQueryBuilder
     {
         var name = element.Count == 1 && element[0].Symbol != null && !IsRangeVariableInScope(element[0].Name)
             ? element[0].Name
-            : NameGenerator.Generic.GenerateUniqueName(GeneratedElementName, n => IsNameFree(n) && element.All(v => !string.Equals(v.Name, n, StringComparison.OrdinalIgnoreCase)));
+            : NameGenerator.Generic.GenerateUniqueName(GeneratedElementName, IsNameFree);
         return CommonConversions.CsEscapedIdentifier(name);
     }
 
@@ -270,9 +253,6 @@ internal class CsQueryBuilder
 
     private bool IsResumedElementUnchanged() =>
         _resumedElement != null && _resumedElement.Scope.SequenceEqual(Scope) && _resumedElement.Expressions.SequenceEqual(Scope.Select(v => v.CsExpression));
-
-    private static bool HasSourceMapping(SyntaxNode node) =>
-        node.DescendantNodesAndSelf().Any(n => n.HasAnnotations(AnnotationConstants.SourceStartLineAnnotationKind));
 
     private static void ReferToElementVia(IReadOnlyList<QueryRangeVariable> element, SyntaxToken identifier)
     {
