@@ -126,7 +126,7 @@ internal class SubstitutionRules
             ?? _clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && QueryClauseConverter.IsConvertedToMethodCall(c))?.SpanStart;
         var referencesBeforeMaterialized = GetReferences(symbol, TextSpan.FromBounds(declaration.Span.End, materializedAt ?? _end)).Take(2).ToList();
         return referencesBeforeMaterialized.Count switch {
-            0 => materializedAt ?? (_finalSelect == null ? _end : null),
+            0 => materializedAt ?? _end,
             1 when materializedAt == null => GetOnlyEvaluatingClause(referencesBeforeMaterialized[0], declaration)?.SpanStart,
             _ => null
         };
@@ -143,7 +143,7 @@ internal class SubstitutionRules
             VBSyntax.WhereClauseSyntax or VBSyntax.LetClauseSyntax => clause,
             _ => null
         };
-        if (evaluated == null || !evaluated.Span.Contains(reference.Span) || reference.Ancestors().TakeWhile(a => a != evaluated).Any(IsConditionallyOrRepeatedlyEvaluated)) return null;
+        if (evaluated == null || reference.Ancestors().TakeWhile(a => a != evaluated).Any(IsConditionallyOrRepeatedlyEvaluated)) return null;
         var isElementBuiltLater = clause != _finalSelect && (_finalSelect == null || _clauses.Any(c => c.SpanStart > clause.SpanStart && c is VBSyntax.GroupByClauseSyntax));
         return !isElementBuiltLater && IsEvaluatedBeforeOtherValues(evaluated, reference, declaration) ? clause : null;
     }

@@ -69,7 +69,7 @@ A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses wh
 * Even a cheap value that could change (a local, field or property) stays a `let` if it's referenced in a lambda or nested query in a `Let` or `Select`, since that may run after VB would have read the value.
 * Delegates (lambdas and `AddressOf`) stay in a `let`, typed as their delegate (`new Predicate<int>(...)`, or `Func<...>` for VB's anonymous delegates), since C# can't infer the type there.
 * `NameOf` of a range variable (or its member) becomes the name as a string, since there may be no C# variable to name.
-* No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a field or local (`Select v = field Let field = 1 Select v`), though range variables clashing with each other are renamed instead.
+* No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a shared field or type name (`Select v = Count Aggregate y In ys Into Count() Select v` with a shared field `Count`), though range variables clashing with each other are renamed instead.
 
 ### Types
 
@@ -83,7 +83,7 @@ VB names are kept unless they clash with a C# range variable VB has dropped, whi
 
 VB's own translation (`ITranslatedQueryOperation`) shows whether a query's lambdas compile to delegates or to expression trees (`ExpressionTreeDetector`, `IQueryTracker.IsWithinExpressionTree`). A later `Aggregate` clause is a separate query over its own source, so is checked separately.
 * Delegates (LINQ to objects) get VB's comparison semantics, exactly as outside a query: `Nothing = ""`, `Option Compare Text`, nullable logic. In a `Where` (and the operands of `OrElse`/`AndAlso` within it, except the left of `AndAlso` when the right could throw or have side effects, since VB evaluates the right when the left is Nothing) Nothing is treated as False, so C#'s lifted operators are used where they're already false whenever VB would give Nothing: `n == 1`, `n > 1`, but `n is { } a && a != 1`.
-* Expression trees (e.g. `IQueryable` from EF) get plain C# operators (`x == s`), with a `Boolean?` operand of `AndAlso`/`OrElse` in a `Where` as `b == true`. The provider decides the semantics, e.g. the database collation decides case sensitivity, and it may not translate VB's runtime helpers or C# patterns at all ([#316](https://github.com/icsharpcode/CodeConverter/issues/316), [#894](https://github.com/icsharpcode/CodeConverter/issues/894)).
+* Expression trees (e.g. `IQueryable` from EF) get plain C# operators (`x == s`), except that `Object` comparisons and relational string comparisons still need VB's runtime helpers, which providers may not translate, with a `Boolean?` operand of `AndAlso`/`OrElse` in a `Where` as `b == true`. The provider decides the semantics, e.g. the database collation decides case sensitivity, and it may not translate VB's runtime helpers or C# patterns at all ([#316](https://github.com/icsharpcode/CodeConverter/issues/316), [#894](https://github.com/icsharpcode/CodeConverter/issues/894)).
   The first source, a join's inner source and `Skip`/`Take` counts aren't part of the expression tree, so get VB's semantics.
 
 ## Limitations
