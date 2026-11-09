@@ -163,7 +163,7 @@ internal partial class QueryClauseConverter
     }
 
     private string GetVariableName(VBSyntax.ExpressionRangeVariableSyntax vbVariable) =>
-        VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbVariable)?.Name ?? vbVariable.Expression.ExtractAnonymousTypeMemberName()?.Text ?? "x";
+        VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbVariable)?.Name ?? "x";
 
     /// <summary>
     /// Nested queries (including subqueries generated for joins and Aggregate) use the enclosing builder to avoid name clashes

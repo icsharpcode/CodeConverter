@@ -62,12 +62,12 @@ internal class CsQueryBuilder
 
     public void AddFrom(QueryRangeVariable variable, TypeSyntax type, ExpressionSyntax collection)
     {
-        var isFirstClause = !IsQueryOpen && _methodCallResult == null;
-        var fromClause = SyntaxFactory.FromClause(type, isFirstClause ? ChooseIdentifier(variable) : DeclareRangeVariable(variable), collection);
-        if (isFirstClause) {
-            _from = fromClause;
+        EnsureQueryOpen();
+        var fromClause = SyntaxFactory.FromClause(type, ChooseIdentifier(variable), collection);
+        if (IsQueryOpen) {
+            _clauses.Add(fromClause);
         } else {
-            AddClause(fromClause);
+            _from = fromClause;
         }
         AddToScope(variable);
     }
