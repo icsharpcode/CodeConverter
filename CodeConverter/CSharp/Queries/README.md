@@ -54,13 +54,13 @@ Since the element comes from `Scope`, C# can keep variables in scope that VB has
 | `Group By` | `group element by key into g`; keys become `g.Key[.Name]`, aggregations `g.F(e => ...)` | `QueryClauseConverter.Grouping.cs` |
 | `Aggregate` | `source.F(...)`; several share one evaluation of the source | `QueryClauseConverter.Grouping.cs` |
 | `Join`, `Group Join` | `join [into]`, inner side chosen by which side references the joined variable | `QueryClauseConverter.Joins.cs` |
-| Nested joins | flat `join`s where valid, otherwise a subquery joined as one variable (VB's own `xs.Join(ys.Join(zs, ...))`) | `PlanFlatJoins`, `DeclareJoinedSubqueryAsync` |
-| `From x As T` | `from T x` where the conversion is the same as `Cast<T>`, otherwise `xs.Select(x => (T)x)` | `ConvertCollectionAsync` |
+| Nested joins | flat `join`s where valid, otherwise a subquery joined as one variable (VB's own `xs.Join(ys.Join(zs, ...))`) | `FlatJoinPlanner`, `DeclareJoinedSubqueryAsync` |
+| `From x As T` | `from T x` where the conversion is the same as `Cast<T>`, otherwise `xs.Select(x => (T)x)` | `QuerySourceConverter` |
 | unsupported shapes | `NotImplementedException`, which shows as a compile error comment | |
 
 ### Substitute or `let`
 
-A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`QueryClauseConverter.Substitution.cs`):
+A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`SubstitutionRules`):
 * It must be evaluated the same number of times, unless it's cheap to repeat. It's evaluated at most once if it has no references before the element is next materialized, or a single reference in the final `Select`.
 * No name it references may be captured by a later lambda parameter. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`.
 

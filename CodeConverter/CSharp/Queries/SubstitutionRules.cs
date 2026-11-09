@@ -3,22 +3,34 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace ICSharpCode.CodeConverter.CSharp.Queries;
 
-internal partial class QueryClauseConverter
+/// <summary>
+/// Decides whether a value can be substituted for each reference to its range variable, rather than declared with a let clause
+/// </summary>
+internal class SubstitutionRules
 {
+    private readonly VBSyntax.QueryExpressionSyntax _vbQuery;
+    private readonly SemanticModel _semanticModel;
+
+    public SubstitutionRules(VBSyntax.QueryExpressionSyntax vbQuery, SemanticModel semanticModel)
+    {
+        _vbQuery = vbQuery;
+        _semanticModel = semanticModel;
+    }
+
     /// <summary>
-    /// Substituting a value for each reference to its variable must not change what it refers to, or how many times it's evaluated (unless that's cheap)
+    /// Substituting must not change what the value refers to, or how many times it's evaluated (unless that's cheap)
     /// </summary>
     /// <remarks>
     /// An unreferenced value is evaluated at most once, as part of the element the next time it's materialized.
     /// After that (at a method call or the end of a join subquery), references read the materialized element instead.
     /// A single reference from the final select (outside any nested lambda/query) is the only place it's evaluated.
     /// </remarks>
-    private bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
+    public bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
         if (IsShadowedLater(value, declaration)) return false;
         if (variable.Symbol == null || CsQueryBuilder.IsCheapToRepeat(value)) return true;
         var materializedAt = GetJoinWithSubqueryContaining(declaration)?.OnKeyword.SpanStart
-            ?? _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && IsConvertedToMethodCall(c))?.SpanStart;
+            ?? _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && QueryClauseConverter.IsConvertedToMethodCall(c))?.SpanStart;
         var referencesBeforeMaterialized = GetReferences(variable, TextSpan.FromBounds(declaration.Span.End, materializedAt ?? _vbQuery.Span.End)).Take(2).ToList();
         return referencesBeforeMaterialized.Count switch {
             0 => true,
@@ -46,7 +58,7 @@ internal partial class QueryClauseConverter
     /// A later VB lambda can reuse that name for a parameter (`Where ys.Any(Function(x) x > y)`), which would capture it.
     /// Later range variables don't need checking since clashing ones are renamed.
     /// </summary>
-    private bool IsShadowedLater(ExpressionSyntax value, VisualBasicSyntaxNode declaration)
+    public bool IsShadowedLater(ExpressionSyntax value, VisualBasicSyntaxNode declaration)
     {
         var referencedNames = new HashSet<string>(value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>()
             .Where(id => id.Parent is not MemberAccessExpressionSyntax { Name: var name } || name != id)
@@ -58,10 +70,10 @@ internal partial class QueryClauseConverter
     /// <summary>
     /// If so, a value substituted into the element stays in the same place relative to other clauses, so can keep its comments
     /// </summary>
-    private bool IsElementMaterializedNext(VBSyntax.QueryClauseSyntax clause)
+    public bool IsElementMaterializedNext(VBSyntax.QueryClauseSyntax clause)
     {
         var clauses = _vbQuery.Clauses;
         var index = clauses.IndexOf(clause);
-        return index < 0 || index == clauses.Count - 1 || IsConvertedToMethodCall(clauses[index + 1]);
+        return index < 0 || index == clauses.Count - 1 || QueryClauseConverter.IsConvertedToMethodCall(clauses[index + 1]);
     }
 }

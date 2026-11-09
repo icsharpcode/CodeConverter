@@ -69,7 +69,7 @@ internal partial class QueryClauseConverter
         var group = source;
         if (aggregate.AggregationVariables.Count > 1) {
             var groupVariable = new QueryRangeVariable(null, GeneratedGroupName);
-            builder.DefineVariable(groupVariable, source, CsQueryBuilder.IsCheapToRepeat(source) && !IsShadowedLater(source, aggregate), keepSourceMapping: false);
+            builder.DefineVariable(groupVariable, source, CsQueryBuilder.IsCheapToRepeat(source) && !_substitution.IsShadowedLater(source, aggregate), keepSourceMapping: false);
             group = groupVariable.CsExpression;
         }
         foreach (var aggregation in await ConvertAggregationsAsync(builder, aggregate, aggregate.AggregationVariables, group, element)) {
@@ -80,7 +80,7 @@ internal partial class QueryClauseConverter
     private Task<(ExpressionSyntax Source, IReadOnlyList<QueryRangeVariable> Element)> ConvertAggregateSourceAsync(VBSyntax.AggregateClauseSyntax aggregate) =>
         WithBuilderAsync(async builder => {
             foreach (var vbVariable in aggregate.Variables) {
-                var (type, collection) = await ConvertCollectionAsync(vbVariable);
+                var (type, collection) = await _sources.ConvertAsync(vbVariable);
                 builder.AddFrom(RegisterVariable(vbVariable), type, collection);
             }
             foreach (var clause in aggregate.AdditionalQueryOperators) {
@@ -102,7 +102,7 @@ internal partial class QueryClauseConverter
             var variable = RegisterVariable(vbAggregation);
             if (vbAggregation.Aggregation is VBSyntax.FunctionAggregationSyntax function) {
                 var value = await ConvertAggregationFunctionAsync(builder, function, group, groupElement);
-                builder.DefineVariable(variable, value, CanSubstitute(variable, vbAggregation, value), IsElementMaterializedNext(clause));
+                builder.DefineVariable(variable, value, _substitution.CanSubstitute(variable, vbAggregation, value), _substitution.IsElementMaterializedNext(clause));
             } else {
                 variable.CsExpression = group;
             }

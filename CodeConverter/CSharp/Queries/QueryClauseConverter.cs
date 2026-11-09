@@ -1,5 +1,4 @@
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Operations;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 using VBSyntaxKind = Microsoft.CodeAnalysis.VisualBasic.SyntaxKind;
@@ -19,6 +18,9 @@ internal partial class QueryClauseConverter
     private readonly HashSet<string> _generatedNames;
     private readonly Stack<CsQueryBuilder> _activeBuilders;
     private readonly List<QueryRangeVariable> _registeredVariables = new();
+    private readonly QuerySourceConverter _sources;
+    private readonly FlatJoinPlanner _joinPlanner;
+    private readonly SubstitutionRules _substitution;
 
     /// <param name="activeBuilders">Builders for the queries being converted, the innermost of which encloses this query</param>
     public QueryClauseConverter(VBSyntax.QueryExpressionSyntax vbQuery, SemanticModel semanticModel, CommonConversions commonConversions,
@@ -31,6 +33,9 @@ internal partial class QueryClauseConverter
         _replacements = replacements;
         _generatedNames = generatedNames;
         _activeBuilders = activeBuilders;
+        _sources = new QuerySourceConverter(semanticModel, commonConversions, ConvertAsync);
+        _joinPlanner = new FlatJoinPlanner(semanticModel);
+        _substitution = new SubstitutionRules(vbQuery, semanticModel);
     }
 
     public async Task<ExpressionSyntax> ConvertAsync()
@@ -75,13 +80,13 @@ internal partial class QueryClauseConverter
         };
     }
 
-    private static bool IsConvertedToMethodCall(VBSyntax.QueryClauseSyntax clause) =>
+    internal static bool IsConvertedToMethodCall(VBSyntax.QueryClauseSyntax clause) =>
         clause is VBSyntax.DistinctClauseSyntax or VBSyntax.PartitionClauseSyntax or VBSyntax.PartitionWhileClauseSyntax;
 
     private async Task ConvertFromAsync(CsQueryBuilder builder, VBSyntax.FromClauseSyntax from)
     {
         foreach (var vbVariable in from.Variables) {
-            var (type, collection) = await ConvertCollectionAsync(vbVariable);
+            var (type, collection) = await _sources.ConvertAsync(vbVariable);
             builder.AddFrom(RegisterVariable(vbVariable), type, collection);
         }
     }
@@ -91,7 +96,7 @@ internal partial class QueryClauseConverter
         foreach (var vbVariable in let.Variables) {
             var value = await ConvertAsync(vbVariable.Expression);
             var variable = RegisterVariable(vbVariable);
-            builder.DefineVariable(variable, value, CanSubstitute(variable, vbVariable, value), IsElementMaterializedNext(let));
+            builder.DefineVariable(variable, value, _substitution.CanSubstitute(variable, vbVariable, value), _substitution.IsElementMaterializedNext(let));
             builder.AddToScope(variable);
         }
     }
@@ -113,7 +118,7 @@ internal partial class QueryClauseConverter
         var values = await select.Variables.SelectAsync(v => ConvertAsync(v.Expression));
         var variables = select.Variables.Select(RegisterVariable).ToList();
         for (int i = 0; i < variables.Count; i++) {
-            builder.DefineVariable(variables[i], values[i], CanSubstitute(variables[i], select.Variables[i], values[i]), IsElementMaterializedNext(select));
+            builder.DefineVariable(variables[i], values[i], _substitution.CanSubstitute(variables[i], select.Variables[i], values[i]), _substitution.IsElementMaterializedNext(select));
         }
         builder.SetScope(variables);
     }
@@ -143,67 +148,6 @@ internal partial class QueryClauseConverter
         var methodName = partitionWhile.SkipOrTakeKeyword.IsKind(VBSyntaxKind.SkipKeyword) ? nameof(Enumerable.SkipWhile) : nameof(Enumerable.TakeWhile);
         var predicate = await builder.CreateElementLambdaAsync(builder.Scope, () => ConvertAsync(partitionWhile.Condition));
         builder.ApplyMethod(partitionWhile, methodName, predicate);
-    }
-
-    /// <summary>
-    /// Makes explicit what VB does implicitly to query a source: AsEnumerable or Cast, and converting to the range variable's declared type
-    /// </summary>
-    private async Task<(TypeSyntax Type, ExpressionSyntax Expression)> ConvertCollectionAsync(VBSyntax.CollectionRangeVariableSyntax vbVariable)
-    {
-        var expression = await ConvertAsync(vbVariable.Expression);
-        var sourceElementType = _semanticModel.GetTypeInfo(vbVariable.Expression).Type?.GetEnumerableElementTypeOrDefault();
-        TypeSyntax castType = null;
-        if (GetImplicitQueryableCall(vbVariable.Expression) is { } implicitCall) {
-            if (implicitCall.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
-                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression, nameof(Enumerable.AsEnumerable)), SyntaxFactory.ArgumentList());
-            } else if (implicitCall.TargetMethod.Name == nameof(Enumerable.Cast)) {
-                sourceElementType = implicitCall.TargetMethod.TypeArguments.Single();
-                castType = _commonConversions.GetTypeSyntax(sourceElementType);
-            }
-        }
-
-        var declaredType = vbVariable.AsClause == null ? null : _semanticModel.GetTypeInfo(vbVariable.AsClause.Type).Type;
-        if (declaredType == null || sourceElementType == null || SymbolEqualityComparer.Default.Equals(sourceElementType, declaredType)) {
-            return (castType, expression);
-        }
-        if (IsSameAsCast(sourceElementType, declaredType)) {
-            return (_commonConversions.GetTypeSyntax(declaredType), expression);
-        }
-        var source = castType == null ? expression : CallCast(expression, castType);
-        return (null, SelectConverted(vbVariable, source, sourceElementType, declaredType));
-    }
-
-    private IInvocationOperation GetImplicitQueryableCall(VBSyntax.ExpressionSyntax collection)
-    {
-        var parent = _semanticModel.GetOperation(collection)?.Parent;
-        while (parent is IConversionOperation { IsImplicit: true }) parent = parent.Parent;
-        return parent is IInvocationOperation { IsImplicit: true, TargetMethod.MethodKind: MethodKind.ReducedExtension } invocation ? invocation : null;
-    }
-
-    /// <summary>
-    /// VB's CType runs conversions like Object to String or Integer to Long, but C#'s Cast&lt;T&gt; would throw
-    /// </summary>
-    private bool IsSameAsCast(ITypeSymbol sourceType, ITypeSymbol targetType)
-    {
-        var conversion = VBasic.VisualBasicExtensions.ClassifyConversion(_semanticModel.Compilation, sourceType, targetType);
-        return conversion.IsReference && !conversion.IsUserDefined && targetType.SpecialType != SpecialType.System_String;
-    }
-
-    private static ExpressionSyntax CallCast(ExpressionSyntax source, TypeSyntax type)
-    {
-        var cast = SyntaxFactory.GenericName(ValidSyntaxFactory.IdentifierName(nameof(Enumerable.Cast)).Identifier, SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(type)));
-        return SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, CsQueryBuilder.ParenthesizeIfNeeded(source), cast), SyntaxFactory.ArgumentList());
-    }
-
-    private ExpressionSyntax SelectConverted(VBSyntax.CollectionRangeVariableSyntax vbVariable, ExpressionSyntax source, ITypeSymbol sourceType, ITypeSymbol targetType)
-    {
-        var variableName = vbVariable.Identifier.Identifier.ValueText;
-        var parameter = CommonConversions.CsEscapedIdentifier(targetType.Name == variableName ? "x" : variableName);
-        var converted = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, SyntaxFactory.IdentifierName(parameter),
-            defaultToCast: true, forceSourceType: sourceType, forceTargetType: targetType);
-        var lambda = SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(parameter), converted);
-        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(CsQueryBuilder.ParenthesizeIfNeeded(source), nameof(Enumerable.Select)),
-            SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(lambda))));
     }
 
     private QueryRangeVariable RegisterVariable(VBSyntax.CollectionRangeVariableSyntax vbDeclaration) => RegisterVariable(VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbDeclaration));
