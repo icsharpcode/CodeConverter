@@ -1,5 +1,4 @@
 using ICSharpCode.CodeConverter.CSharp.Queries;
-using Microsoft.CodeAnalysis.Operations;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -30,7 +29,7 @@ internal class QueryConverter
         var tracker = _triviaConvertingVisitor;
         var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
         tracker.IsWithinQuery = true;
-        tracker.IsWithinExpressionTree |= IsExpressionTree(_semanticModel.GetOperation(query));
+        tracker.IsWithinExpressionTree |= new ExpressionTreeDetector(_semanticModel, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T).IsExpressionTree(query);
         try {
             var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders);
             return await converter.ConvertAsync();
@@ -38,17 +37,4 @@ internal class QueryConverter
             (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
         }
     }
-
-    /// <summary>
-    /// The VB compiler's translation of the query shows whether its lambdas become expression trees, e.g. for IQueryable
-    /// </summary>
-    private bool IsExpressionTree(IOperation operation) =>
-        IsGeneratedOperatorExpressionTreeArgument(operation) || operation?.ChildOperations.Where(c => c is not ITranslatedQueryOperation).Any(IsExpressionTree) == true;
-
-    /// <remarks>
-    /// Lambdas the user wrote within the query aren't relevant
-    /// </remarks>
-    private bool IsGeneratedOperatorExpressionTreeArgument(IOperation operation) =>
-        operation is IArgumentOperation { IsImplicit: true, Parent: IInvocationOperation { IsImplicit: true }, Parameter.Type: var type } &&
-        SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T);
 }

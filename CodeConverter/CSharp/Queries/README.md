@@ -79,7 +79,7 @@ VB names are kept unless they clash with a C# range variable VB has dropped, whi
 
 ### Comparisons
 
-Comparisons in queries skip VB's null/empty string and nullable logic so expression tree providers like EF can translate them (`IQueryTracker.IsWithinQuery`). `Option Compare Text` string equality is kept when the query compiles to delegates, which VB's `ITranslatedQueryOperation` shows. Expression tree providers would translate VB's own text comparison to plain equality anyway.
+Comparisons in queries skip VB's null/empty string and nullable logic so expression tree providers like EF can translate them (`IQueryTracker.IsWithinQuery`). `Option Compare Text` string equality is kept when the query compiles to delegates, which VB's `ITranslatedQueryOperation` shows (`ExpressionTreeDetector`). A later `Aggregate` clause is a separate query over its own source, so is checked separately. Expression tree providers would translate VB's own text comparison to plain equality anyway.
 
 ## Limitations
 

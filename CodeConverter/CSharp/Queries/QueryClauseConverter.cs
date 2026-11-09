@@ -20,6 +20,7 @@ internal partial class QueryClauseConverter
     private readonly QuerySourceConverter _sources;
     private readonly FlatJoinPlanner _joinPlanner;
     private readonly SubstitutionRules _substitution;
+    private readonly ExpressionTreeDetector _expressionTrees;
 
     /// <param name="activeBuilders">Builders for the queries being converted, the innermost of which encloses this query</param>
     public QueryClauseConverter(VBSyntax.QueryExpressionSyntax vbQuery, SemanticModel semanticModel, CommonConversions commonConversions,
@@ -35,6 +36,7 @@ internal partial class QueryClauseConverter
         _sources = new QuerySourceConverter(semanticModel, commonConversions, ConvertAsync);
         _joinPlanner = new FlatJoinPlanner(semanticModel);
         _substitution = new SubstitutionRules(vbQuery, semanticModel);
+        _expressionTrees = new ExpressionTreeDetector(semanticModel, commonConversions.KnownTypes.System_Linq_Expressions_Expression_T);
     }
 
     public async Task<ExpressionSyntax> ConvertAsync()

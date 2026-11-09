@@ -65,6 +65,17 @@ internal partial class QueryClauseConverter
     /// </summary>
     private async Task ConvertAggregateClauseAsync(CsQueryBuilder builder, VBSyntax.AggregateClauseSyntax aggregate)
     {
+        var originalIsWithinExpressionTree = _visitor.IsWithinExpressionTree;
+        _visitor.IsWithinExpressionTree |= _expressionTrees.IsExpressionTree(aggregate);
+        try {
+            await ConvertAggregateClauseWithinTrackedScopeAsync(builder, aggregate);
+        } finally {
+            _visitor.IsWithinExpressionTree = originalIsWithinExpressionTree;
+        }
+    }
+
+    private async Task ConvertAggregateClauseWithinTrackedScopeAsync(CsQueryBuilder builder, VBSyntax.AggregateClauseSyntax aggregate)
+    {
         var (source, element) = await ConvertAggregateSourceAsync(aggregate);
         var group = source;
         if (aggregate.AggregationVariables.Count > 1) {

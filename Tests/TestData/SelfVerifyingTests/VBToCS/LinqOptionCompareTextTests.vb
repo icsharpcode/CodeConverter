@@ -53,6 +53,12 @@ Public Class LinqOptionCompareTextTests
     End Sub
 
     <Fact>
+    Sub TestQueryContainingAggregateOverQueryableIgnoresCase()
+        Dim queryable = {1, 2}.AsQueryable()
+        Assert.Equal(1, (From w In {"A", "b"} Where w = "a" Aggregate i In queryable Into Sum(i) Select w).Count())
+    End Sub
+
+    <Fact>
     Sub TestQueryContainingExpressionTreeLambdaIgnoresCase()
         Dim queryable = Words.AsQueryable()
         Assert.Equal(2, (From w In Words Where w = "a" AndAlso queryable.Any(Function(z) z.Length = w.Length)).Count())
