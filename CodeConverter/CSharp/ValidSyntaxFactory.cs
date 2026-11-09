@@ -119,4 +119,19 @@ public static class ValidSyntaxFactory
     public static IdentifierNameSyntax IdentifierName(string name) => SyntaxFactory.IdentifierName(CommonConversions.CsEscapedIdentifier(name));
     public static IdentifierNameSyntax IdentifierName(SyntaxToken identifier) =>
         SyntaxFacts.IsValidIdentifier(identifier.Text) ? SyntaxFactory.IdentifierName(identifier) : IdentifierName(identifier.Text).WithLeadingTrivia(identifier.LeadingTrivia).WithTrailingTrivia(identifier.TrailingTrivia);
+
+    /// <summary>
+    /// Names the member only when C# wouldn't infer the same name from the expression
+    /// </summary>
+    public static AnonymousObjectMemberDeclaratorSyntax AnonymousObjectMember(string name, ExpressionSyntax expression)
+    {
+        var nameEquals = GetInferredMemberName(expression) == name ? null : SyntaxFactory.NameEquals(IdentifierName(name));
+        return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
+    }
+
+    private static string GetInferredMemberName(ExpressionSyntax expression) => expression switch {
+        IdentifierNameSyntax id => id.Identifier.ValueText,
+        MemberAccessExpressionSyntax { Name: var name } => name.Identifier.ValueText,
+        _ => null
+    };
 }

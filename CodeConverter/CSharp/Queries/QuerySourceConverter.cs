@@ -73,7 +73,7 @@ internal class QuerySourceConverter
     private ExpressionSyntax SelectConverted(VBSyntax.CollectionRangeVariableSyntax vbVariable, ExpressionSyntax source, ITypeSymbol sourceType, ITypeSymbol targetType)
     {
         var variableName = vbVariable.Identifier.Identifier.ValueText;
-        var parameter = CommonConversions.CsEscapedIdentifier(targetType.Name == variableName ? "x" : variableName);
+        var parameter = CommonConversions.CsEscapedIdentifier(targetType.Name == variableName ? CsQueryBuilder.GeneratedElementName : variableName);
         var converted = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, SyntaxFactory.IdentifierName(parameter),
             forceSourceType: sourceType, forceTargetType: targetType);
         var lambda = SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(parameter), converted);

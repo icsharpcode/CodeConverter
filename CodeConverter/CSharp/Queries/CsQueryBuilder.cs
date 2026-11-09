@@ -14,7 +14,8 @@ namespace ICSharpCode.CodeConverter.CSharp.Queries;
 /// </remarks>
 internal class CsQueryBuilder
 {
-    private const string GeneratedElementName = "x";
+    /// <summary>For elements and values VB doesn't name</summary>
+    public const string GeneratedElementName = "x";
     private readonly Func<string, bool> _isNameFreeOutsideQuery;
     private readonly CsQueryBuilder _enclosingQuery;
     private readonly List<ContinuedBody> _continuedBodies = new();
@@ -190,19 +191,7 @@ internal class CsQueryBuilder
         variables.Count == 1 ? variables[0].CsExpression : CreateAnonymousObject(variables.Select(v => (v.Name, v.CsExpression)));
 
     public static AnonymousObjectCreationExpressionSyntax CreateAnonymousObject(IEnumerable<(string Name, ExpressionSyntax Expression)> members) =>
-        SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(members.Select(m => CreateAnonymousMember(m.Name, m.Expression))));
-
-    public static AnonymousObjectMemberDeclaratorSyntax CreateAnonymousMember(string name, ExpressionSyntax expression)
-    {
-        var nameEquals = GetInferredMemberName(expression) == name ? null : SyntaxFactory.NameEquals(ValidSyntaxFactory.IdentifierName(name));
-        return SyntaxFactory.AnonymousObjectMemberDeclarator(nameEquals, expression);
-    }
-
-    private static string GetInferredMemberName(ExpressionSyntax expression) => expression switch {
-        IdentifierNameSyntax id => id.Identifier.ValueText,
-        MemberAccessExpressionSyntax { Name: var name } => name.Identifier.ValueText,
-        _ => null
-    };
+        SyntaxFactory.AnonymousObjectCreationExpression(SyntaxFactory.SeparatedList(members.Select(m => ValidSyntaxFactory.AnonymousObjectMember(m.Name, m.Expression))));
 
     /// <summary>
     /// About as cheap as referencing a range variable, so a let clause isn't worthwhile

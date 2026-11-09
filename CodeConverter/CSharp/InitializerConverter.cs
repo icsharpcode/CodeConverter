@@ -1,5 +1,4 @@
-﻿using ICSharpCode.CodeConverter.CSharp.Queries;
-using Microsoft.CodeAnalysis.Operations;
+﻿using Microsoft.CodeAnalysis.Operations;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -23,7 +22,7 @@ internal class InitializerConverter
     {
         var expression = await node.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
         return node.Expression.ExtractAnonymousTypeMemberName() is { } vbName
-            ? CsQueryBuilder.CreateAnonymousMember(vbName.ValueText, expression)
+            ? ValidSyntaxFactory.AnonymousObjectMember(vbName.ValueText, expression)
             : CS.SyntaxFactory.AnonymousObjectMemberDeclarator(expression);
     }
 
