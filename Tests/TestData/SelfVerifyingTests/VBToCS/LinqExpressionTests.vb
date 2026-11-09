@@ -464,4 +464,10 @@ Public Class LinqExpressionTests
         Assert.Equal("{ x = 1, y =  }", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestWhereNullableBoolean()
+        Dim q = From b In New Boolean?() {True, Nothing, False} Where b
+        Assert.Equal(1, q.Count())
+    End Sub
+
 End Class

@@ -99,7 +99,7 @@ internal partial class QueryClauseConverter
     }
 
     private async Task ConvertWhereAsync(CsQueryBuilder builder, VBSyntax.WhereClauseSyntax where) =>
-        builder.AddClause(SyntaxFactory.WhereClause(await ConvertAsync(where.Condition)));
+        builder.AddClause(SyntaxFactory.WhereClause(await ConvertConditionAsync(where.Condition)));
 
     private async Task ConvertOrderByAsync(CsQueryBuilder builder, VBSyntax.OrderByClauseSyntax orderBy)
     {
@@ -183,8 +183,6 @@ internal partial class QueryClauseConverter
                        NameGenerator.CS.IsNameFreeInScope(_semanticModel, _generatedNames, _vbQuery, name);
     }
 
-    private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
-
     /// <summary>
     /// C# infers a range variable's type from its value, so make VB's declared type explicit where C# can't infer it
     /// </summary>
@@ -199,6 +197,14 @@ internal partial class QueryClauseConverter
         }
         return value;
     }
+
+    private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
+
+    /// <summary>
+    /// VB treats a null Boolean? condition as false
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertConditionAsync(VBSyntax.ExpressionSyntax condition) =>
+        _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(condition, await ConvertAsync(condition), forceTargetType: _commonConversions.KnownTypes.Boolean);
 
     /// <summary>
     /// For positions that never need parentheses, but where the simplifier doesn't remove them
