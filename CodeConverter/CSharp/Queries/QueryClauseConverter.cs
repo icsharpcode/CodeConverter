@@ -39,7 +39,7 @@ internal class QueryClauseConverter
         query.Clauses.First() is VBSyntax.FromClauseSyntax &&
         query.Clauses.All(c => c is VBSyntax.FromClauseSyntax or VBSyntax.LetClauseSyntax or VBSyntax.WhereClauseSyntax or VBSyntax.OrderByClauseSyntax
             or VBSyntax.SelectClauseSyntax or VBSyntax.DistinctClauseSyntax or VBSyntax.PartitionClauseSyntax or VBSyntax.PartitionWhileClauseSyntax
-            or VBSyntax.JoinClauseSyntax);
+            or VBSyntax.JoinClauseSyntax or VBSyntax.GroupByClauseSyntax);
 
     public async Task<ExpressionSyntax> ConvertAsync()
     {
@@ -72,6 +72,7 @@ internal class QueryClauseConverter
             VBSyntax.PartitionWhileClauseSyntax x => ConvertPartitionWhileAsync(builder, x),
             VBSyntax.SimpleJoinClauseSyntax x => ConvertJoinAsync(builder, x),
             VBSyntax.GroupJoinClauseSyntax x => ConvertGroupJoinAsync(builder, x),
+            VBSyntax.GroupByClauseSyntax x => ConvertGroupByAsync(builder, x),
             _ => throw new NotImplementedException($"Conversion for query clause with kind '{clause.Kind()}' not implemented")
         };
     }
@@ -192,6 +193,39 @@ internal class QueryClauseConverter
         foreach (var aggregation in await ConvertAggregationsAsync(builder, groupJoin, groupJoin.AggregationVariables, groupVariable.CsExpression, new[] { joinedVariable })) {
             builder.AddToScope(aggregation);
         }
+    }
+
+    /// <summary>
+    /// Group By replaces the VB range variables in scope with its keys and aggregations, which C# can only do with a continuation.
+    /// The keys and aggregations are then expressed in terms of the group.
+    /// </summary>
+    private async Task ConvertGroupByAsync(CsQueryBuilder builder, VBSyntax.GroupByClauseSyntax groupBy)
+    {
+        var element = groupBy.Items.Any() ? await DeclareExpressionVariablesAsync(groupBy.Items) : builder.Scope.ToList();
+        var keys = await DeclareExpressionVariablesAsync(groupBy.Keys);
+        var groupClause = SyntaxFactory.GroupClause(CsQueryBuilder.CreateElement(element), CsQueryBuilder.CreateElement(keys));
+
+        var groupVariable = GetGroupVariable(groupBy.AggregationVariables);
+        var into = builder.ContinueInto(groupClause, groupVariable.Name, groupVariable.Symbol == null);
+        var group = SyntaxFactory.IdentifierName(into);
+        var groupKey = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, group, ValidSyntaxFactory.IdentifierName("Key"));
+        foreach (var key in keys) {
+            key.CsExpression = keys.Count == 1 ? groupKey : SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, groupKey, ValidSyntaxFactory.IdentifierName(key.Name));
+        }
+        var aggregations = await ConvertAggregationsAsync(builder, groupBy, groupBy.AggregationVariables, group, element);
+        builder.SetScope(keys.Concat(aggregations));
+    }
+
+    private async Task<List<QueryRangeVariable>> DeclareExpressionVariablesAsync(SeparatedSyntaxList<VBSyntax.ExpressionRangeVariableSyntax> vbVariables)
+    {
+        var variables = new List<QueryRangeVariable>();
+        foreach (var vbVariable in vbVariables) {
+            var value = await ConvertAsync(vbVariable.Expression);
+            var variable = DeclareVariable(vbVariable);
+            variable.CsExpression = value;
+            variables.Add(variable);
+        }
+        return variables;
     }
 
     private async Task<(QueryRangeVariable Variable, SyntaxToken Identifier, ExpressionSyntax Collection)> DeclareJoinedVariableAsync(CsQueryBuilder builder, VBSyntax.JoinClauseSyntax join)

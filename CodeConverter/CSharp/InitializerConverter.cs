@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Operations;
+﻿using ICSharpCode.CodeConverter.CSharp.Queries;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -20,7 +21,10 @@ internal class InitializerConverter
 
     public async Task<CSharpSyntaxNode> ConvertInferredFieldInitializerAsync(VBasic.Syntax.InferredFieldInitializerSyntax node)
     {
-        return CS.SyntaxFactory.AnonymousObjectMemberDeclarator(await node.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(CommonConversions.TriviaConvertingExpressionVisitor));
+        var expression = await node.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
+        return node.Expression.ExtractAnonymousTypeMemberName() is { } vbName
+            ? CsQueryBuilder.CreateAnonymousMember(vbName.ValueText, expression)
+            : CS.SyntaxFactory.AnonymousObjectMemberDeclarator(expression);
     }
 
     /// <remarks>Collection initialization has many variants in both VB and C#. Please add especially many test cases when touching this.</remarks>

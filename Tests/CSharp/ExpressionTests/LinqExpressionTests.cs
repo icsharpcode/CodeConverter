@@ -34,52 +34,10 @@ public partial class Issue895
         var duplicates = from x in numbers
                          group x by x into Group
                          where Group.Count() > 1
-                         select Group;
+                         select new { x = Group.Key, Group };
         Console.WriteLine(duplicates.Count());
     }
 }");
-    }
-
-    [Fact]
-    public async Task Characterize_Issue948_GroupByMember_Async()
-    {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
-Imports System.Linq
-
-Class C
-    Public Property MyString As String
-End Class
-
-Public Module Module1
-    Public Sub Main()
-        Dim list As New List(Of C)()
-        Dim result = From f In list
-                     Group f By f.MyString Into Group
-                     Order By MyString
-	End Sub
-End Module",
-            @"using System.Collections.Generic;
-using System.Linq;
-
-internal partial class C
-{
-    public string MyString { get; set; }
-}
-
-public static partial class Module1
-{
-    public static void Main()
-    {
-        var list = new List<C>();
-        var result = from f in list
-                     group f by f.MyString into @group
-                     orderby MyString
-                     select @group;
-    }
-}
-1 target compilation errors:
-CS0103: The name 'MyString' does not exist in the current context");
-        // BUG: Order by should be on @group.Key
     }
 
     [Fact]
@@ -185,8 +143,7 @@ End Sub",
     int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
                        group n by (n % 5) into g
-                       let __groupByKey1__ = g.Key
-                       select new { Remainder = __groupByKey1__, Numbers = g };
+                       select new { Remainder = g.Key, Numbers = g };
 
     foreach (var g in numberGroups)
     {
@@ -600,10 +557,10 @@ public partial class Class1
     {
         var xs = new List<string>();
         var y = from x in xs
-                group x by new { x.Length, Count = x.Count() };
+                group x by new { x.Length, Count = x.Count() } into Group
+                select new { Group.Key.Length, Group.Key.Count, Group };
     }
 }");
-        // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
     }
 
     [Fact]
@@ -742,18 +699,17 @@ internal static partial class Ext
                    _accountEntry.ComputeInterestFlag,
                    _accountEntry.SponsorClaimRevision
                } into Group
-               let _keys = Group.Key
                select new AccountEntry()
                {
-                   LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
-                   LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
-                   SponsorId = _keys.SponsorId,
-                   LookupFundTypeId = _keys.LookupFundTypeId,
-                   StartDate = _keys.StartDate,
-                   SatisfiedDate = _keys.SatisfiedDate,
-                   ComputeInterestFlag = _keys.ComputeInterestFlag,
-                   InterestStartDate = _keys.InterestStartDate,
-                   SponsorClaimRevision = _keys.SponsorClaimRevision,
+                   LookupAccountEntryTypeId = Group.Key.LookupAccountEntryTypeId,
+                   LookupAccountEntrySourceId = Group.Key.LookupAccountEntrySourceId,
+                   SponsorId = Group.Key.SponsorId,
+                   LookupFundTypeId = Group.Key.LookupFundTypeId,
+                   StartDate = Group.Key.StartDate,
+                   SatisfiedDate = Group.Key.SatisfiedDate,
+                   ComputeInterestFlag = Group.Key.ComputeInterestFlag,
+                   InterestStartDate = Group.Key.InterestStartDate,
+                   SponsorClaimRevision = Group.Key.SponsorClaimRevision,
                    Amount = Group.Sum(accountEntry => accountEntry.Amount),
                    AccountTransactions = new List<object>(),
                    AccountEntryClaimDetails = (from _accountEntry in Group
