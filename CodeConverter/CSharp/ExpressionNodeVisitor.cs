@@ -1,3 +1,4 @@
+﻿using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -41,12 +42,13 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         commonConversions.TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
         _initializerConverter = new InitializerConverter(semanticModel, commonConversions, _generatedNames, _tempNameForAnonymousScope);
         _lambdaConverter = new LambdaConverter(commonConversions, semanticModel, _withBlockLhs, extraUsingDirectives, typeContext);
-        _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
+        var rangeVariableReplacements = new RangeVariableReplacements();
+        _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor, rangeVariableReplacements, _generatedNames);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
         _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
         _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, commonConversions, semanticModel, _withBlockLhs, _generatedNames, _conditionalAccessReceivers);
-        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers);
+        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers, rangeVariableReplacements);
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         _binaryExpressionConverter = new BinaryExpressionConverter(semanticModel, _operatorConverter, visualBasicEqualityComparison, visualBasicNullableTypesConverter, commonConversions);
     }
@@ -321,7 +323,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)
     {
-        return await _queryConverter.ConvertClausesAsync(node.Clauses);
+        return await _queryConverter.ConvertQueryAsync(node);
     }
 
     public override async Task<CSharpSyntaxNode> VisitOrdering(VBasic.Syntax.OrderingSyntax node)

@@ -108,11 +108,9 @@ public partial class Issue635
 
     public Issue635()
     {
-        listSelectWhere = from t in
-                              from t in l
-                              select t.foo
+        listSelectWhere = from t in l
                           where 1 == 2
-                          select t;
+                          select t.foo;
     }
 }");
     }
@@ -662,8 +660,7 @@ public partial class Class717
 
         var r = from e in arr
                 let p = $""value: {e}""
-                let l = p.Substring(1)
-                select l;
+                select p.Substring(1);
 
         foreach (var m in r)
             Console.WriteLine(m);

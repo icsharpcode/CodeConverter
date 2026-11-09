@@ -22,6 +22,9 @@ internal class NameGenerator
         return GenerateUniqueVariableNameInScope(semanticModel, generatedNames, variableNameBase, scopeStarts);
     }
 
+    public bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string name) =>
+        !generatedNames.Contains(name) && !GetScopeStarts(node).SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name)).Any();
+
     public string GenerateUniqueVariableName(HashSet<string> generatedNames, string variableNameBase)
     {
         string uniqueName = GenerateUniqueName(variableNameBase, string.Empty, n => !generatedNames.Contains(n));

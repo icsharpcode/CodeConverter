@@ -1,5 +1,6 @@
-using System.Data;
+﻿using System.Data;
 using System.Globalization;
+using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -21,6 +22,7 @@ internal class NameExpressionNodeVisitor
     private readonly Stack<ExpressionSyntax> _withBlockLhs;
     private readonly Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> _conditionalAccessReceivers;
     private readonly ArgumentConverter _argumentConverter;
+    private readonly RangeVariableReplacements _rangeVariableReplacements;
 
     public CommonConversions CommonConversions { get; }
     public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
@@ -29,8 +31,10 @@ internal class NameExpressionNodeVisitor
         Dictionary<string, Stack<(SyntaxNode Scope, string TempName)>> tempNameForAnonymousScope, Stack<ExpressionSyntax> withBlockLhs, CommonConversions commonConversions,
         ArgumentConverter argumentConverter,
         CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor,
-        Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> conditionalAccessReceivers)
+        Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> conditionalAccessReceivers,
+        RangeVariableReplacements rangeVariableReplacements)
     {
+        _rangeVariableReplacements = rangeVariableReplacements;
         _semanticModel = semanticModel;
         _generatedNames = generatedNames;
         _typeContext = typeContext;
@@ -167,6 +171,11 @@ internal class NameExpressionNodeVisitor
     /// <remarks>PERF: This is a hot code path, try to avoid using things like GetOperation except where needed.</remarks>
     public async Task<CSharpSyntaxNode> ConvertIdentifierNameAsync(VBasic.Syntax.IdentifierNameSyntax node)
     {
+        var sym = _semanticModel.GetSymbolInfoInDocument<ISymbol>(node);
+        if (_rangeVariableReplacements.TryGetReplacement(sym, out var rangeVariableReplacement)) {
+            return node.Parent is VBSyntax.ExpressionSyntax and not VBSyntax.ParenthesizedExpressionSyntax ? CsQueryBuilder.ParenthesizeIfNeeded(rangeVariableReplacement) : rangeVariableReplacement;
+        }
+
         var identifier = SyntaxFactory.IdentifierName(CommonConversions.ConvertIdentifier(node.Identifier, node.GetAncestor<VBasic.Syntax.AttributeSyntax>() != null));
 
         bool requiresQualification = !node.Parent.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression, VBasic.SyntaxKind.QualifiedName, VBasic.SyntaxKind.NameColonEquals, VBasic.SyntaxKind.ImportsStatement, VBasic.SyntaxKind.NamespaceStatement, VBasic.SyntaxKind.NamedFieldInitializer) ||
@@ -175,7 +184,6 @@ internal class NameExpressionNodeVisitor
         var qualifiedIdentifier = requiresQualification
             ? QualifyNode(node, identifier) : identifier;
 
-        var sym = _semanticModel.GetSymbolInfoInDocument<ISymbol>(node);
         if (sym is ILocalSymbol) {
             if (sym.IsStatic && sym.ContainingSymbol is IMethodSymbol m && m.AssociatedSymbol is IPropertySymbol) {
                 qualifiedIdentifier = qualifiedIdentifier.WithParentPropertyAccessorKind(m.MethodKind);
