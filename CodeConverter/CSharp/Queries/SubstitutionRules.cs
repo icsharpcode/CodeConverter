@@ -26,24 +26,55 @@ internal class SubstitutionRules
     /// After that, references read the materialized element instead.
     /// A single reference from the final select (outside any nested lambda/query) is the only place it's evaluated.
     /// Clauses in between other than Let could filter, reorder or repeat elements, or (Select) drop the value from the element.
+    /// Values declared in between that stay where they're declared would then be evaluated first.
     /// Substituting a lambda (`new Func<int>(() => 1)(...)`) would be valid but obscure.
     /// </remarks>
     public bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
         if (IsShadowedLater(value, declaration) || IsDelegateCreation(value)) return false;
         if (CsQueryBuilder.IsCheapToRepeat(value)) return true;
-        return GetOnlyEvaluationPosition(variable, declaration) is { } evaluatedAt && HasOnlyLetClausesBetween(declaration, evaluatedAt);
+        return CanEvaluateWhereReferenced(variable.Symbol, declaration);
     }
+
+    private bool CanEvaluateWhereReferenced(ISymbol symbol, VisualBasicSyntaxNode declaration) =>
+        GetOnlyEvaluationPosition(symbol, declaration) is { } evaluatedAt && HasOnlyLetClausesBetween(declaration, evaluatedAt) &&
+        GetValueDeclarations().Where(d => d.Declaration.SpanStart > declaration.Span.End && d.Declaration.SpanStart < evaluatedAt)
+            .All(d => IsCheapToRepeat(d.Value) || d.Value is not VBSyntax.LambdaExpressionSyntax && CanEvaluateWhereReferenced(d.Symbol, d.Declaration));
+
+    /// <summary>
+    /// Values VB evaluates where they're declared, unless substituted. Group keys and items are only evaluated by the group clause.
+    /// </summary>
+    private IEnumerable<(VisualBasicSyntaxNode Declaration, ISymbol Symbol, VBSyntax.ExpressionSyntax Value)> GetValueDeclarations() =>
+        _vbQuery.Clauses.SelectMany(c => c switch {
+            VBSyntax.LetClauseSyntax let => let.Variables.Select(v => ((VisualBasicSyntaxNode)v, (ISymbol)VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, v), v.Expression)),
+            VBSyntax.SelectClauseSyntax select => select.Variables.Select(v => ((VisualBasicSyntaxNode)v, (ISymbol)VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, v), v.Expression)),
+            VBSyntax.GroupByClauseSyntax groupBy => GetAggregations(groupBy.AggregationVariables),
+            VBSyntax.GroupJoinClauseSyntax groupJoin => GetAggregations(groupJoin.AggregationVariables),
+            VBSyntax.AggregateClauseSyntax aggregate => GetAggregations(aggregate.AggregationVariables),
+            _ => Enumerable.Empty<(VisualBasicSyntaxNode, ISymbol, VBSyntax.ExpressionSyntax)>()
+        });
+
+    private IEnumerable<(VisualBasicSyntaxNode, ISymbol, VBSyntax.ExpressionSyntax)> GetAggregations(SeparatedSyntaxList<VBSyntax.AggregationRangeVariableSyntax> aggregations) =>
+        aggregations.Select(a => ((VisualBasicSyntaxNode)a, (ISymbol)VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, a),
+            a.Aggregation is VBSyntax.FunctionAggregationSyntax ? (VBSyntax.ExpressionSyntax)a.Aggregation : null));
+
+    /// <summary>
+    /// The VB equivalent of <see cref="CsQueryBuilder.IsCheapToRepeat"/>. A group aggregation (`Into Group`) just names the group.
+    /// </summary>
+    private bool IsCheapToRepeat(VBSyntax.ExpressionSyntax value) =>
+        value == null || value.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().All(e =>
+            e is VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax or VBSyntax.LiteralExpressionSyntax or VBSyntax.MeExpressionSyntax or VBSyntax.ParenthesizedExpressionSyntax &&
+            !e.IsCallOrConversion(_semanticModel));
 
     private static bool IsDelegateCreation(ExpressionSyntax value) =>
         value is ObjectCreationExpressionSyntax { ArgumentList.Arguments: { Count: 1 } arguments } && arguments[0].Expression is AnonymousFunctionExpressionSyntax;
 
-    private int? GetOnlyEvaluationPosition(QueryRangeVariable variable, VisualBasicSyntaxNode declaration)
+    private int? GetOnlyEvaluationPosition(ISymbol symbol, VisualBasicSyntaxNode declaration)
     {
         var materializedAt = GetJoinWithSubqueryContaining(declaration)?.OnKeyword.SpanStart
             ?? _vbQuery.Clauses.FirstOrDefault(c => c.SpanStart > declaration.Span.End && QueryClauseConverter.IsConvertedToMethodCall(c))?.SpanStart;
         var finalSelect = _vbQuery.Clauses.Last() as VBSyntax.SelectClauseSyntax;
-        var referencesBeforeMaterialized = GetReferences(variable, TextSpan.FromBounds(declaration.Span.End, materializedAt ?? _vbQuery.Span.End)).Take(2).ToList();
+        var referencesBeforeMaterialized = GetReferences(symbol, TextSpan.FromBounds(declaration.Span.End, materializedAt ?? _vbQuery.Span.End)).Take(2).ToList();
         return referencesBeforeMaterialized.Count switch {
             0 => materializedAt ?? (finalSelect == null ? _vbQuery.Span.End : null),
             1 when materializedAt == null && IsOnlyEvaluationInFinalSelect(finalSelect, referencesBeforeMaterialized[0], declaration) => finalSelect.SpanStart,
@@ -57,9 +88,9 @@ internal class SubstitutionRules
         return _vbQuery.Clauses.Where(c => c.SpanStart > declaringClause.SpanStart && c.SpanStart < position).All(c => c is VBSyntax.LetClauseSyntax);
     }
 
-    private IEnumerable<VBSyntax.IdentifierNameSyntax> GetReferences(QueryRangeVariable variable, TextSpan span) =>
-        variable.Symbol == null ? Enumerable.Empty<VBSyntax.IdentifierNameSyntax>() : _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
-            .Where(id => span.Contains(id.Span) && id.Parent is not VBSyntax.NameOfExpressionSyntax && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol));
+    private IEnumerable<VBSyntax.IdentifierNameSyntax> GetReferences(ISymbol symbol, TextSpan span) =>
+        symbol == null ? Enumerable.Empty<VBSyntax.IdentifierNameSyntax>() : _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
+            .Where(id => span.Contains(id.Span) && !id.Ancestors().Any(a => a is VBSyntax.NameOfExpressionSyntax) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, symbol));
 
     private bool IsOnlyEvaluationInFinalSelect(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference, VisualBasicSyntaxNode declaration) =>
         finalSelect != null && finalSelect.Span.Contains(reference.Span) &&

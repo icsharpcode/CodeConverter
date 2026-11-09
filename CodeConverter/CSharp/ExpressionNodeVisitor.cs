@@ -251,8 +251,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
     {
         // A range variable's value may be substituted, so there may be no C# variable to name
-        if (_semanticModel.GetSymbolInfo(node.Argument).Symbol is IRangeVariableSymbol rangeVariable) {
-            return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.StringLiteralExpression, CS.SyntaxFactory.Literal(rangeVariable.Name));
+        if (node.Argument.DescendantNodesAndSelf().Any(n => n is VBasic.Syntax.IdentifierNameSyntax && _semanticModel.GetSymbolInfo(n).Symbol is IRangeVariableSymbol) &&
+            _semanticModel.GetConstantValue(node) is { HasValue: true, Value: string name }) {
+            return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.StringLiteralExpression, CS.SyntaxFactory.Literal(name));
         }
         return CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), CS.SyntaxFactory.ArgumentList(CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
     }

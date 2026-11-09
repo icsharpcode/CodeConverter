@@ -65,9 +65,9 @@ A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses wh
   * where the element is next materialized, if it has no references before then;
   * or at a single reference in the final `Select`, if that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`), and the final `Select` evaluates nothing before it but earlier values and expressions without calls (including VB calls without parentheses).
 
-  Only `Let` clauses may come in between: others filter, reorder or repeat elements, or (`Select`) drop the value. An unused value with nowhere to be evaluated stays a `let`.
+  Only `Let` clauses may come in between: others filter, reorder or repeat elements, or (`Select`) drop the value. Values declared in between must be cheap or substituted too, or they'd be evaluated first. An unused value with nowhere to be evaluated stays a `let`.
 * Lambdas stay in a `let`, typed as their delegate (`new Predicate<int>(...)`, or `Func<...>` for VB's anonymous delegates), since C# can't infer a lambda's type there.
-* `NameOf` of a range variable becomes its name as a string, since there may be no C# variable to name.
+* `NameOf` of a range variable (or its member) becomes the name as a string, since there may be no C# variable to name.
 * No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a field or local (`Select v = field Let field = 1 Select v`), though range variables clashing with each other are renamed instead.
 
 ### Types

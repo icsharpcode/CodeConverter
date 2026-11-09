@@ -144,4 +144,29 @@ Public Class LinqEvaluationTests
         Assert.Equal("y,y", String.Join(",", q))
         Assert.Equal("y1,y2", Logged)
     End Sub
+
+    <Fact>
+    Sub TestLetKeptBetweenSubstitutedLetAndItsUse()
+        Dim q = (From x In {1, 2} Let a = Log("a", x) Let b = Log("b", x) Select a).ToList()
+        Assert.Equal("a1,b1,a2,b2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetKeptBetweenLetAndDistinct()
+        Dim q = (From x In {1, 2} Let a = Log("a", x) Let b = Log("b", x) Let c = b + b Distinct).ToList()
+        Assert.Equal("a1,b1,a2,b2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestAggregationKeptBetweenSubstitutedAggregationAndItsUse()
+        Dim q = (From x In {1, 2} Group By k = 0 Into a = Sum(Log("a", x)), b = Sum(Log("b", x)) Select a, c = b + b).ToList()
+        Assert.Equal("a1,a2,b1,b2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestNameOfMemberOfLet()
+        Dim q = (From x In {1} Let a = Log("a", x) Select n = NameOf(a.ToString)).ToList()
+        Assert.Equal("ToString", q.Single())
+        Assert.Equal("a1", Logged)
+    End Sub
 End Class
