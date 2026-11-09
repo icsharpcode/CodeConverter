@@ -131,7 +131,7 @@ internal partial class QueryClauseConverter
     {
         var variables = new List<QueryRangeVariable>();
         foreach (var vbVariable in vbVariables) {
-            var value = await ConvertWithoutParenthesesAsync(vbVariable.Expression);
+            var value = await ConvertValueAsync(vbVariable, withoutParentheses: true);
             var variable = RegisterVariable(vbVariable);
             variable.CsExpression = value;
             variables.Add(variable);

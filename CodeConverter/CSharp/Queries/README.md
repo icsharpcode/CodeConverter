@@ -61,8 +61,17 @@ Since the element comes from `Scope`, C# can keep variables in scope that VB has
 ### Substitute or `let`
 
 A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`SubstitutionRules`):
-* Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause. Substituted, it's evaluated where the element is next materialized if it has no references before then, or at a single reference in the final `Select` that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`). Only `Let` and `Select` clauses may come in between, since others filter, reorder or repeat elements. An unused value with nowhere to be evaluated stays a `let`.
+* Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause, in declaration order. Substituted, it's evaluated:
+  * where the element is next materialized, if it has no references before then;
+  * or at a single reference in the final `Select`, if that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`), and the final `Select` evaluates nothing before it but cheap expressions and earlier values.
+
+  Only `Let` clauses may come in between: others filter, reorder or repeat elements, or (`Select`) drop the value. An unused value with nowhere to be evaluated stays a `let`.
+* Lambdas stay in a `let`, typed as a delegate, since C# can't infer a lambda's type there.
 * No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a field or local (`Select v = field Let field = 1 Select v`), though range variables clashing with each other are renamed instead.
+
+### Types
+
+C# infers a range variable's type from its value, so values get VB's declared type (`Let s As String = x`) where it differs, `Nothing` is cast to its type, and lambdas are created as their delegate type. `Where` and `Skip`/`Take While` conditions are converted to `Boolean` as in `If` statements, so a null `Boolean?` is false.
 
 ### Names
 

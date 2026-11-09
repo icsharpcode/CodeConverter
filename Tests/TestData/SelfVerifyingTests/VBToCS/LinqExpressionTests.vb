@@ -452,4 +452,16 @@ Public Class LinqExpressionTests
         Assert.Equal("0|0", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestLetWithDeclaredType()
+        Dim q = From x In {12, 3} Let s As String = x Select s.Length
+        Assert.Equal("2|1", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestLetNothing()
+        Dim q = From x In {1} Let y = Nothing Select x, y
+        Assert.Equal("{ x = 1, y =  }", Show(q))
+    End Sub
+
 End Class

@@ -21,18 +21,22 @@ internal class SubstitutionRules
     /// Substituting must not change what the value refers to, or (unless it's cheap) which elements it's evaluated for, how many times, or in what order
     /// </summary>
     /// <remarks>
-    /// VB evaluates the value once per element where it's declared.
+    /// VB evaluates the value once per element where it's declared, in declaration order.
     /// An unreferenced value is evaluated as part of the element the next time it's materialized (at a method call, the end of a join subquery, or the end of a query without a final select).
     /// After that, references read the materialized element instead.
     /// A single reference from the final select (outside any nested lambda/query) is the only place it's evaluated.
-    /// Clauses in between other than Let and Select could filter, reorder or repeat elements.
+    /// Clauses in between other than Let could filter, reorder or repeat elements, or (Select) drop the value from the element.
+    /// Substituting a lambda (`new Func<int>(() => 1)(...)`) would be valid but obscure.
     /// </remarks>
     public bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
-        if (IsShadowedLater(value, declaration)) return false;
+        if (IsShadowedLater(value, declaration) || IsDelegateCreation(value)) return false;
         if (CsQueryBuilder.IsCheapToRepeat(value)) return true;
-        return GetOnlyEvaluationPosition(variable, declaration) is { } evaluatedAt && HasOneToOneClausesBetween(declaration, evaluatedAt);
+        return GetOnlyEvaluationPosition(variable, declaration) is { } evaluatedAt && HasOnlyLetClausesBetween(declaration, evaluatedAt);
     }
+
+    private static bool IsDelegateCreation(ExpressionSyntax value) =>
+        value is ObjectCreationExpressionSyntax { ArgumentList.Arguments: { Count: 1 } arguments } && arguments[0].Expression is AnonymousFunctionExpressionSyntax;
 
     private int? GetOnlyEvaluationPosition(QueryRangeVariable variable, VisualBasicSyntaxNode declaration)
     {
@@ -42,25 +46,38 @@ internal class SubstitutionRules
         var referencesBeforeMaterialized = GetReferences(variable, TextSpan.FromBounds(declaration.Span.End, materializedAt ?? _vbQuery.Span.End)).Take(2).ToList();
         return referencesBeforeMaterialized.Count switch {
             0 => materializedAt ?? (finalSelect == null ? _vbQuery.Span.End : null),
-            1 when materializedAt == null && IsOnlyEvaluationInFinalSelect(finalSelect, referencesBeforeMaterialized[0]) => finalSelect.SpanStart,
+            1 when materializedAt == null && IsOnlyEvaluationInFinalSelect(finalSelect, referencesBeforeMaterialized[0], declaration) => finalSelect.SpanStart,
             _ => null
         };
     }
 
-    private bool HasOneToOneClausesBetween(VisualBasicSyntaxNode declaration, int position)
+    private bool HasOnlyLetClausesBetween(VisualBasicSyntaxNode declaration, int position)
     {
         var declaringClause = declaration.AncestorsAndSelf().OfType<VBSyntax.QueryClauseSyntax>().First();
-        return _vbQuery.Clauses.Where(c => c.SpanStart > declaringClause.SpanStart && c.SpanStart < position)
-            .All(c => c is VBSyntax.LetClauseSyntax or VBSyntax.SelectClauseSyntax);
+        return _vbQuery.Clauses.Where(c => c.SpanStart > declaringClause.SpanStart && c.SpanStart < position).All(c => c is VBSyntax.LetClauseSyntax);
     }
 
     private IEnumerable<VBSyntax.IdentifierNameSyntax> GetReferences(QueryRangeVariable variable, TextSpan span) =>
         variable.Symbol == null ? Enumerable.Empty<VBSyntax.IdentifierNameSyntax>() : _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
             .Where(id => span.Contains(id.Span) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol));
 
-    private static bool IsOnlyEvaluationInFinalSelect(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference) =>
+    private bool IsOnlyEvaluationInFinalSelect(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference, VisualBasicSyntaxNode declaration) =>
         finalSelect != null && finalSelect.Span.Contains(reference.Span) &&
-        !reference.Ancestors().TakeWhile(a => a != finalSelect).Any(IsConditionallyOrRepeatedlyEvaluated);
+        !reference.Ancestors().TakeWhile(a => a != finalSelect).Any(IsConditionallyOrRepeatedlyEvaluated) &&
+        IsEvaluatedBeforeOtherValues(finalSelect, reference, declaration);
+
+    /// <summary>
+    /// Anything the final select evaluates before the reference must not have side effects that VB would run after the value.
+    /// That's true of values declared earlier, and expressions cheap enough to always substitute.
+    /// </summary>
+    private bool IsEvaluatedBeforeOtherValues(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference, VisualBasicSyntaxNode declaration) =>
+        finalSelect.DescendantNodes().OfType<VBSyntax.ExpressionSyntax>().Where(e => e.Span.End <= reference.SpanStart).All(e => e switch {
+            VBSyntax.IdentifierNameSyntax id => _semanticModel.GetSymbolInfo(id).Symbol is not IRangeVariableSymbol rangeVariable ||
+                                                rangeVariable.Locations.FirstOrDefault()?.SourceSpan.Start < declaration.SpanStart,
+            VBSyntax.LiteralExpressionSyntax or VBSyntax.MeExpressionSyntax or VBSyntax.MemberAccessExpressionSyntax or VBSyntax.ParenthesizedExpressionSyntax
+                or VBSyntax.BinaryExpressionSyntax or VBSyntax.UnaryExpressionSyntax => true,
+            _ => false
+        });
 
     private static bool IsConditionallyOrRepeatedlyEvaluated(SyntaxNode node) =>
         node is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax

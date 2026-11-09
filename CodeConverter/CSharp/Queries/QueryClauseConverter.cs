@@ -89,7 +89,7 @@ internal partial class QueryClauseConverter
     private async Task ConvertLetAsync(CsQueryBuilder builder, VBSyntax.LetClauseSyntax let)
     {
         foreach (var vbVariable in let.Variables) {
-            var value = await ConvertAsync(vbVariable.Expression);
+            var value = await ConvertValueAsync(vbVariable);
             var variable = RegisterVariable(vbVariable);
             builder.DefineVariable(variable, value, _substitution.CanSubstitute(variable, vbVariable, value), _substitution.IsElementMaterializedNext(let));
             builder.AddToScope(variable);
@@ -110,7 +110,7 @@ internal partial class QueryClauseConverter
     /// </summary>
     private async Task ConvertSelectAsync(CsQueryBuilder builder, VBSyntax.SelectClauseSyntax select)
     {
-        var values = await select.Variables.SelectAsync(v => ConvertAsync(v.Expression));
+        var values = await select.Variables.SelectAsync(v => ConvertValueAsync(v));
         var variables = select.Variables.Select(RegisterVariable).ToList();
         for (int i = 0; i < variables.Count; i++) {
             builder.DefineVariable(variables[i], values[i], _substitution.CanSubstitute(variables[i], select.Variables[i], values[i]), _substitution.IsElementMaterializedNext(select));
@@ -120,7 +120,7 @@ internal partial class QueryClauseConverter
 
     private async Task<SelectClauseSyntax> ConvertFinalSelectAsync(VBSyntax.SelectClauseSyntax select)
     {
-        var values = await select.Variables.SelectAsync(v => ConvertWithoutParenthesesAsync(v.Expression));
+        var values = await select.Variables.SelectAsync(v => ConvertValueAsync(v, withoutParentheses: true));
         if (values.Length == 1) return SyntaxFactory.SelectClause(values[0]);
         var names = select.Variables.Select(GetVariableName);
         return SyntaxFactory.SelectClause(CsQueryBuilder.CreateAnonymousObject(names.Zip(values, (n, v) => (n, v))));
@@ -182,6 +182,21 @@ internal partial class QueryClauseConverter
     }
 
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
+
+    /// <summary>
+    /// C# infers a range variable's type from its value, so make VB's declared type explicit where C# can't infer it
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertValueAsync(VBSyntax.ExpressionRangeVariableSyntax vbVariable, bool withoutParentheses = false)
+    {
+        var value = withoutParentheses ? await ConvertWithoutParenthesesAsync(vbVariable.Expression) : await ConvertAsync(vbVariable.Expression);
+        if (_semanticModel.GetTypeInfo(vbVariable.Expression).ConvertedType is not { } type) return value;
+        if (vbVariable.NameEquals?.AsClause != null) value = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, value);
+        if (value.IsKind(SyntaxKind.NullLiteralExpression)) return SyntaxFactory.CastExpression(_commonConversions.GetTypeSyntax(type), value);
+        if (vbVariable.Expression is VBSyntax.LambdaExpressionSyntax && _semanticModel.GetSymbolInfo(vbVariable.Expression).Symbol is IMethodSymbol lambda) {
+            return SyntaxFactory.ObjectCreationExpression(_commonConversions.GetFuncTypeSyntax(type, lambda), ExpressionSyntaxExtensions.CreateArgList(value), null);
+        }
+        return value;
+    }
 
     /// <summary>
     /// For positions that never need parentheses, but where the simplifier doesn't remove them

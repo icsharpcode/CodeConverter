@@ -91,4 +91,40 @@ Public Class LinqEvaluationTests
         Dim q = (From x In {3, 1, 2} Select Log("y", x) Where flag Distinct).ToList()
         Assert.Equal("y3,y1,y2", Logged)
     End Sub
+
+    <Fact>
+    Sub TestLetDroppedByLaterSelectIsEvaluated()
+        Dim q = (From x In {1, 2} Let y = Log("y", x) Select z = x Distinct).ToList()
+        Assert.Equal("y1,y2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestAggregationDroppedByLaterSelectIsEvaluated()
+        Dim q = (From x In {1, 2} Group By k = x Mod 2 Into s = Sum(Log("s", x)) Select k Distinct).ToList()
+        Assert.Equal("s1,s2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetsSelectedInReverseOrderAreEvaluatedInDeclarationOrder()
+        Dim q = (From x In {1, 2} Let y = Log("y", x), z = Log("z", x) Select z, y).ToList()
+        Assert.Equal("y1,z1,y2,z2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetIsEvaluatedBeforeCallEarlierInFinalSelect()
+        Dim q = (From x In {1, 2} Let y = Log("y", x) Select Log("g", x) + y).ToList()
+        Assert.Equal("y1,g1,y2,g2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestAggregationsSelectedInReverseOrderAreEvaluatedInDeclarationOrder()
+        Dim q = (From x In {1, 2} Group By k = 0 Into a = Sum(Log("a", x)), b = Sum(Log("b", x)) Select b, a).ToList()
+        Assert.Equal("a1,a2,b1,b2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetLambdaInvoked()
+        Dim q = From x In {1, 2} Let f = Function(a As Integer) a + x Select f(10)
+        Assert.Equal("11,12", String.Join(",", q))
+    End Sub
 End Class
