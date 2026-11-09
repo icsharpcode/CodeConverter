@@ -367,4 +367,61 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task Issue932_GroupByKeysNamedDifferentlyFromTheirMembersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+Public Class Entity
+    Public Property Entity_ID As Integer
+    Public Property First_Name As String
+    Public Property Last_Name As String
+End Class
+Public Class Policy
+    Public Property Agent_Entity_ID As Integer
+    Public Property Insured_Entity_ID As Integer
+End Class
+Public Class C
+    Sub M(policies As IQueryable(Of Policy), entities As IQueryable(Of Entity))
+        Dim results = (From pCurrent In policies
+                       Join agent In entities On agent.Entity_ID Equals pCurrent.Agent_Entity_ID
+                       Join insured In entities On insured.Entity_ID Equals pCurrent.Insured_Entity_ID
+                       Group By
+                            Agent_First_Name = agent.First_Name,
+                            Agent_Last_Name = agent.Last_Name,
+                            Insured_First_Name = insured.First_Name,
+                            Insured_Last_Name = insured.Last_Name Into Group1 = Group
+                       Select
+                            Agent_First_Name = Agent_First_Name,
+                            Agent_Last_Name = Agent_Last_Name,
+                            Insured_First_Name = Insured_First_Name,
+                            Insured_Last_Name = Insured_Last_Name).ToList()
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class Entity
+{
+    public int Entity_ID { get; set; }
+    public string First_Name { get; set; }
+    public string Last_Name { get; set; }
+}
+
+public partial class Policy
+{
+    public int Agent_Entity_ID { get; set; }
+    public int Insured_Entity_ID { get; set; }
+}
+
+public partial class C
+{
+    public void M(IQueryable<Policy> policies, IQueryable<Entity> entities)
+    {
+        var results = (from pCurrent in policies
+                       join agent in entities on pCurrent.Agent_Entity_ID equals agent.Entity_ID
+                       join insured in entities on pCurrent.Insured_Entity_ID equals insured.Entity_ID
+                       group new { pCurrent, agent, insured } by new { Agent_First_Name = agent.First_Name, Agent_Last_Name = agent.Last_Name, Insured_First_Name = insured.First_Name, Insured_Last_Name = insured.Last_Name } into Group1
+                       select new { Group1.Key.Agent_First_Name, Group1.Key.Agent_Last_Name, Group1.Key.Insured_First_Name, Group1.Key.Insured_Last_Name }).ToList();
+    }
+}");
+    }
 }

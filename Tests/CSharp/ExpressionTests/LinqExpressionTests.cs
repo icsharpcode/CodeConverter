@@ -961,4 +961,46 @@ public partial class C
     }
 }");
     }
+
+    /// <summary>
+    /// VB infers Distinct's type argument from the receiver alone, so the contravariant comparer's conversion is made explicit to keep C# inferring the same type
+    /// </summary>
+    [Fact]
+    public async Task Issue1302_GenericMethodInferenceWithBaseTypeComparerAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class BaseValue
+    Public Property Key As Integer
+End Class
+
+Public Class DerivedValue
+    Inherits BaseValue
+End Class
+
+Public Module Helpers
+    Public Function ToDictionary(values As IEnumerable(Of DerivedValue)) As Dictionary(Of Integer, DerivedValue)
+        Return values.Distinct(EqualityComparer(Of BaseValue).Default).ToDictionary(Function(value) value.Key)
+    End Function
+End Module", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class BaseValue
+{
+    public int Key { get; set; }
+}
+
+public partial class DerivedValue : BaseValue
+{
+}
+
+public static partial class Helpers
+{
+    public static Dictionary<int, DerivedValue> ToDictionary(IEnumerable<DerivedValue> values)
+    {
+        return values.Distinct((IEqualityComparer<DerivedValue>)EqualityComparer<BaseValue>.Default).ToDictionary(value => value.Key);
+    }
+}");
+    }
 }

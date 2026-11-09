@@ -556,4 +556,44 @@ Public Class LinqExpressionTests
         Assert.Equal(3, total)
     End Sub
 
+    Public Class Person
+        Public Property Id As Integer
+        Public Property Name As String
+        Public Sub New(id As Integer, name As String)
+            Me.Id = id
+            Me.Name = name
+        End Sub
+    End Class
+
+    <Fact>
+    Sub TestGroupByKeysNamedDifferentlyFromTheirMembers()
+        Dim people = {New Person(1, "a"), New Person(2, "b")}
+        Dim pairs = {Tuple.Create(1, 2), Tuple.Create(1, 2), Tuple.Create(2, 1)}
+        Dim q = From p In pairs
+                Join agent In people On agent.Id Equals p.Item1
+                Join insured In people On insured.Id Equals p.Item2
+                Group By Agent_Name = agent.Name, Insured_Name = insured.Name Into Group1 = Group
+                Select Agent_Name = Agent_Name, Insured_Name = Insured_Name, Count = Group1.Count()
+        Assert.Equal("{ Agent_Name = a, Insured_Name = b, Count = 2 }|{ Agent_Name = b, Insured_Name = a, Count = 1 }", Show(q))
+    End Sub
+
+    Public Class BaseValue
+        Public Property Key As Integer
+    End Class
+
+    Public Class DerivedValue
+        Inherits BaseValue
+    End Class
+
+    Private Shared Function ToDictionary(values As IEnumerable(Of DerivedValue)) As Dictionary(Of Integer, DerivedValue)
+        Return values.Distinct(EqualityComparer(Of BaseValue).Default).ToDictionary(Function(value) value.Key)
+    End Function
+
+    <Fact>
+    Sub TestGenericMethodInferenceWithBaseTypeComparer()
+        Dim value = New DerivedValue With {.Key = 1}
+        Dim result = ToDictionary({value, value})
+        Assert.Same(value, result(1))
+    End Sub
+
 End Class
