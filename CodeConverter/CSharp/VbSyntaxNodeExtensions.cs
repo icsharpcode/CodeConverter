@@ -31,6 +31,23 @@ internal static class VbSyntaxNodeExtensions
                parent is VBSyntax.WhereClauseSyntax;
     }
 
+    /// <summary>
+    /// Where only whether the value is True matters: VB treats Nothing like False.
+    /// That's the case for an operand of OrElse in such a context, and of AndAlso.
+    /// The left of AndAlso only counts if the right is free of calls, since VB evaluates the right when the left is Nothing.
+    /// </summary>
+    public static bool IsOnlyTestedForTrue(this VBSyntax.ExpressionSyntax vbNode)
+    {
+        var node = vbNode.SkipOutOfParens();
+        if (node.AlwaysHasBooleanTypeInCSharp()) return true;
+        return node.Parent is VBSyntax.BinaryExpressionSyntax bin &&
+               (bin.IsKind(VBasic.SyntaxKind.OrElseExpression) || bin.IsKind(VBasic.SyntaxKind.AndAlsoExpression) && (bin.Right == node || !ContainsCall(bin.Right))) &&
+               bin.IsOnlyTestedForTrue();
+    }
+
+    private static bool ContainsCall(VBSyntax.ExpressionSyntax expression) =>
+        expression.DescendantNodesAndSelf().Any(n => n is VBSyntax.InvocationExpressionSyntax or VBSyntax.ObjectCreationExpressionSyntax or VBSyntax.AwaitExpressionSyntax);
+
     public static TokenContext GetMemberContext(this VBSyntax.StatementSyntax member)
     {
         var parentType = member.GetAncestorOrThis<VBSyntax.TypeBlockSyntax>();

@@ -205,6 +205,10 @@ internal class VisualBasicNullableExpressionsConverter
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
+        if (vbNode.IsOnlyTestedForTrue() && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
+            return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation);
+        }
+
         ExpressionSyntax? lhsName = lhs, rhsName = rhs;
         var lhsReusable = IsSafelyReusable(vbNode.Left);
         var rhsReusable = IsSafelyReusable(vbNode.Right);
@@ -241,6 +245,17 @@ internal class VisualBasicNullableExpressionsConverter
 
         return notNullCondition is null ? bin : notNullCondition.Conditional(bin, Null);
     }
+
+    /// <summary>
+    /// C#'s lifted relational operators are false when an operand is null, as is its lifted == unless both are null
+    /// </summary>
+    private static bool IsLiftedOperatorFalseWhenVbIsNothing(VBSyntax.BinaryExpressionSyntax vbNode, bool isLhsNullable, bool isRhsNullable) =>
+        vbNode.Kind() switch {
+            VBasic.SyntaxKind.LessThanExpression or VBasic.SyntaxKind.LessThanOrEqualExpression or
+                VBasic.SyntaxKind.GreaterThanExpression or VBasic.SyntaxKind.GreaterThanOrEqualExpression => true,
+            VBasic.SyntaxKind.EqualsExpression => !(isLhsNullable && isRhsNullable),
+            _ => false
+        };
 
     private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode), ref csName);
     private ExpressionSyntax HasValue(bool reusable, ref ExpressionSyntax csName)
