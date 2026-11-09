@@ -28,12 +28,13 @@ internal class LambdaConverter
 
     public async Task<CSharpSyntaxNode> ConvertMultiLineLambdaAsync(VBSyntax.MultiLineLambdaExpressionSyntax node)
     {
-        var originalIsWithinQuery = CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery;
-        CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
+        var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
+        var originalIsWithinExpressionTree = tracker.IsWithinExpressionTree;
+        tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
         try {
             return await ConvertInnerAsync();
         } finally {
-            CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = originalIsWithinQuery;
+            tracker.IsWithinExpressionTree = originalIsWithinExpressionTree;
         }
 
         async Task<CSharpSyntaxNode> ConvertInnerAsync()
@@ -46,12 +47,13 @@ internal class LambdaConverter
 
     public async Task<CSharpSyntaxNode> ConvertSingleLineLambdaAsync(VBSyntax.SingleLineLambdaExpressionSyntax node)
     {
-        var originalIsWithinQuery = CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery;
-        CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
+        var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
+        var originalIsWithinExpressionTree = tracker.IsWithinExpressionTree;
+        tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
         try {
             return await ConvertInnerAsync();
         } finally {
-            CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = originalIsWithinQuery;
+            tracker.IsWithinExpressionTree = originalIsWithinExpressionTree;
         }
 
         async Task<CSharpSyntaxNode> ConvertInnerAsync()
@@ -240,4 +242,10 @@ internal class LambdaConverter
             return null;
         }
     }
+
+    /// <summary>
+    /// A delegate lambda within an expression tree (e.g. `o.Items.Any(Function(i) ...)` in an IQueryable query) is part of the expression tree too
+    /// </summary>
+    private bool IsWithinExpressionTree(VBasic.VisualBasicSyntaxNode node) =>
+        CommonConversions.TriviaConvertingExpressionVisitor.IsWithinExpressionTree || CommonConversions.IsLinqDelegateExpression(node);
 }

@@ -17,7 +17,7 @@ public enum KnownNullability : byte
 internal class VisualBasicNullableExpressionsConverter
 {
     public IQueryTracker? QueryTracker { get; set; }
-    private bool IsWithinQuery => QueryTracker?.IsWithinQuery == true;
+    private bool IsWithinExpressionTree => QueryTracker?.IsWithinExpressionTree == true;
     private readonly SemanticModel _semanticModel;
     private static readonly IsPatternExpressionSyntax NotFormattedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is {}"));
     private static readonly IsPatternExpressionSyntax NotFormattedNegatedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is not {}"));
@@ -47,8 +47,8 @@ internal class VisualBasicNullableExpressionsConverter
 
     public ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
-        if (IsWithinQuery ||
-            !IsSupported(vbNode.Kind()) || 
+        if (IsWithinExpressionTree) return ForExpressionTree(vbNode, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        if (!IsSupported(vbNode.Kind()) || 
             !lhsTypeInfo.ConvertedType.IsNullable() ||
             !rhsTypeInfo.ConvertedType.IsNullable()) {
             return csBinExp;
@@ -58,6 +58,22 @@ internal class VisualBasicNullableExpressionsConverter
         if (!isLhsNullable && !isRhsNullable) return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation);
 
         return WithBinaryExpressionLogicForNullableTypes(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable);
+    }
+
+    /// <summary>
+    /// Providers translate plain C# operators, but C# only allows a bool? operand of &amp;&amp; or || as `x == true`, which is right where VB treats Nothing as False
+    /// </summary>
+    private ExpressionSyntax ForExpressionTree(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
+    {
+        if (IsSupported(vbNode.Kind()) && !vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)) {
+            return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation); // C#'s lifted comparisons are bool
+        }
+        if (!vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression) || !vbNode.IsOnlyTestedForTrue(_semanticModel)) return csBinExp;
+        var isLhsNullable = IsNullable(vbNode.Left, lhs, lhsTypeInfo);
+        var isRhsNullable = IsNullable(vbNode.Right, rhs, rhsTypeInfo);
+        if (isLhsNullable) lhs = lhs.AddParens().EqualsTrue();
+        if (isRhsNullable) rhs = rhs.AddParens().EqualsTrue();
+        return csBinExp.WithLeft(lhs).WithRight(rhs).WithAdditionalAnnotations(IsNotNullableAnnotation);
     }
 
     private ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(Microsoft.CodeAnalysis.VisualBasic.Syntax.BinaryExpressionSyntax vbNode, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs, bool isLhsNullable,
@@ -205,6 +221,10 @@ internal class VisualBasicNullableExpressionsConverter
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
+        if (vbNode.IsOnlyTestedForTrue(_semanticModel) && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
+            return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation);
+        }
+
         ExpressionSyntax? lhsName = lhs, rhsName = rhs;
         var lhsReusable = IsSafelyReusable(vbNode.Left);
         var rhsReusable = IsSafelyReusable(vbNode.Right);
@@ -242,6 +262,17 @@ internal class VisualBasicNullableExpressionsConverter
         return notNullCondition is null ? bin : notNullCondition.Conditional(bin, Null);
     }
 
+    /// <summary>
+    /// C#'s lifted relational operators are false when an operand is null, as is its lifted == unless both are null
+    /// </summary>
+    private static bool IsLiftedOperatorFalseWhenVbIsNothing(VBSyntax.BinaryExpressionSyntax vbNode, bool isLhsNullable, bool isRhsNullable) =>
+        vbNode.Kind() switch {
+            VBasic.SyntaxKind.LessThanExpression or VBasic.SyntaxKind.LessThanOrEqualExpression or
+                VBasic.SyntaxKind.GreaterThanExpression or VBasic.SyntaxKind.GreaterThanOrEqualExpression => true,
+            VBasic.SyntaxKind.EqualsExpression => !(isLhsNullable && isRhsNullable),
+            _ => false
+        };
+
     private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode), ref csName);
     private ExpressionSyntax HasValue(bool reusable, ref ExpressionSyntax csName)
     {
@@ -256,10 +287,10 @@ internal class VisualBasicNullableExpressionsConverter
 
     private bool IsSafelyReusable(VBasic.Syntax.ExpressionSyntax e)
     {
-        // In general, you can't rely on a query to safely reuse properties (e.g. it may be compiled to SQL and use it 0 times)
+        // In general, you can't rely on an expression tree to safely reuse properties (e.g. it may be compiled to SQL and use it 0 times)
         // Since the code to guarantee the same reuse would be very complex and often not useful (e.g. pulling out methods to compose expressions), we just don't guarantee it
         // This is a trade off, see https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md#deciding-what-the-output-should-be
-        if (IsWithinQuery) return true;
+        if (IsWithinExpressionTree) return true;
         e = e.SkipIntoParens();
         if (e is VBSyntax.LiteralExpressionSyntax) return true;
         var symbolInfo = VBasic.VisualBasicExtensions.GetSymbolInfo(_semanticModel, e);

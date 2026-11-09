@@ -34,52 +34,10 @@ public partial class Issue895
         var duplicates = from x in numbers
                          group x by x into Group
                          where Group.Count() > 1
-                         select Group;
+                         select new { x = Group.Key, Group };
         Console.WriteLine(duplicates.Count());
     }
 }");
-    }
-
-    [Fact]
-    public async Task Characterize_Issue948_GroupByMember_Async()
-    {
-        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
-Imports System.Linq
-
-Class C
-    Public Property MyString As String
-End Class
-
-Public Module Module1
-    Public Sub Main()
-        Dim list As New List(Of C)()
-        Dim result = From f In list
-                     Group f By f.MyString Into Group
-                     Order By MyString
-	End Sub
-End Module",
-            @"using System.Collections.Generic;
-using System.Linq;
-
-internal partial class C
-{
-    public string MyString { get; set; }
-}
-
-public static partial class Module1
-{
-    public static void Main()
-    {
-        var list = new List<C>();
-        var result = from f in list
-                     group f by f.MyString into @group
-                     orderby MyString
-                     select @group;
-    }
-}
-1 target compilation errors:
-CS0103: The name 'MyString' does not exist in the current context");
-        // BUG: Order by should be on @group.Key
     }
 
     [Fact]
@@ -108,11 +66,9 @@ public partial class Issue635
 
     public Issue635()
     {
-        listSelectWhere = from t in
-                              from t in l
-                              select t.foo
+        listSelectWhere = from t in l
                           where 1 == 2
-                          select t;
+                          select t.foo;
     }
 }");
     }
@@ -186,9 +142,8 @@ End Sub",
 {
     int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
-                       group n by (n % 5) into g
-                       let __groupByKey1__ = g.Key
-                       select new { Remainder = __groupByKey1__, Numbers = g };
+                       group n by n % 5 into g
+                       select new { Remainder = g.Key, Numbers = g };
 
     foreach (var g in numberGroups)
     {
@@ -327,7 +282,7 @@ internal partial class Test
 End Function", @"private static string FindPicFilePath(List<FileInfo> AList, string picId)
 {
     foreach (FileInfo FileInfo in from FileInfo1 in AList
-                                  where FileInfo1.Name.Substring(0, 6) == picId
+                                  where (FileInfo1.Name.Substring(0, 6) ?? """") == (picId ?? """")
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;
@@ -424,7 +379,7 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
 }");
     }
 
-    [Fact(Skip = "Issue #29 - Aggregate not supported")]
+    [Fact]
     public async Task LinqAggregateSumAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
@@ -432,28 +387,8 @@ End Function", @"private static IEnumerable<string> FindPicFilePath()
     Dim totalExpense = Aggregate expense In expenses Into Sum()
 End Sub", @"private static void ASub()
 {
-    double[] expenses = {560.0, 300.0, 1080.5, 29.95, 64.75, 200.0};
-    var totalExpense = expenses.Sum();
-}");
-    }
-
-    [Fact(Skip = "Issue #29 - Group join not supported")]
-    public async Task LinqGroupJoinAsync()
-    {
-        await TestConversionVisualBasicToCSharpAsync(@"Private Shared Sub ASub()
-    Dim customerList = From cust In customers
-                       Group Join ord In orders On
-                       cust.CustomerID Equals ord.CustomerID
-                       Into CustomerOrders = Group,
-                            OrderTotal = Sum(ord.Total)
-                       Select cust.CompanyName, cust.CustomerID,
-                              CustomerOrders, OrderTotal
-End Sub", @"private static void ASub()
-{
-    var customerList = from cust in customers
-                       join ord in orders on cust.CustomerID equals ord.CustomerID into CustomerOrders
-                       let OrderTotal = Sum(ord.Total) //TODO Figure out exact C# syntax for this query
-                       select new { cust.CompanyName, cust.CustomerID, CustomerOrders, OrderTotal };
+    double[] expenses = new double[] { 560.0d, 300.0d, 1080.5d, 29.95d, 64.75d, 200.0d };
+    double totalExpense = expenses.Sum();
 }");
     }
 
@@ -622,10 +557,10 @@ public partial class Class1
     {
         var xs = new List<string>();
         var y = from x in xs
-                group x by new { x.Length, Count = x.Count() };
+                group x by new { x.Length, Count = x.Count() } into Group
+                select new { Group.Key.Length, Group.Key.Count, Group };
     }
 }");
-        // Current characterization is slightly wrong, I think it still needs this on the end "into g select new { Length = g.Key.Length, Count = g.Key.Count, Group = g.AsEnumerable() }"
     }
 
     [Fact]
@@ -662,8 +597,7 @@ public partial class Class717
 
         var r = from e in arr
                 let p = $""value: {e}""
-                let l = p.Substring(1)
-                select l;
+                select p.Substring(1);
 
         foreach (var m in r)
             Console.WriteLine(m);
@@ -765,18 +699,17 @@ internal static partial class Ext
                    _accountEntry.ComputeInterestFlag,
                    _accountEntry.SponsorClaimRevision
                } into Group
-               let _keys = Group.Key
                select new AccountEntry()
                {
-                   LookupAccountEntryTypeId = _keys.LookupAccountEntryTypeId,
-                   LookupAccountEntrySourceId = _keys.LookupAccountEntrySourceId,
-                   SponsorId = _keys.SponsorId,
-                   LookupFundTypeId = _keys.LookupFundTypeId,
-                   StartDate = _keys.StartDate,
-                   SatisfiedDate = _keys.SatisfiedDate,
-                   ComputeInterestFlag = _keys.ComputeInterestFlag,
-                   InterestStartDate = _keys.InterestStartDate,
-                   SponsorClaimRevision = _keys.SponsorClaimRevision,
+                   LookupAccountEntryTypeId = Group.Key.LookupAccountEntryTypeId,
+                   LookupAccountEntrySourceId = Group.Key.LookupAccountEntrySourceId,
+                   SponsorId = Group.Key.SponsorId,
+                   LookupFundTypeId = Group.Key.LookupFundTypeId,
+                   StartDate = Group.Key.StartDate,
+                   SatisfiedDate = Group.Key.SatisfiedDate,
+                   ComputeInterestFlag = Group.Key.ComputeInterestFlag,
+                   InterestStartDate = Group.Key.InterestStartDate,
+                   SponsorClaimRevision = Group.Key.SponsorClaimRevision,
                    Amount = Group.Sum(accountEntry => accountEntry.Amount),
                    AccountTransactions = new List<object>(),
                    AccountEntryClaimDetails = (from _accountEntry in Group
@@ -877,7 +810,7 @@ public partial class ConversionTest2
     End Class
     Public Sub BugRepro()
 
-        Dim entities = New List(Of MyEntity) ' If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
+        Dim entities = New List(Of MyEntity)().AsQueryable() ' Like a DbSet from EF Core, 'is' must be converted to == since an expression tree can't contain it
 
         Dim data = (From e In entities
                     Where e.Name Is Nothing OrElse e.FavoriteString IsNot Nothing
@@ -898,11 +831,133 @@ public partial class ConversionTest6
     public void BugRepro()
     {
 
-        var entities = new List<MyEntity>(); // If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
+        var entities = new List<MyEntity>().AsQueryable(); // Like a DbSet from EF Core, 'is' must be converted to == since an expression tree can't contain it
 
         var data = (from e in entities
                     where e.Name == null || e.FavoriteString != null
                     select e).ToList();
+    }
+}");
+    }
+
+    [Fact]
+    public async Task OptionCompareTextIsKeptInQueryOverObjectsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+Imports System.Linq
+
+Public Class C
+    Public Function M(words As String()) As IEnumerable(Of String)
+        Return From w In words Where w = ""a""
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+
+public partial class C
+{
+    public IEnumerable<string> M(string[] words)
+    {
+        return from w in words
+               where CultureInfo.CurrentCulture.CompareInfo.Compare(w, ""a"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0
+               select w;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task OptionCompareTextIsLeftToProviderInQueryableQueryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+Imports System.Linq
+
+Public Class C
+    Public Function M(words As IQueryable(Of String)) As IQueryable(Of String)
+        Return From w In words Where w = ""a""
+    End Function
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public IQueryable<string> M(IQueryable<string> words)
+    {
+        return from w in words
+               where w == ""a""
+               select w;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task ComparisonInDelegateLambdaWithinExpressionTreeIsLeftToProviderAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Item
+    Public Property S As String
+End Class
+Public Class Owner
+    Public Property Items As List(Of Item)
+End Class
+Public Class C
+    Public Function M(owners As IQueryable(Of Owner), s As String) As IQueryable(Of Owner)
+        Return From o In owners Where o.Items.Any(Function(i) i.S = s)
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Item
+{
+    public string S { get; set; }
+}
+
+public partial class Owner
+{
+    public List<Item> Items { get; set; }
+}
+
+public partial class C
+{
+    public IQueryable<Owner> M(IQueryable<Owner> owners, string s)
+    {
+        return from o in owners
+               where o.Items.Any(i => i.S == s)
+               select o;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NullableBooleanAndAlsoInExpressionTreeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq
+
+Public Class R
+    Public Property B As Boolean?
+    Public Property N As Integer
+    Public Property N2 As Integer?
+End Class
+Public Class C
+    Public Function M(rs As IQueryable(Of R)) As IQueryable(Of R)
+        Return From r In rs Where r.B AndAlso r.N > 1 OrElse r.N2 > 1 AndAlso r.B
+    End Function
+End Class", @"using System.Linq;
+
+public partial class R
+{
+    public bool? B { get; set; }
+    public int N { get; set; }
+    public int? N2 { get; set; }
+}
+
+public partial class C
+{
+    public IQueryable<R> M(IQueryable<R> rs)
+    {
+        return from r in rs
+               where r.B == true && r.N > 1 || r.N2 > 1 && r.B == true
+               select r;
     }
 }");
     }

@@ -517,7 +517,7 @@ public partial class TestForEnums
 {
     public static void WriteStatus(PasswordStatus? status)
     {
-        if (status.HasValue && status.Value == PasswordStatus.Locked)
+        if (status == PasswordStatus.Locked)
         {
             Console.Write(""Locked"");
         }
@@ -593,39 +593,39 @@ internal partial class TestClass
             return;
         if (x.HasValue && y.HasValue && x.Value != y.Value)
             return;
-        if (x.HasValue && y.HasValue && x.Value > y.Value)
+        if (x > y)
             return;
-        if (x.HasValue && y.HasValue && x.Value >= y.Value)
+        if (x >= y)
             return;
-        if (x.HasValue && y.HasValue && x.Value < y.Value)
+        if (x < y)
             return;
-        if (x.HasValue && y.HasValue && x.Value <= y.Value)
+        if (x <= y)
             return;
 
-        if (y.HasValue && a == y.Value)
+        if (a == y)
             return;
         if (y.HasValue && a != y.Value)
             return;
-        if (y.HasValue && a > y.Value)
+        if (a > y)
             return;
-        if (y.HasValue && a >= y.Value)
+        if (a >= y)
             return;
-        if (y.HasValue && a < y.Value)
+        if (a < y)
             return;
-        if (y.HasValue && a <= y.Value)
+        if (a <= y)
             return;
 
-        if (x.HasValue && x.Value == a)
+        if (x == a)
             return;
         if (x.HasValue && x.Value != a)
             return;
-        if (x.HasValue && x.Value > a)
+        if (x > a)
             return;
-        if (x.HasValue && x.Value >= a)
+        if (x >= a)
             return;
-        if (x.HasValue && x.Value < a)
+        if (x < a)
             return;
-        if (x.HasValue && x.Value <= a)
+        if (x <= a)
             return;
     }
 }");

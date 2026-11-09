@@ -1,3 +1,4 @@
+using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -41,12 +42,13 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         commonConversions.TriviaConvertingExpressionVisitor = new CommentConvertingVisitorWrapper(this, _semanticModel.SyntaxTree);
         _initializerConverter = new InitializerConverter(semanticModel, commonConversions, _generatedNames, _tempNameForAnonymousScope);
         _lambdaConverter = new LambdaConverter(commonConversions, semanticModel, _withBlockLhs, extraUsingDirectives, typeContext);
-        _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor);
+        var rangeVariableReplacements = new RangeVariableReplacements();
+        _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor, rangeVariableReplacements, _generatedNames);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
         _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
         _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, commonConversions, semanticModel, _withBlockLhs, _generatedNames, _conditionalAccessReceivers);
-        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers);
+        _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers, rangeVariableReplacements);
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);
         _binaryExpressionConverter = new BinaryExpressionConverter(semanticModel, _operatorConverter, visualBasicEqualityComparison, visualBasicNullableTypesConverter, commonConversions);
     }
@@ -248,6 +250,11 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitNameOfExpression(VBasic.Syntax.NameOfExpressionSyntax node)
     {
+        // A range variable's value may be substituted, so there may be no C# variable to name
+        if (node.Argument.DescendantNodesAndSelf().Any(n => n is VBasic.Syntax.IdentifierNameSyntax && _semanticModel.GetSymbolInfo(n).Symbol is IRangeVariableSymbol) &&
+            _semanticModel.GetConstantValue(node) is { HasValue: true, Value: string name }) {
+            return CS.SyntaxFactory.LiteralExpression(CS.SyntaxKind.StringLiteralExpression, CS.SyntaxFactory.Literal(name));
+        }
         return CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.NameOf(), CS.SyntaxFactory.ArgumentList(CS.SyntaxFactory.SingletonSeparatedList(CS.SyntaxFactory.Argument(await node.Argument.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor)))));
     }
 
@@ -321,7 +328,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitQueryExpression(VBasic.Syntax.QueryExpressionSyntax node)
     {
-        return await _queryConverter.ConvertClausesAsync(node.Clauses);
+        return await _queryConverter.ConvertQueryAsync(node);
     }
 
     public override async Task<CSharpSyntaxNode> VisitOrdering(VBasic.Syntax.OrderingSyntax node)
@@ -405,7 +412,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr, ITypeSymbol operandConvertedType)
     {
-        if (await _operatorConverter.ConvertReferenceOrNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), TriviaConvertingExpressionVisitor.IsWithinQuery, true) is { } nothingComparison) {
+        if (await _operatorConverter.ConvertReferenceOrNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), TriviaConvertingExpressionVisitor.IsWithinExpressionTree, true) is { } nothingComparison) {
             return nothingComparison;
         }
         if (operandConvertedType.GetNullableUnderlyingType()?.SpecialType == SpecialType.System_Boolean && node.AlwaysHasBooleanTypeInCSharp()) {

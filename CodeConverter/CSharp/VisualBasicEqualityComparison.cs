@@ -19,7 +19,7 @@ internal class VisualBasicEqualityComparison
     private readonly SemanticModel _semanticModel;
 
     public IQueryTracker? QueryTracker { get; set; }
-    private bool IsWithinQuery => QueryTracker?.IsWithinQuery == true;
+    private bool IsWithinExpressionTree => QueryTracker?.IsWithinExpressionTree == true;
     public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives)
     {
         ExtraUsingDirectives = extraUsingDirectives;
@@ -65,7 +65,7 @@ internal class VisualBasicEqualityComparison
 
     public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
     {
-        if (IsWithinQuery) return RequiredType.None;
+        if (IsWithinExpressionTree) return RequiredType.None;
         var typeInfos = new[] { leftType, rightType };
         if (!node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
             return RequiredType.None;

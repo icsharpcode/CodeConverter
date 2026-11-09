@@ -19,7 +19,7 @@ internal class CommentConvertingVisitorWrapper : IQueryTracker
         _syntaxTree = syntaxTree;
     }
 
-    public bool IsWithinQuery { get; set; }
+    public bool IsWithinExpressionTree { get; set; }
 
     [DebuggerStepThrough]
     public async Task<T> AcceptAsync<T>(VisualBasicSyntaxNode vbNode, SourceTriviaMapKind sourceTriviaMap) where T : CSharpSyntaxNode =>
