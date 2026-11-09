@@ -27,14 +27,13 @@ internal class QueryConverter
     public async Task<CSharpSyntaxNode> ConvertQueryAsync(VBSyntax.QueryExpressionSyntax query)
     {
         var tracker = _triviaConvertingVisitor;
-        var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
-        tracker.IsWithinQuery = true;
+        var originalIsWithinExpressionTree = tracker.IsWithinExpressionTree;
         tracker.IsWithinExpressionTree |= new ExpressionTreeDetector(_semanticModel, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T).IsExpressionTree(query);
         try {
             var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders);
             return await converter.ConvertAsync();
         } finally {
-            (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
+            tracker.IsWithinExpressionTree = originalIsWithinExpressionTree;
         }
     }
 }

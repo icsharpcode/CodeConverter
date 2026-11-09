@@ -79,12 +79,14 @@ VB names are kept unless they clash with a C# range variable VB has dropped, whi
 
 ### Comparisons
 
-Comparisons in queries skip VB's null/empty string and nullable logic so expression tree providers like EF can translate them (`IQueryTracker.IsWithinQuery`). `Option Compare Text` string equality is kept when the query compiles to delegates, which VB's `ITranslatedQueryOperation` shows (`ExpressionTreeDetector`). A later `Aggregate` clause is a separate query over its own source, so is checked separately. Expression tree providers would translate VB's own text comparison to plain equality anyway.
+VB's own translation (`ITranslatedQueryOperation`) shows whether a query's lambdas compile to delegates or to expression trees (`ExpressionTreeDetector`, `IQueryTracker.IsWithinExpressionTree`). A later `Aggregate` clause is a separate query over its own source, so is checked separately.
+* Delegates (LINQ to objects) get VB's comparison semantics, exactly as outside a query: `Nothing = ""`, `Option Compare Text`, nullable logic. In a `Where` (and the operands of `OrElse`/`AndAlso` within it) Nothing is treated as False, so C#'s lifted operators are used where they're already false whenever VB would give Nothing: `n == 1`, `n > 1`, but `n is { } a && a != 1`.
+* Expression trees (e.g. `IQueryable` from EF) get plain C# operators (`x == s`). The provider decides the semantics, e.g. the database collation decides case sensitivity, and it may not translate VB's runtime helpers or C# patterns at all ([#316](https://github.com/icsharpcode/CodeConverter/issues/316), [#894](https://github.com/icsharpcode/CodeConverter/issues/894)).
 
 ## Limitations
 
 * Values that are cheap to repeat (names, member accesses and literals) are always substituted, so a property getter with side effects could run a different number of times.
-* LINQ to objects comparisons other than `Option Compare Text` don't reproduce VB's `Nothing = ""` or three-valued nullable logic.
+* An `IQueryable` evaluated in memory (e.g. `list.AsQueryable()`, or a provider evaluating a comparison client-side) runs the plain C# comparisons, so differs from VB for `Nothing = ""`, nullable logic and `Option Compare Text`.
 
 ## Tests
 

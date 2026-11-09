@@ -29,12 +29,12 @@ internal class LambdaConverter
     public async Task<CSharpSyntaxNode> ConvertMultiLineLambdaAsync(VBSyntax.MultiLineLambdaExpressionSyntax node)
     {
         var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
-        var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
-        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
+        var originalIsWithinExpressionTree = tracker.IsWithinExpressionTree;
+        tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
         try {
             return await ConvertInnerAsync();
         } finally {
-            (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
+            tracker.IsWithinExpressionTree = originalIsWithinExpressionTree;
         }
 
         async Task<CSharpSyntaxNode> ConvertInnerAsync()
@@ -48,12 +48,12 @@ internal class LambdaConverter
     public async Task<CSharpSyntaxNode> ConvertSingleLineLambdaAsync(VBSyntax.SingleLineLambdaExpressionSyntax node)
     {
         var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
-        var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
-        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
+        var originalIsWithinExpressionTree = tracker.IsWithinExpressionTree;
+        tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
         try {
             return await ConvertInnerAsync();
         } finally {
-            (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
+            tracker.IsWithinExpressionTree = originalIsWithinExpressionTree;
         }
 
         async Task<CSharpSyntaxNode> ConvertInnerAsync()

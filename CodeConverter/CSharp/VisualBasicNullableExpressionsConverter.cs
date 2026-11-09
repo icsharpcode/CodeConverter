@@ -17,7 +17,7 @@ public enum KnownNullability : byte
 internal class VisualBasicNullableExpressionsConverter
 {
     public IQueryTracker? QueryTracker { get; set; }
-    private bool IsWithinQuery => QueryTracker?.IsWithinQuery == true;
+    private bool IsWithinExpressionTree => QueryTracker?.IsWithinExpressionTree == true;
     private readonly SemanticModel _semanticModel;
     private static readonly IsPatternExpressionSyntax NotFormattedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is {}"));
     private static readonly IsPatternExpressionSyntax NotFormattedNegatedIsPattern = ((IsPatternExpressionSyntax)SyntaxFactory.ParseExpression("is not {}"));
@@ -47,7 +47,7 @@ internal class VisualBasicNullableExpressionsConverter
 
     public ExpressionSyntax WithBinaryExpressionLogicForNullableTypes(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
-        if (IsWithinQuery ||
+        if (IsWithinExpressionTree ||
             !IsSupported(vbNode.Kind()) || 
             !lhsTypeInfo.ConvertedType.IsNullable() ||
             !rhsTypeInfo.ConvertedType.IsNullable()) {
@@ -271,10 +271,10 @@ internal class VisualBasicNullableExpressionsConverter
 
     private bool IsSafelyReusable(VBasic.Syntax.ExpressionSyntax e)
     {
-        // In general, you can't rely on a query to safely reuse properties (e.g. it may be compiled to SQL and use it 0 times)
+        // In general, you can't rely on an expression tree to safely reuse properties (e.g. it may be compiled to SQL and use it 0 times)
         // Since the code to guarantee the same reuse would be very complex and often not useful (e.g. pulling out methods to compose expressions), we just don't guarantee it
         // This is a trade off, see https://github.com/icsharpcode/CodeConverter/blob/master/.github/CONTRIBUTING.md#deciding-what-the-output-should-be
-        if (IsWithinQuery) return true;
+        if (IsWithinExpressionTree) return true;
         e = e.SkipIntoParens();
         if (e is VBSyntax.LiteralExpressionSyntax) return true;
         var symbolInfo = VBasic.VisualBasicExtensions.GetSymbolInfo(_semanticModel, e);

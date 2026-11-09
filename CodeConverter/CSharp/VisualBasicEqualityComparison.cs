@@ -19,13 +19,7 @@ internal class VisualBasicEqualityComparison
     private readonly SemanticModel _semanticModel;
 
     public IQueryTracker? QueryTracker { get; set; }
-    private bool IsWithinQuery => QueryTracker?.IsWithinQuery == true;
     private bool IsWithinExpressionTree => QueryTracker?.IsWithinExpressionTree == true;
-
-    /// <summary>
-    /// Kept simple so expression tree providers (e.g. EF) can translate them. They'd translate VB's text comparison to plain equality anyway, but it changes the result of a query run as delegates.
-    /// </summary>
-    private bool UsesSimplifiedQueryComparison => IsWithinQuery && (IsWithinExpressionTree || !OptionCompareTextCaseInsensitive);
     public VisualBasicEqualityComparison(SemanticModel semanticModel, HashSet<string> extraUsingDirectives)
     {
         ExtraUsingDirectives = extraUsingDirectives;
@@ -71,7 +65,7 @@ internal class VisualBasicEqualityComparison
 
     public RequiredType GetObjectEqualityType(VBSyntax.BinaryExpressionSyntax node, TypeInfo leftType, TypeInfo rightType)
     {
-        if (UsesSimplifiedQueryComparison) return RequiredType.None;
+        if (IsWithinExpressionTree) return RequiredType.None;
         var typeInfos = new[] { leftType, rightType };
         if (!node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression)) {
             return RequiredType.None;

@@ -311,7 +311,7 @@ public partial class C
     public IEnumerable<object> M(ArrayList list)
     {
         return from object x in list
-               where x != null
+               where x is not null
                select x;
     }
 }");
@@ -710,7 +710,7 @@ public partial class C
     public async Task ComparisonAfterQueryGetsVisualBasicSemanticsAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class C
-    Public Function M(xs As String(), s As String) As Boolean
+    Public Function M(xs As IQueryable(Of String), s As String) As Boolean
         Dim q = From x In xs Where x = s
         Return s = """"
     End Function
@@ -718,7 +718,7 @@ End Class", @"using System.Linq;
 
 public partial class C
 {
-    public bool M(string[] xs, string s)
+    public bool M(IQueryable<string> xs, string s)
     {
         var q = from x in xs
                 where x == s

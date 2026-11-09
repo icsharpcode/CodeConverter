@@ -282,7 +282,7 @@ internal partial class Test
 End Function", @"private static string FindPicFilePath(List<FileInfo> AList, string picId)
 {
     foreach (FileInfo FileInfo in from FileInfo1 in AList
-                                  where FileInfo1.Name.Substring(0, 6) == picId
+                                  where (FileInfo1.Name.Substring(0, 6) ?? """") == (picId ?? """")
                                   select FileInfo1)
         return FileInfo.FullName;
     return string.Empty;
@@ -810,7 +810,7 @@ public partial class ConversionTest2
     End Class
     Public Sub BugRepro()
 
-        Dim entities = New List(Of MyEntity) ' If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
+        Dim entities = New List(Of MyEntity)().AsQueryable() ' Like a DbSet from EF Core, 'is' must be converted to == since an expression tree can't contain it
 
         Dim data = (From e In entities
                     Where e.Name Is Nothing OrElse e.FavoriteString IsNot Nothing
@@ -831,7 +831,7 @@ public partial class ConversionTest6
     public void BugRepro()
     {
 
-        var entities = new List<MyEntity>(); // If this was a DbSet from EFCore, then the 'is' below needs to be converted to == to avoid an error. Instead of detecting dbset, we'll just do this for all queries
+        var entities = new List<MyEntity>().AsQueryable(); // Like a DbSet from EF Core, 'is' must be converted to == since an expression tree can't contain it
 
         var data = (from e in entities
                     where e.Name == null || e.FavoriteString != null
