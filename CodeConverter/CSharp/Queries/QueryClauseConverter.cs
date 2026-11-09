@@ -48,7 +48,7 @@ internal class QueryClauseConverter
         try {
             var clauses = _vbQuery.Clauses;
             if (clauses.First() is VBSyntax.AggregateClauseSyntax aggregate) {
-                if (clauses.Count > 1) throw new NotImplementedException("Query operators after an initial Aggregate clause not implemented");
+                if (clauses.Count > 1) throw new NotSupportedException("Query operators after an initial Aggregate clause aren't valid VB");
                 return await ConvertAggregateQueryAsync(aggregate);
             }
             return await WithBuilderAsync(async builder => {

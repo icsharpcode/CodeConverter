@@ -131,7 +131,6 @@ The exception is `Option Compare Text` for queries that run as delegates: droppi
 
 * Expressions with side effects can be evaluated at a different point relative to sorting/filtering (e.g. an inlined `Let` evaluated after `Order By`), but the same number of times per element. Queries generally can't guarantee this anyway (they may be translated to SQL).
 * Comparisons in queries other than Option Compare Text keep the simple expression-tree-friendly form, so VB's `Nothing = ""` string semantics and three-valued nullable logic aren't reproduced in LINQ to objects queries (unlike method-syntax lambdas). This was an existing deliberate trade-off; `IsWithinExpressionTree` now makes it possible to revisit.
-* Clauses after an initial `Aggregate ... Into` aren't converted.
 * A comma separated `From x In {1}, y In ...` gets a blank line after the first variable, a trivia mapping quirk that predates this change.
 
 ## Tests
