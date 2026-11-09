@@ -887,4 +887,44 @@ public partial class C
     }
 }", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
     }
+
+    [Fact]
+    public async Task ComparisonInDelegateLambdaWithinExpressionTreeIsLeftToProviderAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class Item
+    Public Property S As String
+End Class
+Public Class Owner
+    Public Property Items As List(Of Item)
+End Class
+Public Class C
+    Public Function M(owners As IQueryable(Of Owner), s As String) As IQueryable(Of Owner)
+        Return From o In owners Where o.Items.Any(Function(i) i.S = s)
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class Item
+{
+    public string S { get; set; }
+}
+
+public partial class Owner
+{
+    public List<Item> Items { get; set; }
+}
+
+public partial class C
+{
+    public IQueryable<Owner> M(IQueryable<Owner> owners, string s)
+    {
+        return from o in owners
+               where o.Items.Any(i => i.S == s)
+               select o;
+    }
+}");
+    }
 }

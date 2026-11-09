@@ -30,7 +30,7 @@ internal class LambdaConverter
     {
         var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
         var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
-        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = CommonConversions.IsLinqDelegateExpression(node);
+        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
         try {
             return await ConvertInnerAsync();
         } finally {
@@ -49,7 +49,7 @@ internal class LambdaConverter
     {
         var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
         var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
-        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = CommonConversions.IsLinqDelegateExpression(node);
+        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = IsWithinExpressionTree(node);
         try {
             return await ConvertInnerAsync();
         } finally {
@@ -242,4 +242,10 @@ internal class LambdaConverter
             return null;
         }
     }
+
+    /// <summary>
+    /// A delegate lambda within an expression tree (e.g. `o.Items.Any(Function(i) ...)` in an IQueryable query) is part of the expression tree too
+    /// </summary>
+    private bool IsWithinExpressionTree(VBasic.VisualBasicSyntaxNode node) =>
+        CommonConversions.TriviaConvertingExpressionVisitor.IsWithinExpressionTree || CommonConversions.IsLinqDelegateExpression(node);
 }
