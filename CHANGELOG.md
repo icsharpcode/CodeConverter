@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### VB -> C#
 
+* Linq query conversion drastically changed in [#1395](https://github.com/icsharpcode/CodeConverter/pull/1305). Please report any bugs - especially regressions!
 
 ### C# -> VB
 
