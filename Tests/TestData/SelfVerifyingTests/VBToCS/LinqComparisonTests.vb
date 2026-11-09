@@ -134,4 +134,13 @@ Public Class LinqComparisonTests
         Dim q = From n In nums Group By k = n Mod 2 Into Any(n = 1)
         Assert.Equal(2, q.Count())
     End Sub
+
+    <Fact>
+    Sub TestIfNullableAndAlsoThrowingRightWhenLeftIsNothing()
+        Dim n As Integer? = Nothing
+        Dim z = 0
+        Assert.Throws(Of DivideByZeroException)(Sub()
+                                                     If n = 1 AndAlso 1 \ z = 0 Then _calls += 1
+                                                 End Sub)
+    End Sub
 End Class

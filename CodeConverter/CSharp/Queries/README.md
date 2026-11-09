@@ -81,7 +81,7 @@ VB names are kept unless they clash with a C# range variable VB has dropped, whi
 ### Comparisons
 
 VB's own translation (`ITranslatedQueryOperation`) shows whether a query's lambdas compile to delegates or to expression trees (`ExpressionTreeDetector`, `IQueryTracker.IsWithinExpressionTree`). A later `Aggregate` clause is a separate query over its own source, so is checked separately.
-* Delegates (LINQ to objects) get VB's comparison semantics, exactly as outside a query: `Nothing = ""`, `Option Compare Text`, nullable logic. In a `Where` (and the operands of `OrElse`/`AndAlso` within it) Nothing is treated as False, so C#'s lifted operators are used where they're already false whenever VB would give Nothing: `n == 1`, `n > 1`, but `n is { } a && a != 1`.
+* Delegates (LINQ to objects) get VB's comparison semantics, exactly as outside a query: `Nothing = ""`, `Option Compare Text`, nullable logic. In a `Where` (and the operands of `OrElse`/`AndAlso` within it, except the left of `AndAlso` when the right could throw or have side effects, since VB evaluates the right when the left is Nothing) Nothing is treated as False, so C#'s lifted operators are used where they're already false whenever VB would give Nothing: `n == 1`, `n > 1`, but `n is { } a && a != 1`.
 * Expression trees (e.g. `IQueryable` from EF) get plain C# operators (`x == s`), with a `Boolean?` operand of `AndAlso`/`OrElse` in a `Where` as `b == true`. The provider decides the semantics, e.g. the database collation decides case sensitivity, and it may not translate VB's runtime helpers or C# patterns at all ([#316](https://github.com/icsharpcode/CodeConverter/issues/316), [#894](https://github.com/icsharpcode/CodeConverter/issues/894)).
 
 ## Limitations

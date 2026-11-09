@@ -42,9 +42,20 @@ internal static class VbSyntaxNodeExtensions
         if (node.AlwaysHasBooleanTypeInCSharp()) return true;
         return node.Parent is VBSyntax.BinaryExpressionSyntax bin &&
                (bin.IsKind(VBasic.SyntaxKind.OrElseExpression) || bin.IsKind(VBasic.SyntaxKind.AndAlsoExpression) &&
-                   (bin.Right == node || !bin.Right.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().Any(e => e.IsCallOrConversion(semanticModel)))) &&
+                   (bin.Right == node || !bin.Right.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().Any(e => e.MayThrowOrHaveSideEffects(semanticModel)))) &&
                bin.IsOnlyTestedForTrue(semanticModel);
     }
+
+    /// <summary>
+    /// Besides calls, arithmetic can overflow or divide by zero, and narrowing conversions can fail.
+    /// Property getters (and member access on a null receiver) are assumed not to.
+    /// </summary>
+    public static bool MayThrowOrHaveSideEffects(this VBSyntax.ExpressionSyntax expression, SemanticModel semanticModel) =>
+        expression.IsCallOrConversion(semanticModel) ||
+        expression.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression,
+            VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression, VBasic.SyntaxKind.ExponentiateExpression, VBasic.SyntaxKind.UnaryMinusExpression) ||
+        expression is VBSyntax.BinaryExpressionSyntax or VBSyntax.UnaryExpressionSyntax && semanticModel.GetSymbolInfo(expression).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator } ||
+        VBasic.VisualBasicExtensions.GetConversion(semanticModel, expression).IsNarrowing;
 
     /// <summary>
     /// Could have side effects or throw. VB calls a method referenced without parentheses.
