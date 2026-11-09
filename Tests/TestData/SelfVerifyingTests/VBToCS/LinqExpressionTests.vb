@@ -361,4 +361,58 @@ Public Class LinqExpressionTests
         Assert.Equal("{ x = 1, y = 1, c = 2 }|{ x = 3, y = 3, c = 1 }", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestTypedFromOverNonGenericCollectionConvertsValues()
+        Dim list As New System.Collections.ArrayList From {1, "2"}
+        Dim q = From x As Integer In list Select x + 1
+        Assert.Equal("2|3", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestValueReferencedBeforeDistinct()
+        Dim q = From x In {1, 1, 2, 3}
+                Let y = Evaluate(x * 2)
+                Where y > 2
+                Distinct
+        Assert.Equal("{ x = 2, y = 4 }|{ x = 3, y = 6 }", Show(q))
+        Assert.Equal(4, _evaluations)
+    End Sub
+
+    <Fact>
+    Sub TestNestedJoinConditionSkippingAJoinedVariable()
+        Dim q = From x In {1, 2, 3}
+                Join y In {2, 3, 4}
+                    Join z In {1, 2, 3} On z Equals y
+                On x Equals z
+                Select x, y, z
+        Assert.Equal("{ x = 2, y = 2, z = 2 }|{ x = 3, y = 3, z = 3 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestGroupByFollowedByMethodCallThenMoreClauses()
+        Dim q = From x In {1, 2, 3, 4, 5}
+                Group By k = x Mod 2 Into Count()
+                Distinct
+                Where Count > 2
+        Assert.Equal("{ k = 1, Count = 3 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestTwoGroupBys()
+        Dim q = From x In {1, 2, 3, 4, 5, 6, 7}
+                Group By k = x Mod 4 Into Count()
+                Group By Count Into Keys = Group
+        Assert.Equal("2:3|1:1", Show(q.Select(Function(g) g.Count & ":" & g.Keys.Count())))
+    End Sub
+
+    <Fact>
+    Sub TestNestedJoinConditionOnlyInvalidOnceBothVariablesAreInScope()
+        Dim q = From x In {2, 4}
+                Join y In {1, 2}
+                    Join z In {1, 2} On z Equals y
+                On x Equals y + y And x Equals y + z
+                Select x, y
+        Assert.Equal("{ x = 2, y = 1 }|{ x = 4, y = 2 }", Show(q))
+    End Sub
+
 End Class

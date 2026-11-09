@@ -456,4 +456,56 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task NestedJoinConditionSkippingAJoinedVariableJoinsSubqueryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private Shared Sub M(xs As Integer(), ys As Integer(), zs As Integer())
+        Dim q = From x In xs
+                Join y In ys
+                    Join z In zs On z Equals y
+                On x Equals z
+                Select x, y, z
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    private static void M(int[] xs, int[] ys, int[] zs)
+    {
+        var q = from x in xs
+                join x1 in from y in ys
+                           join z in zs on y equals z
+                           select new { y, z } on x equals x1.z
+                select new { x, x1.y, x1.z };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NestedJoinConditionOnlyInvalidOnceBothVariablesAreInScopeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private Shared Sub M(xs As Integer(), ys As Integer(), zs As Integer())
+        Dim q = From x In xs
+                Join y In ys
+                    Join z In zs On z Equals y
+                On x Equals y And x Equals y + z
+                Select x, y, z
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    private static void M(int[] xs, int[] ys, int[] zs)
+    {
+        var q = from x in xs
+                join x1 in from y in ys
+                           join z in zs on y equals z
+                           select new { y, z } on new { key0 = x, key1 = x } equals new { key0 = x1.y, key1 = x1.y + x1.z }
+                select new { x, x1.y, x1.z };
+    }
+}");
+    }
 }
