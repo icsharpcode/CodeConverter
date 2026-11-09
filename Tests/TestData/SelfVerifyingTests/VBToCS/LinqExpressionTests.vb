@@ -440,4 +440,16 @@ Public Class LinqExpressionTests
         Assert.Equal("2", Show(q))
     End Sub
 
+    <Fact>
+    Sub TestSubstitutedConditionalInInterpolation()
+        Dim q = From x In {3, 1} Let y = If(x > 1, "a", "b") Select $"{y}"
+        Assert.Equal("a|b", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestSubstitutedArrayCreationIndexed()
+        Dim q = From x In {3, 1} Let a = New Integer(x) {} Select a(0)
+        Assert.Equal("0|0", Show(q))
+    End Sub
+
 End Class

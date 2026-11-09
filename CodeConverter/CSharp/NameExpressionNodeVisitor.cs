@@ -173,7 +173,7 @@ internal class NameExpressionNodeVisitor
     {
         var sym = _semanticModel.GetSymbolInfoInDocument<ISymbol>(node);
         if (_rangeVariableReplacements.TryGetReplacement(sym, out var rangeVariableReplacement)) {
-            var isOperand = node.Parent is VBSyntax.ExpressionSyntax and not VBSyntax.ParenthesizedExpressionSyntax;
+            var isOperand = node.Parent is VBSyntax.ExpressionSyntax and not VBSyntax.ParenthesizedExpressionSyntax or VBSyntax.InterpolationSyntax;
             return isOperand ? CsQueryBuilder.ParenthesizeIfNeeded(rangeVariableReplacement) : rangeVariableReplacement;
         }
 

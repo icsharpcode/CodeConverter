@@ -217,7 +217,7 @@ internal class CsQueryBuilder
     public static ExpressionSyntax ParenthesizeIfNeeded(ExpressionSyntax expression) => expression switch {
         IdentifierNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax or ElementAccessExpressionSyntax
             or ParenthesizedExpressionSyntax or LiteralExpressionSyntax or ThisExpressionSyntax
-            or ObjectCreationExpressionSyntax or ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax => expression,
+            or ObjectCreationExpressionSyntax or ArrayCreationExpressionSyntax { Initializer: not null } or ImplicitArrayCreationExpressionSyntax => expression,
         _ => expression.AddParens()
     };
 
