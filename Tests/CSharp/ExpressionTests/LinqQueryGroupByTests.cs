@@ -310,7 +310,7 @@ public partial class C
     {
         var q = from x in new[] { 1, 2 }
                 from y in new[] { 3, 4 }
-                group new { x, y } by (x % 2) into Group
+                group new { x, y } by x % 2 into Group
                 select new { k = Group.Key, Total = Group.Sum(x1 => x1.x * x1.y) };
     }
 }");

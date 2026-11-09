@@ -142,7 +142,7 @@ End Sub",
 {
     int[] numbers = new[] { 5, 4, 1, 3, 9, 8, 6, 7, 2, 0 };
     var numberGroups = from n in numbers
-                       group n by (n % 5) into g
+                       group n by n % 5 into g
                        select new { Remainder = g.Key, Numbers = g };
 
     foreach (var g in numberGroups)

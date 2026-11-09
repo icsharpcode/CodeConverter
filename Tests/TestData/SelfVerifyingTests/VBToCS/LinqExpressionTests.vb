@@ -1,8 +1,36 @@
 ﻿Imports System
+Imports System.Collections.Generic
 Imports System.Linq
 Imports Xunit
 
 Public Class LinqExpressionTests
+
+    Public Class Entity
+        Public Property P1 As String
+        Public Property P2 As String
+        Public Property Value As Decimal
+        Public Sub New(p1 As String, p2 As String, value As Decimal)
+            Me.P1 = p1
+            Me.P2 = p2
+            Me.Value = value
+        End Sub
+    End Class
+
+    Private Shared ReadOnly Entities As Entity() = {
+        New Entity("a", "x", 1D), New Entity("a", "y", 2D), New Entity("a", "x", 3D),
+        New Entity("b", "x", 4D), New Entity("b", "y", 5D), New Entity("c", "z", 6D)
+    }
+
+    Private Shared Function Show(Of T)(items As IEnumerable(Of T)) As String
+        Return String.Join("|", items)
+    End Function
+
+    Private _evaluations As Integer
+
+    Private Function Evaluate(Of T)(value As T) As T
+        _evaluations += 1
+        Return value
+    End Function
 
     <Fact>
     Sub TestWhereAfterGroup()
@@ -11,6 +39,251 @@ Public Class LinqExpressionTests
                          Group By x Into Group
                          Where Group.Count > 1
         Assert.Equal(1, duplicates.Count)
+        Assert.Equal(4, duplicates.Single().x)
+    End Sub
+
+    <Fact>
+    Sub TestSelectThenWhere()
+        Dim data = From d In {1.2, 2.2, 3.4, 5.6}
+                   Select i = CType(Math.Floor(d), Integer)
+                   Where i Mod 2 = 1
+        Assert.Equal("1|3|5", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestSelectThenOrderBy()
+        Dim fields = (From v In {DayOfWeek.Tuesday, DayOfWeek.Monday} Select Value = v, Name = [Enum].GetName(GetType(DayOfWeek), v) Order By Value Ascending).ToArray
+        Assert.Equal("{ Value = Monday, Name = Monday }|{ Value = Tuesday, Name = Tuesday }", Show(fields))
+    End Sub
+
+    <Fact>
+    Sub TestSelectReusingRangeVariableName()
+        Dim data = From x In {1, 2, 3}
+                   Select x = x * 2
+                   Where x > 2
+        Assert.Equal("4|6", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestImplicitSelectOfAllRangeVariables()
+        Dim data = From x In {1, 2}, y In {"a", "b"}
+                   Let z = x.ToString() & y
+                   Where z <> "1a"
+        Assert.Equal("{ x = 1, y = b, z = 1b }|{ x = 2, y = a, z = 2a }|{ x = 2, y = b, z = 2b }", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestDistinctAfterSelectOfMultipleVariables()
+        Dim data = From x In {1, 2, 3, 4, 5, 6, 7}
+                   Select a = x Mod 2, b = x Mod 3
+                   Distinct
+                   Where a > 0
+                   Select b
+        Assert.Equal("1|0|2", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestTakeWhileAfterSelectOfMultipleVariables()
+        Dim data = From x In {1, 2, 3}
+                   Select x, y = x * 2
+                   Take While y < 6
+        Assert.Equal("{ x = 1, y = 2 }|{ x = 2, y = 4 }", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestPartitionsThenWhere()
+        Dim data = From x In {1, 2, 3, 4, 5, 6}
+                   Skip 1
+                   Skip While x < 3
+                   Take While x < 6
+                   Take 2
+                   Where x > 3
+        Assert.Equal("4", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestJoinOnComputedKey()
+        Dim data = From current In {2001, 2002, 2003}
+                   Join previous In {2000, 2001} On current - 1 Equals previous
+                   Select current
+        Assert.Equal("2001|2002", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestJoinWrittenInnerFirst()
+        Dim data = From current In {2001, 2002, 2003}
+                   Join previous In {2000, 2001} On previous Equals current - 1
+                   Select current, previous
+        Assert.Equal("{ current = 2001, previous = 2000 }|{ current = 2002, previous = 2001 }", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestJoinOnMultipleConditions()
+        Dim data = From e In Entities
+                   Join f In Entities On e.P1 Equals f.P1 And e.P2 Equals f.P2
+                   Where e.Value < f.Value
+                   Select e.Value, Other = f.Value
+        Assert.Equal("{ Value = 1, Other = 3 }", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestNestedJoin()
+        Dim data = From x In {1, 2, 3}
+                   Join y In {2, 3, 4}
+                       Join z In {3, 4} On z Equals y
+                   On x Equals y
+                   Select x, y, z
+        Assert.Equal("{ x = 3, y = 3, z = 3 }", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestGroupJoinIntoGroupThenFromDefaultIfEmpty()
+        Dim data = From p In {"a", "b", "d"}
+                   Group Join e In Entities On e.P1 Equals p Into Group
+                   From e In Group.DefaultIfEmpty()
+                   Order By p Descending
+                   Select p & If(e Is Nothing, "-", e.Value.ToString())
+                   Distinct
+        Assert.Equal("d-|b4|b5|a1|a2|a3", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestGroupJoinWithoutSelect()
+        Dim data = (From p In {"a", "d"}
+                    Group Join e In Entities On e.P1 Equals p Into Matches = Group
+                    From m In Matches.DefaultIfEmpty).ToList
+        Assert.Equal("a31|a32|a33|d0", Show(data.Select(Function(d) d.p & d.Matches.Count() & If(d.m Is Nothing, "", d.m.Value.ToString()))))
+    End Sub
+
+    <Fact>
+    Sub TestGroupJoinAggregates()
+        Dim data = From p In {"a", "b", "d"}
+                   Group Join e In Entities On p Equals e.P1
+                   Into Total = Sum(e.Value), Count()
+                   Where Count > 0
+        Assert.Equal("{ p = a, Total = 6, Count = 3 }|{ p = b, Total = 9, Count = 2 }", Show(data))
+    End Sub
+
+    <Fact>
+    Sub TestGroupByMultipleKeysIntoAggregate()
+        Dim queryMax = From item In Entities
+                       Where item.P1 <> "c"
+                       Group By item.P1, item.P2
+                       Into ValueMax = Max(item.Value)
+                       Select New With {
+                           P1, P2, ValueMax
+                       }
+        Assert.Equal("{ P1 = a, P2 = x, ValueMax = 3 }|{ P1 = a, P2 = y, ValueMax = 2 }|{ P1 = b, P2 = x, ValueMax = 4 }|{ P1 = b, P2 = y, ValueMax = 5 }", Show(queryMax))
+    End Sub
+
+    <Fact>
+    Sub TestGroupByAggregateUsedInWhereAndSelect()
+        Dim tSummary = From t In Entities
+                       Group By t.P1 Into Summary = Sum(t.Value)
+                       Where Summary > 6
+                       Select P1, Summary
+        Assert.Equal("{ P1 = b, Summary = 9 }", Show(tSummary))
+    End Sub
+
+    <Fact>
+    Sub TestOrderByGroupKey()
+        Dim result = From f In Entities
+                     Group f By f.P2 Into Group
+                     Order By P2 Descending
+        Assert.Equal("z1|y2|x3", Show(result.Select(Function(r) r.P2 & r.Group.Count())))
+    End Sub
+
+    <Fact>
+    Sub TestGroupByMultipleKeysIntoNamedGroup()
+        Dim result As IEnumerable(Of Decimal) = From e In Entities
+                                                Group e By e.P1, e.P2 Into g1 = Group
+                                                Select g1.First().Value
+        Assert.Equal("1|2|4|5|6", Show(result))
+    End Sub
+
+    <Fact>
+    Sub TestGroupItemsByKeyIntoAggregates()
+        Dim result = From item In Entities
+                     Group v = item.Value, item.P1 By k = item.P2 Into s = Sum(v), Group, Count()
+                     Select k, s, Count, Firsts = String.Join("", Group.Select(Function(g) g.P1))
+        Assert.Equal("{ k = x, s = 8, Count = 3, Firsts = aab }|{ k = y, s = 7, Count = 2, Firsts = ab }|{ k = z, s = 6, Count = 1, Firsts = c }", Show(result))
+    End Sub
+
+    <Fact>
+    Sub TestGroupByCompoundElement()
+        Dim q = From x In {1, 2}
+                From y In {3, 4}
+                Group By k = x Mod 2 Into Total = Sum(x * y)
+        Assert.Equal("{ k = 1, Total = 7 }|{ k = 0, Total = 14 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestGroupByWithoutGroupAggregation()
+        Dim q = From x In {1, 2, 2}
+                Group By x Into Count()
+        Assert.Equal("{ x = 1, Count = 1 }|{ x = 2, Count = 2 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestAggregateWithSingleAggregation()
+        Dim total = Aggregate e In Entities Where e.P1 = "a" Into Sum(e.Value)
+        Assert.Equal(6D, total)
+    End Sub
+
+    <Fact>
+    Sub TestAggregateWithMultipleAggregationsEvaluatesSourceOnce()
+        Dim agg = Aggregate x In Evaluate({1, 2, 3}) Where x > 1 Into s = Sum(x), c = Count()
+        Assert.Equal("{ s = 5, c = 2 }", agg.ToString())
+        Assert.Equal(1, _evaluations)
+    End Sub
+
+    <Fact>
+    Sub TestAggregateClauseWithinQuery()
+        Dim q = From x In {1, 2, 3}
+                Aggregate y In {1, 2, 3} Where y > x Into Sum(y), Count()
+                Where Count > 0
+        Assert.Equal("{ x = 1, Sum = 5, Count = 2 }|{ x = 2, Sum = 3, Count = 1 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestLetUsedTwiceIsEvaluatedOncePerElement()
+        Dim q = (From x In {1, 2, 3}
+                 Let y = Evaluate(x * 2)
+                 Where y > 2
+                 Select y).ToList()
+        Assert.Equal("4|6", Show(q))
+        Assert.Equal(3, _evaluations)
+    End Sub
+
+    <Fact>
+    Sub TestNestedQueryReferencingOuterRangeVariable()
+        Dim q = From x In {1, 2, 3}
+                Select x, Smaller = (From y In {1, 2, 3} Where y < x Select y).Count()
+                Where Smaller > 0
+        Assert.Equal("{ x = 2, Smaller = 1 }|{ x = 3, Smaller = 2 }", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestTypedFromConvertsElements()
+        Dim objects = New Object() {1, 2}
+        Dim q = From x As Integer In objects
+                Select x + 1
+        Assert.Equal("2|3", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestTypedFromWithWideningConversion()
+        Dim q = From x As Long In {1, 2}
+                Select x * Integer.MaxValue
+        Assert.Equal("2147483647|4294967294", Show(q))
+    End Sub
+
+    <Fact>
+    Sub TestFromNonGenericCollection()
+        Dim list As New System.Collections.ArrayList From {1, "a"}
+        Dim q = From x In list
+                Select s = x.ToString()
+        Assert.Equal("1|a", Show(q))
     End Sub
 
 End Class

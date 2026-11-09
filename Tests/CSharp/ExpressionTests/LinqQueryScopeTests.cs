@@ -209,4 +209,66 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task TypedFromWithReferenceConversionUsesCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Function M(objects As Object()) As IEnumerable(Of String)
+        Return From c As C In objects Select s = c.ToString()
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class C
+{
+    public IEnumerable<string> M(object[] objects)
+    {
+        return from C c in objects
+               select c.ToString();
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TypedFromWithValueConversionSelectsConvertedValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Function M(ints As Integer()) As IEnumerable(Of Long)
+        Return From x As Long In ints Select x * 2
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class C
+{
+    public IEnumerable<long> M(int[] ints)
+    {
+        return from x in ints.Select(x => (long)x)
+               select x * 2L;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task FromNonGenericCollectionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Function M(list As System.Collections.ArrayList) As IEnumerable(Of Object)
+        Return From x In list Where x IsNot Nothing
+    End Function
+End Class", @"using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+
+public partial class C
+{
+    public IEnumerable<object> M(ArrayList list)
+    {
+        return from object x in list
+               where x != null
+               select x;
+    }
+}");
+    }
 }

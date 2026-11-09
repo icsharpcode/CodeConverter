@@ -188,7 +188,7 @@ internal class QueryClauseConverter
 
     private async Task<SelectClauseSyntax> ConvertFinalSelectAsync(VBSyntax.SelectClauseSyntax select)
     {
-        var values = await select.Variables.SelectAsync(v => ConvertAsync(v.Expression));
+        var values = await select.Variables.SelectAsync(v => ConvertWithoutParenthesesAsync(v.Expression));
         if (values.Length == 1) return SyntaxFactory.SelectClause(values[0]);
         var names = select.Variables.Select(GetName);
         return SyntaxFactory.SelectClause(CsQueryBuilder.CreateAnonymousObject(names.Zip(values, (n, v) => (n, v))));
@@ -282,7 +282,7 @@ internal class QueryClauseConverter
     {
         var variables = new List<QueryRangeVariable>();
         foreach (var vbVariable in vbVariables) {
-            var value = await ConvertAsync(vbVariable.Expression);
+            var value = await ConvertWithoutParenthesesAsync(vbVariable.Expression);
             var variable = DeclareVariable(vbVariable);
             variable.CsExpression = value;
             variables.Add(variable);
@@ -366,15 +366,46 @@ internal class QueryClauseConverter
         return SyntaxFactory.InvocationExpression(method, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
     }
 
+    /// <summary>
+    /// VB implicitly calls AsEnumerable or Cast where needed to make a source queryable, and converts each element when the range variable's type is given.
+    /// </summary>
     private async Task<(TypeSyntax Type, ExpressionSyntax Expression)> ConvertCollectionAsync(VBSyntax.CollectionRangeVariableSyntax vbVariable)
     {
         var expression = await ConvertAsync(vbVariable.Expression);
+        var sourceElementType = _semanticModel.GetTypeInfo(vbVariable.Expression).Type?.GetEnumerableElementTypeOrDefault();
+        TypeSyntax castType = null;
         var parentOperation = _semanticModel.GetOperation(vbVariable.Expression)?.Parent;
-        if (parentOperation is IInvocationOperation { IsImplicit: true } io && io.TargetMethod.MethodKind == MethodKind.ReducedExtension &&
-            io.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
-            expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression, io.TargetMethod.Name), SyntaxFactory.ArgumentList());
+        while (parentOperation is IConversionOperation { IsImplicit: true }) parentOperation = parentOperation.Parent;
+        if (parentOperation is IInvocationOperation { IsImplicit: true } io && io.TargetMethod.MethodKind == MethodKind.ReducedExtension) {
+            if (io.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
+                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression, io.TargetMethod.Name), SyntaxFactory.ArgumentList());
+            } else if (io.TargetMethod.Name == nameof(Enumerable.Cast)) {
+                sourceElementType = io.TargetMethod.TypeArguments.Single();
+                castType = _commonConversions.GetTypeSyntax(sourceElementType);
+            }
         }
-        return (null, expression);
+
+        var rangeVariableType = vbVariable.AsClause == null ? null : _semanticModel.GetTypeInfo(vbVariable.AsClause.Type).Type;
+        if (rangeVariableType == null || sourceElementType == null || SymbolEqualityComparer.Default.Equals(sourceElementType, rangeVariableType)) {
+            return (castType, expression);
+        }
+
+        var conversion = VBasic.VisualBasicExtensions.ClassifyConversion(_semanticModel.Compilation, sourceElementType, rangeVariableType);
+        if (conversion.IsReference && !conversion.IsUserDefined && rangeVariableType.SpecialType != SpecialType.System_String) {
+            return (_commonConversions.GetTypeSyntax(rangeVariableType), expression);
+        }
+
+        // e.g. a numeric conversion, which C#'s Cast<T> would throw for
+        var parameter = CommonConversions.CsEscapedIdentifier(rangeVariableType.Name == vbVariable.Identifier.Identifier.ValueText ? "x" : vbVariable.Identifier.Identifier.ValueText);
+        var converted = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, SyntaxFactory.IdentifierName(parameter),
+            defaultToCast: true, forceSourceType: sourceElementType, forceTargetType: rangeVariableType);
+        var source = castType == null ? expression : SyntaxFactory.InvocationExpression(
+            SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, CsQueryBuilder.ParenthesizeIfNeeded(expression),
+                SyntaxFactory.GenericName(ValidSyntaxFactory.IdentifierName(nameof(Enumerable.Cast)).Identifier, SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(castType)))),
+            SyntaxFactory.ArgumentList());
+        var select = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(CsQueryBuilder.ParenthesizeIfNeeded(source), nameof(Enumerable.Select)),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(parameter), converted)))));
+        return (null, select);
     }
 
     /// <summary>
@@ -439,4 +470,13 @@ internal class QueryClauseConverter
     }
 
     private Task<ExpressionSyntax> ConvertAsync(VBSyntax.ExpressionSyntax expression) => expression.AcceptAsync<ExpressionSyntax>(_visitor);
+
+    /// <summary>
+    /// For positions which never need parentheses, but where the simplifier doesn't remove them
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertWithoutParenthesesAsync(VBSyntax.ExpressionSyntax expression)
+    {
+        var converted = await ConvertAsync(expression);
+        return converted is ParenthesizedExpressionSyntax p ? p.Expression : converted;
+    }
 }
