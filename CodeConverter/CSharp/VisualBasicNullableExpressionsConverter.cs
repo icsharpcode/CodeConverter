@@ -65,7 +65,10 @@ internal class VisualBasicNullableExpressionsConverter
     /// </summary>
     private ExpressionSyntax ForExpressionTree(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
-        if (!vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression) || !vbNode.IsOnlyTestedForTrue()) return csBinExp;
+        if (IsSupported(vbNode.Kind()) && !vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)) {
+            return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation); // C#'s lifted comparisons are bool
+        }
+        if (!vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression) || !vbNode.IsOnlyTestedForTrue(_semanticModel)) return csBinExp;
         var isLhsNullable = IsNullable(vbNode.Left, lhs, lhsTypeInfo);
         var isRhsNullable = IsNullable(vbNode.Right, rhs, rhsTypeInfo);
         if (isLhsNullable) lhs = lhs.AddParens().EqualsTrue();
@@ -218,7 +221,7 @@ internal class VisualBasicNullableExpressionsConverter
         BinaryExpressionSyntax csNode, ExpressionSyntax lhs, ExpressionSyntax rhs,
         bool isLhsNullable, bool isRhsNullable)
     {
-        if (vbNode.IsOnlyTestedForTrue() && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
+        if (vbNode.IsOnlyTestedForTrue(_semanticModel) && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
             return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation);
         }
 

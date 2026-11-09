@@ -130,10 +130,16 @@ internal partial class QueryClauseConverter
         var methodName = _semanticModel.GetSymbolInfo(function).Symbol?.Name ?? function.FunctionName.ValueText;
         var arguments = function.Argument == null
             ? Array.Empty<ArgumentSyntax>()
-            : new[] { SyntaxFactory.Argument(await builder.CreateElementLambdaAsync(groupElement, () => ConvertAsync(function.Argument))) };
+            : new[] { SyntaxFactory.Argument(await builder.CreateElementLambdaAsync(groupElement, () => ConvertAggregationArgumentAsync(function.Argument))) };
         var method = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, group.AddParensUnlessPrimary(), ValidSyntaxFactory.IdentifierName(methodName));
         return SyntaxFactory.InvocationExpression(method, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
     }
+
+    /// <summary>
+    /// VB converts the argument to the lambda's return type, e.g. a Boolean? predicate to Boolean (throwing for Nothing)
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertAggregationArgumentAsync(VBSyntax.ExpressionSyntax argument) =>
+        _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(argument, await ConvertAsync(argument));
 
     /// <summary>
     /// Used for group keys and items, which are only evaluated where the group clause is

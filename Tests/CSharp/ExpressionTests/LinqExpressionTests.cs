@@ -936,10 +936,11 @@ public partial class C
 Public Class R
     Public Property B As Boolean?
     Public Property N As Integer
+    Public Property N2 As Integer?
 End Class
 Public Class C
     Public Function M(rs As IQueryable(Of R)) As IQueryable(Of R)
-        Return From r In rs Where r.B AndAlso r.N > 1 OrElse r.B
+        Return From r In rs Where r.B AndAlso r.N > 1 OrElse r.N2 > 1 AndAlso r.B
     End Function
 End Class", @"using System.Linq;
 
@@ -947,6 +948,7 @@ public partial class R
 {
     public bool? B { get; set; }
     public int N { get; set; }
+    public int? N2 { get; set; }
 }
 
 public partial class C
@@ -954,7 +956,7 @@ public partial class C
     public IQueryable<R> M(IQueryable<R> rs)
     {
         return from r in rs
-               where r.B == true && r.N > 1 || r.B == true
+               where r.B == true && r.N > 1 || r.N2 > 1 && r.B == true
                select r;
     }
 }");

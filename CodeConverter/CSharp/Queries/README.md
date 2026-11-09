@@ -72,7 +72,7 @@ A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses wh
 
 ### Types
 
-C# infers a range variable's type from its value, so values get VB's declared type (`Let s As String = x`) where it differs, `Nothing` is cast to its type, and lambdas are created as their delegate type. `Where` and `Skip`/`Take While` conditions are converted to `Boolean` as in `If` statements, so a null `Boolean?` is false.
+C# infers a range variable's type from its value, so values get VB's declared type (`Let s As String = x`) where it differs, `Nothing` is cast to its type, and lambdas are created as their delegate type. `Where` and `Skip`/`Take While` conditions are converted to `Boolean` as in `If` statements, so a null `Boolean?` is false. Aggregation function arguments are converted to the function's lambda return type as VB does, so a null `Boolean?` predicate in `Count(...)` throws.
 
 ### Names
 

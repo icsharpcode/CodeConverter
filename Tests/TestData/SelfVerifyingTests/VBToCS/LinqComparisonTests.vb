@@ -94,4 +94,44 @@ Public Class LinqComparisonTests
     Sub TestNullableBooleanOrElse()
         Assert.Equal(2, (From f In Flags Where f OrElse False).Count())
     End Sub
+
+    Private ReadOnly Property Check As Boolean
+        Get
+            _calls += 1
+            Return True
+        End Get
+    End Property
+
+    Private Function CheckCall() As Boolean
+        _calls += 1
+        Return True
+    End Function
+
+    <Fact>
+    Sub TestNullableAndAlsoCallWithoutParenthesesWhenLeftIsNothing()
+        Dim q = (From n In Numbers Where n > 1 AndAlso CheckCall).ToList()
+        Assert.Equal(1, q.Count)
+        Assert.Equal(2, _calls)
+    End Sub
+
+    <Fact>
+    Sub TestIfNullableAndAlsoCallWithoutParenthesesWhenLeftIsNothing()
+        Dim n As Integer? = Nothing
+        If n = 1 AndAlso CheckCall Then _calls += 10
+        Assert.Equal(1, _calls)
+    End Sub
+
+    <Fact>
+    Sub TestAggregateCountWithNullablePredicate()
+        Dim nums = New Integer?() {1, 2, 3}
+        Dim c = Aggregate n In nums Into Count(n > 1)
+        Assert.Equal(2, c)
+    End Sub
+
+    <Fact>
+    Sub TestGroupByAnyWithNullablePredicate()
+        Dim nums = New Integer?() {1, 2, 3}
+        Dim q = From n In nums Group By k = n Mod 2 Into Any(n = 1)
+        Assert.Equal(2, q.Count())
+    End Sub
 End Class
