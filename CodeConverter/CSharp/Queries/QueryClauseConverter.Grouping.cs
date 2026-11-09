@@ -131,7 +131,7 @@ internal partial class QueryClauseConverter
         var arguments = function.Argument == null
             ? Array.Empty<ArgumentSyntax>()
             : new[] { SyntaxFactory.Argument(await builder.CreateElementLambdaAsync(groupElement, () => ConvertAsync(function.Argument))) };
-        var method = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, CsQueryBuilder.ParenthesizeIfNeeded(group), ValidSyntaxFactory.IdentifierName(methodName));
+        var method = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, group.AddParensUnlessPrimary(), ValidSyntaxFactory.IdentifierName(methodName));
         return SyntaxFactory.InvocationExpression(method, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
     }
 

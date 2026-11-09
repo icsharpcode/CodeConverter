@@ -30,7 +30,7 @@ internal class QuerySourceConverter
         TypeSyntax castType = null;
         if (GetImplicitQueryableCall(vbVariable.Expression) is { } implicitCall) {
             if (implicitCall.TargetMethod.Name == nameof(Enumerable.AsEnumerable)) {
-                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(CsQueryBuilder.ParenthesizeIfNeeded(expression), nameof(Enumerable.AsEnumerable)), SyntaxFactory.ArgumentList());
+                expression = SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(expression.AddParensUnlessPrimary(), nameof(Enumerable.AsEnumerable)), SyntaxFactory.ArgumentList());
             } else if (implicitCall.TargetMethod.Name == nameof(Enumerable.Cast)) {
                 sourceElementType = implicitCall.TargetMethod.TypeArguments.Single();
                 castType = _commonConversions.GetTypeSyntax(sourceElementType);
@@ -67,7 +67,7 @@ internal class QuerySourceConverter
     private static ExpressionSyntax CallCast(ExpressionSyntax source, TypeSyntax type)
     {
         var cast = SyntaxFactory.GenericName(ValidSyntaxFactory.IdentifierName(nameof(Enumerable.Cast)).Identifier, SyntaxFactory.TypeArgumentList(SyntaxFactory.SingletonSeparatedList(type)));
-        return SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, CsQueryBuilder.ParenthesizeIfNeeded(source), cast), SyntaxFactory.ArgumentList());
+        return SyntaxFactory.InvocationExpression(SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, source.AddParensUnlessPrimary(), cast), SyntaxFactory.ArgumentList());
     }
 
     private ExpressionSyntax SelectConverted(VBSyntax.CollectionRangeVariableSyntax vbVariable, ExpressionSyntax source, ITypeSymbol sourceType, ITypeSymbol targetType)
@@ -77,7 +77,7 @@ internal class QuerySourceConverter
         var converted = _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbVariable.Expression, SyntaxFactory.IdentifierName(parameter),
             forceSourceType: sourceType, forceTargetType: targetType);
         var lambda = SyntaxFactory.SimpleLambdaExpression(SyntaxFactory.Parameter(parameter), converted);
-        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(CsQueryBuilder.ParenthesizeIfNeeded(source), nameof(Enumerable.Select)),
+        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(source.AddParensUnlessPrimary(), nameof(Enumerable.Select)),
             SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(lambda))));
     }
 }

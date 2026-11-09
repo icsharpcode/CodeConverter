@@ -153,13 +153,14 @@ internal partial class QueryClauseConverter
 
     private QueryRangeVariable RegisterVariable(IRangeVariableSymbol symbol)
     {
-        var variable = new QueryRangeVariable(symbol, symbol?.Name ?? CsQueryBuilder.GeneratedElementName);
+        var variable = new QueryRangeVariable(symbol, GetName(symbol));
         _replacements.Register(variable);
         return variable;
     }
 
-    private string GetVariableName(VBSyntax.ExpressionRangeVariableSyntax vbVariable) =>
-        VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbVariable)?.Name ?? CsQueryBuilder.GeneratedElementName;
+    private string GetVariableName(VBSyntax.ExpressionRangeVariableSyntax vbVariable) => GetName(VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, vbVariable));
+
+    private static string GetName(IRangeVariableSymbol symbol) => symbol?.Name ?? CsQueryBuilder.GeneratedElementName;
 
     /// <summary>
     /// Nested queries (including subqueries generated for joins and Aggregate) use the enclosing builder to avoid name clashes

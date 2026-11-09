@@ -123,7 +123,7 @@ internal class CsQueryBuilder
     public void ApplyMethod(string methodName, params ExpressionSyntax[] arguments)
     {
         var target = Materialize();
-        var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ParenthesizeIfNeeded(target), ValidSyntaxFactory.IdentifierName(methodName));
+        var memberAccess = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, target.AddParensUnlessPrimary(), ValidSyntaxFactory.IdentifierName(methodName));
         _methodCallResult = SyntaxFactory.InvocationExpression(memberAccess, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments.Select(SyntaxFactory.Argument))));
         _from = null;
         _resumedElement = null;
@@ -209,13 +209,6 @@ internal class CsQueryBuilder
         MemberAccessExpressionSyntax mae => IsCheapToRepeat(mae.Expression),
         ParenthesizedExpressionSyntax pe => IsCheapToRepeat(pe.Expression),
         _ => false
-    };
-
-    public static ExpressionSyntax ParenthesizeIfNeeded(ExpressionSyntax expression) => expression switch {
-        IdentifierNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax or ElementAccessExpressionSyntax
-            or ParenthesizedExpressionSyntax or LiteralExpressionSyntax or ThisExpressionSyntax
-            or ObjectCreationExpressionSyntax or ArrayCreationExpressionSyntax { Initializer: not null } or ImplicitArrayCreationExpressionSyntax => expression,
-        _ => expression.AddParens()
     };
 
     /// <summary>

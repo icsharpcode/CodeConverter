@@ -137,6 +137,16 @@ internal static class CSharpUtil
     }
 
     /// <summary>
+    /// For an operand of member access, invocation or element access, e.g. a substituted expression
+    /// </summary>
+    public static ExpressionSyntax AddParensUnlessPrimary(this ExpressionSyntax expression) => expression switch {
+        IdentifierNameSyntax or MemberAccessExpressionSyntax or InvocationExpressionSyntax or ElementAccessExpressionSyntax
+            or ParenthesizedExpressionSyntax or LiteralExpressionSyntax or ThisExpressionSyntax
+            or ObjectCreationExpressionSyntax or ArrayCreationExpressionSyntax { Initializer: not null } or ImplicitArrayCreationExpressionSyntax => expression,
+        _ => expression.AddParens()
+    };
+
+    /// <summary>
     /// Get negation of the specified relational operator
     /// </summary>
     /// <returns>
