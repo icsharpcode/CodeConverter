@@ -150,8 +150,26 @@ internal class CsQueryBuilder
         foreach (var continued in Enumerable.Reverse(_continuedBodies)) {
             body = SyntaxFactory.QueryBody(SyntaxFactory.List(continued.Clauses), continued.SelectOrGroup, SyntaxFactory.QueryContinuation(continued.Into, body));
         }
-        return SyntaxFactory.QueryExpression(_from, body);
+        return WithoutElasticTriviaAfterBraces(SyntaxFactory.QueryExpression(_from, body));
     }
+
+    /// <summary>
+    /// The formatter puts a blank line between a closing brace and a following clause separated only by elastic trivia, e.g. after `from x in new[] { 1 }`
+    /// </summary>
+    private static QueryExpressionSyntax WithoutElasticTriviaAfterBraces(QueryExpressionSyntax query)
+    {
+        var braceTokensBeforeClauses = query.DescendantTokens()
+            .Where(t => t.IsKind(SyntaxKind.CloseBraceToken) && IsFirstTokenOfClause(t.GetNextToken()) && IsOnlyElastic(t.TrailingTrivia) && IsOnlyElastic(t.GetNextToken().LeadingTrivia))
+            .ToList();
+        var nextTokens = braceTokensBeforeClauses.Select(t => t.GetNextToken()).ToList();
+        return query.ReplaceTokens(braceTokensBeforeClauses.Concat(nextTokens), (original, _) =>
+            nextTokens.Contains(original) ? original.WithLeadingTrivia(SyntaxTriviaList.Empty) : original.WithTrailingTrivia(SyntaxTriviaList.Empty));
+    }
+
+    private static bool IsFirstTokenOfClause(SyntaxToken token) =>
+        token.Parent is QueryClauseSyntax or SelectOrGroupClauseSyntax or QueryContinuationSyntax && token.Parent.GetFirstToken() == token;
+
+    private static bool IsOnlyElastic(SyntaxTriviaList trivia) => trivia.All(t => t.HasAnnotation(SyntaxAnnotation.ElasticAnnotation));
 
     /// <summary>
     /// For example the argument of an aggregate function, which is a lambda over the group's element

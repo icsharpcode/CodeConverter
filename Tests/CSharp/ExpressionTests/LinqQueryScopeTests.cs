@@ -779,4 +779,25 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ClauseAfterInitializerOnSameLineHasNoBlankLineAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M()
+        Dim data = From x In {3, 1, 2} Let ys = New Integer() {x} Where x > 1 Select ys
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M()
+    {
+        var data = from x in new[] { 3, 1, 2 }
+                   let ys = new int[] { x }
+                   where x > 1
+                   select ys;
+    }
+}");
+    }
 }
