@@ -361,7 +361,8 @@ public partial class C
                 select Group.Key;
         var r = from x in xs
                 group x by x.Length into Group
-                orderby Group.Count() descending
+                let Count = Group.Count()
+                orderby Count descending
                 select Group.Key;
     }
 }");

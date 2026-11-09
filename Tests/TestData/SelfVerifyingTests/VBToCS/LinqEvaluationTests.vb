@@ -198,4 +198,34 @@ Public Class LinqEvaluationTests
         i = 5
         Assert.Equal(2, q(0).Count())
     End Sub
+
+    <Fact>
+    Sub TestLetUsedInOrderByAfterEarlierLetIsEvaluatedPerElement()
+        Dim q = (From x In {3, 1, 2} Let z = Log("z", x) Let y = Log("y", x) Order By y Select x, z).ToList()
+        Assert.Equal("z3,y3,z1,y1,z2,y2", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestLetCopyOfSubstitutedLetKeepsDeclarationOrder()
+        Dim q = (From x In {1, 2} Let c = Log("c", x) Let y = Log("y", x) Let d = y Select c, d, e = d).ToList()
+        Assert.Equal("c1,y1,c2,y2", Logged)
+    End Sub
+
+    Private _field As Integer
+
+    <Fact>
+    Sub TestLetCopyOfFieldIsReadWhenQueryIsEvaluated()
+        _field = 1
+        Dim q = (From x In {1} Let a = _field Let v = a Select f = New Func(Of Integer)(Function() v)).ToList()
+        _field = 5
+        Assert.Equal(1, q(0).Invoke())
+    End Sub
+
+    <Fact>
+    Sub TestLetOfFieldInGroupItemIsReadWhenQueryIsEvaluated()
+        _field = 1
+        Dim q = (From x In {1} Let v = _field Group items = (From z In {10} Select z + v) By k = x Into Group).ToList()
+        _field = 100
+        Assert.Equal(11, q(0).Group.Single().Single())
+    End Sub
 End Class

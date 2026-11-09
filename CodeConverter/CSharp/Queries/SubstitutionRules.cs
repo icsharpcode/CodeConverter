@@ -43,13 +43,13 @@ internal class SubstitutionRules
     /// VB evaluates the value once per element where it's declared, in declaration order.
     /// An unreferenced value is evaluated as part of the element the next time it's materialized (at a method call, the end of a join subquery, or the end of a query without a final select).
     /// After that, references read the materialized element instead.
-    /// A single reference from the final select, a Where, a Let or the first Order By key (outside any nested lambda/query or conditional operand) is the only place it's evaluated,
+    /// A single reference from the final select, a Where or a Let (outside any nested lambda/query or conditional operand) is the only place it's evaluated,
     /// so long as the element isn't built from it later.
     /// Clauses in between other than Let could filter, reorder or repeat elements, or (Select) drop the value from the element.
     /// Values declared in between that stay where they're declared would then be evaluated first.
     /// Substituting a delegate (`new Func<int>(() => 1)(...)`) would be valid but obscure.
     /// A cheap value still can't be substituted into a lambda or nested query that may run after the query reads it, unless it can't change.
-    /// Those in a Let or Select can, since the resulting value can be used later.
+    /// Those in a Let, Select or Group By can, since the resulting value can be used later.
     /// </remarks>
     public bool CanSubstitute(QueryRangeVariable variable, VisualBasicSyntaxNode declaration, ExpressionSyntax value)
     {
@@ -68,13 +68,26 @@ internal class SubstitutionRules
         GetReferences(symbol, TextSpan.FromBounds(declaration.Span.End, _vbQuery.Span.End)).Any(r => {
             var withinQuery = r.Ancestors().TakeWhile(a => a != _vbQuery).ToList();
             return withinQuery.Any(a => a is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax) &&
-                   withinQuery.Last() is VBSyntax.LetClauseSyntax or VBSyntax.SelectClauseSyntax;
+                   withinQuery.Last() is VBSyntax.LetClauseSyntax or VBSyntax.SelectClauseSyntax or VBSyntax.GroupByClauseSyntax;
         });
 
     private bool IsImmutableWithinQuery(VBSyntax.ExpressionSyntax value) =>
         value.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().All(e =>
             e is VBSyntax.LiteralExpressionSyntax or VBSyntax.ParenthesizedExpressionSyntax ||
-            e is VBSyntax.IdentifierNameSyntax && _semanticModel.GetSymbolInfo(e).Symbol is IRangeVariableSymbol);
+            e is VBSyntax.IdentifierNameSyntax && _semanticModel.GetSymbolInfo(e).Symbol is IRangeVariableSymbol rangeVariable &&
+            (GetDeclaredValue(rangeVariable) is not { } declaredValue || IsImmutableWithinQuery(declaredValue)));
+
+    /// <summary>
+    /// Null for a range variable that's an element of a source, a group, or a group key, which are evaluated once and stored
+    /// </summary>
+    private VBSyntax.ExpressionSyntax GetDeclaredValue(IRangeVariableSymbol rangeVariable) =>
+        _vbQuery.DescendantNodes().Select(n => n switch {
+            VBSyntax.ExpressionRangeVariableSyntax v when n.Parent is not VBSyntax.GroupByClauseSyntax &&
+                SymbolEqualityComparer.Default.Equals(VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, v), rangeVariable) => v.Expression,
+            VBSyntax.AggregationRangeVariableSyntax { Aggregation: VBSyntax.FunctionAggregationSyntax aggregation } a when
+                SymbolEqualityComparer.Default.Equals(VBasic.VisualBasicExtensions.GetDeclaredSymbol(_semanticModel, a), rangeVariable) => aggregation,
+            _ => null
+        }).FirstOrDefault(v => v != null);
 
     private bool CanEvaluateWhereReferenced(ISymbol symbol, VisualBasicSyntaxNode declaration) =>
         GetOnlyEvaluationPosition(symbol, declaration) is { } evaluatedAt && HasOnlyLetClausesBetween(declaration, evaluatedAt) &&
@@ -104,7 +117,8 @@ internal class SubstitutionRules
     private bool IsCheapToRepeat(VBSyntax.ExpressionSyntax value) =>
         value == null || value.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().All(e =>
             e is VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax or VBSyntax.LiteralExpressionSyntax or VBSyntax.MeExpressionSyntax or VBSyntax.ParenthesizedExpressionSyntax &&
-            !e.IsCallOrConversion(_semanticModel));
+            !e.IsCallOrConversion(_semanticModel) &&
+            (_semanticModel.GetSymbolInfo(e).Symbol is not IRangeVariableSymbol rangeVariable || IsCheapToRepeat(GetDeclaredValue(rangeVariable))));
 
     private int? GetOnlyEvaluationPosition(ISymbol symbol, VisualBasicSyntaxNode declaration)
     {
@@ -127,7 +141,6 @@ internal class SubstitutionRules
         SyntaxNode evaluated = clause switch {
             _ when clause == _finalSelect => clause,
             VBSyntax.WhereClauseSyntax or VBSyntax.LetClauseSyntax => clause,
-            VBSyntax.OrderByClauseSyntax orderBy => orderBy.Orderings.First(),
             _ => null
         };
         if (evaluated == null || !evaluated.Span.Contains(reference.Span) || reference.Ancestors().TakeWhile(a => a != evaluated).Any(IsConditionallyOrRepeatedlyEvaluated)) return null;
@@ -183,6 +196,7 @@ internal class SubstitutionRules
             .Select(id => id.Identifier.ValueText), StringComparer.OrdinalIgnoreCase);
         var namesOutsideQuery = new HashSet<string>(declaration.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>()
             .Where(id => id.Parent is not VBSyntax.MemberAccessExpressionSyntax { Name: var name } || name != id)
+            .Where(id => id.Parent is not VBSyntax.NamedFieldInitializerSyntax { Name: var fieldName } || fieldName != id)
             .Where(id => _semanticModel.GetSymbolInfo(id).Symbol is not IRangeVariableSymbol)
             .Select(id => id.Identifier.ValueText), StringComparer.OrdinalIgnoreCase);
         return _declarations.Value

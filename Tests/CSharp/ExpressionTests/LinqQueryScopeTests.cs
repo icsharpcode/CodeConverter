@@ -821,4 +821,23 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task AnonymousMemberNameDoesNotPreventSubstitutionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Sub M(xs As Integer())
+        Dim q = From x In xs Select v = New With {.a = x} Select v.a
+    End Sub
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public void M(int[] xs)
+    {
+        var q = from x in xs
+                select new { a = x }.a;
+    }
+}");
+    }
 }
