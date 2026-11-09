@@ -63,10 +63,11 @@ Since the element comes from `Scope`, C# can keep variables in scope that VB has
 A value (`Let`, mid-query `Select`, aggregation) is substituted into its uses when that can't change behaviour (`SubstitutionRules`):
 * Unless it's cheap to repeat, it must be evaluated for the same elements, in the same order, the same number of times. VB evaluates it once per element reaching its clause, in declaration order. Substituted, it's evaluated:
   * where the element is next materialized, if it has no references before then;
-  * or at a single reference in the final `Select`, if that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`), and the final `Select` evaluates nothing before it but cheap expressions and earlier values.
+  * or at a single reference in the final `Select`, if that isn't in a lambda, nested query or conditionally evaluated operand (`If`, `AndAlso`, `OrElse`, `?.`), and the final `Select` evaluates nothing before it but earlier values and expressions without calls (including VB calls without parentheses).
 
   Only `Let` clauses may come in between: others filter, reorder or repeat elements, or (`Select`) drop the value. An unused value with nowhere to be evaluated stays a `let`.
-* Lambdas stay in a `let`, typed as a delegate, since C# can't infer a lambda's type there.
+* Lambdas stay in a `let`, typed as their delegate (`new Predicate<int>(...)`, or `Func<...>` for VB's anonymous delegates), since C# can't infer a lambda's type there.
+* `NameOf` of a range variable becomes its name as a string, since there may be no C# variable to name.
 * No name it references may be captured by a later declaration. C# keeps variables VB has dropped, so `Select y = x Where ys.Any(Function(x) x > y)` must not substitute `x` for `y`; the same goes for locals and loop variables in later lambdas. A later range variable can capture a field or local (`Select v = field Let field = 1 Select v`), though range variables clashing with each other are renamed instead.
 
 ### Types
@@ -86,6 +87,7 @@ VB's own translation (`ITranslatedQueryOperation`) shows whether a query's lambd
 ## Limitations
 
 * Values that are cheap to repeat (names, member accesses and literals) are always substituted, so a property getter with side effects could run a different number of times.
+* Operators before a substituted value in the final `Select` are assumed not to throw or have side effects, so `Select a = 1 \ x, b = y` could throw before evaluating `y` rather than after.
 * An `IQueryable` evaluated in memory (e.g. `list.AsQueryable()`, or a provider evaluating a comparison client-side) runs the plain C# comparisons, so differs from VB for `Nothing = ""`, nullable logic and `Option Compare Text`.
 
 ## Tests

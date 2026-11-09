@@ -127,4 +127,21 @@ Public Class LinqEvaluationTests
         Dim q = From x In {1, 2} Let f = Function(a As Integer) a + x Select f(10)
         Assert.Equal("11,12", String.Join(",", q))
     End Sub
+
+    Private Function G() As Integer
+        Return Log("g", 0)
+    End Function
+
+    <Fact>
+    Sub TestLetIsEvaluatedBeforeCallWithoutParenthesesEarlierInFinalSelect()
+        Dim q = (From x In {1, 2} Let y = Log("y", x) Select a = G, b = y).ToList()
+        Assert.Equal("y1,g0,y2,g0", Logged)
+    End Sub
+
+    <Fact>
+    Sub TestNameOfLetDoesNotEvaluateIt()
+        Dim q = (From x In {1, 2} Let y = Log("y", x) Select NameOf(y)).ToList()
+        Assert.Equal("y,y", String.Join(",", q))
+        Assert.Equal("y1,y2", Logged)
+    End Sub
 End Class

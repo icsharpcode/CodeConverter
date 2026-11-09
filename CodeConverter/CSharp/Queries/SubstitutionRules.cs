@@ -59,7 +59,7 @@ internal class SubstitutionRules
 
     private IEnumerable<VBSyntax.IdentifierNameSyntax> GetReferences(QueryRangeVariable variable, TextSpan span) =>
         variable.Symbol == null ? Enumerable.Empty<VBSyntax.IdentifierNameSyntax>() : _vbQuery.DescendantNodes(span).OfType<VBSyntax.IdentifierNameSyntax>()
-            .Where(id => span.Contains(id.Span) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol));
+            .Where(id => span.Contains(id.Span) && id.Parent is not VBSyntax.NameOfExpressionSyntax && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(id).Symbol, variable.Symbol));
 
     private bool IsOnlyEvaluationInFinalSelect(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference, VisualBasicSyntaxNode declaration) =>
         finalSelect != null && finalSelect.Span.Contains(reference.Span) &&
@@ -72,6 +72,7 @@ internal class SubstitutionRules
     /// </summary>
     private bool IsEvaluatedBeforeOtherValues(VBSyntax.SelectClauseSyntax finalSelect, VBSyntax.IdentifierNameSyntax reference, VisualBasicSyntaxNode declaration) =>
         finalSelect.DescendantNodes().OfType<VBSyntax.ExpressionSyntax>().Where(e => e.Span.End <= reference.SpanStart).All(e => e switch {
+            VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax when _semanticModel.GetSymbolInfo(e).Symbol is IMethodSymbol => false,
             VBSyntax.IdentifierNameSyntax id => _semanticModel.GetSymbolInfo(id).Symbol is not IRangeVariableSymbol rangeVariable ||
                                                 rangeVariable.Locations.FirstOrDefault()?.SourceSpan.Start < declaration.SpanStart,
             VBSyntax.LiteralExpressionSyntax or VBSyntax.MeExpressionSyntax or VBSyntax.MemberAccessExpressionSyntax or VBSyntax.ParenthesizedExpressionSyntax
