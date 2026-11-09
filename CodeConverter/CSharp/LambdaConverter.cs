@@ -28,12 +28,13 @@ internal class LambdaConverter
 
     public async Task<CSharpSyntaxNode> ConvertMultiLineLambdaAsync(VBSyntax.MultiLineLambdaExpressionSyntax node)
     {
-        var originalIsWithinQuery = CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery;
-        CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
+        var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
+        var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
+        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = CommonConversions.IsLinqDelegateExpression(node);
         try {
             return await ConvertInnerAsync();
         } finally {
-            CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = originalIsWithinQuery;
+            (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
         }
 
         async Task<CSharpSyntaxNode> ConvertInnerAsync()
@@ -46,12 +47,13 @@ internal class LambdaConverter
 
     public async Task<CSharpSyntaxNode> ConvertSingleLineLambdaAsync(VBSyntax.SingleLineLambdaExpressionSyntax node)
     {
-        var originalIsWithinQuery = CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery;
-        CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = CommonConversions.IsLinqDelegateExpression(node);
+        var tracker = CommonConversions.TriviaConvertingExpressionVisitor;
+        var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
+        tracker.IsWithinQuery = tracker.IsWithinExpressionTree = CommonConversions.IsLinqDelegateExpression(node);
         try {
             return await ConvertInnerAsync();
         } finally {
-            CommonConversions.TriviaConvertingExpressionVisitor.IsWithinQuery = originalIsWithinQuery;
+            (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
         }
 
         async Task<CSharpSyntaxNode> ConvertInnerAsync()

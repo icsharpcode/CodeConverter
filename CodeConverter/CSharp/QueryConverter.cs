@@ -1,4 +1,5 @@
 using ICSharpCode.CodeConverter.CSharp.Queries;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -26,13 +27,22 @@ internal class QueryConverter
 
     public async Task<CSharpSyntaxNode> ConvertQueryAsync(VBSyntax.QueryExpressionSyntax query)
     {
-        bool originalIsWithinQuery = _triviaConvertingVisitor.IsWithinQuery;
-        _triviaConvertingVisitor.IsWithinQuery = true;
+        var tracker = _triviaConvertingVisitor;
+        var (originalIsWithinQuery, originalIsWithinExpressionTree) = (tracker.IsWithinQuery, tracker.IsWithinExpressionTree);
+        tracker.IsWithinQuery = true;
+        tracker.IsWithinExpressionTree = IsExpressionTree(_semanticModel.GetOperation(query));
         try {
             var converter = new QueryClauseConverter(query, _semanticModel, _commonConversions, _triviaConvertingVisitor, _rangeVariableReplacements, _generatedNames, _activeBuilders);
             return await converter.ConvertAsync();
         } finally {
-            _triviaConvertingVisitor.IsWithinQuery = originalIsWithinQuery;
+            (tracker.IsWithinQuery, tracker.IsWithinExpressionTree) = (originalIsWithinQuery, originalIsWithinExpressionTree);
         }
     }
+
+    /// <summary>
+    /// The VB compiler's translation of the query shows whether its lambdas are passed as expression trees, e.g. to IQueryable
+    /// </summary>
+    private bool IsExpressionTree(IOperation operation) =>
+        operation is IArgumentOperation { Parameter.Type: var type } && SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _commonConversions.KnownTypes.System_Linq_Expressions_Expression_T)
+        || operation?.ChildOperations.Where(c => c is not ITranslatedQueryOperation).Any(IsExpressionTree) == true;
 }

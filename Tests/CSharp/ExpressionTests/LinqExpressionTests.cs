@@ -839,4 +839,52 @@ public partial class ConversionTest6
     }
 }");
     }
+
+    [Fact]
+    public async Task OptionCompareTextIsKeptInQueryOverObjectsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+Imports System.Linq
+
+Public Class C
+    Public Function M(words As String()) As IEnumerable(Of String)
+        Return From w In words Where w = ""a""
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+
+public partial class C
+{
+    public IEnumerable<string> M(string[] words)
+    {
+        return from w in words
+               where CultureInfo.CurrentCulture.CompareInfo.Compare(w, ""a"", CompareOptions.IgnoreCase | CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth) == 0
+               select w;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task OptionCompareTextIsLeftToProviderInQueryableQueryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Compare Text
+Imports System.Linq
+
+Public Class C
+    Public Function M(words As IQueryable(Of String)) As IQueryable(Of String)
+        Return From w In words Where w = ""a""
+    End Function
+End Class", @"using System.Linq;
+
+public partial class C
+{
+    public IQueryable<string> M(IQueryable<string> words)
+    {
+        return from w in words
+               where w == ""a""
+               select w;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
 }
