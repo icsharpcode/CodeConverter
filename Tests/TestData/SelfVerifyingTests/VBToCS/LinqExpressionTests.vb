@@ -433,4 +433,11 @@ Public Class LinqExpressionTests
         Assert.Equal(7, q)
     End Sub
 
+    <Fact>
+    Sub TestJoinOnCompositeKeysOfDifferentTypes()
+        Dim ys = New Integer?() {1, 2}
+        Dim q = From x In {2, 3} Join y In ys On x Equals y And x Equals y Select x
+        Assert.Equal("2", Show(q))
+    End Sub
+
 End Class

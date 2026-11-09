@@ -85,8 +85,9 @@ internal partial class QueryClauseConverter
         if (keys.Length == 1) return keys[0];
         return (CreateCompositeKey(keys.Select(k => k.Outer)), CreateCompositeKey(keys.Select(k => k.Inner)));
 
+        // C# infers a single key's type from both sides, but the members of anonymous composite keys must match exactly, so make each side's conversion to VB's common type explicit
         async Task<ExpressionSyntax> ConvertKeyAsync(VBSyntax.ExpressionSyntax vbKey) =>
-            _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbKey, await ConvertAsync(vbKey));
+            _commonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbKey, await ConvertAsync(vbKey), defaultToCast: conditions.Count > 1);
         static ExpressionSyntax CreateCompositeKey(IEnumerable<ExpressionSyntax> keys) =>
             CsQueryBuilder.CreateAnonymousObject(keys.Select((k, i) => ("key" + i, k)));
     }
