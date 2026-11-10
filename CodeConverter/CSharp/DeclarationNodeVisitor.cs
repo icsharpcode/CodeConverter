@@ -949,23 +949,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
         var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, node.GetMemberContext());
 
-        var (ctorExpression, ctorVbArgs) = GetFirstStatementMemberCall(node.Statements);
-        var ctorArgs = await ctorVbArgs.AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ArgumentList();
-
-        IEnumerable<VBSyntax.StatementSyntax> statements;
-        ConstructorInitializerSyntax ctorCall;
-        if (ctorExpression == null || !ctorExpression.Name.Identifier.IsKindOrHasMatchingText(VBasic.SyntaxKind.NewKeyword)) {
-            statements = node.Statements;
-            ctorCall = null;
-        } else if (ctorExpression.Expression is VBSyntax.MyBaseExpressionSyntax) {
+        IEnumerable<VBSyntax.StatementSyntax> statements = node.Statements;
+        ConstructorInitializerSyntax ctorCall = null;
+        if (GetConstructorInitializerCall(node.Statements) is var (initializerKind, vbArguments)) {
+            var ctorArgs = await vbArguments.AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ArgumentList();
+            ctorCall = CS.SyntaxFactory.ConstructorInitializer(initializerKind, ctorArgs);
             statements = node.Statements.Skip(1);
-            ctorCall = CS.SyntaxFactory.ConstructorInitializer(CS.SyntaxKind.BaseConstructorInitializer, ctorArgs);
-        } else if (ctorExpression.Expression is VBSyntax.MeExpressionSyntax || ctorExpression.Expression is VBSyntax.MyClassExpressionSyntax) {
-            statements = node.Statements.Skip(1);
-            ctorCall = CS.SyntaxFactory.ConstructorInitializer(CS.SyntaxKind.ThisConstructorInitializer, ctorArgs);
-        } else {
-            statements = node.Statements;
-            ctorCall = null;
         }
 
         var convertedBodyStatements = await ConvertMethodBodyStatementsAsync(node, statements.ToArray());
@@ -984,7 +973,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     /// Parentheses are optional when calling a parameterless constructor, so "MyBase.New" may have no invocation around it.
     /// The call may also be written with the Call keyword, e.g. "Call MyBase.New(x)".
     /// </summary>
-    private static (VBSyntax.MemberAccessExpressionSyntax Target, VBSyntax.ArgumentListSyntax Arguments) GetFirstStatementMemberCall(SyntaxList<VBSyntax.StatementSyntax> statements)
+    /// <returns>null when the first statement doesn't call another constructor</returns>
+    private static (CS.SyntaxKind InitializerKind, VBSyntax.ArgumentListSyntax Arguments)? GetConstructorInitializerCall(SyntaxList<VBSyntax.StatementSyntax> statements)
     {
         var calledExpression = statements.FirstOrDefault() switch {
             VBSyntax.ExpressionStatementSyntax expressionStatement => expressionStatement.Expression,
@@ -992,7 +982,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             _ => null
         };
         var invocation = calledExpression as VBSyntax.InvocationExpressionSyntax;
-        return ((invocation?.Expression ?? calledExpression) as VBSyntax.MemberAccessExpressionSyntax, invocation?.ArgumentList);
+        if ((invocation?.Expression ?? calledExpression) is not VBSyntax.MemberAccessExpressionSyntax memberAccess
+            || !memberAccess.Name.Identifier.IsKindOrHasMatchingText(VBasic.SyntaxKind.NewKeyword)) {
+            return null;
+        }
+
+        CS.SyntaxKind? initializerKind = memberAccess.Expression switch {
+            VBSyntax.MyBaseExpressionSyntax => CS.SyntaxKind.BaseConstructorInitializer,
+            VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax => CS.SyntaxKind.ThisConstructorInitializer,
+            _ => null
+        };
+        return initializerKind is { } kind ? (kind, invocation?.ArgumentList) : null;
     }
 
     public override async Task<CSharpSyntaxNode> VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
