@@ -343,8 +343,7 @@ internal class TypeConversionAnalyzer
             return true;
         } 
         else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp() &&
-                 vbNode.SkipIntoParens() is var unparenthesized &&
-                 (unparenthesized is not VBSyntax.BinaryExpressionSyntax and not VBSyntax.UnaryExpressionSyntax || unparenthesized.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression))) {
+                 !IsMadeBoolByNullableOperatorConversion(vbNode)) {
             typeConversionKind = TypeConversionKind.NullableBool;
             return true;
         }
@@ -355,6 +354,16 @@ internal class TypeConversionAnalyzer
 
         typeConversionKind = csConversion.IsIdentity ? TypeConversionKind.Identity : TypeConversionKind.Unknown;
         return false;
+    }
+
+    /// <summary>
+    /// In a condition, the nullable operator conversions already give bool for operators such as comparisons, Not, AndAlso and OrElse, but not for And, Or and Xor
+    /// </summary>
+    private static bool IsMadeBoolByNullableOperatorConversion(VBSyntax.ExpressionSyntax vbNode)
+    {
+        var unparenthesized = vbNode.SkipIntoParens();
+        return unparenthesized is VBSyntax.BinaryExpressionSyntax or VBSyntax.UnaryExpressionSyntax &&
+               !unparenthesized.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression);
     }
 
     private static bool IsExactTypeNumericLiteral(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType) => 

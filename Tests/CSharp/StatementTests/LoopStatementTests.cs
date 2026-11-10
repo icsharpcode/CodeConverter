@@ -241,6 +241,7 @@ internal partial class TestClass
 }");
     }
 
+    // Deliberately pins master's known imperfect output: VB doesn't lift a CType returning Boolean? (a Nothing operand throws), so it's left alone
     [Fact]
     public async Task NullableStructureWithWideningToNullableBooleanConditionsAreNotLiftedAsync()
     {
