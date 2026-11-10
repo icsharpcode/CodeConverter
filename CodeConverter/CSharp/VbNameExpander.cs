@@ -80,7 +80,7 @@ internal class VbNameExpander : ISyntaxExpander
     {
         var classType = (ITypeSymbol)node.GetEnclosingDeclaredTypeSymbol(semanticModel);
 
-        return classType.InheritsFromOrEquals(symbol.ReceiverType);
+        return classType.InheritsFromOrEquals(symbol.ReceiverType, includeInterfaces: true);
     }
 
     /// <summary>
@@ -122,9 +122,13 @@ internal class VbNameExpander : ISyntaxExpander
     private static INamedTypeSymbol GetDefaultImplicitInstance(SimpleNameSyntax node, ISymbol symbol, SemanticModel semanticModel, CancellationToken cancellationToken = default) =>
         IsQualifiableInstanceReference(symbol) && IsLeftMostQualifier(node) ? semanticModel.GetEnclosingSymbol<INamedTypeSymbol>(node.SpanStart, cancellationToken) : null;
 
+    /// <remarks>
+    /// Reduced extension methods are never members of the qualifying type, but that's not type promotion.
+    /// Treating them as such replaces the whole access with its receiver, skipping the expansion of an implicit Me receiver within it.
+    /// </remarks>
     private static bool IsTypePromotion(SyntaxNode node, ISymbol symbol, SemanticModel semanticModel)
     {
-        if (IsQualifiableInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes && maes.Expression != null) {
+        if (!symbol.IsReducedExtension() && IsQualifiableInstanceReference(symbol) && node is MemberAccessExpressionSyntax maes && maes.Expression != null) {
             var qualifyingType = semanticModel.GetTypeInfo(maes.Expression).Type;
             return qualifyingType == null || !qualifyingType.ContainsMember(symbol);
         }

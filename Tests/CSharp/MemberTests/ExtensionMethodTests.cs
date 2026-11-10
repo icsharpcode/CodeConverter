@@ -32,6 +32,32 @@ internal static partial class TestClass
     }
 
     [Fact]
+    public async Task ImplicitMeExtensionCallKeepsReceiverAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class MyList
+    Inherits List(Of Integer)
+
+    Public Function Uniques() As List(Of Integer)
+        Return Distinct().ToList()
+    End Function
+End Class", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class MyList : List<int>
+{
+
+    public List<int> Uniques()
+    {
+        return this.Distinct().ToList();
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestExtensionMethodWithExistingImportAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
