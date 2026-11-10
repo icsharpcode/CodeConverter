@@ -265,14 +265,23 @@ internal class NameExpressionNodeVisitor
     {
         if (operation is not IInvocationOperation { TargetMethod: var method } invocation ||
             (method.ReducedFrom ?? method.ConstructedFrom.ReducedFrom) is not { IsGenericMethod: true } extension ||
-            convertedExpression is not MemberAccessExpressionSyntax { Name: IdentifierNameSyntax name } memberAccess ||
+            convertedExpression is not (MemberAccessExpressionSyntax { Name: IdentifierNameSyntax } or MemberBindingExpressionSyntax { Name: IdentifierNameSyntax }) ||
             !invocation.Arguments.Any(a => IsConvertedToFitGenericParameter(a, extension))) {
             return convertedExpression;
         }
         var typeArguments = extension.TypeParameters.Select(t => GetInferredTypeArgument(method, t)).ToList();
-        if (typeArguments.Any(t => t is null or ITypeParameterSymbol || t.IsAnonymousType)) return convertedExpression;
+        if (typeArguments.Any(t => t is null || t.IsAnonymousType || IsCallsOwnTypeParameter(t))) return convertedExpression;
         var typeArgumentList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(typeArguments.Select(t => CommonConversions.GetTypeSyntax(t))));
-        return memberAccess.WithName(SyntaxFactory.GenericName(name.Identifier, typeArgumentList));
+        return convertedExpression switch {
+            MemberAccessExpressionSyntax memberAccess => memberAccess.WithName(SyntaxFactory.GenericName(memberAccess.Name.Identifier, typeArgumentList)),
+            MemberBindingExpressionSyntax memberBinding => memberBinding.WithName(SyntaxFactory.GenericName(memberBinding.Name.Identifier, typeArgumentList)),
+            _ => convertedExpression
+        };
+
+        /// The enclosing method's or type's type parameters can be named, but the call's own uninferred ones can't
+        bool IsCallsOwnTypeParameter(ITypeSymbol type) =>
+            type is ITypeParameterSymbol { DeclaringMethod: { } declaringMethod } &&
+            (declaringMethod.ReducedFrom != null || SymbolEqualityComparer.Default.Equals(declaringMethod.OriginalDefinition, extension.OriginalDefinition));
     }
 
     /// <summary>

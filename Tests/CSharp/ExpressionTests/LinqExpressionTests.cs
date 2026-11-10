@@ -1005,6 +1005,90 @@ public static partial class Helpers
     }
 
     /// <summary>
+    /// The type argument VB inferred can be the calling method's own type parameter
+    /// </summary>
+    [Fact]
+    public async Task GenericMethodInferenceWithCallersTypeParameterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class BaseValue
+    Public Property Key As Integer
+End Class
+
+Public Class DerivedValue
+    Inherits BaseValue
+End Class
+
+Public Module Helpers
+    Public Function DistinctValues(Of T As BaseValue)(values As IEnumerable(Of T)) As List(Of T)
+        Return values.Distinct(EqualityComparer(Of BaseValue).Default).ToList()
+    End Function
+End Module", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class BaseValue
+{
+    public int Key { get; set; }
+}
+
+public partial class DerivedValue : BaseValue
+{
+}
+
+public static partial class Helpers
+{
+    public static List<T> DistinctValues<T>(IEnumerable<T> values) where T : BaseValue
+    {
+        return values.Distinct<T>(EqualityComparer<BaseValue>.Default).ToList();
+    }
+}");
+    }
+
+    /// <summary>
+    /// Conditional access converts to a member binding, which needs the same type arguments
+    /// </summary>
+    [Fact]
+    public async Task GenericMethodInferenceWithConditionalAccessAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Collections.Generic
+Imports System.Linq
+
+Public Class BaseValue
+    Public Property Key As Integer
+End Class
+
+Public Class DerivedValue
+    Inherits BaseValue
+End Class
+
+Public Module Helpers
+    Public Function DistinctValues(values As IEnumerable(Of DerivedValue)) As List(Of DerivedValue)
+        Return values?.Distinct(EqualityComparer(Of BaseValue).Default).ToList()
+    End Function
+End Module", @"using System.Collections.Generic;
+using System.Linq;
+
+public partial class BaseValue
+{
+    public int Key { get; set; }
+}
+
+public partial class DerivedValue : BaseValue
+{
+}
+
+public static partial class Helpers
+{
+    public static List<DerivedValue> DistinctValues(IEnumerable<DerivedValue> values)
+    {
+        return values?.Distinct<DerivedValue>(EqualityComparer<BaseValue>.Default).ToList();
+    }
+}");
+    }
+
+    /// <summary>
     /// C# infers the same type arguments when an argument implements the generic parameter type exactly
     /// </summary>
     [Fact]
