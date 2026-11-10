@@ -10,6 +10,63 @@ Module Program
             Dim x As A = New B
             Assert.True(x.TestMethod())
         End Sub
+
+        <Fact()>
+        Public Sub ConstructorInitializersWithNonCanonicalCasing()
+            Assert.Equal("Base(lower)", New NonCanonicalCtorCalls("lower").Log)
+            Assert.Equal("Base(upper);Derived(Integer)", New NonCanonicalCtorCalls(1).Log)
+            Assert.Equal("Base(myclass);Derived(Long)", New NonCanonicalCtorCalls(1L).Log)
+            Assert.Equal("Base();Derived(Short)", New NonCanonicalCtorCalls(1S).Log)
+            Assert.Equal("Base(upper);Derived(Integer);Derived()", New NonCanonicalCtorCalls().Log)
+            Assert.Equal("Base(call);Derived(Double)", New NonCanonicalCtorCalls(1.0).Log)
+            Assert.Equal("Base(upper);Derived(Integer);Derived(Decimal)", New NonCanonicalCtorCalls(1D).Log)
+            Assert.Equal("Base(myclass);Derived(Long);Derived(Byte)", New NonCanonicalCtorCalls(CByte(1)).Log)
+        End Sub
+    End Class
+
+    Public Class CtorBase
+        Public Log As String
+        Public Sub New()
+            Log = "Base()"
+        End Sub
+        Public Sub New(value As String)
+            Log = "Base(" & value & ")"
+        End Sub
+    End Class
+
+    Public Class NonCanonicalCtorCalls
+        Inherits CtorBase
+        Public Sub New(value As String)
+            MyBase.new(value)
+        End Sub
+        Public Sub New(value As Integer)
+            MYBASE.NEW("upper")
+            Log &= ";Derived(Integer)"
+        End Sub
+        Public Sub New(value As Long)
+            myclass.New("myclass")
+            Log &= ";Derived(Long)"
+        End Sub
+        Public Sub New(value As Short)
+            mybase.nEw
+            Log &= ";Derived(Short)"
+        End Sub
+        Public Sub New()
+            Me.new(1)
+            Log &= ";Derived()"
+        End Sub
+        Public Sub New(value As Double)
+            Call MyBase.new("call")
+            Log &= ";Derived(Double)"
+        End Sub
+        Public Sub New(value As Decimal)
+            CALL ME.NEW(1)
+            Log &= ";Derived(Decimal)"
+        End Sub
+        Public Sub New(value As Byte)
+            call myclass.New(1L)
+            Log &= ";Derived(Byte)"
+        End Sub
     End Class
 
     Public Interface IA
