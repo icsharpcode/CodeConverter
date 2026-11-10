@@ -18,6 +18,9 @@ Module Program
             Assert.Equal("Base(myclass);Derived(myclass)", New NonCanonicalCtorCalls(1L).Log)
             Assert.Equal("Base();Derived(short)", New NonCanonicalCtorCalls(1S).Log)
             Assert.Equal("Base(me);Derived(me);Derived()", New NonCanonicalCtorCalls().Log)
+            Assert.Equal("Base(call);Derived(call)", New NonCanonicalCtorCalls(1.0).Log)
+            Assert.Equal("Base(me);Derived(me);Derived(call me)", New NonCanonicalCtorCalls(1D).Log)
+            Assert.Equal("Base(myclass);Derived(myclass);Derived(call myclass)", New NonCanonicalCtorCalls(CByte(1)).Log)
         End Sub
     End Class
 
@@ -51,6 +54,18 @@ Module Program
         Public Sub New()
             Me.new(1)
             Log &= ";Derived()"
+        End Sub
+        Public Sub New(value As Double)
+            Call MyBase.new("call")
+            Log &= ";Derived(call)"
+        End Sub
+        Public Sub New(value As Decimal)
+            CALL ME.NEW(1)
+            Log &= ";Derived(call me)"
+        End Sub
+        Public Sub New(value As Byte)
+            call myclass.New(1L)
+            Log &= ";Derived(call myclass)"
         End Sub
     End Class
 

@@ -982,10 +982,15 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     /// <summary>
     /// VB has no constructor initializer syntax: a call to another constructor (MyBase.New, Me.New or MyClass.New) can only be the first statement.
     /// Parentheses are optional when calling a parameterless constructor, so "MyBase.New" may have no invocation around it.
+    /// The call may also be written with the Call keyword, e.g. "Call MyBase.New(x)".
     /// </summary>
     private static (VBSyntax.MemberAccessExpressionSyntax Target, VBSyntax.ArgumentListSyntax Arguments) GetFirstStatementMemberCall(SyntaxList<VBSyntax.StatementSyntax> statements)
     {
-        var calledExpression = (statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression;
+        var calledExpression = statements.FirstOrDefault() switch {
+            VBSyntax.ExpressionStatementSyntax expressionStatement => expressionStatement.Expression,
+            VBSyntax.CallStatementSyntax callStatement => callStatement.Invocation,
+            _ => null
+        };
         var invocation = calledExpression as VBSyntax.InvocationExpressionSyntax;
         return ((invocation?.Expression ?? calledExpression) as VBSyntax.MemberAccessExpressionSyntax, invocation?.ArgumentList);
     }

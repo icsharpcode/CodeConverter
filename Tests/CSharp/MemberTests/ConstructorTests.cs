@@ -496,4 +496,48 @@ public partial class Derived : Base
     }
 }");
     }
+
+    [Fact]
+    public async Task CallStatementConstructorInitializersWithNonCanonicalCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        Call MyBase.new(value)
+    End Sub
+    Public Sub New(value As Integer)
+        call Me.NEW(value.ToString())
+    End Sub
+    Public Sub New()
+        CALL myclass.New(1)
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(value)
+    {
+    }
+    public Derived(int value) : this(value.ToString())
+    {
+    }
+    public Derived() : this(1)
+    {
+    }
+}");
+    }
 }
