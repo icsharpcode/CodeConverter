@@ -1,4 +1,6 @@
-﻿namespace ICSharpCode.CodeConverter.CSharp;
+﻿using Microsoft.CodeAnalysis.Emit;
+
+namespace ICSharpCode.CodeConverter.CSharp;
 
 internal static class ProjectExtensions
 {
@@ -13,6 +15,25 @@ internal static class ProjectExtensions
             projectReferences, parseOptions);
         var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
         return csharpViewOfVbProject;
+    }
+
+    /// <summary>
+    /// Like <see cref="CreateReferenceOnlyProjectFromAnyOptions"/>, but references an image emitted directly from the project's compilation.
+    /// Roslyn's workspace-generated skeleton references aren't readable on all platforms (e.g. Linux) which silently hides all of the project's own types.
+    /// </summary>
+    public static async Task<Project> CreateReferenceOnlyProjectFromAnyOptionsAsync(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions, CancellationToken cancellationToken)
+    {
+        var compilation = await project.GetCompilationAsync(cancellationToken);
+        using var stream = new MemoryStream();
+        var emitResult = compilation.Emit(stream, options: new EmitOptions(metadataOnly: true, includePrivateMembers: false), cancellationToken: cancellationToken);
+        if (!emitResult.Success) return project.CreateReferenceOnlyProjectFromAnyOptions(baseOptions, parseOptions);
+
+        var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
+        var viewerId = ProjectId.CreateNewId();
+        var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
+            project.ProjectReferences, parseOptions);
+        var reference = MetadataReference.CreateFromImage(stream.ToArray(), new MetadataReferenceProperties());
+        return project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId).AddMetadataReference(reference);
     }
 
     public static ProjectInfo ToProjectInfo(this Project project, ProjectId projectId, string projectName,
