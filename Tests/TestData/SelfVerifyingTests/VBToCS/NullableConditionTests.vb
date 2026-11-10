@@ -92,4 +92,50 @@ Public Class NullableConditionTests
         Assert.Equal(New Integer?() {Nothing, 3, 2}, (From v In values Skip While v <= limit).ToArray())
         Assert.Equal(New Integer?() {1}, (From v In values Take While Not v > limit).ToArray())
     End Sub
+
+    <Theory>
+    <InlineData(False, 0, False, 0, 3)>
+    <InlineData(True, 0, True, 3, 0)>
+    <InlineData(True, 1, False, 0, 3)>
+    Public Sub NullableStructureWithWideningToBooleanConditions(hasValue As Boolean, value As Integer, expectedIf As Boolean, expectedWhile As Integer, expectedDoUntil As Integer)
+        Dim s As ZeroIsTrue? = If(hasValue, New ZeroIsTrue With {.Value = value}, CType(Nothing, ZeroIsTrue?))
+        Dim result = False
+        If s Then result = True
+        Assert.Equal(expectedIf, result)
+
+        Dim count = 0
+        While (s)
+            count += 1
+            If count = 3 Then Exit While
+        End While
+        Assert.Equal(expectedWhile, count)
+
+        count = 0
+        Do Until s
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(expectedDoUntil, count)
+
+        Dim calls = 0
+        Dim getS = Function()
+                       calls += 1
+                       Return s
+                   End Function
+        result = False
+        If getS() Then result = True
+        Assert.Equal(expectedIf, result)
+        Assert.Equal(1, calls)
+    End Sub
 End Class
+
+''' <summary>
+''' Its default value converts to True, so a condition that is Nothing must become False without converting the default
+''' </summary>
+Public Structure ZeroIsTrue
+    Public Value As Integer
+
+    Public Shared Widening Operator CType(s As ZeroIsTrue) As Boolean
+        Return s.Value = 0
+    End Operator
+End Structure

@@ -100,6 +100,16 @@ internal class VisualBasicNullableExpressionsConverter
         return typeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
     }
 
+    /// <summary>
+    /// In a condition, VB lifts a conversion to Boolean and treats Nothing as False.
+    /// The converted default value isn't necessarily False (e.g. a user-defined operator), so check for a value rather than using GetValueOrDefault.
+    /// </summary>
+    public ExpressionSyntax ConvertWhenNotNullElseFalse(VBSyntax.ExpressionSyntax vbExpr, ExpressionSyntax csExpr, Func<ExpressionSyntax, ExpressionSyntax> convertValue)
+    {
+        var hasValueCheck = HasValue(vbExpr, ref csExpr);
+        return hasValueCheck.And(convertValue(csExpr));
+    }
+
     private string GetArgName() => $"arg{Interlocked.Increment(ref _argCounter)}";
 
     private ExpressionSyntax? PatternVar(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, out ExpressionSyntax lhsName)

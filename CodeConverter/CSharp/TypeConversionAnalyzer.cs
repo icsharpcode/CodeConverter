@@ -108,7 +108,9 @@ internal class TypeConversionAnalyzer
                 return addParenthesisIfNeeded ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode) : csNode;
             case TypeConversionKind.DestructiveCast:
             case TypeConversionKind.NonDestructiveCast:
-                return CreateCast(csNode, vbConvertedType);
+                return IsNonBooleanNullableCondition(vbNode, vbType, vbConvertedType)
+                    ? _vbNullableExpressionsConverter.ConvertWhenNotNullElseFalse(vbNode, csNode, value => CreateCast(value, vbConvertedType))
+                    : CreateCast(csNode, vbConvertedType);
             case TypeConversionKind.Conversion:
                 return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.NullableBool:
@@ -433,6 +435,14 @@ internal class TypeConversionAnalyzer
     /// </summary>
     private static ExpressionSyntax GetUnderlyingValueToConvert(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNullableNode) =>
         vbNode.AlwaysHasBooleanTypeInCSharp() ? csNullableNode.GetValueOrDefault() : csNullableNode.NullableGetValueExpression();
+
+    /// <summary>
+    /// In a condition, VB lifts a conversion to Boolean (e.g. a user-defined CType), so Nothing is False rather than throwing.
+    /// A Boolean? condition is excluded: the nullable Boolean logic already makes it bool, so a cast on it is redundant and simplified away.
+    /// </summary>
+    private static bool IsNonBooleanNullableCondition(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
+        vbType.IsNullable(out var underlyingType) && underlyingType.SpecialType != SpecialType.System_Boolean &&
+        !vbConvertedType.IsNullable() && vbNode.AlwaysHasBooleanTypeInCSharp();
 
     private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
     {

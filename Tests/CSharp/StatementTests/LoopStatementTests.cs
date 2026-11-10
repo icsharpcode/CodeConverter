@@ -181,6 +181,113 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NullableStructureWithWideningToBooleanConditionsTreatNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Structure S
+    Public Shared Widening Operator CType(s As S) As Boolean
+        Return True
+    End Operator
+End Structure
+
+Class TestClass
+    Private Function GetS() As S?
+        Return Nothing
+    End Function
+
+    Private Sub TestMethod(s As S?)
+        If s Then Return
+        While (s) : End While
+        Do Until s : Loop
+        Do : Loop While GetS()
+    End Sub
+End Class", @"
+internal partial struct S
+{
+    public static implicit operator bool(S s)
+    {
+        return true;
+    }
+}
+
+internal partial class TestClass
+{
+    private S? GetS()
+    {
+        return default;
+    }
+
+    private void TestMethod(S? s)
+    {
+        if (s.HasValue && (bool)s.Value)
+            return;
+        while (s.HasValue && (bool)s.Value)
+        {
+        }
+        while (!s.HasValue || !(bool)s.Value)
+        {
+        }
+        do
+        {
+        }
+        while (GetS() is { } arg1 && (bool)arg1);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task OptionStrictOffNullableToBooleanOutsideConditionsKeepsValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Structure S
+    Public Shared Widening Operator CType(s As S) As Boolean
+        Return True
+    End Operator
+End Structure
+
+Class TestClass
+    Private Function IsTrue(b As Boolean) As Boolean
+        Return b
+    End Function
+
+    Private Sub TestMethod(x As Integer?, s As S?)
+        Dim b As Boolean = x
+        If IsTrue(x) Then Return
+        If CBool(x) Then Return
+        Do Until s : Loop
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial struct S
+{
+    public static implicit operator bool(S s)
+    {
+        return true;
+    }
+}
+
+internal partial class TestClass
+{
+    private bool IsTrue(bool b)
+    {
+        return b;
+    }
+
+    private void TestMethod(int? x, S? s)
+    {
+        bool b = Conversions.ToBoolean(x.Value);
+        if (IsTrue(Conversions.ToBoolean(x.Value)))
+            return;
+        if (Conversions.ToBoolean(x.Value))
+            return;
+        while (!s.HasValue || !(bool)s.Value)
+        {
+        }
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
     public async Task NonNullableUntilConditionsAreInvertedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

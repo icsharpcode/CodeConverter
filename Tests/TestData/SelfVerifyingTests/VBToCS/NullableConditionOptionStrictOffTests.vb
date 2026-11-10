@@ -54,6 +54,42 @@ Public Class NullableConditionOptionStrictOffTests
         Assert.Equal(expected, result)
     End Sub
 
+    <Fact>
+    Public Sub NullableToBooleanOutsideConditionsThrowsForNothing()
+        Dim x As Integer? = Nothing
+        Assert.Throws(Of InvalidOperationException)(Sub()
+                                                        Dim b As Boolean = x
+                                                    End Sub)
+        Assert.Throws(Of InvalidOperationException)(Sub()
+                                                        If IsTrue(x) Then Return
+                                                    End Sub)
+        Assert.Throws(Of InvalidOperationException)(Sub()
+                                                        If CBool(x) Then Return
+                                                    End Sub)
+    End Sub
+
+    Private Shared Function IsTrue(b As Boolean) As Boolean
+        Return b
+    End Function
+
+    <Theory>
+    <InlineData(False, 0, False, 3)>
+    <InlineData(True, 0, True, 0)>
+    <InlineData(True, 1, False, 3)>
+    Public Sub NullableStructureWithWideningToBooleanConditions(hasValue As Boolean, value As Integer, expectedIf As Boolean, expectedDoUntil As Integer)
+        Dim s As ZeroIsTrueStrictOff? = If(hasValue, New ZeroIsTrueStrictOff With {.Value = value}, CType(Nothing, ZeroIsTrueStrictOff?))
+        Dim result = False
+        If s Then result = True
+        Assert.Equal(expectedIf, result)
+
+        Dim count = 0
+        Do Until s
+            count += 1
+            If count = MaxIterations Then Exit Do
+        Loop
+        Assert.Equal(expectedDoUntil, count)
+    End Sub
+
     <Theory>
     <InlineData(Nothing, 0, 3)>
     <InlineData("True", 3, 0)>
@@ -87,3 +123,11 @@ Public Class NullableConditionOptionStrictOffTests
         Assert.Equal(expected, count)
     End Sub
 End Class
+
+Public Structure ZeroIsTrueStrictOff
+    Public Value As Integer
+
+    Public Shared Widening Operator CType(s As ZeroIsTrueStrictOff) As Boolean
+        Return s.Value = 0
+    End Operator
+End Structure
