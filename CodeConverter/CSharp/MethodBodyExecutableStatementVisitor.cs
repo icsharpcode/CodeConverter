@@ -571,8 +571,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
     {
-        var condition = await node.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
+        var condition = await ConvertConditionAsync(node.Condition);
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
         ElseClauseSyntax elseClause = null;
 
@@ -585,8 +584,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
     {
-        var condition = await node.IfStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
+        var condition = await ConvertConditionAsync(node.IfStatement.Condition);
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
 
         var elseClause = await ConvertElseClauseAsync(node.ElseBlock);
@@ -604,9 +602,17 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private async Task<(ExpressionSyntax ElseIfCondition, BlockSyntax ElseBlock)> ConvertElseIfAsync(VBSyntax.ElseIfBlockSyntax elseIf)
     {
         var elseBlock = SyntaxFactory.Block(await ConvertStatementsAsync(elseIf.Statements));
-        var elseIfCondition = await elseIf.ElseIfStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: CommonConversions.KnownTypes.Boolean);
+        var elseIfCondition = await ConvertConditionAsync(elseIf.ElseIfStatement.Condition);
         return (elseIfCondition, elseBlock);
+    }
+
+    /// <summary>
+    /// VB converts a condition to Boolean (e.g. Nothing to False), whereas C# requires it to already be bool
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertConditionAsync(VBSyntax.ExpressionSyntax vbCondition)
+    {
+        var condition = await vbCondition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbCondition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
     }
 
     private async Task<ElseClauseSyntax> ConvertElseClauseAsync(VBSyntax.ElseBlockSyntax elseBlock)
