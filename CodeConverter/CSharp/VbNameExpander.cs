@@ -80,7 +80,7 @@ internal class VbNameExpander : ISyntaxExpander
     {
         var classType = (ITypeSymbol)node.GetEnclosingDeclaredTypeSymbol(semanticModel);
 
-        return classType.InheritsFromOrEquals(symbol.ReceiverType);
+        return classType.InheritsFromOrEquals(symbol.ReceiverType, includeInterfaces: true);
     }
 
     /// <summary>
