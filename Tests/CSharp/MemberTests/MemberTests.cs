@@ -1646,6 +1646,41 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task ParameterlessMembersWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Declare Sub ExternSub Lib ""lib""
+    Declare Function ExternFunc Lib ""lib"" As Integer
+    Sub New
+    End Sub
+    Sub Foo
+    End Sub
+    Function Bar As Integer
+        Return 1
+    End Function
+End Class", @"using System.Runtime.InteropServices;
+
+internal partial class TestClass
+{
+    [DllImport(""lib"")]
+    public static extern void ExternSub();
+    [DllImport(""lib"")]
+    public static extern int ExternFunc();
+    public TestClass()
+    {
+    }
+    public void Foo()
+    {
+    }
+    public int Bar()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestMultipleCharDefaultValuesForStringParametersAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
