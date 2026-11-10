@@ -241,9 +241,11 @@ internal partial class TestClass
 }");
     }
 
-    // Deliberately pins master's known imperfect output: VB doesn't lift a CType returning Boolean? (a Nothing operand throws), so it's left alone
+    /// <summary>
+    /// VB doesn't lift a CType returning Boolean? (a Nothing operand throws, so .Value), but treats a Nothing result as False
+    /// </summary>
     [Fact]
-    public async Task NullableStructureWithWideningToNullableBooleanConditionsAreNotLiftedAsync()
+    public async Task StructureWithWideningToNullableBooleanConditionsCompareResultWithTrueAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Structure S
     Public Shared Widening Operator CType(s As S) As Boolean?
@@ -252,9 +254,10 @@ internal partial class TestClass
 End Structure
 
 Class TestClass
-    Private Sub TestMethod(s As S?)
+    Private Sub TestMethod(s As S?, ns As S)
         If s Then Return
         Do Until s : Loop
+        While ns : End While
     End Sub
 End Class", @"
 internal partial struct S
@@ -267,11 +270,14 @@ internal partial struct S
 
 internal partial class TestClass
 {
-    private void TestMethod(S? s)
+    private void TestMethod(S? s, S ns)
     {
-        if ((bool)s)
+        if ((bool?)s.Value == true)
             return;
-        while (!(bool)s)
+        while ((bool?)s.Value != true)
+        {
+        }
+        while ((bool?)ns == true)
         {
         }
     }

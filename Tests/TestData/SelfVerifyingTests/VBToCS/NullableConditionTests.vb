@@ -157,7 +157,52 @@ Public Class NullableConditionTests
         Loop
         Assert.Equal(If(expected, 0, 3), count)
     End Sub
+
+    <Theory>
+    <InlineData(Nothing, False, 3)>
+    <InlineData(True, True, 0)>
+    <InlineData(False, False, 3)>
+    Public Sub StructureWithWideningToNullableBooleanConditions(converted As Boolean?, expectedIf As Boolean, expectedDoUntil As Integer)
+        Dim ns As New ToNullableBoolean With {.Converted = converted}
+        Dim s As ToNullableBoolean? = ns
+        Dim result = False
+        If ns Then result = True
+        Assert.Equal(expectedIf, result)
+
+        result = False
+        If s Then result = True
+        Assert.Equal(expectedIf, result)
+
+        Dim count = 0
+        Do Until s
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(expectedDoUntil, count)
+    End Sub
+
+    <Fact>
+    Public Sub NothingStructureWithWideningToNullableBooleanConditionThrows()
+        Dim s As ToNullableBoolean? = Nothing
+        Assert.Throws(Of InvalidOperationException)(Sub()
+                                                        If s Then Return
+                                                    End Sub)
+        Assert.Throws(Of InvalidOperationException)(Sub()
+                                                        Do Until s : Exit Do : Loop
+                                                    End Sub)
+    End Sub
 End Class
+
+''' <summary>
+''' VB doesn't lift a conversion to Boolean? for a Nothing operand
+''' </summary>
+Public Structure ToNullableBoolean
+    Public Converted As Boolean?
+
+    Public Shared Widening Operator CType(s As ToNullableBoolean) As Boolean?
+        Return s.Converted
+    End Operator
+End Structure
 
 ''' <summary>
 ''' Its default value converts to True, so a condition that is Nothing must become False without converting the default

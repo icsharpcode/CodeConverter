@@ -443,20 +443,31 @@ internal class TypeConversionAnalyzer
     private static ExpressionSyntax GetUnderlyingValueToConvert(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNullableNode) =>
         vbNode.AlwaysHasBooleanTypeInCSharp() ? csNullableNode.GetValueOrDefault() : csNullableNode.NullableGetValueExpression();
 
-    private ExpressionSyntax CreateCastForContext(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
-        IsNonBooleanNullableCondition(vbNode, vbType, vbConvertedType)
+    private ExpressionSyntax CreateCastForContext(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType)
+    {
+        if (!vbNode.AlwaysHasBooleanTypeInCSharp()) return CreateCast(csNode, vbConvertedType);
+        if (GetNullableReturnTypeOfUserDefinedConversion(vbNode) is { } nullableBoolean) {
+            var operand = vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode;
+            return CreateCast(operand, nullableBoolean).EqualsTrue();
+        }
+        return IsNonBooleanNullable(vbType, vbConvertedType)
             ? _vbNullableExpressionsConverter.ConvertWhenNotNullElseFalse(vbNode, csNode, value => CreateCast(value, vbConvertedType))
             : CreateCast(csNode, vbConvertedType);
+    }
 
     /// <summary>
-    /// In a condition, VB lifts a conversion to Boolean (e.g. a user-defined CType returning Boolean), so Nothing is False rather than throwing.
-    /// A user-defined CType returning Boolean? isn't lifted that way: VB throws for a Nothing operand, and treats a Nothing result as False.
+    /// In a condition, VB doesn't lift a user-defined CType returning Boolean? (a Nothing operand throws, whereas C# would lift it to give null),
+    /// but treats a Nothing result as False, like any other Boolean? condition
+    /// </summary>
+    private ITypeSymbol GetNullableReturnTypeOfUserDefinedConversion(VBSyntax.ExpressionSyntax vbNode) =>
+        VBasic.VisualBasicExtensions.GetConversion(_semanticModel, vbNode).MethodSymbol?.ReturnType is { } returnType && returnType.IsNullable() ? returnType : null;
+
+    /// <summary>
+    /// In a condition, VB lifts any other conversion to Boolean (e.g. a user-defined CType returning Boolean), so Nothing is False rather than throwing.
     /// A Boolean? condition is excluded: the nullable Boolean logic already makes it bool, so a cast on it is redundant and simplified away.
     /// </summary>
-    private bool IsNonBooleanNullableCondition(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
-        vbType.IsNullable(out var underlyingType) && underlyingType.SpecialType != SpecialType.System_Boolean &&
-        !vbConvertedType.IsNullable() && vbNode.AlwaysHasBooleanTypeInCSharp() &&
-        !(VBasic.VisualBasicExtensions.GetConversion(_semanticModel, vbNode).MethodSymbol?.ReturnType).IsNullable();
+    private static bool IsNonBooleanNullable(ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
+        vbType.IsNullable(out var underlyingType) && underlyingType.SpecialType != SpecialType.System_Boolean && !vbConvertedType.IsNullable();
 
     private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
     {
