@@ -1197,35 +1197,23 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         var statements = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements)).UnpackNonNestedBlock();
 
-        if (node.DoStatement.WhileOrUntilClause != null) {
-            var stmt = node.DoStatement.WhileOrUntilClause;
-            if (stmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.WhileKeyword))
-                return SingleStatement(SyntaxFactory.WhileStatement(
-                    await stmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor),
-                    statements
-                ));
-            return SingleStatement(SyntaxFactory.WhileStatement(
-                (await stmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor)).InvertCondition(),
-                statements
-            ));
+        if (node.DoStatement.WhileOrUntilClause is { } topClause) {
+            return SingleStatement(SyntaxFactory.WhileStatement(await ConvertLoopContinueConditionAsync(topClause), statements));
         }
 
-        var whileOrUntilStmt = node.LoopStatement.WhileOrUntilClause;
-        ExpressionSyntax conditionExpression;
-        bool isUntilStmt;
-        if (whileOrUntilStmt != null) {
-            conditionExpression = await whileOrUntilStmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-            isUntilStmt = whileOrUntilStmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword);
-        } else {
-            conditionExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
-            isUntilStmt = false;
-        }
+        var bottomCondition = node.LoopStatement.WhileOrUntilClause is { } bottomClause
+            ? await ConvertLoopContinueConditionAsync(bottomClause)
+            : SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
+        return SingleStatement(SyntaxFactory.DoStatement(statements, bottomCondition));
+    }
 
-        if (isUntilStmt) {
-            conditionExpression = conditionExpression.InvertCondition();
-        }
-
-        return SingleStatement(SyntaxFactory.DoStatement(statements, conditionExpression));
+    /// <summary>
+    /// C# only has While loops, so an Until loop continues while its condition is false
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertLoopContinueConditionAsync(VBSyntax.WhileOrUntilClauseSyntax clause)
+    {
+        var condition = await clause.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return clause.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword) ? condition.InvertCondition() : condition;
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node)
