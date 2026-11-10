@@ -431,4 +431,69 @@ public partial class Derived : Base
     }
 }");
     }
+
+    [Fact]
+    public async Task MyBaseNewWithoutParenthesesKeepsCommentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New()
+        MyBase.nEw ' Comment
+    End Sub
+End Class", @"
+public partial class Base
+{
+}
+
+public partial class Derived : Base
+{
+
+    public Derived() : base() // Comment
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithNonCanonicalCasingNamedAndOmittedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New(value As String, Optional n As Integer = 3)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MyBase.new(n:=4, value:=value)
+    End Sub
+    Public Sub New(value As Integer)
+        mybase.New(value.ToString(), )
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base(string value, int n = 3)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(n: 4, value: value)
+    {
+    }
+    public Derived(int value) : base(value.ToString())
+    {
+    }
+}");
+    }
 }
