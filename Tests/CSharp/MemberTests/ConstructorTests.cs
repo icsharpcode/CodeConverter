@@ -540,4 +540,27 @@ public partial class Derived : Base
     }
 }");
     }
+
+    [Fact]
+    public async Task CallStatementNonConstructorWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Derived
+    Public Sub New()
+        Call Me.Foo
+    End Sub
+    Private Sub Foo()
+    End Sub
+End Class", @"
+public partial class Derived
+{
+    public Derived()
+    {
+        Foo();
+    }
+    private void Foo()
+    {
+    }
+}");
+    }
 }
