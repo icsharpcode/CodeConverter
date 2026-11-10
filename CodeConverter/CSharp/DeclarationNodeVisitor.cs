@@ -854,7 +854,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         );
 
         bool canHaveMethodBody = declaredSymbol?.CanHaveMethodBody() != false;
-        return hasBody && canHaveMethodBody ? decl : decl.WithSemicolonToken(SemicolonToken);
+        return hasBody && canHaveMethodBody ? decl : WithoutAsyncModifier(decl).WithSemicolonToken(SemicolonToken);
+    }
+
+    /// <summary>
+    /// VB allows <c>MustOverride Async Function</c>, but C# reports CS1994 for <c>async</c> on a method without a body.
+    /// <c>async</c> is an implementation detail rather than part of the signature, so overriding methods can still be async.
+    /// </summary>
+    private static MethodDeclarationSyntax WithoutAsyncModifier(MethodDeclarationSyntax decl)
+    {
+        var asyncModifier = decl.Modifiers.FirstOrDefault(m => m.IsKind(CS.SyntaxKind.AsyncKeyword));
+        return asyncModifier == default ? decl : decl.WithModifiers(decl.Modifiers.Remove(asyncModifier));
     }
 
     public override async Task<CSharpSyntaxNode> VisitEventBlock(VBSyntax.EventBlockSyntax node)
