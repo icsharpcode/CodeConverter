@@ -45,9 +45,9 @@ When asked to "fix bug X" or "implement Y", follow these phases unless told othe
 - Don't change existing test expectations unless the new output is verified better or correct. Explain each change in the commit or PR.
 
 ## 4. Documentation pushed down to the code
-- The code says *what*: use names, and extract methods or classes, so the code reads without comments.
+- The code says *what*: use names, and extract methods or classes, so the code reads with only rare essential comments.
 - XML doc comments say *why*: the VB/C# rule or constraint behind a decision, with a source where useful. Don't repeat what the code does.
-- When an area needs an overview (several classes working together), add or update a terse README.md in that directory. Map each requirement to where it's implemented and to its source; leave out history and old versions. Example: `CodeConverter/CSharp/Queries/README.md`.
+- When an area needs an overview (several classes working together on a larger concept), add or update a terse README.md in that directory. Map each requirement to where it's implemented and to its source information; leave out history and old versions. Example: `CodeConverter/CSharp/Queries/README.md`.
 
 ## 5. Verify, then review blind until it converges
 - Run the full suite and compare it against the baseline of known environment failures. Report any difference.
@@ -63,8 +63,7 @@ When asked to "fix bug X" or "implement Y", follow these phases unless told othe
   - Stop when a round finds only nitpicks, or when its fixes start reversing earlier fixes (a flip-flop). Report what was declined, and why.
 
 ## 6. Deliver
-- Work on the designated branch, push, and open a draft PR. Use "Fixes #N" lines for each issue resolved, a summary mapped to the issues, what needs the reviewer's attention or decision, test counts, and how the suite compares with the baseline.
-- Answer review questions on their threads. Raise anything ambiguous or architectural with the user rather than deciding it unilaterally.
+- When writing a draft PR descript, use "Fixes #N" lines for each issue resolved, a summary mapped to the issues, what needs the reviewer's attention or decision, test counts, and how the suite compares with the baseline.
 
 # Tooling notes
 - Build and run a subset: `dotnet build Tests/Tests.csproj -f net10.0`, then `dotnet test Tests/Tests.csproj -f net10.0 --no-build --filter "FullyQualifiedName~Linq"`.
