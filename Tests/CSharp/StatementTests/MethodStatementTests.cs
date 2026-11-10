@@ -864,6 +864,52 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task SingleLineIfAsLastStatementBeforeElseKeepsBracesIssue823Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(OUTER As Boolean, FOO1 As Boolean, FOO2 As Boolean)
+        If OUTER Then
+          If FOO1 Then Bar1() : Exit Sub
+        Else 'NOT OUTER
+          If FOO2 Then
+            Bar2()
+            Exit Sub
+          End If
+        End If 'OUTER
+    End Sub
+    Private Sub Bar1()
+    End Sub
+    Private Sub Bar2()
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool OUTER, bool FOO1, bool FOO2)
+    {
+        if (OUTER)
+        {
+            if (FOO1)
+            {
+                Bar1();
+                return;
+            }
+        }
+        else if (FOO2) // NOT OUTER
+        {
+            Bar2();
+            return;
+        } // OUTER
+    }
+    private void Bar1()
+    {
+    }
+    private void Bar2()
+    {
+    }
+}");
+    }
+
+    [Fact]
     public async Task NestedBlockStatementsKeepSameNestingAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
