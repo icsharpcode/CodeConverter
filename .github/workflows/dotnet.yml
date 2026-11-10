@@ -85,3 +85,15 @@ jobs:
       runs-on: windows-2025-vs2026
       vs-version: '[18.0,)'
       dotnet-version: 10.0.x
+
+  test-linux-net8:
+    uses: ./.github/workflows/dotnet-tests.yml
+    with:
+      runs-on: ubuntu-24.04
+      dotnet-version: 8.0.x
+
+  test-linux-net10:
+    uses: ./.github/workflows/dotnet-tests.yml
+    with:
+      runs-on: ubuntu-24.04
+      dotnet-version: 10.0.x
