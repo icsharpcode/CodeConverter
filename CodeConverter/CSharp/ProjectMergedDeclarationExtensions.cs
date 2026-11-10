@@ -37,7 +37,8 @@ internal static class ProjectMergedDeclarationExtensions
         var projXml = XDocument.Load(vbProject.FilePath);
         var xmlNs = projXml.Root?.GetDefaultNamespace();
         foreach (var resx in projXml.Descendants().Where(IsStandaloneGeneratedResource)) {
-            string relativePath = GetIncludeOrUpdateAttribute(resx).Value;
+            // Project files written on Windows use backslashes, whatever OS we are running on
+            string relativePath = GetIncludeOrUpdateAttribute(resx).Value.Replace('\\', Path.DirectorySeparatorChar);
             string directoryName = Path.GetDirectoryName(relativePath);
             if (directoryName != null && resx.Element(xmlNs + "LastGenOutput") is {Value: {} lastGenOutput}) {
                 yield return (relativePath, Path.Combine(directoryName, lastGenOutput));

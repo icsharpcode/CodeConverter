@@ -121,8 +121,8 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
             .Select(d => d.Element(xmlNs + "value"));
         foreach (var fileRefValue in fileRefValues) {
             var origValueParts = fileRefValue.Value.Split(';');
-            string newRelativePath = GetPathRelativeToProject(projDirPath, Path.GetFullPath(Path.Combine(resxDirPath, origValueParts[0])));
-            fileRefValue.Value = string.Join(";", newRelativePath.Yield().Concat(origValueParts.Skip(1)));
+            string newRelativePath = GetPathRelativeToProject(projDirPath, Path.GetFullPath(Path.Combine(resxDirPath, origValueParts[0].Replace('\\', Path.DirectorySeparatorChar))));
+            fileRefValue.Value = string.Join(";", newRelativePath.Replace('/', '\\').Yield().Concat(origValueParts.Skip(1)));
         }
         return xml.Declaration + Environment.NewLine + xml;
     }

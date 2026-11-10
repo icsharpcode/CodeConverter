@@ -38,4 +38,8 @@ internal static class PathConverter
 
         return rel;
     }
+
+    /// <summary>Regex-escapes a path, allowing either directory separator wherever the path has one</summary>
+    public static string EscapeSeparatorAgnostic(string path) =>
+        System.Text.RegularExpressions.Regex.Replace(System.Text.RegularExpressions.Regex.Escape(path), @"\\\\|/", @"[\\/]");
 }

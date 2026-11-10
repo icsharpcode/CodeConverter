@@ -36,7 +36,7 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         {
             // Solution files always use backslashes, whatever the OS we're running on
             var newProjPath = @"""" + PathConverter.TogglePathExtension(relativeProjPath.Replace('/', '\\')) + @""", ";
-            var projPathEscaped = @"""" + EscapeSeparatorAgnostic(relativeProjPath);
+            var projPathEscaped = @"""" + PathConverter.EscapeSeparatorAgnostic(relativeProjPath);
             var projName = GetProjNameWithoutFramework(name);
 
             (string oldType, string newType) = GetProjectTypeReplacement(projTypeGuidMappings, projName, projPathEscaped,
@@ -61,16 +61,16 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         var projectReferenceReplacements = new List<(string Find, string Replace, bool FirstOnly)>();
         foreach ((string _, string relativeProjPath, string projContents) in projTuples)
         {
-            var escapedProjPath = EscapeSeparatorAgnostic(relativeProjPath);
-            var projRefRegex = new Regex(@"(\\|"")(" + escapedProjPath + ")");
+            var escapedProjPath = PathConverter.EscapeSeparatorAgnostic(relativeProjPath);
+            var projRefRegex = new Regex(@"(\\|"")" + escapedProjPath);
 
             var projRefMatch = projRefRegex.Match(projContents);
             var characterBeforePath = projRefMatch.Groups[1].Value;
-            // Keep whichever separators the project file already uses
-            var pathAsWritten = projRefMatch.Success ? projRefMatch.Groups[2].Value : relativeProjPath;
 
-            var extendedEscProjPath = Regex.Escape(characterBeforePath) + escapedProjPath;
-            var newProjPath = characterBeforePath + PathConverter.TogglePathExtension(pathAsWritten);
+            // Keep whichever directory separators each referencing file already uses
+            var (findPath, replacePath) = SeparatorPreservingReplacement(relativeProjPath, PathConverter.TogglePathExtension(relativeProjPath));
+            var extendedEscProjPath = Regex.Escape(characterBeforePath) + findPath;
+            var newProjPath = characterBeforePath + replacePath;
 
             projectReferenceReplacements.Add((extendedEscProjPath, newProjPath, false));
             if (string.IsNullOrWhiteSpace(sourceSolutionContents)) {
@@ -83,9 +83,19 @@ public class SolutionFileTextEditor : ISolutionFileTextEditor
         return projectReferenceReplacements;
     }
 
-    /// <summary>Regex-escapes a path, allowing either directory separator wherever the path has one</summary>
-    private static string EscapeSeparatorAgnostic(string path) =>
-        Regex.Replace(Regex.Escape(path), @"\\\\|/", @"[\\/]");
+    /// <summary>
+    /// Regex find and replacement strings which match a path with either directory separator, and keep the separators found when replacing.
+    /// Both paths must have the same number of separators.
+    /// </summary>
+    private static (string Find, string Replace) SeparatorPreservingReplacement(string path, string newPath)
+    {
+        var separators = new[] { '\\', '/' };
+        var oldSegments = path.Split(separators);
+        var newSegments = newPath.Split(separators);
+        var find = string.Join(@"([\\/])", oldSegments.Select(Regex.Escape));
+        var replace = string.Concat(newSegments.Select((segment, i) => (i > 0 ? "${" + i + "}" : "") + segment.Replace("$", "$$")));
+        return (find, replace);
+    }
 
     // Gets the project name without the framework specifier (in case of multiple target frameworks)
     private static string GetProjNameWithoutFramework(string projName)
