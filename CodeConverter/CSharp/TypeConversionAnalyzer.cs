@@ -426,6 +426,13 @@ internal class TypeConversionAnalyzer
         return SyntaxFactory.InvocationExpression(memberAccess, arguments);
     }
 
+    /// <summary>
+    /// Converting Nothing to a non-nullable type throws in VB, except in a condition: there VB lifts the conversion to Boolean? and treats Nothing as False.
+    /// The default (zero) of every type convertible to Boolean also converts to False, so GetValueOrDefault matches that with a single evaluation.
+    /// </summary>
+    private static ExpressionSyntax GetUnderlyingValueToConvert(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNullableNode) =>
+        vbNode.AlwaysHasBooleanTypeInCSharp() ? csNullableNode.GetValueOrDefault() : csNullableNode.NullableGetValueExpression();
+
     private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
     {
         var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
@@ -443,7 +450,7 @@ internal class TypeConversionAnalyzer
         currentType.IsNullable(out var nullableCurrentType);
         targetType.IsNullable(out var nullableTargetType);
         if (nullableCurrentType != null && nullableTargetType == null) {
-            csNode = csNode.NullableGetValueExpression();
+            csNode = GetUnderlyingValueToConvert(vbNode, csNode);
         }
         var typeNameForConversionMethod = nullableTargetType ?? targetType;
 

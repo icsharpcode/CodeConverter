@@ -140,6 +140,47 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task OptionStrictOffNonBooleanConditionsTreatNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Class TestClass
+    Private Sub TestMethod(x As Integer?, o As Object)
+        If x Then Return
+        While x : End While
+        Do Until x : Loop
+        While o : End While
+        Do Until o : Loop
+        Do Until o > 1 : Loop
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private void TestMethod(int? x, object o)
+    {
+        if (Conversions.ToBoolean(x.GetValueOrDefault()))
+            return;
+        while (Conversions.ToBoolean(x.GetValueOrDefault()))
+        {
+        }
+        while (!Conversions.ToBoolean(x.GetValueOrDefault()))
+        {
+        }
+        while (Conversions.ToBoolean(o))
+        {
+        }
+        while (!Conversions.ToBoolean(o))
+        {
+        }
+        while (!Conversions.ToBoolean(Operators.ConditionalCompareObjectGreater(o, 1, false)))
+        {
+        }
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
     public async Task NonNullableUntilConditionsAreInvertedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
