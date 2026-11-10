@@ -20,15 +20,28 @@ internal static class VbSyntaxNodeExtensions
         return parentIsMemberAccessExpression || parentIsNonArgumentExpression && !parentIsBinaryExpression && !parentIsLambda && !parentIsParenthesis;
     }
 
+    /// <summary>
+    /// Where VB binds a condition as Boolean (e.g. Nothing becomes False), the C# condition must be bool.
+    /// VB's binder passes the condition context through parentheses (isOperandOfConditionalBranch in Binder_Expressions.vb), so this does too.
+    /// </summary>
     public static bool AlwaysHasBooleanTypeInCSharp(this VBSyntax.ExpressionSyntax vbNode)
     {
-        var parent = vbNode.SkipOutOfParens()?.Parent;
+        var condition = vbNode.OutermostParenthesizedOrSelf();
 
-        return parent is VBSyntax.SingleLineIfStatementSyntax singleLine && singleLine.Condition == vbNode ||
-               parent is VBSyntax.IfStatementSyntax ifStatement && ifStatement.Condition == vbNode ||
-               parent is VBSyntax.ElseIfStatementSyntax elseIfStatement && elseIfStatement.Condition == vbNode ||
-               parent is VBSyntax.TernaryConditionalExpressionSyntax ternary && ternary.Condition == vbNode ||
-               parent is VBSyntax.WhereClauseSyntax or VBSyntax.PartitionWhileClauseSyntax;
+        return condition.Parent switch {
+            VBSyntax.SingleLineIfStatementSyntax singleLine => singleLine.Condition == condition,
+            VBSyntax.IfStatementSyntax ifStatement => ifStatement.Condition == condition,
+            VBSyntax.ElseIfStatementSyntax elseIfStatement => elseIfStatement.Condition == condition,
+            VBSyntax.TernaryConditionalExpressionSyntax ternary => ternary.Condition == condition,
+            VBSyntax.WhereClauseSyntax or VBSyntax.PartitionWhileClauseSyntax => true,
+            _ => false
+        };
+    }
+
+    private static VBSyntax.ExpressionSyntax OutermostParenthesizedOrSelf(this VBSyntax.ExpressionSyntax vbNode)
+    {
+        while (vbNode.Parent is VBSyntax.ParenthesizedExpressionSyntax parenthesized) vbNode = parenthesized;
+        return vbNode;
     }
 
     /// <summary>

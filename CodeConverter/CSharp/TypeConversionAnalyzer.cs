@@ -341,7 +341,7 @@ internal class TypeConversionAnalyzer
             return true;
         } 
         else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp() &&
-                 (vbNode is not VBSyntax.BinaryExpressionSyntax and not VBSyntax.UnaryExpressionSyntax || vbNode.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression))) {
+                 (vbNode.SkipIntoParens() is not VBSyntax.BinaryExpressionSyntax and not VBSyntax.UnaryExpressionSyntax || vbNode.SkipIntoParens().IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression))) {
             typeConversionKind = TypeConversionKind.NullableBool;
             return true;
         }
