@@ -256,6 +256,53 @@ internal class NameExpressionNodeVisitor
         return await ConvertInvocationAsync(node, invocationSymbol, expressionSymbol);
     }
 
+    /// <summary>
+    /// VB infers an extension method's type arguments from the receiver first, then converts the other arguments to fit,
+    /// whereas C# infers from all arguments together, e.g. `values.Distinct(EqualityComparer(Of BaseValue).Default)` would make C# infer BaseValue.
+    /// So where an argument only fits its generic parameter via a variance conversion, state the type arguments VB inferred.
+    /// </summary>
+    private ExpressionSyntax WithTypeArgumentsInferredByVb(IOperation operation, ExpressionSyntax convertedExpression)
+    {
+        if (operation is not IInvocationOperation { TargetMethod: var method } invocation ||
+            (method.ReducedFrom ?? method.ConstructedFrom.ReducedFrom) is not { IsGenericMethod: true } extension ||
+            convertedExpression is not MemberAccessExpressionSyntax { Name: IdentifierNameSyntax name } memberAccess ||
+            !invocation.Arguments.Any(a => IsConvertedToFitGenericParameter(a, extension))) {
+            return convertedExpression;
+        }
+        var typeArguments = extension.TypeParameters.Select(t => GetInferredTypeArgument(method, t)).ToList();
+        if (typeArguments.Any(t => t is null or ITypeParameterSymbol || t.IsAnonymousType)) return convertedExpression;
+        var typeArgumentList = SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(typeArguments.Select(t => CommonConversions.GetTypeSyntax(t))));
+        return memberAccess.WithName(SyntaxFactory.GenericName(name.Identifier, typeArgumentList));
+    }
+
+    /// <summary>
+    /// VB fixes some type parameters from the receiver while reducing the method, and infers the rest from the arguments
+    /// </summary>
+    private static ITypeSymbol GetInferredTypeArgument(IMethodSymbol reducedMethod, ITypeParameterSymbol typeParameter) =>
+        reducedMethod.ConstructedFrom.GetTypeInferredDuringReduction(typeParameter) ??
+        reducedMethod.TypeParameters.Zip(reducedMethod.TypeArguments, (p, a) => (p, a)).FirstOrDefault(t => SymbolEqualityComparer.Default.Equals(t.p.ReducedFrom, typeParameter)).a;
+
+    private static bool IsConvertedToFitGenericParameter(IArgumentOperation argument, IMethodSymbol extension) =>
+        argument is { Value: IConversionOperation { IsImplicit: true, Operand.Type: { } argumentType }, Parameter: { Ordinal: var ordinal, Type: var parameterType } } &&
+        ordinal + 1 < extension.Parameters.Length && ContainsTypeParameter(extension.Parameters[ordinal + 1].Type) &&
+        IsVarianceConversion(argumentType, parameterType);
+
+    /// <summary>
+    /// The argument implements the parameter's generic type with different type arguments, e.g. IEqualityComparer(Of Base) for IEqualityComparer(Of Derived)
+    /// </summary>
+    private static bool IsVarianceConversion(ITypeSymbol argumentType, ITypeSymbol parameterType) =>
+        parameterType is INamedTypeSymbol { IsGenericType: true } genericParameter &&
+        argumentType.GetBaseTypesAndThis().Concat(argumentType.AllInterfaces)
+            .Any(t => SymbolEqualityComparer.Default.Equals(t.OriginalDefinition, genericParameter.OriginalDefinition) &&
+                      !SymbolEqualityComparer.Default.Equals(t, genericParameter));
+
+    private static bool ContainsTypeParameter(ITypeSymbol type) => type switch {
+        ITypeParameterSymbol => true,
+        IArrayTypeSymbol array => ContainsTypeParameter(array.ElementType),
+        INamedTypeSymbol named => named.TypeArguments.Any(ContainsTypeParameter),
+        _ => false
+    };
+
     private async Task<CSharpSyntaxNode> WithRemovedRedundantConversionOrNullAsync(VBSyntax.InvocationExpressionSyntax conversionNode, ISymbol invocationSymbol)
     {
         if (invocationSymbol?.ContainingNamespace.MetadataName != nameof(Microsoft.VisualBasic) ||
@@ -333,6 +380,8 @@ internal class NameExpressionNodeVisitor
                 }
             }
         }
+
+        convertedExpression = WithTypeArgumentsInferredByVb(operation, convertedExpression);
 
         if (invocationSymbol is IMethodSymbol m && convertedExpression is LambdaExpressionSyntax) {
             convertedExpression = SyntaxFactory.ObjectCreationExpression(CommonConversions.GetFuncTypeSyntax(expressionType, m), ExpressionSyntaxExtensions.CreateArgList(convertedExpression), null);
