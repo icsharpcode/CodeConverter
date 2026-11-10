@@ -6,32 +6,27 @@ internal static class ProjectExtensions
 {
     private static readonly char[] DirSeparators = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
-    public static Project CreateReferenceOnlyProjectFromAnyOptions(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions)
-    {
-        var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
-        var viewerId = ProjectId.CreateNewId();
-        var projectReferences = project.ProjectReferences.Concat(new[] {new ProjectReference(project.Id)});
-        var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
-            projectReferences, parseOptions);
-        var csharpViewOfVbProject = project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId);
-        return csharpViewOfVbProject;
-    }
-
     /// <summary>
-    /// Like <see cref="CreateReferenceOnlyProjectFromAnyOptions"/>, but references an image emitted directly from the project's compilation.
-    /// Roslyn's workspace-generated skeleton references aren't readable on all platforms (e.g. Linux) which silently hides all of the project's own types.
+    /// Creates a project in the other language which can see the types of <paramref name="project"/> (including internal ones).
+    /// It references an image emitted directly from the project's compilation, since Roslyn's workspace-generated
+    /// reference to the project isn't readable on all platforms (e.g. Linux) which silently hides all of its types.
     /// </summary>
     public static async Task<Project> CreateReferenceOnlyProjectFromAnyOptionsAsync(this Project project, CompilationOptions baseOptions, ParseOptions parseOptions, CancellationToken cancellationToken)
     {
+        var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
+        var viewerId = ProjectId.CreateNewId();
+
         var compilation = await project.GetCompilationAsync(cancellationToken);
         using var stream = new MemoryStream();
         var emitResult = compilation.Emit(stream, options: new EmitOptions(metadataOnly: true, includePrivateMembers: false), cancellationToken: cancellationToken);
-        if (!emitResult.Success) return project.CreateReferenceOnlyProjectFromAnyOptions(baseOptions, parseOptions);
+        if (!emitResult.Success) {
+            // Fall back to letting the workspace generate the reference to the project
+            var projectReferences = project.ProjectReferences.Concat(new[] { new ProjectReference(project.Id) });
+            var fallbackProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options, projectReferences, parseOptions);
+            return project.Solution.AddProject(fallbackProjectInfo).GetProject(viewerId);
+        }
 
-        var options = baseOptions.WithMetadataImportOptions(MetadataImportOptions.All);
-        var viewerId = ProjectId.CreateNewId();
-        var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options,
-            project.ProjectReferences, parseOptions);
+        var viewerProjectInfo = project.ToProjectInfo(viewerId, project.Name + viewerId, options, project.ProjectReferences, parseOptions);
         var reference = MetadataReference.CreateFromImage(stream.ToArray(), new MetadataReferenceProperties());
         return project.Solution.AddProject(viewerProjectInfo).GetProject(viewerId).AddMetadataReference(reference);
     }

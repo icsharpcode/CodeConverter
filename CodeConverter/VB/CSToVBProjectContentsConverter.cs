@@ -47,7 +47,7 @@ internal class CSToVBProjectContentsConverter : IProjectContentsConverter
         // TODO: Don't throw away solution-wide effects - write them to referencing files, and use in conversion of any other projects being converted at the same time.
         project = await ClashingMemberRenamer.RenameClashingSymbolsAsync(project, _cancellationToken);
         _convertedVbProject = project.ToProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
-        _vbReferenceProject = project.CreateReferenceOnlyProjectFromAnyOptions(_vbCompilationOptions, _vbParseOptions);
+        _vbReferenceProject = await project.CreateReferenceOnlyProjectFromAnyOptionsAsync(_vbCompilationOptions, _vbParseOptions, _cancellationToken);
         _vbViewOfCsSymbols = (VisualBasicCompilation)await _vbReferenceProject.GetCompilationAsync(_cancellationToken);
         SourceProject = project;
     }
