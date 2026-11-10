@@ -220,4 +220,112 @@ internal partial class StaticLocalConvertedToField
     }
 }");
     }
+
+    [Fact]
+    public async Task MyBaseNewWithNonCanonicalCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MyBase.new(value)
+    End Sub
+End Class", @"public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithUpperCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MYBASE.NEW(value)
+    End Sub
+End Class", @"public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MyBase.nEw
+    End Sub
+End Class", @"public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base()
+    {
+    }
+}");
+    }
 }

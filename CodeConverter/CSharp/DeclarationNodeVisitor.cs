@@ -949,8 +949,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
         var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, node.GetMemberContext());
 
-        var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
-        var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
+        // Parentheses are optional when calling a parameterless constructor, so "MyBase.New" has no invocation around it
+        var firstExpression = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression;
+        var ctor = firstExpression as VBSyntax.InvocationExpressionSyntax;
+        var ctorExpression = (ctor?.Expression ?? firstExpression) as VBSyntax.MemberAccessExpressionSyntax;
         var ctorArgs = await (ctor?.ArgumentList).AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ArgumentList();
 
         IEnumerable<VBSyntax.StatementSyntax> statements;
