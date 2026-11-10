@@ -1664,4 +1664,86 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task MustOverrideAsyncFunctionDropsAsyncModifierAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+MustInherit Class TestClass
+    Public MustOverride Async Function TestMethod() As Task
+End Class
+
+Class ChildClass
+    Inherits TestClass
+
+    Public Overrides Async Function TestMethod() As Task
+        Await Task.Delay(1)
+    End Function
+End Class", @"using System.Threading.Tasks;
+
+internal abstract partial class TestClass
+{
+    public abstract Task TestMethod();
+}
+
+internal partial class ChildClass : TestClass
+{
+
+    public override async Task TestMethod()
+    {
+        await Task.Delay(1);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MustOverrideAsyncSubAndGenericFunctionDropsAsyncModifierAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+MustInherit Class TestClass
+    Protected MustOverride Async Sub Fire()
+    Public MustOverride Async Function GetAsync(x As Integer) As Task(Of Integer)
+End Class", @"using System.Threading.Tasks;
+
+internal abstract partial class TestClass
+{
+    protected abstract void Fire();
+    public abstract Task<int> GetAsync(int x);
+}");
+    }
+
+    [Fact]
+    public async Task PartialAsyncMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+Partial Class TestClass
+    Private Partial Sub Defined()
+    End Sub
+End Class
+
+Partial Class TestClass
+    Private Async Sub Defined()
+        Await Task.Delay(1)
+    End Sub
+End Class", @"using System.Threading.Tasks;
+
+internal partial class TestClass
+{
+    partial void Defined();
+}
+
+internal partial class TestClass
+{
+    async partial void Defined()
+    {
+        await Task.Delay(1);
+    }
+}");
+    }
 }
