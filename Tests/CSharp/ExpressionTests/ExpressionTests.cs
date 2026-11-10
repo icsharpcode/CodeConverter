@@ -2386,6 +2386,19 @@ End Function",
     }
 
     [Fact]
+    public async Task ValueTupleConstructorBecomesTupleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Function Foo() As ValueTuple(Of Double, Double)
+    Return New ValueTuple(Of Double, Double)(1, 2)
+End Function",
+            @"public (double, double) Foo()
+{
+    return (1d, 2d);
+}");
+    }
+
+    [Fact]
     public async Task UseEventBackingFieldAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
