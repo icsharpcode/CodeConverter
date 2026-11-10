@@ -127,6 +127,36 @@ Public Class NullableConditionTests
         Assert.Equal(expectedIf, result)
         Assert.Equal(1, calls)
     End Sub
+
+    <Theory>
+    <InlineData(False, False, False)>
+    <InlineData(True, False, False)>
+    <InlineData(True, True, True)>
+    Public Sub NullableStructureConditionalExpressionConditions(useFirst As Boolean, firstHasValue As Boolean, expected As Boolean)
+        Dim first As ZeroIsTrue? = If(firstHasValue, New ZeroIsTrue, CType(Nothing, ZeroIsTrue?))
+        Dim second As ZeroIsTrue? = Nothing
+        Dim result = False
+        If If(useFirst, first, second) Then result = True
+        Assert.Equal(expected, result)
+
+        result = False
+        If If(If(useFirst, first, second), second) Then result = True
+        Assert.Equal(expected, result)
+
+        Dim count = 0
+        Do Until If(useFirst, first, second)
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(If(expected, 0, 3), count)
+
+        count = 0
+        Do Until If(If(useFirst, first, second), second)
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(If(expected, 0, 3), count)
+    End Sub
 End Class
 
 ''' <summary>

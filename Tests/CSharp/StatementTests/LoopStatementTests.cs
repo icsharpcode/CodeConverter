@@ -199,6 +199,8 @@ Class TestClass
         While (s) : End While
         Do Until s : Loop
         Do : Loop While GetS()
+        If If(s, GetS()) Then Return
+        Do Until If(s.HasValue, s, GetS()) : Loop
     End Sub
 End Class", @"
 internal partial struct S
@@ -230,6 +232,11 @@ internal partial class TestClass
         {
         }
         while (GetS() is { } arg1 && (bool)arg1);
+        if ((s ?? GetS()) is { } arg2 && (bool)arg2)
+            return;
+        while (!((s.HasValue ? s : GetS()) is { } arg3) || !(bool)arg3)
+        {
+        }
     }
 }");
     }
