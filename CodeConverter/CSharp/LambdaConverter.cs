@@ -40,7 +40,7 @@ internal class LambdaConverter
         async Task<CSharpSyntaxNode> ConvertInnerAsync()
         {
             var body = await ConvertMethodBodyStatementsAsync(node, node.Statements);
-            var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
+            var param = await node.SubOrFunctionHeader.ParameterList.AcceptParameterListAsync(CommonConversions.TriviaConvertingExpressionVisitor);
             return await ConvertAsync(node, param, body.ToList());
         }
     }
@@ -66,7 +66,7 @@ internal class LambdaConverter
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode) };
             }
 
-            var param = await node.SubOrFunctionHeader.ParameterList.AcceptAsync<ParameterListSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
+            var param = await node.SubOrFunctionHeader.ParameterList.AcceptParameterListAsync(CommonConversions.TriviaConvertingExpressionVisitor);
             return await ConvertAsync(node, param, convertedStatements);
         }
     }

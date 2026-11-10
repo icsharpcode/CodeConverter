@@ -496,7 +496,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             CS.SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers),
             returnType, CommonConversions.ConvertIdentifier(node.Identifier),
             typeParameters,
-            await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),
+            await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor),
             constraints
         );
     }
@@ -795,7 +795,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)));
 
         var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
-        var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList();
+        var parameterList = await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor);
         var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
         var hasExplicitInterfaceImplementation = declaredSymbol.IsNonPublicInterfaceImplementation() || declaredSymbol.IsRenamedInterfaceMember(directlyConvertedCsIdentifier, declaredSymbol.ExplicitInterfaceImplementations);
@@ -892,7 +892,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)),
                 delegateName,
                 null,
-                await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList(),
+                await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor),
                 CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
             );
 
@@ -927,7 +927,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
         var attributeList = CS.SyntaxFactory.List(attributes);
         var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
-        var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor);
+        var parameterList = await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor);
         var methodBodyVisitor = await ConvertMethodBodyStatementsAsync(node, containingBlock.Statements);
         var body = CS.SyntaxFactory.Block(methodBodyVisitor);
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, node.GetMemberContext());
@@ -974,7 +974,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             CS.SyntaxFactory.List(attributes),
             modifiers, 
             CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier).WithoutSourceMapping(), //TODO Use semantic model for this name
-            await block.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList(),
+            await block.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor),
             ctorCall,
             CS.SyntaxFactory.Block(convertedBodyStatements)
         );
@@ -1010,8 +1010,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         modifiers = modifiers.Add(CS.SyntaxFactory.Token(CS.SyntaxKind.ExternKeyword));
 
         var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
-        var parameterListSyntax = await (node.ParameterList).AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ??
-                                  CS.SyntaxFactory.ParameterList();
+        var parameterListSyntax = await (node.ParameterList).AcceptParameterListAsync(_triviaConvertingExpressionVisitor);
 
         return CS.SyntaxFactory.MethodDeclaration(attributeLists, modifiers, returnType, null, CommonConversions.ConvertIdentifier(node.Identifier), null,
             parameterListSyntax, CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), null, null).WithSemicolonToken(SemicolonToken);
