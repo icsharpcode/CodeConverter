@@ -13,14 +13,14 @@ Module Program
 
         <Fact()>
         Public Sub ConstructorInitializersWithNonCanonicalCasing()
-            Assert.Equal("Base(base)", New NonCanonicalCtorCalls("base").Log)
-            Assert.Equal("Base(me);Derived(me)", New NonCanonicalCtorCalls(1).Log)
-            Assert.Equal("Base(myclass);Derived(myclass)", New NonCanonicalCtorCalls(1L).Log)
-            Assert.Equal("Base();Derived(short)", New NonCanonicalCtorCalls(1S).Log)
-            Assert.Equal("Base(me);Derived(me);Derived()", New NonCanonicalCtorCalls().Log)
-            Assert.Equal("Base(call);Derived(call)", New NonCanonicalCtorCalls(1.0).Log)
-            Assert.Equal("Base(me);Derived(me);Derived(call me)", New NonCanonicalCtorCalls(1D).Log)
-            Assert.Equal("Base(myclass);Derived(myclass);Derived(call myclass)", New NonCanonicalCtorCalls(CByte(1)).Log)
+            Assert.Equal("Base(lower)", New NonCanonicalCtorCalls("lower").Log)
+            Assert.Equal("Base(upper);Derived(Integer)", New NonCanonicalCtorCalls(1).Log)
+            Assert.Equal("Base(myclass);Derived(Long)", New NonCanonicalCtorCalls(1L).Log)
+            Assert.Equal("Base();Derived(Short)", New NonCanonicalCtorCalls(1S).Log)
+            Assert.Equal("Base(upper);Derived(Integer);Derived()", New NonCanonicalCtorCalls().Log)
+            Assert.Equal("Base(call);Derived(Double)", New NonCanonicalCtorCalls(1.0).Log)
+            Assert.Equal("Base(upper);Derived(Integer);Derived(Decimal)", New NonCanonicalCtorCalls(1D).Log)
+            Assert.Equal("Base(myclass);Derived(Long);Derived(Byte)", New NonCanonicalCtorCalls(CByte(1)).Log)
         End Sub
     End Class
 
@@ -40,16 +40,16 @@ Module Program
             MyBase.new(value)
         End Sub
         Public Sub New(value As Integer)
-            MYBASE.NEW("me")
-            Log &= ";Derived(me)"
+            MYBASE.NEW("upper")
+            Log &= ";Derived(Integer)"
         End Sub
         Public Sub New(value As Long)
             myclass.New("myclass")
-            Log &= ";Derived(myclass)"
+            Log &= ";Derived(Long)"
         End Sub
         Public Sub New(value As Short)
             mybase.nEw
-            Log &= ";Derived(short)"
+            Log &= ";Derived(Short)"
         End Sub
         Public Sub New()
             Me.new(1)
@@ -57,15 +57,15 @@ Module Program
         End Sub
         Public Sub New(value As Double)
             Call MyBase.new("call")
-            Log &= ";Derived(call)"
+            Log &= ";Derived(Double)"
         End Sub
         Public Sub New(value As Decimal)
             CALL ME.NEW(1)
-            Log &= ";Derived(call me)"
+            Log &= ";Derived(Decimal)"
         End Sub
         Public Sub New(value As Byte)
             call myclass.New(1L)
-            Log &= ";Derived(call myclass)"
+            Log &= ";Derived(Byte)"
         End Sub
     End Class
 
