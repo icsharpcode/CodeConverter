@@ -14,7 +14,7 @@ public class ProjectConversion
     private readonly ILanguageConversion _languageConversion;
     private readonly bool _showCompilationErrors;
     private readonly bool _returnSelectedNode;
-    private static readonly string[] BannedPaths = { ".AssemblyAttributes.", "\\bin\\", "\\obj\\" };
+    private static readonly string[] BannedPaths = { ".AssemblyAttributes.", "/bin/", "/obj/" };
     private readonly CancellationToken _cancellationToken;
 
     private ProjectConversion(IProjectContentsConverter projectContentsConverter, IEnumerable<Document> documentsToConvert, IEnumerable<TextDocument> additionalDocumentsToConvert,
@@ -118,7 +118,8 @@ public class ProjectConversion
             }
         }
 
-        var sourceTargetReplacements = sourceToTargetMap.Select(m => (Regex.Escape(m.Item1), m.Item2));
+        // Project files may use either directory separator, whatever OS this is running on
+        var sourceTargetReplacements = sourceToTargetMap.Select(m => (PathConverter.EscapeSeparatorAgnostic(m.Item1), m.Item2.Replace('/', '\\')));
         var languageSpecificReplacements = sourceTargetReplacements.Concat(languageConversion.GetProjectFileReplacementRegexes()).Concat(languageConversion.GetProjectTypeGuidMappings())
             .Select(m => (m.Item1, m.Item2, false));
 
@@ -166,7 +167,7 @@ public class ProjectConversion
         IProgress<ConversionProgress> progress, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var documentsWithLengths = await projectContentsConverter.SourceProject.Documents
-            .Where(d => !BannedPaths.Any(d.FilePath.Contains))
+            .Where(d => !BannedPaths.Any(d.FilePath.Replace('\\', '/').Contains))
             .SelectAsync(async d => (Doc: d, (await d.GetTextAsync(cancellationToken)).Length));
 
         //Perf heuristic: Decrease memory pressure on the simplification phase by converting large files first https://github.com/icsharpcode/CodeConverter/issues/524#issuecomment-590301594

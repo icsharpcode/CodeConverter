@@ -18,7 +18,7 @@ Public Class XmlTests
 
         Assert.Equal("<books xmlns:t=""http://example.com/test"" xmlns=""http://example.com/"">
   <t:book />
-</books>", document.ToString())
+</books>", document.ToString().Replace(Environment.NewLine, vbCrLf))
     End Sub
 
 
@@ -33,7 +33,7 @@ Public Class XmlTests
 
         Assert.Equal("<books xmlns:t=""http://example.com/test"" xmlns=""http://example.com/"">
   <t:book />
-</books>", document.ToString())
+</books>", document.ToString().Replace(Environment.NewLine, vbCrLf))
     End Sub
 
 End Class

@@ -17,7 +17,7 @@ public class SolutionFileTextEditorTests : IDisposable
 {
     private Solution _sln;
     private const string SlnName = "MySolution";
-    private const string SlnFilePath = @"C:\" + SlnName + @"\" + SlnName + ".sln";
+    private static readonly string SlnFilePath = Utils.RootedPath(SlnName, SlnName + ".sln");
     private Mock<IFileSystem> _fsMock;
 
     public SolutionFileTextEditorTests()
@@ -55,7 +55,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", "VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -63,10 +63,10 @@ public class SolutionFileTextEditorTests : IDisposable
     {
         //Arrange
         var slnxContents = "<Solution>\r\n  <Project Path=\"ConsoleApp1/ConsoleApp1.vbproj\" />\r\n</Solution>";
-        var slnxSln = CreateTestSolution(@"C:\MySolution\MySolution.slnx");
+        var slnxSln = CreateTestSolution(Utils.RootedPath("MySolution", "MySolution.slnx"));
         var projectId = ProjectId.CreateNewId();
         var projInfo = ProjectInfo.Create(projectId, VersionStamp.Create(), "ConsoleApp1", "ConsoleApp1",
-            LanguageNames.VisualBasic, @"C:\MySolution\ConsoleApp1\ConsoleApp1.vbproj");
+            LanguageNames.VisualBasic, Utils.RootedPath("MySolution", "ConsoleApp1", "ConsoleApp1.vbproj"));
         slnxSln = slnxSln.AddProject(projInfo);
         var testProject = slnxSln.GetProject(projectId);
 
@@ -80,7 +80,7 @@ public class SolutionFileTextEditorTests : IDisposable
 
         //Assert
         var expectedSlnFile = "<Solution>\r\n  <Project Path=\"ConsoleApp1/ConsoleApp1.csproj\" />\r\n</Solution>";
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", @"VbLibrary\VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", @"VbLibrary\VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", @"VbLibrary\VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", @"VbLibrary", @"VbLibrary\VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -218,7 +218,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", @"VbLibrary", @"VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -246,7 +246,7 @@ public class SolutionFileTextEditorTests : IDisposable
             ("FAE04EC0-301F-11D3-BF4B-00C04F79EFBC", @"VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -513,13 +513,13 @@ public class SolutionFileTextEditorTests : IDisposable
             ("9A19103F-16F7-4668-BE54-9A1E7A4F7556", @"VbLibrary\VbLibrary.csproj", "913DD733-37BF-05CF-35C5-5BD4A0431C47")
         });
 
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     private static string GetSolutionProjectReference(IEnumerable<(string ProjTypeGuid, string RelativeProjPath, string ProjRefGuid)> projRefTuples)
     {
         return GetSolutionProjectReference(projRefTuples
-            .Select(tuple => (tuple.ProjTypeGuid, ProjName: Path.GetFileNameWithoutExtension(tuple.RelativeProjPath),
+            .Select(tuple => (tuple.ProjTypeGuid, ProjName: Path.GetFileNameWithoutExtension(tuple.RelativeProjPath.Replace('\\', '/')),
                 tuple.RelativeProjPath, tuple.ProjRefGuid))
             .ToList());
     }
@@ -577,7 +577,7 @@ EndProject";
         return Utils.HomogenizeEol(referenceString);
     }
 
-    private static Solution CreateTestSolution(string filePath = SlnFilePath)
+    private static Solution CreateTestSolution(string filePath = null)
     {
         var ws = Task.Run(() => ThreadSafeWorkspaceHelper.CreateAdhocWorkspace.GetValueAsync())
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits - the tests don't deadlock
@@ -585,7 +585,7 @@ EndProject";
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
         var solutionId = SolutionId.CreateNewId(SlnName);
         var versionStamp = VersionStamp.Create();
-        var solutionInfo = SolutionInfo.Create(solutionId, versionStamp, filePath);
+        var solutionInfo = SolutionInfo.Create(solutionId, versionStamp, filePath ?? SlnFilePath);
 
         return ws.AddSolution(solutionInfo);
     }
@@ -620,10 +620,10 @@ EndProject";
     {
         //Arrange
         var slnxContents = "<Solution>\r\n  <Project Path=\"VbLibrary.vbproj\" />\r\n</Solution>";
-        var slnxSln = CreateTestSolution(@"C:\MySolution\MySolution.slnx");
+        var slnxSln = CreateTestSolution(Utils.RootedPath("MySolution", "MySolution.slnx"));
         var projectId = ProjectId.CreateNewId();
         var projInfo = ProjectInfo.Create(projectId, VersionStamp.Create(), "VbLibrary", "VbLibrary",
-            LanguageNames.VisualBasic, @"C:\MySolution\VbLibrary.vbproj");
+            LanguageNames.VisualBasic, Utils.RootedPath("MySolution", "VbLibrary.vbproj"));
         slnxSln = slnxSln.AddProject(projInfo);
         var testProject = slnxSln.GetProject(projectId);
 
@@ -637,7 +637,7 @@ EndProject";
 
         //Assert
         var expectedSlnFile = "<Solution>\r\n  <Project Path=\"VbLibrary.csproj\" />\r\n</Solution>";
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 
     [Fact]
@@ -645,10 +645,10 @@ EndProject";
     {
         //Arrange
         var slnxContents = "<Solution>\r\n  <Project Path=\"VbLibrary\\VbLibrary.vbproj\" />\r\n</Solution>";
-        var slnxSln = CreateTestSolution(@"C:\MySolution\MySolution.slnx");
+        var slnxSln = CreateTestSolution(Utils.RootedPath("MySolution", "MySolution.slnx"));
         var projectId = ProjectId.CreateNewId();
         var projInfo = ProjectInfo.Create(projectId, VersionStamp.Create(), "VbLibrary", "VbLibrary",
-            LanguageNames.VisualBasic, @"C:\MySolution\VbLibrary\VbLibrary.vbproj");
+            LanguageNames.VisualBasic, Utils.RootedPath("MySolution", "VbLibrary", "VbLibrary.vbproj"));
         slnxSln = slnxSln.AddProject(projInfo);
         var testProject = slnxSln.GetProject(projectId);
 
@@ -662,6 +662,6 @@ EndProject";
 
         //Assert
         var expectedSlnFile = "<Solution>\r\n  <Project Path=\"VbLibrary\\VbLibrary.csproj\" />\r\n</Solution>";
-        Assert.Equal(expectedSlnFile, Utils.HomogenizeEol(convertedSlnFile));
+        Assert.Equal(Utils.HomogenizeEol(expectedSlnFile), Utils.HomogenizeEol(convertedSlnFile));
     }
 }

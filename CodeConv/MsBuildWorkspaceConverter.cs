@@ -85,6 +85,8 @@ public sealed class MsBuildWorkspaceConverter
             using var workspace = MSBuildWorkspace.Create(properties);
 
             Solution solution = await workspace.OpenSolutionAsync(_solutionFilePath);
+            solution = await RestoreVisualBasicDefinesLostOnUnixAsync(solution, properties);
+            solution = await ReplaceProjectReferencesWithEmittedMetadataOnUnixAsync(solution);
 
             var errorString = await GetCompilationErrorsAsync(workspace, solution.Projects);
             if (string.IsNullOrEmpty(errorString)) return solution;
@@ -103,6 +105,64 @@ public sealed class MsBuildWorkspaceConverter
             {
                 return new ValidationException($"{mainMessage}:{Environment.NewLine}{fullDetail}{Environment.NewLine}{mainMessage}");
             }
+        }
+
+        /// <summary>
+        /// On Unix, MSBuild turns the backslashes escaping the quotes in VB string defines (e.g. CONFIG=\"Debug\") into slashes
+        /// when returning the compiler arguments. Roslyn then fails to parse the whole /define argument, so every conditional
+        /// compilation symbol is lost, including _MyType which then defaults to a My template that can't compile.
+        /// This re-reads the defines from the project's evaluated FinalDefineConstants property.
+        /// </summary>
+        private static async Task<Solution> RestoreVisualBasicDefinesLostOnUnixAsync(Solution solution, IDictionary<string, string> globalProperties)
+        {
+            if (System.IO.Path.DirectorySeparatorChar == '\\') return solution;
+
+            foreach (var project in solution.Projects.Where(p => p.Language == LanguageNames.VisualBasic && p.FilePath != null)) {
+                if (project.ParseOptions is not Microsoft.CodeAnalysis.VisualBasic.VisualBasicParseOptions parseOptions) continue;
+                if (parseOptions.PreprocessorSymbolNames.Contains("CONFIG")) continue;
+
+                var propertyArgs = string.Join(" ", globalProperties.Select(kv => $"\"-p:{kv.Key}={kv.Value}\""));
+                var psi = new ProcessStartInfo("dotnet", $"msbuild \"{project.FilePath}\" -nologo -t:AddImplicitDefineConstants -getProperty:FinalDefineConstants,DefineConstants {propertyArgs}");
+                var (exitCode, stdOut, _) = await psi.GetOutputAsync();
+                if (exitCode != 0) continue;
+
+                var finalDefines = System.Text.Json.JsonDocument.Parse(stdOut).RootElement
+                    .GetProperty("Properties").GetProperty("FinalDefineConstants").GetString();
+                if (string.IsNullOrWhiteSpace(finalDefines)) continue;
+
+                var defines = Microsoft.CodeAnalysis.VisualBasic.VisualBasicCommandLineParser.ParseConditionalCompilationSymbols(finalDefines, out _);
+                var merged = parseOptions.PreprocessorSymbols.Concat(defines).GroupBy(kv => kv.Key).Select(g => g.Last());
+                var newParseOptions = parseOptions.WithPreprocessorSymbols(merged);
+                // The VB compilation options carry their own copy of the parse options, which is where the compiler reads _MyType from
+                var newCompilationOptions = ((Microsoft.CodeAnalysis.VisualBasic.VisualBasicCompilationOptions)project.CompilationOptions!).WithParseOptions(newParseOptions);
+                solution = solution.WithProjectParseOptions(project.Id, newParseOptions).WithProjectCompilationOptions(project.Id, newCompilationOptions);
+            }
+            return solution;
+        }
+
+        /// <summary>
+        /// Roslyn's workspace-generated reference to another project (used when its output hasn't been built) isn't readable on Unix,
+        /// so the referencing compilation reports "not a valid assembly". Emit the metadata directly and reference that instead.
+        /// </summary>
+        private static async Task<Solution> ReplaceProjectReferencesWithEmittedMetadataOnUnixAsync(Solution solution)
+        {
+            if (System.IO.Path.DirectorySeparatorChar == '\\') return solution;
+
+            foreach (var projectId in solution.GetProjectDependencyGraph().GetTopologicallySortedProjects()) {
+                var project = solution.GetProject(projectId)!;
+                foreach (var projectReference in project.ProjectReferences.ToArray()) {
+                    var referenced = solution.GetProject(projectReference.ProjectId);
+                    var compilation = referenced == null ? null : await referenced.GetCompilationAsync();
+                    if (compilation == null) continue;
+
+                    using var stream = new System.IO.MemoryStream();
+                    if (!compilation.Emit(stream, options: new Microsoft.CodeAnalysis.Emit.EmitOptions(metadataOnly: true)).Success) continue;
+
+                    var reference = MetadataReference.CreateFromImage(stream.ToArray(), new MetadataReferenceProperties(aliases: projectReference.Aliases, embedInteropTypes: projectReference.EmbedInteropTypes));
+                    solution = solution.RemoveProjectReference(projectId, projectReference).AddMetadataReference(projectId, reference);
+                }
+            }
+            return solution;
         }
 
         private async Task<string> GetCompilationErrorsAsync(MSBuildWorkspace workspace, IEnumerable<Project> projectsToConvert)

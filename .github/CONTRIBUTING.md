@@ -20,7 +20,7 @@ If that function isn't on a public API, we could choose a more specific type if 
 If that function is on a public API, we could make internal callers use a different method with a specific type, and have the public method just call through to that method. We may want to flag such cases with an attribute, comment or #warning pragma encouraging refactoring to remove the "Object" overload if it's not required by public API consumers.
 
 ## Test types
-See [Tests/Readme.md](https://github.com/icsharpcode/CodeConverter/blob/master/Tests/Readme.md)
+See [Tests/Readme.md](https://github.com/icsharpcode/CodeConverter/blob/master/Tests/Readme.md), including [how to keep tests and code cross-platform](https://github.com/icsharpcode/CodeConverter/blob/master/Tests/Readme.md#cross-platform-windows-and-linux) (line endings: git + tests; path separators: production code)
 
 ## How to get started changing code
 In ProjectConversion, you'll see there's a separate entry point for the online snippet converter which:

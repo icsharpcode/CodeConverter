@@ -41,6 +41,12 @@ public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixtu
     private static readonly string MultiFileCharacterizationDir = Path.Combine(TestConstants.GetTestDataDirectory(), "MultiFileCharacterization");
     private static readonly string OriginalSolutionDir = Path.Combine(MultiFileCharacterizationDir, "SourceFiles");
     private static readonly string SolutionFile = Path.Combine(OriginalSolutionDir, "CharacterizationTestSolution.sln");
+    static MultiFileTestFixture()
+    {
+        // The characterization solution contains WinForms projects, which only restore on non-Windows OSes with this set
+        Environment.SetEnvironmentVariable("EnableWindowsTargeting", "true");
+    }
+
     private static readonly MsBuildWorkspaceConverter _msBuildWorkspaceConverter = new(JoinableTaskFactorySingleton.EnsureInitialized(), SolutionFile, false);
 
     public async Task ConvertProjectsWhereAsync(Func<Project, bool> shouldConvertProject, Language targetLanguage, [CallerMemberName] string expectedResultsDirectory = "")
@@ -54,7 +60,7 @@ public sealed class MultiFileTestFixture : ICollectionFixture<MultiFileTestFixtu
         try {
             if (!expectedResultDirectory.Exists) expectedResultDirectory.Create();
             var expectedFiles = expectedResultDirectory.GetFiles("*", SearchOption.AllDirectories)
-                .Where(f => !f.FullName.Contains(@"\obj\") && !f.FullName.Contains(@"\bin\")).ToArray();
+                .Where(f => !f.FullName.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}") && !f.FullName.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")).ToArray();
             AssertAllExpectedFilesAreEqual(expectedFiles, conversionResults, expectedResultDirectory, OriginalSolutionDir);
             AssertAllConvertedFilesWereExpected(expectedFiles, conversionResults, expectedResultDirectory, OriginalSolutionDir);
             AssertNoConversionErrors(conversionResults);
