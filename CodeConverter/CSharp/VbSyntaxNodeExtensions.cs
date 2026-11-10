@@ -33,6 +33,8 @@ internal static class VbSyntaxNodeExtensions
             VBSyntax.IfStatementSyntax ifStatement => ifStatement.Condition == condition,
             VBSyntax.ElseIfStatementSyntax elseIfStatement => elseIfStatement.Condition == condition,
             VBSyntax.TernaryConditionalExpressionSyntax ternary => ternary.Condition == condition,
+            VBSyntax.WhileStatementSyntax whileStatement => whileStatement.Condition == condition,
+            VBSyntax.WhileOrUntilClauseSyntax or VBSyntax.CatchFilterClauseSyntax => true,
             VBSyntax.WhereClauseSyntax or VBSyntax.PartitionWhileClauseSyntax => true,
             _ => false
         };

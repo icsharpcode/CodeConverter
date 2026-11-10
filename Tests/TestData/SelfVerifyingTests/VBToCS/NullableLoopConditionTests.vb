@@ -163,6 +163,54 @@ Public Class NullableLoopConditionTests
         Assert.Equal(expectedUntilOrElse, count)
     End Sub
 
+    <Theory>
+    <InlineData(Nothing, 1, 3, 3)>
+    <InlineData(1, 2, 3, 1)>
+    <InlineData(2, 1, 0, 3)>
+    Public Sub UntilNotComparison(a As Integer?, b As Integer?, expectedDoUntil As Integer, expectedLoopUntil As Integer)
+        Dim count = 0
+        Do Until Not (a < b)
+            count += 1
+            If count = MaxIterations Then Exit Do
+        Loop
+        Assert.Equal(expectedDoUntil, count)
+
+        count = 0
+        Do
+            count += 1
+            If count = MaxIterations Then Exit Do
+        Loop Until Not a >= b
+        Assert.Equal(expectedLoopUntil, count)
+    End Sub
+
+    <Fact>
+    Public Sub ConditionWithSideEffectsEvaluatedOncePerIteration()
+        Dim log As New System.Text.StringBuilder()
+        Dim values As Integer?() = {1, 2, Nothing, 3}
+        Dim index = 0
+        Dim nextValue = Function()
+                            log.Append("n")
+                            index += 1
+                            Return values(index - 1)
+                        End Function
+        Dim limit = Function() As Integer?
+                        log.Append("l")
+                        Return 3
+                    End Function
+        While nextValue() < limit()
+            log.Append("b")
+        End While
+        Assert.Equal("nlbnlbnl", log.ToString())
+
+        log.Clear()
+        index = 0
+        Dim limitValue As Integer? = 3
+        Do Until nextValue() = limitValue
+            log.Append("b")
+        Loop
+        Assert.Equal("nbnbnbn", log.ToString())
+    End Sub
+
     <Fact>
     Public Sub WhileStopsWhenComparisonBecomesNothing()
         Dim currentDate As Date? = New Date(2000, 1, 1)

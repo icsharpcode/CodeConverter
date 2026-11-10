@@ -1143,7 +1143,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         async Task<CatchFilterClauseSyntax> ConvertCatchFilterClauseAsync(VBasic.Syntax.CatchFilterClauseSyntax node)
         {
             if (node == null) return null;
-            return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+            return SyntaxFactory.CatchFilterClause(await ConvertConditionAsync(node.Filter));
         }
 
         async Task<FinallyClauseSyntax> ConvertFinallyBlockAsync(VBasic.Syntax.FinallyBlockSyntax node)
@@ -1188,7 +1188,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public override async Task<SyntaxList<StatementSyntax>> VisitWhileBlock(VBSyntax.WhileBlockSyntax node)
     {
         return SingleStatement(SyntaxFactory.WhileStatement(
-            await node.WhileStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor),
+            await ConvertConditionAsync(node.WhileStatement.Condition),
             SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements)).UnpackNonNestedBlock()
         ));
     }
@@ -1208,11 +1208,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     }
 
     /// <summary>
-    /// C# only has While loops, so an Until loop continues while its condition is false
+    /// C# only has While loops, so an Until loop continues while its condition is false.
+    /// VB converts the Until condition to Boolean (Nothing to False) before negating it, so an Until loop continues while it's Nothing.
     /// </summary>
     private async Task<ExpressionSyntax> ConvertLoopContinueConditionAsync(VBSyntax.WhileOrUntilClauseSyntax clause)
     {
-        var condition = await clause.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        var condition = await ConvertConditionAsync(clause.Condition);
         return clause.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword) ? condition.InvertCondition() : condition;
     }
 

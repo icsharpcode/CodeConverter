@@ -39,6 +39,135 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NullableComparisonInWhileConditionIssue1300Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Class TestClass
+    Sub TestMethod(startDate As Date?, endDate As Date?)
+        Dim currentDate = startDate
+        While currentDate <= endDate
+            currentDate = currentDate.Value.AddMinutes(1)
+        End While
+        While (currentDate <= endDate)
+            currentDate = currentDate.Value.AddMinutes(1)
+        End While
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void TestMethod(DateTime? startDate, DateTime? endDate)
+    {
+        var currentDate = startDate;
+        while (currentDate <= endDate)
+            currentDate = currentDate.Value.AddMinutes(1d);
+        while (currentDate <= endDate)
+            currentDate = currentDate.Value.AddMinutes(1d);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NullableLoopConditionsTreatNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?)
+        While x = y : End While
+        While b : End While
+        While Not b : End While
+        Do While x <> y : Loop
+        Do While b AndAlso x > y : Loop
+        Do Until x < y : Loop
+        Do Until x = y : Loop
+        Do Until b : Loop
+        Do Until b OrElse x > 2 : Loop
+        Do : Loop While x >= y
+        Do : Loop While b
+        Do : Loop Until x > y
+        Do : Loop Until Not b
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, bool? b)
+    {
+        while (x.HasValue && y.HasValue && x.Value == y.Value)
+        {
+        }
+        while (b == true)
+        {
+        }
+        while (b == false)
+        {
+        }
+        while (x.HasValue && y.HasValue && x.Value != y.Value)
+        {
+        }
+        while ((!b.HasValue || b.Value) && x > y && b.HasValue)
+        {
+        }
+        while (!(x < y))
+        {
+        }
+        while (!(x.HasValue && y.HasValue && x.Value == y.Value))
+        {
+        }
+        while (b != true)
+        {
+        }
+        while (!(b.GetValueOrDefault() || x > 2))
+        {
+        }
+        do
+        {
+        }
+        while (x >= y);
+        do
+        {
+        }
+        while (b == true);
+        do
+        {
+        }
+        while (!(x > y));
+        do
+        {
+        }
+        while (!(b == false));
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NonNullableUntilConditionsAreInvertedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(i As Integer, b As Boolean)
+        Do Until i < 1 : Loop
+        Do Until Not b : Loop
+        Do : Loop Until i = 1 OrElse b
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int i, bool b)
+    {
+        while (i >= 1)
+        {
+        }
+        while (b)
+        {
+        }
+        do
+        {
+        }
+        while (i != 1 && !b);
+    }
+}");
+    }
+
+    [Fact]
     public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program
