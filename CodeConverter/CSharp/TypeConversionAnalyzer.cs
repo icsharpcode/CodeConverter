@@ -1,4 +1,4 @@
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -437,12 +437,14 @@ internal class TypeConversionAnalyzer
         vbNode.AlwaysHasBooleanTypeInCSharp() ? csNullableNode.GetValueOrDefault() : csNullableNode.NullableGetValueExpression();
 
     /// <summary>
-    /// In a condition, VB lifts a conversion to Boolean (e.g. a user-defined CType), so Nothing is False rather than throwing.
+    /// In a condition, VB lifts a conversion to Boolean (e.g. a user-defined CType returning Boolean), so Nothing is False rather than throwing.
+    /// A user-defined CType returning Boolean? isn't lifted that way: VB throws for a Nothing operand, and treats a Nothing result as False.
     /// A Boolean? condition is excluded: the nullable Boolean logic already makes it bool, so a cast on it is redundant and simplified away.
     /// </summary>
-    private static bool IsNonBooleanNullableCondition(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
+    private bool IsNonBooleanNullableCondition(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
         vbType.IsNullable(out var underlyingType) && underlyingType.SpecialType != SpecialType.System_Boolean &&
-        !vbConvertedType.IsNullable() && vbNode.AlwaysHasBooleanTypeInCSharp();
+        !vbConvertedType.IsNullable() && vbNode.AlwaysHasBooleanTypeInCSharp() &&
+        !(VBasic.VisualBasicExtensions.GetConversion(_semanticModel, vbNode).MethodSymbol?.ReturnType).IsNullable();
 
     private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
     {

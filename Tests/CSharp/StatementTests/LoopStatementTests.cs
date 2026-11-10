@@ -242,6 +242,42 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NullableStructureWithWideningToNullableBooleanConditionsAreNotLiftedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Structure S
+    Public Shared Widening Operator CType(s As S) As Boolean?
+        Return Nothing
+    End Operator
+End Structure
+
+Class TestClass
+    Private Sub TestMethod(s As S?)
+        If s Then Return
+        Do Until s : Loop
+    End Sub
+End Class", @"
+internal partial struct S
+{
+    public static implicit operator bool?(S s)
+    {
+        return default;
+    }
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(S? s)
+    {
+        if ((bool)s)
+            return;
+        while (!(bool)s)
+        {
+        }
+    }
+}");
+    }
+
+    [Fact]
     public async Task OptionStrictOffNullableToBooleanOutsideConditionsKeepsValueAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
