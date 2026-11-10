@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -562,5 +563,31 @@ public partial class Derived
     {
     }
 }");
+    }
+
+    [Fact]
+    public async Task DictionaryAccessNamedNewIsNotConstructorCallAsync()
+    {
+        // The body conversion drops the invocation of the dictionary-accessed delegate (CS0201), so only the constructor initializer is asserted on
+        var convertedCode = await ConvertAsync<VBToCSConversion>(@"Imports System
+
+Public Class Derived
+    Default ReadOnly Property Item(k As String) As Action
+        Get
+            Return Sub() Console.WriteLine(k)
+        End Get
+    End Property
+
+    Public Sub New()
+        Me!new()
+    End Sub
+    Public Sub New(value As String)
+        Call Me!New()
+    End Sub
+End Class");
+
+        Assert.DoesNotContain(": this(", convertedCode);
+        Assert.Contains("this[\"new\"]", convertedCode);
+        Assert.Contains("this[\"New\"]", convertedCode);
     }
 }

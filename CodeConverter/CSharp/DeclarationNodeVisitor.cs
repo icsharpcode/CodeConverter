@@ -982,7 +982,9 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             _ => null
         };
         var invocation = calledExpression as VBSyntax.InvocationExpressionSyntax;
+        // "Me!New" is dictionary access (Me("New")) rather than a constructor call
         if ((invocation?.Expression ?? calledExpression) is not VBSyntax.MemberAccessExpressionSyntax memberAccess
+            || !memberAccess.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression)
             || !memberAccess.Name.Identifier.IsKindOrHasMatchingText(VBasic.SyntaxKind.NewKeyword)) {
             return null;
         }
