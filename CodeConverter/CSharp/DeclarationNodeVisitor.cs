@@ -989,12 +989,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             return null;
         }
 
-        CS.SyntaxKind? initializerKind = memberAccess.Expression switch {
-            VBSyntax.MyBaseExpressionSyntax => CS.SyntaxKind.BaseConstructorInitializer,
-            VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax => CS.SyntaxKind.ThisConstructorInitializer,
+        return memberAccess.Expression switch {
+            VBSyntax.MyBaseExpressionSyntax => (CS.SyntaxKind.BaseConstructorInitializer, invocation?.ArgumentList),
+            VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax => (CS.SyntaxKind.ThisConstructorInitializer, invocation?.ArgumentList),
             _ => null
         };
-        return initializerKind is { } kind ? (kind, invocation?.ArgumentList) : null;
     }
 
     public override async Task<CSharpSyntaxNode> VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
