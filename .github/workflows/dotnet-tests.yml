@@ -24,16 +24,17 @@ jobs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
+    - name: Log .NET version
+      run: dotnet --info
+
+    # Build with the newest SDK (the projects also target net10.0); only the test run is pinned to SDK 8
+    - name: Build
+      run: dotnet build Tests/Tests.csproj -c Release -f ${{ env.TestFramework }}
+
     - name: Create global.json to enforce .NET 8 for MSBuild and update Tests/TestData projects
       if: inputs.dotnet-version == '8.0.x'
       shell: pwsh
       run: ./.github/scripts/update-testdata-targetframework.ps1
-
-    - name: Log .NET version
-      run: dotnet --info
-
-    - name: Build
-      run: dotnet build Tests/Tests.csproj -c Release -f ${{ env.TestFramework }}
 
     - name: Execute unit tests
       run: dotnet test Tests/Tests.csproj -c Release -f ${{ env.TestFramework }} --no-build
