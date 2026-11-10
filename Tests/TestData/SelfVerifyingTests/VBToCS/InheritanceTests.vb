@@ -10,6 +10,48 @@ Module Program
             Dim x As A = New B
             Assert.True(x.TestMethod())
         End Sub
+
+        <Fact()>
+        Public Sub ConstructorInitializersWithNonCanonicalCasing()
+            Assert.Equal("Base(base)", New NonCanonicalCtorCalls("base").Log)
+            Assert.Equal("Base(me);Derived(me)", New NonCanonicalCtorCalls(1).Log)
+            Assert.Equal("Base(myclass);Derived(myclass)", New NonCanonicalCtorCalls(1L).Log)
+            Assert.Equal("Base();Derived(short)", New NonCanonicalCtorCalls(1S).Log)
+            Assert.Equal("Base(me);Derived(me);Derived()", New NonCanonicalCtorCalls().Log)
+        End Sub
+    End Class
+
+    Public Class CtorBase
+        Public Log As String
+        Public Sub New()
+            Log = "Base()"
+        End Sub
+        Public Sub New(value As String)
+            Log = "Base(" & value & ")"
+        End Sub
+    End Class
+
+    Public Class NonCanonicalCtorCalls
+        Inherits CtorBase
+        Public Sub New(value As String)
+            MyBase.new(value)
+        End Sub
+        Public Sub New(value As Integer)
+            MYBASE.NEW("me")
+            Log &= ";Derived(me)"
+        End Sub
+        Public Sub New(value As Long)
+            myclass.New("myclass")
+            Log &= ";Derived(myclass)"
+        End Sub
+        Public Sub New(value As Short)
+            mybase.nEw
+            Log &= ";Derived(short)"
+        End Sub
+        Public Sub New()
+            Me.new(1)
+            Log &= ";Derived()"
+        End Sub
     End Class
 
     Public Interface IA

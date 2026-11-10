@@ -238,7 +238,8 @@ Public Class Derived
     Public Sub New(value As String)
         MyBase.new(value)
     End Sub
-End Class", @"public partial class Base
+End Class", @"
+public partial class Base
 {
     public Base()
     {
@@ -274,7 +275,8 @@ Public Class Derived
     Public Sub New(value As String)
         MYBASE.NEW(value)
     End Sub
-End Class", @"public partial class Base
+End Class", @"
+public partial class Base
 {
     public Base()
     {
@@ -309,8 +311,11 @@ Public Class Derived
 
     Public Sub New(value As String)
         MyBase.nEw
+        Console.WriteLine(value)
     End Sub
-End Class", @"public partial class Base
+End Class", @"using System;
+
+public partial class Base
 {
     public Base()
     {
@@ -324,6 +329,104 @@ public partial class Derived : Base
 {
 
     public Derived(string value) : base()
+    {
+        Console.WriteLine(value);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MeAndMyClassNewWithNonCanonicalCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New()
+        Me.new(""a"")
+    End Sub
+    Public Sub New(value As Integer)
+        myclass.NEW(value.ToString())
+        Console.WriteLine(value)
+    End Sub
+    Public Sub New(value As String)
+        MyBase.New(value)
+    End Sub
+End Class", @"using System;
+
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived() : this(""a"")
+    {
+    }
+    public Derived(int value) : this(value.ToString())
+    {
+        Console.WriteLine(value);
+    }
+    public Derived(string value) : base(value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task FirstStatementNotConstructorCallAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        Me.Newish(New Base(value))
+        MyBase.ToString()
+    End Sub
+    Private Sub Newish(b As Base)
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value)
+    {
+        Newish(new Base(value));
+        base.ToString();
+    }
+    private void Newish(Base b)
     {
     }
 }");
