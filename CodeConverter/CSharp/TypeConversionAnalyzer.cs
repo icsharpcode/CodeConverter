@@ -112,8 +112,7 @@ internal class TypeConversionAnalyzer
             case TypeConversionKind.Conversion:
                 return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.NullableBool:
-                return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
-                    LiteralConversions.GetLiteralExpression(true));
+                return csNode.EqualsTrue();
             case TypeConversionKind.StringToCharArray:
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, ValidSyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
                 return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,

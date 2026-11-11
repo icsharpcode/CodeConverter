@@ -181,6 +181,52 @@ Public Class NullableConditionTests
         Assert.Equal(expectedDoUntil, count)
     End Sub
 
+    <Theory>
+    <InlineData(True, Nothing, 1)>
+    <InlineData(True, 1, 2)>
+    <InlineData(True, 2, 1)>
+    <InlineData(False, 1, 2)>
+    <InlineData(False, 2, 1)>
+    <InlineData(False, 1, Nothing)>
+    Public Sub NullableBooleanTernaryConditions(f As Boolean, x As Integer?, y As Integer?)
+        Dim expected = x.HasValue AndAlso y.HasValue AndAlso If(f, x.Value < y.Value, x.Value > y.Value)
+        Dim result = False
+        If If(f, x < y, x > y) Then result = True
+        Assert.Equal(expected, result)
+
+        Dim count = 0
+        Do Until If(f, x < y, x > y)
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(If(expected, 0, 3), count)
+    End Sub
+
+    <Theory>
+    <InlineData(True, Nothing)>
+    <InlineData(True, True)>
+    <InlineData(True, False)>
+    <InlineData(False, Nothing)>
+    <InlineData(False, True)>
+    <InlineData(False, False)>
+    Public Sub NullableBooleanTernaryUntilConditions(f As Boolean, b As Boolean?)
+        Dim notB As Boolean? = Not b
+        Dim expectedEitherWay = If(f, b, notB).GetValueOrDefault()
+        Dim count = 0
+        Do Until If(f, b, Not b)
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(If(expectedEitherWay, 0, 3), count)
+
+        count = 0
+        Do
+            count += 1
+            If count = 3 Then Exit Do
+        Loop Until If(f, b, b)
+        Assert.Equal(If(b.GetValueOrDefault(), 1, 3), count)
+    End Sub
+
     <Fact>
     Public Sub NothingStructureWithWideningToNullableBooleanConditionThrows()
         Dim s As ToNullableBoolean? = Nothing
