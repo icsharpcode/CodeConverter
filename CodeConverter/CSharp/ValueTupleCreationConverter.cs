@@ -41,6 +41,7 @@ internal class ValueTupleCreationConverter
 
     /// <summary>
     /// The arguments in element order, flattening a TRest created inline, since that's how a tuple literal with more than 7 elements is laid out.
+    /// A TRest created without arguments has no elements to flatten: the literal would lose the nested tuple.
     /// </summary>
     private List<VBSyntax.SimpleArgumentSyntax> GetTupleElementsOrNull(VBSyntax.ObjectCreationExpressionSyntax node)
     {
@@ -53,7 +54,7 @@ internal class ValueTupleCreationConverter
         var restElements = elements[RestIndex].Expression is VBSyntax.ObjectCreationExpressionSyntax restCreation && HasNoConversion(restCreation)
             ? GetTupleElementsOrNull(restCreation)
             : null;
-        return restElements is null ? null : elements.Take(RestIndex).Concat(restElements).ToList();
+        return restElements is {Count: > 0} ? elements.Take(RestIndex).Concat(restElements).ToList() : null;
     }
 
     private bool HasNoConversion(VBSyntax.ExpressionSyntax expression) =>

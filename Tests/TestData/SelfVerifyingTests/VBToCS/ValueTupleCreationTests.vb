@@ -107,6 +107,9 @@ Public Class ValueTupleCreationTests
 
         Dim restWidened = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
         Assert.Equal(GetType(ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Long))), restWidened.GetType())
+
+        Dim restDefault = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)())
+        Assert.Equal(GetType(ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))), restDefault.GetType())
     End Sub
 
     <Fact>

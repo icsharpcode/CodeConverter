@@ -2447,6 +2447,7 @@ End Function",
     Dim nine = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer, Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer, Long)(8, 9))
     Dim restVariable = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, rest)
     Dim restWidened = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
+    Dim restDefault = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)())
 End Sub",
             @"public void Foo(ValueTuple<int> rest)
 {
@@ -2454,6 +2455,7 @@ End Sub",
     var nine = (1, 2, 3, 4, 5, 6, 7, 8, 9L);
     var restVariable = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<int>>(1, 2, 3, 4, 5, 6, 7, rest);
     var restWidened = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<long>>(1, 2, 3, 4, 5, 6, 7, new ValueTuple<int>(8));
+    var restDefault = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<int>>(1, 2, 3, 4, 5, 6, 7, default);
 }");
     }
 
