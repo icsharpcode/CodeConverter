@@ -47,10 +47,6 @@ internal static class CSharpUtil
             return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, SyntaxFactory.ParenthesizedExpression(condition));
         }
 
-        if (condition is ConditionalExpressionSyntax cEx) {
-            return cEx.WithCondition(InvertCondition(cEx.Condition, negateOrderingComparisons));
-        }
-
         if (condition is LiteralExpressionSyntax) {
             if (condition.Kind() == SyntaxKind.TrueLiteralExpression)
                 return SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
