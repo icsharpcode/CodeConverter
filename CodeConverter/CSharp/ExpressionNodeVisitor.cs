@@ -412,6 +412,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr, ITypeSymbol operandConvertedType)
     {
+        if (expr.SkipIntoParens().HasAnnotation(VisualBasicNullableExpressionsConverter.NegatedForParentNotAnnotation)) {
+            return expr;
+        }
         if (await _operatorConverter.ConvertReferenceOrNothingComparisonOrNullAsync(node.Operand.SkipIntoParens(), TriviaConvertingExpressionVisitor.IsWithinExpressionTree, true) is { } nothingComparison) {
             return nothingComparison;
         }

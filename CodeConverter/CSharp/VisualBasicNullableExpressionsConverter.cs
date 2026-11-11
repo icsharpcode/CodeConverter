@@ -33,6 +33,11 @@ internal class VisualBasicNullableExpressionsConverter
     /// </summary>
     private static readonly SyntaxAnnotation IsNotNullableAnnotation = new("CodeConverter.Nullable", false.ToString());
 
+    /// <summary>
+    /// Marks a comparison already negated for its parent Not
+    /// </summary>
+    public static readonly SyntaxAnnotation NegatedForParentNotAnnotation = new("CodeConverter.NegatedForParentNot");
+
     public VisualBasicNullableExpressionsConverter(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
     public ExpressionSyntax InvokeConversionWhenNotNull(VBSyntax.ExpressionSyntax vbExpr, ExpressionSyntax csExpr, MemberAccessExpressionSyntax conversionMethod, TypeSyntax castType)
@@ -234,6 +239,10 @@ internal class VisualBasicNullableExpressionsConverter
         if (vbNode.IsOnlyTestedForTrue(_semanticModel) && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
             return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation);
         }
+        if (IsNegationOnlyTestedForTrue(vbNode) && IsLiftedOrderingWithTotalOrder(vbNode)) {
+            var negated = SyntaxFactory.BinaryExpression(CSharpUtil.NegateRelationalOperator(csNode.Kind()), csNode.Left, csNode.Right);
+            return negated.WithAdditionalAnnotations(IsNotNullableAnnotation, NegatedForParentNotAnnotation);
+        }
 
         ExpressionSyntax? lhsName = lhs, rhsName = rhs;
         var lhsReusable = IsSafelyReusable(vbNode.Left);
@@ -271,6 +280,24 @@ internal class VisualBasicNullableExpressionsConverter
 
         return notNullCondition is null ? bin : notNullCondition.Conditional(bin, Null);
     }
+
+    private bool IsNegationOnlyTestedForTrue(VBSyntax.BinaryExpressionSyntax vbNode) =>
+        vbNode.OutermostParenthesizedOrSelf().Parent is VBSyntax.UnaryExpressionSyntax not && not.IsKind(VBasic.SyntaxKind.NotExpression) &&
+        not.IsOnlyTestedForTrue(_semanticModel);
+
+    /// <summary>
+    /// Where VB's Not of a comparison is only tested for True, the lifted opposite comparison is equivalent: both are false when an operand is Nothing.
+    /// That needs every pair of values to be ordered, which isn't the case for floating point NaN.
+    /// C# has no ordering operators for bool, and a structure's user-defined operators needn't be a total order.
+    /// </summary>
+    private bool IsLiftedOrderingWithTotalOrder(VBSyntax.BinaryExpressionSyntax vbNode) =>
+        vbNode.IsKind(VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+            VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression) &&
+        HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Left).ConvertedType) && HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Right).ConvertedType);
+
+    private static bool HasTotalOrder(ITypeSymbol? type) =>
+        (type?.GetNullableUnderlyingType() ?? type) is { IsValueType: true } valueType &&
+        (valueType.TypeKind == TypeKind.Enum || valueType.SpecialType is not (SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Boolean or SpecialType.None));
 
     /// <summary>
     /// C#'s lifted relational operators are false when an operand is null, as is its lifted == unless both are null

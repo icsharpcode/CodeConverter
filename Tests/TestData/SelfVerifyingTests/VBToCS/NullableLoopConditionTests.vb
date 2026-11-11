@@ -229,4 +229,94 @@ Public Class NullableLoopConditionTests
     Public Sub TernaryIfOperator(a As Integer?, expected As Integer)
         Assert.Equal(expected, If(a < 2, 1, 2))
     End Sub
+
+    <Theory>
+    <InlineData(Nothing, 1)>
+    <InlineData(1, Nothing)>
+    <InlineData(Nothing, Nothing)>
+    <InlineData(1, 2)>
+    <InlineData(2, 1)>
+    <InlineData(2, 2)>
+    Public Sub NotOrderingComparisons(a As Integer?, b As Integer?)
+        Dim bothHaveValues = a.HasValue AndAlso b.HasValue
+        AssertNotComparison(bothHaveValues AndAlso Not a.Value < b.Value, Function()
+                                                                         Dim count = 0
+                                                                         While Not (a < b)
+                                                                             count += 1
+                                                                             If count = MaxIterations Then Exit While
+                                                                         End While
+                                                                         Return count
+                                                                     End Function, Function()
+                                                                                       Dim count = 0
+                                                                                       Do Until Not (a < b)
+                                                                                           count += 1
+                                                                                           If count = MaxIterations Then Exit Do
+                                                                                       Loop
+                                                                                       Return count
+                                                                                   End Function)
+        AssertNotComparison(bothHaveValues AndAlso Not a.Value <= b.Value, Function()
+                                                                          Dim count = 0
+                                                                          While Not a <= b
+                                                                              count += 1
+                                                                              If count = MaxIterations Then Exit While
+                                                                          End While
+                                                                          Return count
+                                                                      End Function, Function()
+                                                                                        Dim count = 0
+                                                                                        Do
+                                                                                            count += 1
+                                                                                            If count = MaxIterations Then Exit Do
+                                                                                        Loop Until Not a <= b
+                                                                                        Return If(count = 1, 0, MaxIterations)
+                                                                                    End Function)
+        AssertNotComparison(bothHaveValues AndAlso Not a.Value > b.Value, Function()
+                                                                         Dim count = 0
+                                                                         Do While Not (a > b)
+                                                                             count += 1
+                                                                             If count = MaxIterations Then Exit Do
+                                                                         Loop
+                                                                         Return count
+                                                                     End Function, Function()
+                                                                                       Dim count = 0
+                                                                                       Do Until (Not a > b)
+                                                                                           count += 1
+                                                                                           If count = MaxIterations Then Exit Do
+                                                                                       Loop
+                                                                                       Return count
+                                                                                   End Function)
+        Dim result = False
+        If Not (a >= b) Then result = True
+        Assert.Equal(bothHaveValues AndAlso Not a.Value >= b.Value, result)
+        result = False
+        If Not (a >= b) AndAlso a <> 0 Then result = True
+        Assert.Equal(bothHaveValues AndAlso Not a.Value >= b.Value AndAlso a.Value <> 0, result)
+    End Sub
+
+    ''' <summary>
+    ''' A While loop runs while its condition is True, and an Until loop runs while it isn't
+    ''' </summary>
+    Private Shared Sub AssertNotComparison(isTrue As Boolean, countWhile As Func(Of Integer), countUntil As Func(Of Integer))
+        Assert.Equal(If(isTrue, MaxIterations, 0), countWhile())
+        Assert.Equal(If(isTrue, 0, MaxIterations), countUntil())
+    End Sub
+
+    <Theory>
+    <InlineData(Nothing, 1.0, False)>
+    <InlineData(Double.NaN, 1.0, True)>
+    <InlineData(2.0, 1.0, True)>
+    <InlineData(1.0, 2.0, False)>
+    Public Sub NotComparisonsThatCannotBeFlipped(a As Double?, b As Double?, expectedNotLessOrEqual As Boolean)
+        Dim count = 0
+        While Not (a <= b)
+            count += 1
+            If count = MaxIterations Then Exit While
+        End While
+        Assert.Equal(If(expectedNotLessOrEqual, MaxIterations, 0), count)
+
+        Dim x As Integer? = If(a.HasValue AndAlso Not Double.IsNaN(a.Value), CInt(a.Value), CType(Nothing, Integer?))
+        Dim y As Integer? = If(b.HasValue, CInt(b.Value), CType(Nothing, Integer?))
+        Dim result = False
+        If Not (x = y) Then result = True
+        Assert.Equal(x.HasValue AndAlso y.HasValue AndAlso x.Value <> y.Value, result)
+    End Sub
 End Class

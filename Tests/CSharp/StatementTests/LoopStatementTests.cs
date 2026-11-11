@@ -342,6 +342,79 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NotOfNullableOrderingComparisonFlipsLiftedOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum Size
+    Small
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, d As Decimal?, s As Size?)
+        While Not (x < y) : End While
+        Do Until Not (x < y) : Loop
+        Do While Not x >= y AndAlso Not (d > 1) : Loop
+        If Not (x <= y) Then Return
+        If Not (s > Size.Small) Then Return
+    End Sub
+End Class", @"
+internal enum Size
+{
+    Small
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, decimal? d, Size? s)
+    {
+        while (x >= y)
+        {
+        }
+        while (!(x >= y))
+        {
+        }
+        while (x < y && d <= 1)
+        {
+        }
+        if (x > y)
+            return;
+        if (s <= Size.Small)
+            return;
+    }
+}");
+    }
+
+    /// <summary>
+    /// Flipping the operator is wrong for NaN, and for = and &lt;&gt; when both operands are Nothing
+    /// </summary>
+    [Fact]
+    public async Task NotOfFloatingPointOrEqualityNullableComparisonIsNotFlippedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, a As Double?, b As Single?)
+        While Not (a < 1.0) : End While
+        If Not (b >= 1) Then Return
+        If Not (x = y) Then Return
+        If Not (x <> y) Then Return
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, double? a, float? b)
+    {
+        while ((a.HasValue ? a.Value < 1.0d : null) == false)
+        {
+        }
+        if ((b.HasValue ? b.Value >= 1 : null) == false)
+            return;
+        if ((x.HasValue && y.HasValue ? x.Value == y.Value : null) == false)
+            return;
+        if ((x.HasValue && y.HasValue ? x.Value != y.Value : null) == false)
+            return;
+    }
+}");
+    }
+
+    [Fact]
     public async Task NonNullableUntilConditionsAreInvertedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

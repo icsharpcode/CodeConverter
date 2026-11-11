@@ -40,7 +40,7 @@ internal static class VbSyntaxNodeExtensions
         };
     }
 
-    private static VBSyntax.ExpressionSyntax OutermostParenthesizedOrSelf(this VBSyntax.ExpressionSyntax vbNode)
+    public static VBSyntax.ExpressionSyntax OutermostParenthesizedOrSelf(this VBSyntax.ExpressionSyntax vbNode)
     {
         while (vbNode.Parent is VBSyntax.ParenthesizedExpressionSyntax parenthesized) vbNode = parenthesized;
         return vbNode;
