@@ -32,6 +32,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private readonly ArgumentConverter _argumentConverter;
     private readonly BinaryExpressionConverter _binaryExpressionConverter;
     private readonly InitializerConverter _initializerConverter;
+    private readonly ValueTupleCreationConverter _valueTupleCreationConverter;
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
@@ -46,6 +47,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _queryConverter = new QueryConverter(commonConversions, _semanticModel, TriviaConvertingExpressionVisitor, rangeVariableReplacements, _generatedNames);
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
+        _valueTupleCreationConverter = new ValueTupleCreationConverter(semanticModel, commonConversions);
         _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
         _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, commonConversions, semanticModel, _withBlockLhs, _generatedNames, _conditionalAccessReceivers);
         _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers, rangeVariableReplacements);
@@ -281,6 +283,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitObjectCreationExpression(VBasic.Syntax.ObjectCreationExpressionSyntax node)
     {
+        if (await _valueTupleCreationConverter.ConvertToTupleLiteralOrNullAsync(node) is { } tupleLiteral) return tupleLiteral;
         var createdType = _semanticModel.GetTypeInfo(node).Type;
         var objectCreationExpressionSyntax = CS.SyntaxFactory.ObjectCreationExpression(
             createdType is INamedTypeSymbol {IsTupleType: true} tupleType ? CommonConversions.GetValueTupleTypeSyntax(tupleType) : await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),

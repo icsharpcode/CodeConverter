@@ -2399,6 +2399,46 @@ End Function",
     }
 
     [Fact]
+    public async Task ValueTupleConstructorBecomesTupleLiteralWithElementsOfTheTypeArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub Foo(x As Integer, s As Short)
+    Dim widened = New ValueTuple(Of Long, Short)(x, s)
+    Dim literals = New ValueTuple(Of Double, Long, Byte)(1, 2, 3)
+    Dim shortArithmetic = New ValueTuple(Of Short, Integer)(s * s, s * s)
+    Dim stringAndChar = New ValueTuple(Of String, Char)(""a"", ""b""c)
+    Dim nothings = New ValueTuple(Of String, Integer)(Nothing, Nothing)
+End Sub",
+            @"public void Foo(int x, short s)
+{
+    var widened = ((long)x, s);
+    var literals = (1d, 2L, (byte)3);
+    var shortArithmetic = ((short)(s * s), s * s);
+    var stringAndChar = (""a"", 'b');
+    var nothings = ((string)null, default(int));
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorWithInlineRestBecomesFlatTupleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub Foo(rest As ValueTuple(Of Integer))
+    Dim eight = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
+    Dim nine = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer, Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer, Long)(8, 9))
+    Dim restVariable = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, rest)
+    Dim restWidened = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
+End Sub",
+            @"public void Foo(ValueTuple<int> rest)
+{
+    var eight = (1, 2, 3, 4, 5, 6, 7, 8);
+    var nine = (1, 2, 3, 4, 5, 6, 7, 8, 9L);
+    var restVariable = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<int>>(1, 2, 3, 4, 5, 6, 7, rest);
+    var restWidened = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<long>>(1, 2, 3, 4, 5, 6, 7, new ValueTuple<int>(8));
+}");
+    }
+
+    [Fact]
     public async Task ValueTupleConstructorKeepsConstructorWhenTupleLiteralWouldChangeMeaningAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
@@ -2408,6 +2448,7 @@ End Function",
     Dim named = New ValueTuple(Of Integer, String)(item2:=s, item1:=x)
     Dim initialized = New ValueTuple(Of Integer, Integer) With {.Item1 = x}
     Dim oneElement = New ValueTuple(Of Integer)(x)
+    Dim lambda = New ValueTuple(Of Func(Of Integer), Integer)(Function() x, 2)
 End Sub",
             @"public void Foo(string s, int x)
 {
@@ -2416,6 +2457,25 @@ End Sub",
     var named = new ValueTuple<int, string>(item2: s, item1: x);
     var initialized = new ValueTuple<int, int>() { Item1 = x };
     var oneElement = new ValueTuple<int>(x);
+    var lambda = new ValueTuple<Func<int>, int>(() => x, 2);
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorInExpressionTreeKeepsConstructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Linq.Expressions
+
+Class C
+    Private ReadOnly _create As Expression(Of Func(Of Integer, (Integer, Integer))) = Function(x) New ValueTuple(Of Integer, Integer)(x, 2)
+End Class",
+            @"using System;
+using System.Linq.Expressions;
+
+internal partial class C
+{
+    private readonly Expression<Func<int, (int, int)>> _create = x => new ValueTuple<int, int>(x, 2);
 }");
     }
 

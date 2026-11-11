@@ -362,6 +362,23 @@ internal class TypeConversionAnalyzer
                !unparenthesized.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression);
     }
 
+    /// <summary>
+    /// Whether the expression <see cref="AddExplicitConversion(VBSyntax.ExpressionSyntax, ExpressionSyntax, bool, bool, bool, ITypeSymbol, ITypeSymbol)"/> produces
+    /// has the converted type as its natural C# type, so keeps that type where nothing target-types it (e.g. an element of a tuple literal assigned to var).
+    /// Conversions C# does implicitly (e.g. boxing, int to int?, lambda to delegate) are left to the target type, so don't.
+    /// </summary>
+    public bool KeepsConvertedTypeWithoutTargetType(VBSyntax.ExpressionSyntax vbNode)
+    {
+        var (vbType, vbConvertedType) = GetTypeInfo(vbNode);
+        if (vbConvertedType is null) return false;
+        var sourceIsConvertedType = SymbolEqualityComparer.Default.Equals(vbType, vbConvertedType);
+        return AnalyzeConversion(vbNode) switch {
+            TypeConversionKind.Unknown or TypeConversionKind.Identity or TypeConversionKind.DelegateConstructor => sourceIsConvertedType,
+            TypeConversionKind.LiteralSuffix => sourceIsConvertedType || IsExactTypeNumericLiteral(vbNode, vbConvertedType),
+            _ => true
+        };
+    }
+
     private static bool IsExactTypeNumericLiteral(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType) => 
         vbNode is VBSyntax.LiteralExpressionSyntax literal &&
         LiteralConversions.ConvertLiteralNumericValueOrNull(literal.Token.Value, vbConvertedType) is {};
