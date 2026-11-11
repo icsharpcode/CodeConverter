@@ -30,6 +30,24 @@ Public Class ValueTupleCreationTests
         Assert.Equal(("a", "b"c), stringAndChar)
     End Sub
 
+    Private Enum Colour
+        Red
+        Green
+    End Enum
+
+    <Fact>
+    Sub ConvertedElementsKeepTheTypeArguments()
+        Dim o As Object = "3"
+        Dim narrowed = New ValueTuple(Of Integer, String)(CInt(o), CStr(o))
+        Assert.Equal(GetType(ValueTuple(Of Integer, String)), narrowed.GetType())
+        Assert.Equal((3, "3"), narrowed)
+
+        Dim c = Colour.Green
+        Dim enums = New ValueTuple(Of Colour, Integer)(c, c)
+        Assert.Equal(GetType(ValueTuple(Of Colour, Integer)), enums.GetType())
+        Assert.Equal((Colour.Green, 1), enums)
+    End Sub
+
     <Fact>
     Sub ElementsNeedingATargetTypeKeepTheTypeArguments()
         Dim x As Integer = 1

@@ -2420,6 +2420,41 @@ End Sub",
     }
 
     [Fact]
+    public async Task ValueTupleConstructorWithConvertedElementsBecomesTupleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Option Strict Off
+
+Enum Colour
+    Red
+End Enum
+
+Class C
+    Sub Foo(o As Object, c As Colour)
+        Dim narrowed = New ValueTuple(Of Integer, String)(o, o)
+        Dim enums = New ValueTuple(Of Colour, Integer)(c, c)
+        Dim enumFromInteger = New ValueTuple(Of Colour, Colour)(0, c)
+    End Sub
+End Class",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum Colour
+{
+    Red
+}
+
+internal partial class C
+{
+    public void Foo(object o, Colour c)
+    {
+        var narrowed = (Conversions.ToInteger(o), Conversions.ToString(o));
+        var enums = (c, (int)c);
+        var enumFromInteger = ((Colour)0, c);
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
     public async Task ValueTupleConstructorWithoutArgumentsBecomesDefaultAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
