@@ -39,6 +39,414 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task NullableComparisonInWhileConditionIssue1300Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Class TestClass
+    Sub TestMethod(startDate As Date?, endDate As Date?)
+        Dim currentDate = startDate
+        While currentDate <= endDate
+            currentDate = currentDate.Value.AddMinutes(1)
+        End While
+        While (currentDate <= endDate)
+            currentDate = currentDate.Value.AddMinutes(1)
+        End While
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void TestMethod(DateTime? startDate, DateTime? endDate)
+    {
+        var currentDate = startDate;
+        while (currentDate <= endDate)
+            currentDate = currentDate.Value.AddMinutes(1d);
+        while (currentDate <= endDate)
+            currentDate = currentDate.Value.AddMinutes(1d);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NullableLoopConditionsTreatNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?, i As Integer)
+        While x = y : End While
+        While b : End While
+        While Not b : End While
+        Do While x <> y : Loop
+        Do While b AndAlso x > y : Loop
+        Do Until x < y : Loop
+        Do Until x = y : Loop
+        Do Until b : Loop
+        Do Until b OrElse x > 2 : Loop
+        Do : Loop While x >= y
+        Do : Loop While b
+        Do : Loop Until x > y
+        Do : Loop Until Not b
+        Do Until b = True : Loop
+        Do Until x > y AndAlso i < 3 : Loop
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, bool? b, int i)
+    {
+        while (x.HasValue && y.HasValue && x.Value == y.Value)
+        {
+        }
+        while (b == true)
+        {
+        }
+        while (b == false)
+        {
+        }
+        while (x.HasValue && y.HasValue && x.Value != y.Value)
+        {
+        }
+        while ((!b.HasValue || b.Value) && x > y && b.HasValue)
+        {
+        }
+        while (!(x < y))
+        {
+        }
+        while (!x.HasValue || !y.HasValue || x.Value != y.Value)
+        {
+        }
+        while (b != true)
+        {
+        }
+        while (!b.GetValueOrDefault() && !(x > 2))
+        {
+        }
+        do
+        {
+        }
+        while (x >= y);
+        do
+        {
+        }
+        while (b == true);
+        do
+        {
+        }
+        while (!(x > y));
+        do
+        {
+        }
+        while (b != false);
+        while (b != true)
+        {
+        }
+        while (!(x > y) || i >= 3)
+        {
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task OptionStrictOffNonBooleanConditionsTreatNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Class TestClass
+    Private Sub TestMethod(x As Integer?, o As Object)
+        If x Then Return
+        While x : End While
+        Do Until x : Loop
+        While o : End While
+        Do Until o : Loop
+        Do Until o > 1 : Loop
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private void TestMethod(int? x, object o)
+    {
+        if (Conversions.ToBoolean(x.GetValueOrDefault()))
+            return;
+        while (Conversions.ToBoolean(x.GetValueOrDefault()))
+        {
+        }
+        while (!Conversions.ToBoolean(x.GetValueOrDefault()))
+        {
+        }
+        while (Conversions.ToBoolean(o))
+        {
+        }
+        while (!Conversions.ToBoolean(o))
+        {
+        }
+        while (!Conversions.ToBoolean(Operators.ConditionalCompareObjectGreater(o, 1, false)))
+        {
+        }
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task NullableStructureWithWideningToBooleanConditionsTreatNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Structure S
+    Public Shared Widening Operator CType(s As S) As Boolean
+        Return True
+    End Operator
+End Structure
+
+Class TestClass
+    Private Function GetS() As S?
+        Return Nothing
+    End Function
+
+    Private Sub TestMethod(s As S?)
+        If s Then Return
+        While (s) : End While
+        Do Until s : Loop
+        Do : Loop While GetS()
+        If If(s, GetS()) Then Return
+        Do Until If(s.HasValue, s, GetS()) : Loop
+    End Sub
+End Class", @"
+internal partial struct S
+{
+    public static implicit operator bool(S s)
+    {
+        return true;
+    }
+}
+
+internal partial class TestClass
+{
+    private S? GetS()
+    {
+        return default;
+    }
+
+    private void TestMethod(S? s)
+    {
+        if (s.HasValue && (bool)s.Value)
+            return;
+        while (s.HasValue && (bool)s.Value)
+        {
+        }
+        while (!s.HasValue || !(bool)s.Value)
+        {
+        }
+        do
+        {
+        }
+        while (GetS() is { } arg1 && (bool)arg1);
+        if ((s ?? GetS()) is { } arg2 && (bool)arg2)
+            return;
+        while (!((s.HasValue ? s : GetS()) is { } arg3) || !(bool)arg3)
+        {
+        }
+    }
+}");
+    }
+
+    /// <summary>
+    /// VB doesn't lift a CType returning Boolean? (a Nothing operand throws, so .Value), but treats a Nothing result as False
+    /// </summary>
+    [Fact]
+    public async Task StructureWithWideningToNullableBooleanConditionsCompareResultWithTrueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Structure S
+    Public Shared Widening Operator CType(s As S) As Boolean?
+        Return Nothing
+    End Operator
+End Structure
+
+Class TestClass
+    Private Sub TestMethod(s As S?, ns As S)
+        If s Then Return
+        Do Until s : Loop
+        While ns : End While
+    End Sub
+End Class", @"
+internal partial struct S
+{
+    public static implicit operator bool?(S s)
+    {
+        return default;
+    }
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(S? s, S ns)
+    {
+        if ((bool?)s.Value == true)
+            return;
+        while ((bool?)s.Value != true)
+        {
+        }
+        while ((bool?)ns == true)
+        {
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task OptionStrictOffNullableToBooleanOutsideConditionsKeepsValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Structure S
+    Public Shared Widening Operator CType(s As S) As Boolean
+        Return True
+    End Operator
+End Structure
+
+Class TestClass
+    Private Function IsTrue(b As Boolean) As Boolean
+        Return b
+    End Function
+
+    Private Sub TestMethod(x As Integer?, s As S?)
+        Dim b As Boolean = x
+        If IsTrue(x) Then Return
+        If CBool(x) Then Return
+        Do Until s : Loop
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial struct S
+{
+    public static implicit operator bool(S s)
+    {
+        return true;
+    }
+}
+
+internal partial class TestClass
+{
+    private bool IsTrue(bool b)
+    {
+        return b;
+    }
+
+    private void TestMethod(int? x, S? s)
+    {
+        bool b = Conversions.ToBoolean(x.Value);
+        if (IsTrue(Conversions.ToBoolean(x.Value)))
+            return;
+        if (Conversions.ToBoolean(x.Value))
+            return;
+        while (!s.HasValue || !(bool)s.Value)
+        {
+        }
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task NotOfNullableOrderingComparisonFlipsLiftedOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum Size
+    Small
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, d As Decimal?, s As Size?)
+        While Not (x < y) : End While
+        Do Until Not (x < y) : Loop
+        Do While Not x >= y AndAlso Not (d > 1) : Loop
+        If Not (x <= y) Then Return
+        If Not (s > Size.Small) Then Return
+    End Sub
+End Class", @"
+internal enum Size
+{
+    Small
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, decimal? d, Size? s)
+    {
+        while (x >= y)
+        {
+        }
+        while (!(x >= y))
+        {
+        }
+        while (x < y && d <= 1)
+        {
+        }
+        if (x > y)
+            return;
+        if (s <= Size.Small)
+            return;
+    }
+}");
+    }
+
+    /// <summary>
+    /// Flipping the operator is wrong for NaN, and for = and &lt;&gt; when both operands are Nothing
+    /// </summary>
+    [Fact]
+    public async Task NotOfFloatingPointOrEqualityNullableComparisonIsNotFlippedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, a As Double?, b As Single?)
+        While Not (a < 1.0) : End While
+        If Not (b >= 1) Then Return
+        If Not (x = y) Then Return
+        If Not (x <> y) Then Return
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, double? a, float? b)
+    {
+        while ((a.HasValue ? a.Value < 1.0d : null) == false)
+        {
+        }
+        if ((b.HasValue ? b.Value >= 1 : null) == false)
+            return;
+        if ((x.HasValue && y.HasValue ? x.Value == y.Value : null) == false)
+            return;
+        if ((x.HasValue && y.HasValue ? x.Value != y.Value : null) == false)
+            return;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task NonNullableUntilConditionsAreInvertedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(i As Integer, b As Boolean)
+        Do Until i < 1 : Loop
+        Do Until Not b : Loop
+        Do : Loop Until i = 1 OrElse b
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int i, bool b)
+    {
+        while (i >= 1)
+        {
+        }
+        while (b)
+        {
+        }
+        do
+        {
+        }
+        while (i != 1 && !b);
+    }
+}");
+    }
+
+    [Fact]
     public async Task TwoForEachStatementsWithImplicitVariableCreationAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Friend Class Program

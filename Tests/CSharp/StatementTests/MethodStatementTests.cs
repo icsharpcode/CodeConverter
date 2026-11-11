@@ -1464,6 +1464,41 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task TryCatchWithNullableFilterTreatsNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?)
+        Try
+        Catch e As ArgumentException When x = y
+        Catch e As InvalidOperationException When (b)
+        Catch e As Exception When x < y
+        End Try
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, bool? b)
+    {
+        try
+        {
+        }
+        catch (ArgumentException e) when (x.HasValue && y.HasValue && x.Value == y.Value)
+        {
+        }
+        catch (InvalidOperationException e) when (b == true)
+        {
+        }
+        catch (Exception e) when (x < y)
+        {
+        }
+    }
+}");
+    }
+
+    [Fact]
     public async Task SwitchIntToEnumAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Module Main

@@ -1,4 +1,4 @@
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -108,12 +108,11 @@ internal class TypeConversionAnalyzer
                 return addParenthesisIfNeeded ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode) : csNode;
             case TypeConversionKind.DestructiveCast:
             case TypeConversionKind.NonDestructiveCast:
-                return CreateCast(csNode, vbConvertedType);
+                return CreateCastOrConditionCast(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.Conversion:
                 return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.NullableBool:
-                return SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, csNode,
-                    LiteralConversions.GetLiteralExpression(true));
+                return csNode.EqualsTrue();
             case TypeConversionKind.StringToCharArray:
                 var memberAccessExpressionSyntax = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, csNode, ValidSyntaxFactory.IdentifierName(nameof(string.ToCharArray)));
                 return SyntaxFactory.InvocationExpression(memberAccessExpressionSyntax,
@@ -340,9 +339,8 @@ internal class TypeConversionAnalyzer
             typeConversionKind = TypeConversionKind.Conversion;
             return true;
         } 
-        else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp() &&
-                 (vbNode is not VBSyntax.BinaryExpressionSyntax and not VBSyntax.UnaryExpressionSyntax || vbNode.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression))) {
-            typeConversionKind = TypeConversionKind.NullableBool;
+        else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp()) {
+            typeConversionKind = IsMadeBoolByNullableOperatorConversion(vbNode) ? TypeConversionKind.Identity : TypeConversionKind.NullableBool;
             return true;
         }
         else if (csConversion.IsExplicit) {
@@ -352,6 +350,16 @@ internal class TypeConversionAnalyzer
 
         typeConversionKind = csConversion.IsIdentity ? TypeConversionKind.Identity : TypeConversionKind.Unknown;
         return false;
+    }
+
+    /// <summary>
+    /// In a condition, the nullable operator conversions already give bool (so no conversion is needed) for operators such as comparisons, Not, AndAlso and OrElse, but not for And, Or and Xor
+    /// </summary>
+    private static bool IsMadeBoolByNullableOperatorConversion(VBSyntax.ExpressionSyntax vbNode)
+    {
+        var unparenthesized = vbNode.SkipIntoParens();
+        return unparenthesized is VBSyntax.BinaryExpressionSyntax or VBSyntax.UnaryExpressionSyntax &&
+               !unparenthesized.IsKind(VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression);
     }
 
     private static bool IsExactTypeNumericLiteral(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType) => 
@@ -426,6 +434,39 @@ internal class TypeConversionAnalyzer
         return SyntaxFactory.InvocationExpression(memberAccess, arguments);
     }
 
+    /// <summary>
+    /// Converting Nothing to a non-nullable type throws in VB, except in a condition: there VB lifts the conversion to Boolean? and treats Nothing as False.
+    /// The default (zero) of every type convertible to Boolean also converts to False, so GetValueOrDefault matches that with a single evaluation.
+    /// </summary>
+    private static ExpressionSyntax GetUnderlyingValueToConvert(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNullableNode) =>
+        vbNode.AlwaysHasBooleanTypeInCSharp() ? csNullableNode.GetValueOrDefault() : csNullableNode.NullableGetValueExpression();
+
+    private ExpressionSyntax CreateCastOrConditionCast(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType)
+    {
+        if (!vbNode.AlwaysHasBooleanTypeInCSharp()) return CreateCast(csNode, vbConvertedType);
+        if (GetNullableReturnTypeOfUserDefinedConversion(vbNode) is { } nullableBoolean) {
+            var operand = vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode;
+            return CreateCast(operand, nullableBoolean).EqualsTrue();
+        }
+        return IsNonBooleanNullable(vbType, vbConvertedType)
+            ? _vbNullableExpressionsConverter.ConvertWhenNotNullElseFalse(vbNode, csNode, value => CreateCast(value, vbConvertedType))
+            : CreateCast(csNode, vbConvertedType);
+    }
+
+    /// <summary>
+    /// In a condition, VB doesn't lift a user-defined CType returning Boolean? (a Nothing operand throws, whereas C# would lift it to give null),
+    /// but treats a Nothing result as False, like any other Boolean? condition
+    /// </summary>
+    private ITypeSymbol GetNullableReturnTypeOfUserDefinedConversion(VBSyntax.ExpressionSyntax vbNode) =>
+        VBasic.VisualBasicExtensions.GetConversion(_semanticModel, vbNode).MethodSymbol?.ReturnType is { } returnType && returnType.IsNullable() ? returnType : null;
+
+    /// <summary>
+    /// In a condition, VB lifts any other conversion to Boolean (e.g. a user-defined CType returning Boolean), so Nothing is False rather than throwing.
+    /// A Boolean? condition is excluded: the nullable Boolean logic already makes it bool.
+    /// </summary>
+    private static bool IsNonBooleanNullable(ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
+        vbType.IsNullable(out var underlyingType) && underlyingType.SpecialType != SpecialType.System_Boolean && !vbConvertedType.IsNullable();
+
     private ExpressionSyntax AddExplicitConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol currentType, ITypeSymbol targetType)
     {
         var displayType = targetType.ToMinimalDisplayString(_semanticModel, vbNode.SpanStart);
@@ -443,7 +484,7 @@ internal class TypeConversionAnalyzer
         currentType.IsNullable(out var nullableCurrentType);
         targetType.IsNullable(out var nullableTargetType);
         if (nullableCurrentType != null && nullableTargetType == null) {
-            csNode = csNode.NullableGetValueExpression();
+            csNode = GetUnderlyingValueToConvert(vbNode, csNode);
         }
         var typeNameForConversionMethod = nullableTargetType ?? targetType;
 
