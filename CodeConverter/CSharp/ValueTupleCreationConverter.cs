@@ -29,7 +29,7 @@ internal class ValueTupleCreationConverter
 
     public async Task<ExpressionSyntax> ConvertOrNullAsync(VBSyntax.ObjectCreationExpressionSyntax node)
     {
-        if (node.Initializer != null || _semanticModel.GetTypeInfo(node).Type is not {IsTupleType: true} tupleType) return null;
+        if (GetPlainTupleCreationTypeOrNull(node) is not { } tupleType) return null;
         if (node.ArgumentList?.Arguments.Any() != true) return SyntaxFactory.DefaultExpression(_commonConversions.GetTypeSyntax(tupleType));
         if (_commonConversions.TriviaConvertingExpressionVisitor.IsWithinExpressionTree) return null;
         var elements = GetTupleElementsOrNull(node);
@@ -45,7 +45,7 @@ internal class ValueTupleCreationConverter
     /// </summary>
     private List<VBSyntax.SimpleArgumentSyntax> GetTupleElementsOrNull(VBSyntax.ObjectCreationExpressionSyntax node)
     {
-        if (node.Initializer != null || _semanticModel.GetTypeInfo(node).Type is not {IsTupleType: true}) return null;
+        if (GetPlainTupleCreationTypeOrNull(node) is null) return null;
         if (node.ArgumentList?.Arguments.All(a => a is VBSyntax.SimpleArgumentSyntax {IsNamed: false}) != true) return null;
 
         var elements = node.ArgumentList.Arguments.Cast<VBSyntax.SimpleArgumentSyntax>().ToList();
@@ -57,6 +57,13 @@ internal class ValueTupleCreationConverter
         return restElements is {Count: > 0} ? elements.Take(RestIndex).Concat(restElements).ToList() : null;
     }
 
-    private bool HasNoConversion(VBSyntax.ExpressionSyntax expression) =>
-        _semanticModel.GetTypeInfo(expression) is var typeInfo && SymbolEqualityComparer.Default.Equals(typeInfo.Type, typeInfo.ConvertedType);
+    /// <summary>The created tuple type, unless an object initializer sets members after construction.</summary>
+    private ITypeSymbol GetPlainTupleCreationTypeOrNull(VBSyntax.ObjectCreationExpressionSyntax node) =>
+        node.Initializer == null && _semanticModel.GetTypeInfo(node).Type is {IsTupleType: true} tupleType ? tupleType : null;
+
+    private bool HasNoConversion(VBSyntax.ExpressionSyntax expression)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(expression);
+        return SymbolEqualityComparer.Default.Equals(typeInfo.Type, typeInfo.ConvertedType);
+    }
 }
