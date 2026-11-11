@@ -86,6 +86,7 @@ internal partial class TestClass
         Do : Loop While b
         Do : Loop Until x > y
         Do : Loop Until Not b
+        Do Until b = True : Loop
     End Sub
 End Class", @"
 internal partial class TestClass
@@ -110,13 +111,13 @@ internal partial class TestClass
         while (!(x < y))
         {
         }
-        while (!(x.HasValue && y.HasValue && x.Value == y.Value))
+        while (!x.HasValue || !y.HasValue || x.Value != y.Value)
         {
         }
         while (b != true)
         {
         }
-        while (!(b.GetValueOrDefault() || x > 2))
+        while (!b.GetValueOrDefault() && !(x > 2))
         {
         }
         do
@@ -134,7 +135,10 @@ internal partial class TestClass
         do
         {
         }
-        while (!(b == false));
+        while (b != false);
+        while (b != true)
+        {
+        }
     }
 }");
     }

@@ -340,9 +340,8 @@ internal class TypeConversionAnalyzer
             typeConversionKind = TypeConversionKind.Conversion;
             return true;
         } 
-        else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp() &&
-                 !IsMadeBoolByNullableOperatorConversion(vbNode)) {
-            typeConversionKind = TypeConversionKind.NullableBool;
+        else if (csConversion.IsNullable && csConvertedType.SpecialType == SpecialType.System_Boolean && vbNode.AlwaysHasBooleanTypeInCSharp()) {
+            typeConversionKind = IsMadeBoolByNullableOperatorConversion(vbNode) ? TypeConversionKind.Identity : TypeConversionKind.NullableBool;
             return true;
         }
         else if (csConversion.IsExplicit) {
@@ -355,7 +354,7 @@ internal class TypeConversionAnalyzer
     }
 
     /// <summary>
-    /// In a condition, the nullable operator conversions already give bool for operators such as comparisons, Not, AndAlso and OrElse, but not for And, Or and Xor
+    /// In a condition, the nullable operator conversions already give bool (so no conversion is needed) for operators such as comparisons, Not, AndAlso and OrElse, but not for And, Or and Xor
     /// </summary>
     private static bool IsMadeBoolByNullableOperatorConversion(VBSyntax.ExpressionSyntax vbNode)
     {
@@ -464,7 +463,7 @@ internal class TypeConversionAnalyzer
 
     /// <summary>
     /// In a condition, VB lifts any other conversion to Boolean (e.g. a user-defined CType returning Boolean), so Nothing is False rather than throwing.
-    /// A Boolean? condition is excluded: the nullable Boolean logic already makes it bool, so a cast on it is redundant and simplified away.
+    /// A Boolean? condition is excluded: the nullable Boolean logic already makes it bool.
     /// </summary>
     private static bool IsNonBooleanNullable(ITypeSymbol vbType, ITypeSymbol vbConvertedType) =>
         vbType.IsNullable(out var underlyingType) && underlyingType.SpecialType != SpecialType.System_Boolean && !vbConvertedType.IsNullable();
