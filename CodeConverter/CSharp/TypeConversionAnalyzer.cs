@@ -108,7 +108,7 @@ internal class TypeConversionAnalyzer
                 return addParenthesisIfNeeded ? vbNode.ParenthesizeIfPrecedenceCouldChange(csNode) : csNode;
             case TypeConversionKind.DestructiveCast:
             case TypeConversionKind.NonDestructiveCast:
-                return CreateCastForContext(vbNode, csNode, vbType, vbConvertedType);
+                return CreateCastOrConditionCast(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.Conversion:
                 return AddExplicitConvertTo(vbNode, csNode, vbType, vbConvertedType);
             case TypeConversionKind.NullableBool:
@@ -441,7 +441,7 @@ internal class TypeConversionAnalyzer
     private static ExpressionSyntax GetUnderlyingValueToConvert(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNullableNode) =>
         vbNode.AlwaysHasBooleanTypeInCSharp() ? csNullableNode.GetValueOrDefault() : csNullableNode.NullableGetValueExpression();
 
-    private ExpressionSyntax CreateCastForContext(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType)
+    private ExpressionSyntax CreateCastOrConditionCast(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbType, ITypeSymbol vbConvertedType)
     {
         if (!vbNode.AlwaysHasBooleanTypeInCSharp()) return CreateCast(csNode, vbConvertedType);
         if (GetNullableReturnTypeOfUserDefinedConversion(vbNode) is { } nullableBoolean) {

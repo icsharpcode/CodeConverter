@@ -34,7 +34,8 @@ internal class VisualBasicNullableExpressionsConverter
     private static readonly SyntaxAnnotation IsNotNullableAnnotation = new("CodeConverter.Nullable", false.ToString());
 
     /// <summary>
-    /// Marks a comparison already negated for its parent Not
+    /// Marks a comparison already negated for its parent Not. By the time Not is visited, its operand has already been expanded to the HasValue form,
+    /// so the comparison negates itself while it can still use the lifted operator, and Not skips its own negation.
     /// </summary>
     public static readonly SyntaxAnnotation NegatedForParentNotAnnotation = new("CodeConverter.NegatedForParentNot");
 
