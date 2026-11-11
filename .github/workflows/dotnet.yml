@@ -72,16 +72,14 @@ jobs:
         name: ICSharpCode.CodeConverter.Func.${{ env.BuildVersion }}.zip
         path: Func/bin/${{ env.BuildTarget }}/publish/
 
-  test-vs2022:
+  test-windows-latest:
     uses: ./.github/workflows/dotnet-tests.yml
     with:
-      runs-on: windows-2022
-      vs-version: '[17.0,18.0)'
-      dotnet-version: 8.0.x
-
-  test-vs2026:
-    uses: ./.github/workflows/dotnet-tests.yml
-    with:
-      runs-on: windows-2025-vs2026
-      vs-version: '[18.0,)'
+      runs-on: windows-latest
       dotnet-version: 10.0.x
+
+  test-linux-previous:
+    uses: ./.github/workflows/dotnet-tests.yml
+    with:
+      runs-on: ubuntu-latest
+      dotnet-version: 8.0.x

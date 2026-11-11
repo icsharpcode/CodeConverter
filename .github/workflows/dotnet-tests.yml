@@ -6,9 +6,6 @@ on:
       runs-on:
         required: true
         type: string
-      vs-version:
-        required: true
-        type: string
       dotnet-version:
         required: true
         type: string
@@ -16,6 +13,9 @@ on:
 jobs:
   test:
     runs-on: ${{ inputs.runs-on }}
+    env:
+      # Tests only need the matching target framework; the slnf also builds the Web project, which needs node
+      TestFramework: net${{ inputs.dotnet-version == '8.0.x' && '8.0' || '10.0' }}
 
     steps:
     - uses: actions/checkout@v4
@@ -24,24 +24,17 @@ jobs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
 
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v2
-      with:
-        vs-version: ${{ inputs.vs-version }}
+    - name: Log .NET version
+      run: dotnet --info
 
+    # Build with the newest SDK (the projects also target net10.0); only the test run is pinned to SDK 8
     - name: Build
-      run: dotnet build DotNetBuildable.slnf /p:Configuration=Release
+      run: dotnet build Tests/Tests.csproj -c Release -f ${{ env.TestFramework }}
 
     - name: Create global.json to enforce .NET 8 for MSBuild and update Tests/TestData projects
       if: inputs.dotnet-version == '8.0.x'
       shell: pwsh
       run: ./.github/scripts/update-testdata-targetframework.ps1
 
-    - name: Log MSBuild version
-      run: msbuild -version
-
-    - name: Log .NET version
-      run: dotnet --info
-
     - name: Execute unit tests
-      run: dotnet test Tests/Tests.csproj -c Release --framework net${{ inputs.dotnet-version == '8.0.x' && '8.0' || '10.0' }} --no-build
+      run: dotnet test Tests/Tests.csproj -c Release -f ${{ env.TestFramework }} --no-build
