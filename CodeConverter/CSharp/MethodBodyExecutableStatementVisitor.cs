@@ -1214,8 +1214,16 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private async Task<ExpressionSyntax> ConvertLoopContinueConditionAsync(VBSyntax.WhileOrUntilClauseSyntax clause)
     {
         var condition = await ConvertConditionAsync(clause.Condition);
-        return clause.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword) ? condition.InvertCondition() : condition;
+        return clause.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword)
+            ? condition.InvertCondition(negateOrderingComparisons: !ContainsNullableOrderingComparison(clause.Condition))
+            : condition;
     }
+
+    private bool ContainsNullableOrderingComparison(VBSyntax.ExpressionSyntax vbCondition) =>
+        vbCondition.DescendantNodesAndSelf().OfType<VBSyntax.BinaryExpressionSyntax>().Any(comparison =>
+            comparison.IsKind(VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+                VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression) &&
+            (_semanticModel.GetTypeInfo(comparison.Left).ConvertedType.IsNullable() || _semanticModel.GetTypeInfo(comparison.Right).ConvertedType.IsNullable()));
 
     public override async Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node)
     {

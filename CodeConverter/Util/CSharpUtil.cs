@@ -9,15 +9,19 @@ internal static class CSharpUtil
     /// Inverts a boolean condition. Note: The condition object can be frozen (from AST) it's cloned internally.
     /// </summary>
     /// <param name="condition">The condition to invert.</param>
-    public static ExpressionSyntax InvertCondition(this ExpressionSyntax condition)
+    /// <param name="negateOrderingComparisons">
+    /// False where an operand of &lt;, &lt;=, &gt; or &gt;= may be nullable: a lifted comparison is false when an operand is null,
+    /// so the negated operator would be false too, rather than true.
+    /// </param>
+    public static ExpressionSyntax InvertCondition(this ExpressionSyntax condition, bool negateOrderingComparisons = true)
     {
-        return InvertConditionInternal(condition);
+        return InvertConditionInternal(condition, negateOrderingComparisons);
     }
 
-    private static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition)
+    private static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition, bool negateOrderingComparisons)
     {
         if (condition is ParenthesizedExpressionSyntax) {
-            return SyntaxFactory.ParenthesizedExpression(InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression));
+            return SyntaxFactory.ParenthesizedExpression(InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression, negateOrderingComparisons));
         }
 
         if (condition is PrefixUnaryExpressionSyntax) {
@@ -34,21 +38,17 @@ internal static class CSharpUtil
             var bOp = (BinaryExpressionSyntax)condition;
 
             if (bOp.IsKind(SyntaxKind.LogicalAndExpression) || bOp.IsKind(SyntaxKind.LogicalOrExpression))
-                return SyntaxFactory.BinaryExpression(NegateConditionOperator(bOp.Kind()), InvertCondition(bOp.Left), InvertCondition(bOp.Right));
+                return SyntaxFactory.BinaryExpression(NegateConditionOperator(bOp.Kind()), InvertCondition(bOp.Left, negateOrderingComparisons), InvertCondition(bOp.Right, negateOrderingComparisons));
 
-            if (bOp.IsKind(SyntaxKind.EqualsExpression) ||
-                bOp.IsKind(SyntaxKind.NotEqualsExpression) ||
-                bOp.IsKind(SyntaxKind.GreaterThanExpression) ||
-                bOp.IsKind(SyntaxKind.GreaterThanOrEqualExpression) ||
-                bOp.IsKind(SyntaxKind.LessThanExpression) ||
-                bOp.IsKind(SyntaxKind.LessThanOrEqualExpression))
+            if (bOp.IsKind(SyntaxKind.EqualsExpression) || bOp.IsKind(SyntaxKind.NotEqualsExpression) ||
+                negateOrderingComparisons && IsOrderingComparison(bOp))
                 return SyntaxFactory.BinaryExpression(NegateRelationalOperator(bOp.Kind()), bOp.Left, bOp.Right);
 
             return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, SyntaxFactory.ParenthesizedExpression(condition));
         }
 
         if (condition is ConditionalExpressionSyntax cEx) {
-            return cEx.WithCondition(InvertCondition(cEx.Condition));
+            return cEx.WithCondition(InvertCondition(cEx.Condition, negateOrderingComparisons));
         }
 
         if (condition is LiteralExpressionSyntax) {
@@ -60,6 +60,10 @@ internal static class CSharpUtil
 
         return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, condition.AddParens());
     }
+
+    private static bool IsOrderingComparison(BinaryExpressionSyntax bOp) =>
+        bOp.IsKind(SyntaxKind.GreaterThanExpression) || bOp.IsKind(SyntaxKind.GreaterThanOrEqualExpression) ||
+        bOp.IsKind(SyntaxKind.LessThanExpression) || bOp.IsKind(SyntaxKind.LessThanOrEqualExpression);
 
     public static SyntaxKind GetExpressionOperatorTokenKind(SyntaxKind op)
     {
