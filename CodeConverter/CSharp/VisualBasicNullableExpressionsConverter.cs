@@ -71,7 +71,7 @@ internal class VisualBasicNullableExpressionsConverter
     private ExpressionSyntax ForExpressionTree(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
         if (IsSupported(vbNode.Kind()) && !vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)) {
-            return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation); // C#'s lifted comparisons are bool
+            return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation, CSharpUtil.MayCompareNullAnnotation); // C#'s lifted comparisons are bool
         }
         if (!vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression) || !vbNode.IsOnlyTestedForTrue(_semanticModel)) return csBinExp;
         var isLhsNullable = IsNullable(vbNode.Left, lhs, lhsTypeInfo);
@@ -237,11 +237,11 @@ internal class VisualBasicNullableExpressionsConverter
         bool isLhsNullable, bool isRhsNullable)
     {
         if (vbNode.IsOnlyTestedForTrue(_semanticModel) && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
-            return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation);
+            return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation, CSharpUtil.MayCompareNullAnnotation);
         }
         if (IsNegationOnlyTestedForTrue(vbNode) && IsLiftedOrderingWithTotalOrder(vbNode)) {
             var negated = SyntaxFactory.BinaryExpression(CSharpUtil.NegateRelationalOperator(csNode.Kind()), csNode.Left, csNode.Right);
-            return negated.WithAdditionalAnnotations(IsNotNullableAnnotation, NegatedForParentNotAnnotation);
+            return negated.WithAdditionalAnnotations(IsNotNullableAnnotation, CSharpUtil.MayCompareNullAnnotation, NegatedForParentNotAnnotation);
         }
 
         ExpressionSyntax? lhsName = lhs, rhsName = rhs;

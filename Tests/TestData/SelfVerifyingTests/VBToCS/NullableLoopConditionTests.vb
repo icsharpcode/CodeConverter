@@ -292,6 +292,20 @@ Public Class NullableLoopConditionTests
         Assert.Equal(bothHaveValues AndAlso Not a.Value >= b.Value AndAlso a.Value <> 0, result)
     End Sub
 
+    <Theory>
+    <InlineData(Nothing, 1)>
+    <InlineData(1, Nothing)>
+    <InlineData(1, 2)>
+    <InlineData(2, 1)>
+    Public Sub DoUntilNullableAndNonNullableComparisons(a As Integer?, b As Integer?)
+        Dim i = 0
+        Do Until a < b AndAlso i < 3
+            i += 1
+            If i = MaxIterations Then Exit Do
+        Loop
+        Assert.Equal(If(a.HasValue AndAlso b.HasValue AndAlso a.Value < b.Value, 0, MaxIterations), i)
+    End Sub
+
     ''' <summary>
     ''' A While loop runs while its condition is True, and an Until loop runs while it isn't
     ''' </summary>

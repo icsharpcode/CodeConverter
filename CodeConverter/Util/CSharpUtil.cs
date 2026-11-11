@@ -6,22 +6,24 @@ namespace ICSharpCode.CodeConverter.Util;
 internal static class CSharpUtil
 {
     /// <summary>
+    /// Marks a lifted comparison whose operands may be null. A lifted &lt;, &lt;=, &gt; or &gt;= is false when an operand is null,
+    /// so its opposite operator would be false too, rather than true.
+    /// </summary>
+    public static readonly SyntaxAnnotation MayCompareNullAnnotation = new("CodeConverter.MayCompareNull");
+
+    /// <summary>
     /// Inverts a boolean condition. Note: The condition object can be frozen (from AST) it's cloned internally.
     /// </summary>
     /// <param name="condition">The condition to invert.</param>
-    /// <param name="negateOrderingComparisons">
-    /// False where an operand of &lt;, &lt;=, &gt; or &gt;= may be nullable: a lifted comparison is false when an operand is null,
-    /// so the negated operator would be false too, rather than true.
-    /// </param>
-    public static ExpressionSyntax InvertCondition(this ExpressionSyntax condition, bool negateOrderingComparisons = true)
+    public static ExpressionSyntax InvertCondition(this ExpressionSyntax condition)
     {
-        return InvertConditionInternal(condition, negateOrderingComparisons);
+        return InvertConditionInternal(condition);
     }
 
-    private static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition, bool negateOrderingComparisons)
+    private static ExpressionSyntax InvertConditionInternal(ExpressionSyntax condition)
     {
         if (condition is ParenthesizedExpressionSyntax) {
-            return SyntaxFactory.ParenthesizedExpression(InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression, negateOrderingComparisons));
+            return SyntaxFactory.ParenthesizedExpression(InvertCondition(((ParenthesizedExpressionSyntax)condition).Expression));
         }
 
         if (condition is PrefixUnaryExpressionSyntax) {
@@ -38,10 +40,10 @@ internal static class CSharpUtil
             var bOp = (BinaryExpressionSyntax)condition;
 
             if (bOp.IsKind(SyntaxKind.LogicalAndExpression) || bOp.IsKind(SyntaxKind.LogicalOrExpression))
-                return SyntaxFactory.BinaryExpression(NegateConditionOperator(bOp.Kind()), InvertCondition(bOp.Left, negateOrderingComparisons), InvertCondition(bOp.Right, negateOrderingComparisons));
+                return SyntaxFactory.BinaryExpression(NegateConditionOperator(bOp.Kind()), InvertCondition(bOp.Left), InvertCondition(bOp.Right));
 
             if (bOp.IsKind(SyntaxKind.EqualsExpression) || bOp.IsKind(SyntaxKind.NotEqualsExpression) ||
-                negateOrderingComparisons && IsOrderingComparison(bOp))
+                IsOrderingComparison(bOp) && !bOp.HasAnnotation(MayCompareNullAnnotation))
                 return SyntaxFactory.BinaryExpression(NegateRelationalOperator(bOp.Kind()), bOp.Left, bOp.Right);
 
             return SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, SyntaxFactory.ParenthesizedExpression(condition));

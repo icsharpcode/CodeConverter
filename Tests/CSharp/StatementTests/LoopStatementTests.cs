@@ -72,7 +72,7 @@ internal partial class TestClass
     public async Task NullableLoopConditionsTreatNothingAsFalseAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
-    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?)
+    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?, i As Integer)
         While x = y : End While
         While b : End While
         While Not b : End While
@@ -87,11 +87,12 @@ internal partial class TestClass
         Do : Loop Until x > y
         Do : Loop Until Not b
         Do Until b = True : Loop
+        Do Until x > y AndAlso i < 3 : Loop
     End Sub
 End Class", @"
 internal partial class TestClass
 {
-    private void TestMethod(int? x, int? y, bool? b)
+    private void TestMethod(int? x, int? y, bool? b, int i)
     {
         while (x.HasValue && y.HasValue && x.Value == y.Value)
         {
@@ -137,6 +138,9 @@ internal partial class TestClass
         }
         while (b != false);
         while (b != true)
+        {
+        }
+        while (!(x > y) || i >= 3)
         {
         }
     }
