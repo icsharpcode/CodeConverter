@@ -940,8 +940,10 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             @default = SyntaxFactory.EqualsValue((ExpressionSyntax)node.Default?.Value.Accept(TriviaConvertingVisitor));
         }
         AttributeListSyntax[] newAttributes;
-        var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, TokenContext.Local);
-        if ((modifiers.Count == 0 && returnType != null) || node.Modifiers.Any(CS.SyntaxKind.ThisKeyword)) {
+        // VB marks an extension method with <Extension> on the method (see VisitMethodDeclaration), not on its first parameter
+        var parameterModifiers = node.Modifiers.Where(m => !m.IsKind(CS.SyntaxKind.ThisKeyword)).ToList();
+        var modifiers = CommonConversions.ConvertModifiers(parameterModifiers, TokenContext.Local);
+        if (modifiers.Count == 0 && returnType != null) {
             newAttributes = Array.Empty<AttributeListSyntax>();
         } else if (node.Modifiers.Any(CS.SyntaxKind.OutKeyword)) {
             newAttributes = new[] {

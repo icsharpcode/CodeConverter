@@ -479,11 +479,11 @@ Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
-    Public Sub TestMethod(Me str As String)
+    Public Sub TestMethod(str As String)
     End Sub
 
     <Extension()>
-    Public Sub TestMethod2Parameters(Me str As String, __ As Action(Of String))
+    Public Sub TestMethod2Parameters(str As String, __ As Action(Of String))
     End Sub
 End Module", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
@@ -504,8 +504,74 @@ static class TestClass
 
 Friend Module TestClass
     <Extension()>
-    Public Sub TestMethod(Me str As String)
+    Public Sub TestMethod(str As String)
     End Sub
+End Module");
+    }
+
+    [Fact]
+    public async Task TestExtensionMethodParameterModifiersAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System.Collections.Generic;
+
+static class TestClass
+{
+    public static void Increment(this ref int value)
+    {
+        value++;
+    }
+
+    public static void Decrement(ref this int value)
+    {
+        value--;
+    }
+
+    public static T Identity<T>(this T value) where T : struct
+    {
+        return value;
+    }
+
+    public static int First(this int[] values, ref int index, out bool found, int fallback = 0)
+    {
+        found = values.Length > index;
+        return found ? values[index] : fallback;
+    }
+
+    public static IEnumerable<T> Skip<T>(this IEnumerable<T> source)
+    {
+        return source;
+    }
+}", @"Imports System.Collections.Generic
+Imports System.Runtime.CompilerServices
+Imports System.Runtime.InteropServices
+
+Friend Module TestClass
+    <Extension()>
+    Public Sub Increment(ByRef value As Integer)
+        value += 1
+    End Sub
+
+    <Extension()>
+    Public Sub Decrement(ByRef value As Integer)
+        value -= 1
+    End Sub
+
+    <Extension()>
+    Public Function Identity(Of T As Structure)(value As T) As T
+        Return value
+    End Function
+
+    <Extension()>
+    Public Function First(values As Integer(), ByRef index As Integer, <Out> ByRef found As Boolean, Optional fallback As Integer = 0) As Integer
+        found = values.Length > index
+        Return If(found, values(index), fallback)
+    End Function
+
+    <Extension()>
+    Public Function Skip(Of T)(source As IEnumerable(Of T)) As IEnumerable(Of T)
+        Return source
+    End Function
 End Module");
     }
 
