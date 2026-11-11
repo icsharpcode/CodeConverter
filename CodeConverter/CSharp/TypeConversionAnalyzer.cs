@@ -374,7 +374,7 @@ internal class TypeConversionAnalyzer
         var sourceIsConvertedType = SymbolEqualityComparer.Default.Equals(vbType, vbConvertedType);
         return AnalyzeConversion(vbNode) switch {
             TypeConversionKind.Unknown or TypeConversionKind.Identity or TypeConversionKind.DelegateConstructor => sourceIsConvertedType,
-            TypeConversionKind.LiteralSuffix => sourceIsConvertedType || IsExactTypeNumericLiteral(vbNode, vbConvertedType),
+            TypeConversionKind.LiteralSuffix => IsExactTypeNumericLiteral(vbNode, vbConvertedType),
             _ => true
         };
     }

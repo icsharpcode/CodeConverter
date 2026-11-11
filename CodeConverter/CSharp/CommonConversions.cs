@@ -224,7 +224,7 @@ internal class CommonConversions
     /// </summary>
     public TypeSyntax GetValueTupleTypeSyntax(INamedTypeSymbol tupleType)
     {
-        var typeArguments = (tupleType.TupleUnderlyingType ?? tupleType).TypeArguments.Select(t => GetTypeSyntax(t));
+        var typeArguments = tupleType.TupleUnderlyingType.TypeArguments.Select(t => GetTypeSyntax(t));
         var valueTupleName = SyntaxFactory.GenericName(SyntaxFactory.Identifier(nameof(ValueTuple)), SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(typeArguments)));
         return SyntaxFactory.QualifiedName(GetFullyQualifiedNameSyntax(tupleType.ContainingNamespace), valueTupleName);
     }
