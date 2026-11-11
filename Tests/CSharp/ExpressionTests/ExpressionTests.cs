@@ -2420,6 +2420,25 @@ End Sub",
     }
 
     [Fact]
+    public async Task ValueTupleConstructorWithoutArgumentsBecomesDefaultAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Function Foo() As (Integer, String)
+    Dim pair = New ValueTuple(Of Integer, String)()
+    Dim noParentheses = New ValueTuple(Of Integer, String)
+    Dim oneElement = New ValueTuple(Of Integer)()
+    Return New ValueTuple(Of Integer, String)
+End Function",
+            @"public (int, string) Foo()
+{
+    var pair = default((int, string));
+    var noParentheses = default((int, string));
+    var oneElement = default(ValueTuple<int>);
+    return default;
+}");
+    }
+
+    [Fact]
     public async Task ValueTupleConstructorWithInlineRestBecomesFlatTupleLiteralAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(

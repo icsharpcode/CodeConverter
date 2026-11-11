@@ -4,8 +4,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace ICSharpCode.CodeConverter.CSharp;
 
 /// <summary>
-/// Converts <c>New ValueTuple(Of T1, T2)(a, b)</c> to the tuple literal <c>(a, b)</c>, which creates the same value.
-/// C# can't write <c>new (T1, T2)(a, b)</c> (CS8181), so anything this declines is created with <c>new ValueTuple&lt;T1, T2&gt;(a, b)</c>.
+/// Converts <c>New ValueTuple(Of T1, T2)(a, b)</c> to the tuple literal <c>(a, b)</c>, and <c>New ValueTuple(Of T1, T2)()</c> to <c>default((T1, T2))</c>,
+/// which create the same values. C# can't write <c>new (T1, T2)(a, b)</c> (CS8181), so anything this declines is created with <c>new ValueTuple&lt;T1, T2&gt;(a, b)</c>.
 /// </summary>
 /// <remarks>
 /// A tuple literal's element types come from a target type if it has one, and from its elements otherwise (e.g. assigned to var).
@@ -27,8 +27,10 @@ internal class ValueTupleCreationConverter
         _commonConversions = commonConversions;
     }
 
-    public async Task<ExpressionSyntax> ConvertToTupleLiteralOrNullAsync(VBSyntax.ObjectCreationExpressionSyntax node)
+    public async Task<ExpressionSyntax> ConvertOrNullAsync(VBSyntax.ObjectCreationExpressionSyntax node)
     {
+        if (node.Initializer != null || _semanticModel.GetTypeInfo(node).Type is not {IsTupleType: true} tupleType) return null;
+        if (node.ArgumentList?.Arguments.Any() != true) return SyntaxFactory.DefaultExpression(_commonConversions.GetTypeSyntax(tupleType));
         if (_commonConversions.TriviaConvertingExpressionVisitor.IsWithinExpressionTree) return null;
         var elements = GetTupleElementsOrNull(node);
         if (elements is not {Count: > 1} || !elements.All(e => _commonConversions.TypeConversionAnalyzer.KeepsConvertedTypeWithoutTargetType(e.Expression))) return null;

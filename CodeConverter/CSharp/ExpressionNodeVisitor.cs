@@ -283,7 +283,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitObjectCreationExpression(VBasic.Syntax.ObjectCreationExpressionSyntax node)
     {
-        if (await _valueTupleCreationConverter.ConvertToTupleLiteralOrNullAsync(node) is { } tupleLiteral) return tupleLiteral;
+        if (await _valueTupleCreationConverter.ConvertOrNullAsync(node) is { } tupleCreation) return tupleCreation;
         var createdType = _semanticModel.GetTypeInfo(node).Type;
         var objectCreationExpressionSyntax = CS.SyntaxFactory.ObjectCreationExpression(
             createdType is INamedTypeSymbol {IsTupleType: true} tupleType ? CommonConversions.GetValueTupleTypeSyntax(tupleType) : await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),

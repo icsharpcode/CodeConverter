@@ -82,6 +82,16 @@ Public Class ValueTupleCreationTests
     End Sub
 
     <Fact>
+    Sub CreationWithoutArgumentsIsDefault()
+        Dim pair = New ValueTuple(Of Integer, String)()
+        Assert.Equal(GetType(ValueTuple(Of Integer, String)), pair.GetType())
+        Assert.Equal((0, CStr(Nothing)), pair)
+        Dim noParentheses = New ValueTuple(Of Integer, String)
+        Assert.Equal(pair, noParentheses)
+        Assert.Equal(0, New ValueTuple(Of Integer)().Item1)
+    End Sub
+
+    <Fact>
     Sub LongTuplesKeepAllElements()
         Dim eight = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
         Assert.Equal(GetType(ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))), eight.GetType())
