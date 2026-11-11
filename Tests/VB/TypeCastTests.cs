@@ -265,4 +265,122 @@ End Class");
     End Sub
 End Class");
     }
+
+    [Fact]
+    public async Task NativeIntegerTypesAsync() {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"public class Test {
+    private nint _signed;
+    private nuint _unsigned;
+    public nuint TestMethod(nint value, int i, uint u) {
+        _signed = value;
+        _signed = (nint)i;
+        _unsigned = (nuint)u;
+        return _unsigned;
+    }
+}",
+            @"Public Class Test
+    Private _signed As IntPtr
+    Private _unsigned As UIntPtr
+    Public Function TestMethod(value As IntPtr, i As Integer, u As UInteger) As UIntPtr
+        _signed = value
+        _signed = CType(i, IntPtr)
+        _unsigned = CType(u, UIntPtr)
+        Return _unsigned
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task IntPtrArgumentAsync() {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
+using System.Runtime.InteropServices;
+
+class NativeMethods {
+    [DllImport(""user32.dll"", EntryPoint = ""GetWindowLongPtr"")]
+    static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+    public static long GetWindowLong(IntPtr hWnd, int nIndex) {
+        return GetWindowLongPtr64(hWnd, nIndex).ToInt64();
+    }
+}",
+            @"Imports System
+Imports System.Runtime.InteropServices
+
+Friend Class NativeMethods
+    <DllImport(""user32.dll"", EntryPoint:=""GetWindowLongPtr"")>
+    Private Shared Function GetWindowLongPtr64(hWnd As IntPtr, nIndex As Integer) As IntPtr
+    End Function
+    Public Shared Function GetWindowLong(hWnd As IntPtr, nIndex As Integer) As Long
+        Return GetWindowLongPtr64(hWnd, nIndex).ToInt64()
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task NativeIntegerTypeContextsAsync() {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
+using System.Collections.Generic;
+
+public class Test {
+    public nint[] Array = new nint[1];
+    public List<nuint> List = new List<nuint>();
+    public nint? Nullable;
+    public Func<nint, nuint> Convert;
+
+    public Type TestMethod() {
+        nint local = 5;
+        var inferred = (nint)local;
+        nint max = nint.MaxValue;
+        nint zero = default(nint);
+        nint none = default;
+        Nullable = local;
+        return typeof(nuint);
+    }
+}",
+            @"Imports System
+Imports System.Collections.Generic
+
+Public Class Test
+    Public Array As IntPtr() = New IntPtr(0) {}
+    Public List As List(Of UIntPtr) = New List(Of UIntPtr)()
+    Public Nullable As IntPtr?
+    Public Convert As Func(Of IntPtr, UIntPtr)
+
+    Public Function TestMethod() As Type
+        Dim local As IntPtr = 5
+        Dim inferred = local
+        Dim max = IntPtr.MaxValue
+        Dim zero As IntPtr = Nothing
+        Dim none As IntPtr = Nothing
+        Nullable = local
+        Return GetType(UIntPtr)
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task UserTypeNamedNintAsync() {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
+
+class nint { }
+
+class Test {
+    private nint _custom = new nint();
+    private IntPtr _pointer = IntPtr.Zero;
+    private System.UIntPtr _unsigned = System.UIntPtr.Zero;
+}",
+            @"Imports System
+
+Friend Class nint
+End Class
+
+Friend Class Test
+    Private _custom As nint = New nint()
+    Private _pointer As IntPtr = IntPtr.Zero
+    Private _unsigned As UIntPtr = UIntPtr.Zero
+End Class");
+    }
 }

@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 * Don't emit Me on the first parameter of an extension method - [#1118](https://github.com/icsharpcode/CodeConverter/issues/1118)
 * Truncate towards zero when converting a fractional number to an integer, instead of inheriting VB's rounding - [#1021](https://github.com/icsharpcode/CodeConverter/issues/1021)
+* Convert nint/nuint to IntPtr/UIntPtr instead of the undefined nint/System.nint
 
 ## [10.0.2] - 2026-11-08
 
