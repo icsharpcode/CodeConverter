@@ -220,6 +220,16 @@ internal class CommonConversions
     }
 
     /// <summary>
+    /// C# forbids tuple type syntax after <c>new</c> (CS8181), so a tuple type is named by its generic ValueTuple type there.
+    /// </summary>
+    public TypeSyntax GetValueTupleTypeSyntax(INamedTypeSymbol tupleType)
+    {
+        var typeArguments = (tupleType.TupleUnderlyingType ?? tupleType).TypeArguments.Select(t => GetTypeSyntax(t));
+        var valueTupleName = SyntaxFactory.GenericName(SyntaxFactory.Identifier(nameof(ValueTuple)), SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(typeArguments)));
+        return SyntaxFactory.QualifiedName(GetFullyQualifiedNameSyntax(tupleType.ContainingNamespace), valueTupleName);
+    }
+
+    /// <summary>
     /// Semantic model merges the symbols, but the compiled form retains multiple namespaces, which (when referenced from C#) need to keep the correct casing.
     /// <seealso cref="DeclarationNodeVisitor.WithDeclarationNameCasingAsync(VBSyntax.NamespaceBlockSyntax, ISymbol)"/>
     /// <seealso cref="CommonConversions.WithDeclarationName(SyntaxToken, ISymbol, string)"/>

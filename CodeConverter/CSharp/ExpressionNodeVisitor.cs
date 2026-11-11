@@ -281,9 +281,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public override async Task<CSharpSyntaxNode> VisitObjectCreationExpression(VBasic.Syntax.ObjectCreationExpressionSyntax node)
     {
-
+        var createdType = _semanticModel.GetTypeInfo(node).Type;
         var objectCreationExpressionSyntax = CS.SyntaxFactory.ObjectCreationExpression(
-            await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),
+            createdType is INamedTypeSymbol {IsTupleType: true} tupleType ? CommonConversions.GetValueTupleTypeSyntax(tupleType) : await node.Type.AcceptAsync<TypeSyntax>(TriviaConvertingExpressionVisitor),
             // VB can omit empty arg lists:
             await _argumentConverter.ConvertArgumentListOrEmptyAsync(node, node.ArgumentList),
             null

@@ -2399,6 +2399,27 @@ End Function",
     }
 
     [Fact]
+    public async Task ValueTupleConstructorKeepsConstructorWhenTupleLiteralWouldChangeMeaningAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub Foo(s As String, x As Integer)
+    Dim boxed = New ValueTuple(Of Object, Object)(s, 1)
+    Dim nullable = New ValueTuple(Of Integer?, Integer)(x, 1)
+    Dim named = New ValueTuple(Of Integer, String)(item2:=s, item1:=x)
+    Dim initialized = New ValueTuple(Of Integer, Integer) With {.Item1 = x}
+    Dim oneElement = New ValueTuple(Of Integer)(x)
+End Sub",
+            @"public void Foo(string s, int x)
+{
+    var boxed = new ValueTuple<object, object>(s, 1);
+    var nullable = new ValueTuple<int?, int>(x, 1);
+    var named = new ValueTuple<int, string>(item2: s, item1: x);
+    var initialized = new ValueTuple<int, int>() { Item1 = x };
+    var oneElement = new ValueTuple<int>(x);
+}");
+    }
+
+    [Fact]
     public async Task UseEventBackingFieldAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
