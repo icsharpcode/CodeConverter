@@ -20,6 +20,10 @@ internal static class VbSyntaxNodeExtensions
         return parentIsMemberAccessExpression || parentIsNonArgumentExpression && !parentIsBinaryExpression && !parentIsLambda && !parentIsParenthesis;
     }
 
+    public static bool IsOrderingComparison(this VBSyntax.ExpressionSyntax node) =>
+        node.IsKind(VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+            VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression);
+
     /// <summary>
     /// Where VB binds a condition as Boolean (e.g. Nothing becomes False), the C# condition must be bool.
     /// VB's binder passes the condition context through parentheses (isOperandOfConditionalBranch in Binder_Expressions.vb), so this does too.

@@ -291,9 +291,7 @@ internal class VisualBasicNullableExpressionsConverter
     /// C# has no ordering operators for bool, and a structure's user-defined operators needn't be a total order.
     /// </summary>
     private bool IsLiftedOrderingWithTotalOrder(VBSyntax.BinaryExpressionSyntax vbNode) =>
-        vbNode.IsKind(VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
-            VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression) &&
-        HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Left).ConvertedType) && HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Right).ConvertedType);
+        vbNode.IsOrderingComparison() && HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Left).ConvertedType) && HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Right).ConvertedType);
 
     private static bool HasTotalOrder(ITypeSymbol? type) =>
         (type?.GetNullableUnderlyingType() ?? type) is { IsValueType: true } valueType &&
@@ -303,12 +301,7 @@ internal class VisualBasicNullableExpressionsConverter
     /// C#'s lifted relational operators are false when an operand is null, as is its lifted == unless both are null
     /// </summary>
     private static bool IsLiftedOperatorFalseWhenVbIsNothing(VBSyntax.BinaryExpressionSyntax vbNode, bool isLhsNullable, bool isRhsNullable) =>
-        vbNode.Kind() switch {
-            VBasic.SyntaxKind.LessThanExpression or VBasic.SyntaxKind.LessThanOrEqualExpression or
-                VBasic.SyntaxKind.GreaterThanExpression or VBasic.SyntaxKind.GreaterThanOrEqualExpression => true,
-            VBasic.SyntaxKind.EqualsExpression => !(isLhsNullable && isRhsNullable),
-            _ => false
-        };
+        vbNode.IsOrderingComparison() || vbNode.IsKind(VBasic.SyntaxKind.EqualsExpression) && !(isLhsNullable && isRhsNullable);
 
     private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode), ref csName);
     private ExpressionSyntax HasValue(bool reusable, ref ExpressionSyntax csName)
