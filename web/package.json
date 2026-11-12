@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "@monaco-editor/react": "^4.7.0",
-        "axios": "^1.21.0",
+        "axios": "^1.21.1",
         "bootstrap": "^5.3.8",
         "monaco-editor": "^0.57.0",
         "react": "^19.3.1",
@@ -29,7 +29,7 @@
         "@vitejs/plugin-react": "^4.3.4",
         "jsdom": "^27.4.0",
         "typescript": "~5.9.3",
-        "vite": "^6.4.5",
+        "vite": "^6.4.6",
         "vitest": "^5.1.0"
     }
 }
