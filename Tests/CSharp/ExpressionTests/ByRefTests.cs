@@ -1557,4 +1557,73 @@ public partial class C
     }
 }", incompatibleWithAutomatedCommentTesting: true); // The late-bound assignment is emitted on the local function's line
     }
+
+    [Fact]
+    public async Task ParameterizedPropertyIsWrittenBackThroughItsSetterIssue909Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class ClsDb
+    Private ReadOnly _recordValues(10, 30) As String
+
+    Public Sub Get_Equal(ByRef tableBuffer As Integer, ByRef keyIndex As Integer, ByRef keyValue As String, ByRef recordPosition As String, ByRef errorNumber As Integer)
+        keyValue = ""found""
+    End Sub
+
+    Public Property Qr(ByVal tableBuffer As Integer, ByVal fieldNumber As Integer) As String
+        Get
+            Return _recordValues(tableBuffer, fieldNumber)
+        End Get
+        Set(ByVal value As String)
+            _recordValues(tableBuffer, fieldNumber) = value
+        End Set
+    End Property
+End Class
+
+Public Module Euro_Str
+    Public Db As New ClsDb
+    Public QAdr As Integer
+    Public CourseBuffer As Integer
+End Module
+
+Public Class Caller
+    Sub Find(recordPositionQAdr As String, errorCode As Integer)
+        Db.Get_Equal(QAdr, 0, Db.Qr(CourseBuffer, 21), recordPositionQAdr, errorCode)
+    End Sub
+End Class", @"
+public partial class ClsDb
+{
+    private readonly string[,] _recordValues = new string[11, 31];
+
+    public void Get_Equal(ref int tableBuffer, ref int keyIndex, ref string keyValue, ref string recordPosition, ref int errorNumber)
+    {
+        keyValue = ""found"";
+    }
+
+    public string get_Qr(int tableBuffer, int fieldNumber)
+    {
+        return _recordValues[tableBuffer, fieldNumber];
+    }
+    public void set_Qr(int tableBuffer, int fieldNumber, string value)
+    {
+        _recordValues[tableBuffer, fieldNumber] = value;
+    }
+}
+
+public static partial class Euro_Str
+{
+    public static ClsDb Db = new ClsDb();
+    public static int QAdr;
+    public static int CourseBuffer;
+}
+
+public partial class Caller
+{
+    public void Find(string recordPositionQAdr, int errorCode)
+    {
+        int argkeyIndex = 0;
+        string argkeyValue = Euro_Str.Db.get_Qr(Euro_Str.CourseBuffer, 21);
+        Euro_Str.Db.Get_Equal(ref Euro_Str.QAdr, ref argkeyIndex, ref argkeyValue, ref recordPositionQAdr, ref errorCode);
+        Euro_Str.Db.set_Qr(Euro_Str.CourseBuffer, 21, argkeyValue);
+    }
+}");
+    }
 }

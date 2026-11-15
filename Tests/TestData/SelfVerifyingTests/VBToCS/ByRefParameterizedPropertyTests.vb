@@ -1,0 +1,136 @@
+Imports System.Collections.Generic
+Imports Xunit
+
+Public Class ByRefParameterizedPropertyTests
+    Private ReadOnly _log As New List(Of String)
+    Private _fieldIndex As Integer = 1
+
+    <Fact>
+    Public Sub ParameterizedPropertyIsWrittenBackThroughItsSetterIssue909()
+        Dim db As New Db(_log)
+        db.Get_Equal(1, db.Qr(1, 21), "position")
+        Assert.Equal("changed", db.Qr(1, 21))
+        Assert.Equal("get 1,21;set 1,21=changed;get 1,21", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub OmittedOptionalIndexIsWrittenBackThroughTheSetter()
+        Dim db As New Db(_log)
+        SetValue(db.WithDefault())
+        Assert.Equal("get 7;set 7=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub ImplicitMeParameterizedPropertyIsWrittenBack()
+        Dim db As New Db(_log)
+        db.SetOwnValue()
+        db.SetOwnValueWithMe()
+        Assert.Equal("get 2,3;set 2,3=changed;get 4,5;set 4,5=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub ReadOnlyParameterizedPropertyIsNotWrittenBack()
+        Dim db As New Db(_log)
+        SetValue(db.ReadOnlyQr(NextIndex()))
+        Assert.Equal("index 1;readonly get 1", LogText())
+    End Sub
+
+    Private Function LogText() As String
+        Return String.Join(";", _log)
+    End Function
+
+    Private Function NextIndex() As Integer
+        _log.Add("index 1")
+        Return 1
+    End Function
+
+    Private Function GetDb() As Db
+        _log.Add("receiver")
+        Return New Db(_log)
+    End Function
+
+    Private Shared Function SetValue(ByRef value As String) As String
+        value = "changed"
+        Return value
+    End Function
+
+    Private Shared Sub SetValueAndIndex(ByRef value As String, ByRef index As Integer)
+        value = "changed"
+        index = 5
+    End Sub
+
+    Private Class Db
+        Private ReadOnly _log As List(Of String)
+        Private ReadOnly _values As New Dictionary(Of String, String)
+
+        Public Sub New(log As List(Of String))
+            _log = log
+        End Sub
+
+        Public Sub Get_Equal(ByRef tableBuffer As Integer, ByRef keyValue As String, ByRef recordPosition As String)
+            keyValue = "changed"
+        End Sub
+
+        Public Sub SetOwnValue()
+            SetValue(Qr(2, 3))
+        End Sub
+
+        Public Sub SetOwnValueWithMe()
+            SetValue(Me.Qr(4, 5))
+        End Sub
+
+        Public Property Qr(tableBuffer As Integer, fieldNumber As Integer) As String
+            Get
+                _log.Add("get " & tableBuffer & "," & fieldNumber)
+                Return Lookup(tableBuffer & "," & fieldNumber)
+            End Get
+            Set(value As String)
+                _log.Add("set " & tableBuffer & "," & fieldNumber & "=" & value)
+                _values(tableBuffer & "," & fieldNumber) = value
+            End Set
+        End Property
+
+        Public Property WithDefault(Optional index As Integer = 7) As String
+            Get
+                _log.Add("get " & index)
+                Return Lookup(CStr(index))
+            End Get
+            Set(value As String)
+                _log.Add("set " & index & "=" & value)
+            End Set
+        End Property
+
+        Public ReadOnly Property ReadOnlyQr(index As Integer) As String
+            Get
+                _log.Add("readonly get " & index)
+                Return Lookup(CStr(index))
+            End Get
+        End Property
+
+        Default Public Property Item(index As Integer) As String
+            Get
+                _log.Add("item get " & index)
+                Return Lookup(CStr(index))
+            End Get
+            Set(value As String)
+                _log.Add("item set " & index & "=" & value)
+            End Set
+        End Property
+
+        Public Property Plain As String
+            Get
+                _log.Add("plain get")
+                Return Nothing
+            End Get
+            Set(value As String)
+                _log.Add("plain set=" & value)
+            End Set
+        End Property
+
+        Private Function Lookup(key As String) As String
+            Dim value As String = Nothing
+            _values.TryGetValue(key, value)
+            Return value
+        End Function
+    End Class
+End Class

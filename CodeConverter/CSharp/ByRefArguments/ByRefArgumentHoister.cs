@@ -1,4 +1,6 @@
-﻿namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+﻿using Microsoft.CodeAnalysis.Operations;
+
+namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 
 /// <summary>
 /// C# can only pass a variable by reference, so a ByRef argument that isn't one gets a temporary, and VB's copy-back becomes a write-back statement.
@@ -58,11 +60,31 @@ internal class ByRefArgumentHoister
 
         if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
             var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-            var writeBack = new AdditionalAssignment(refLValue, convertedLocalIdentifier);
+            var writeBack = CreateWriteBack(node, refLValue, convertedLocalIdentifier);
             if (_writeBacksPerCall.Count > 0) _writeBacksPerCall.Peek().Add(writeBack);
             else _typeContext.PerScopeState.Hoist(writeBack);
         }
 
         return local.IdentifierName;
+    }
+
+    private AdditionalAssignment CreateWriteBack(VBSyntax.ExpressionSyntax vbTarget, CSSyntax.ExpressionSyntax csTarget, CSSyntax.ExpressionSyntax value)
+    {
+        if (_semanticModel.GetOperation(vbTarget) is IPropertyReferenceOperation { Arguments.Length: > 0 } pro && !VBasic.VisualBasicExtensions.IsDefault(pro.Property) &&
+            csTarget is CSSyntax.InvocationExpressionSyntax getterCall) {
+            return AdditionalAssignment.ViaSetter(CreateSetterCall(getterCall, pro.Property, value));
+        }
+        return new AdditionalAssignment(csTarget, value);
+    }
+
+    private static CSSyntax.InvocationExpressionSyntax CreateSetterCall(CSSyntax.InvocationExpressionSyntax getterCall, IPropertySymbol property, CSSyntax.ExpressionSyntax value)
+    {
+        var setterName = ValidSyntaxFactory.IdentifierName(property.SetMethod.Name);
+        CSSyntax.ExpressionSyntax setter = getterCall.Expression switch {
+            CSSyntax.MemberAccessExpressionSyntax maes => maes.WithName(setterName),
+            CSSyntax.SimpleNameSyntax => setterName,
+            var other => throw new NotSupportedException($"Parameterized property getter call {other.Kind()}")
+        };
+        return CS.SyntaxFactory.InvocationExpression(setter, CommonConversions.AddSetterValueArgument(getterCall.ArgumentList, property, value));
     }
 }
