@@ -467,16 +467,7 @@ internal class NameExpressionNodeVisitor
 
             var args = await _argumentConverter.ConvertArgumentListOrEmptyAsync(node, optionalArgumentList);
             if (extraArg != null) {
-                var extraArgSyntax = SyntaxFactory.Argument(extraArg);
-                var propertySymbol = ((IPropertyReferenceOperation)operation).Property;
-                var forceNamedExtraArg = args.Arguments.Count != propertySymbol.GetParameters().Length ||
-                                         args.Arguments.Any(t => t.NameColon != null);
-
-                if (forceNamedExtraArg) {
-                    extraArgSyntax = extraArgSyntax.WithNameColon(SyntaxFactory.NameColon("value"));
-                }
-
-                args = args.WithArguments(args.Arguments.Add(extraArgSyntax));
+                args = CommonConversions.AddSetterValueArgument(args, ((IPropertyReferenceOperation)operation).Property, extraArg);
             }
 
             return SyntaxFactory.InvocationExpression((ExpressionSyntax)expr, args);
