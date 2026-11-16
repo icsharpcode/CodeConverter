@@ -14,6 +14,26 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub IndexArgumentsAreEvaluatedOnce()
+        Dim db As New Db(_log)
+        SetValue(db.Qr(NextIndex(), 21))
+        Assert.Equal("index 1;get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub ReceiverIsEvaluatedOnce()
+        SetValue(GetDb().Qr(1, 21))
+        Assert.Equal("receiver;get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub NamedIndexArgumentsAreWrittenBackThroughTheSetter()
+        Dim db As New Db(_log)
+        SetValue(db.Qr(fieldNumber:=21, tableBuffer:=NextIndex()))
+        Assert.Equal("index 1;get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
     Public Sub OmittedOptionalIndexIsWrittenBackThroughTheSetter()
         Dim db As New Db(_log)
         SetValue(db.WithDefault())
@@ -29,11 +49,61 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub LocalIndexWrittenByAnotherArgumentUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        Dim index = 1
+        SetValueAndIndex(db.Qr(index, 21), index)
+        Assert.Equal(5, index)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub FieldIndexWrittenByAnotherArgumentUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        SetValueAndIndex(db.Qr(_fieldIndex, 21), _fieldIndex)
+        Assert.Equal(5, _fieldIndex)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
     Public Sub ReadOnlyParameterizedPropertyIsNotWrittenBack()
         Dim db As New Db(_log)
         SetValue(db.ReadOnlyQr(NextIndex()))
         Assert.Equal("index 1;readonly get 1", LogText())
     End Sub
+
+    <Fact>
+    Public Sub DefaultPropertyIndexIsEvaluatedOnce()
+        Dim db As New Db(_log)
+        SetValue(db(NextIndex()))
+        Assert.Equal("index 1;item get 1;item set 1=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub PropertyReceiverIsEvaluatedOnce()
+        SetValue(GetDb().Plain)
+        Assert.Equal("receiver;plain get;plain set=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub ReturnWritesBackThroughTheSetterBeforeReturning()
+        Dim db As New Db(_log)
+        Assert.Equal("changed", ReturnSetValue(db))
+        Assert.Equal("index 1;get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub ConditionWritesBackThroughTheSetterBeforeTheBlock()
+        Dim db As New Db(_log)
+        If SetValue(db.Qr(NextIndex(), 21)) = "changed" Then
+            _log.Add("then " & db.Qr(1, 21))
+        End If
+        Assert.Equal("index 1;get 1,21;set 1,21=changed;get 1,21;then changed", LogText())
+    End Sub
+
+    Private Function ReturnSetValue(db As Db) As String
+        Return SetValue(db.Qr(NextIndex(), 21))
+    End Function
 
     Private Function LogText() As String
         Return String.Join(";", _log)

@@ -54,6 +54,10 @@ internal class ByRefArgumentHoister
             refLValue = eae.WithExpression(tmpContainer.IdentifierName);
         }
 
+        if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
+            refLValue = ByRefTargetTemporaries.Hoist(_semanticModel, _typeContext, node, refLValue);
+        }
+
         var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, refLValue, defaultToCast: refKind != RefKind.None);
 
         var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));

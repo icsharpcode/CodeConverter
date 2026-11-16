@@ -1626,4 +1626,126 @@ public partial class Caller
     }
 }");
     }
+
+    [Fact]
+    public async Task ByRefPropertyTargetEvaluatesReceiverAndIndexesOnceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private _index As Integer
+
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Default Public Property Item(i As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Public Property Plain As String
+
+    Function NextIndex() As Integer
+        Return 1
+    End Function
+
+    Function GetC() As C
+        Return Me
+    End Function
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+
+    Shared Sub SetValueAndIndex(ByRef value As String, ByRef index As Integer)
+    End Sub
+
+    Sub UsesTwice(other As C)
+        Dim i = 1
+        SetValue(Qr(i, 2)) ' Locals, constants and fields are evaluated again
+        SetValue(other.Qr(_index, NextIndex()))
+        SetValue(GetC().Qr(1, 2))
+        SetValue(GetC().Plain)
+        SetValue(other(NextIndex()))
+        SetValueAndIndex(other.Qr(i, 2), i) ' i is written by the call
+    End Sub
+End Class", @"
+public partial class C
+{
+    private int _index;
+
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+
+    public string this[int i]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+
+    public string Plain { get; set; }
+
+    public int NextIndex()
+    {
+        return 1;
+    }
+
+    public C GetC()
+    {
+        return this;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+
+    public static void SetValueAndIndex(ref string value, ref int index)
+    {
+    }
+
+    public void UsesTwice(C other)
+    {
+        int i = 1;
+        string argvalue = get_Qr(i, 2);
+        SetValue(ref argvalue);
+        set_Qr(i, 2, argvalue); // Locals, constants and fields are evaluated again
+        var tmp = NextIndex();
+        string argvalue1 = other.get_Qr(_index, tmp);
+        SetValue(ref argvalue1);
+        other.set_Qr(_index, tmp, argvalue1);
+        var tmp1 = GetC();
+        string argvalue2 = tmp1.get_Qr(1, 2);
+        SetValue(ref argvalue2);
+        tmp1.set_Qr(1, 2, argvalue2);
+        var tmp2 = GetC();
+        string argvalue3 = tmp2.Plain;
+        SetValue(ref argvalue3);
+        tmp2.Plain = argvalue3;
+        var tmp3 = other;
+        var tmp4 = NextIndex();
+        string argvalue4 = tmp3[tmp4];
+        SetValue(ref argvalue4);
+        tmp3[tmp4] = argvalue4;
+        var tmp5 = i;
+        string argvalue5 = other.get_Qr(tmp5, 2);
+        SetValueAndIndex(ref argvalue5, ref i);
+        other.set_Qr(tmp5, 2, argvalue5); // i is written by the call
+    }
+}");
+    }
 }
