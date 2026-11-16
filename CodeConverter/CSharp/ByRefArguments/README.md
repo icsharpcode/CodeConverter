@@ -29,7 +29,25 @@ Within each of these, one call's write-backs are hoisted after its whole argumen
 
 The classes in this folder hold the ByRef-specific decisions. The placement mechanics stay with the code they extend: the hoisted node types and `PerScopeState` (the hoisting for every feature), `MethodBodyExecutableStatementVisitor` (jumps) and `CommonConversions` (field initializers, whose method wraps any hoisted statement, not only ByRef ones).
 
+### What the write-back writes to
+
+Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/main/src/Compilers/VisualBasic/Portable/Lowering/UseTwiceRewriter.vb), which `RewriteByRefArgumentWithCopyBack` uses to read the target and then write it with the setter. Behaviour is covered by `Tests/TestData/SelfVerifyingTests/VBToCS/ByRefParameterizedProperty*.vb`.
+
+* VB evaluates the target's receiver and index arguments once, and the write-back reuses their values. It copies each into a temporary except literals, constants and `Me`.
+* The converter hoists a `tmp` only where the second evaluation could give a different value. A local, parameter or field is reused unless the enclosing expression writes it (as a ByRef argument, or in a lambda): `ByRefTargetTemporaries`.
+* A parameterized property (not the default one) becomes `get_X`/`set_X` methods, so its write-back calls the setter with the same index arguments: `ByRefArgumentHoister.CreateWriteBack`, `AdditionalAssignment.ViaSetter`. It takes its place in the call's reversed write-back order like any other.
+* A `ReadOnly` property isn't written back (`GetRefConversionForExpression`), so it's evaluated once and needs no temporaries.
+
+| VB target | C# |
+|---|---|
+| `Qr(i, 2)`, `other.Qr(_index, 2)` | `get_Qr(i, 2)` … `set_Qr(i, 2, arg)` |
+| `other.Qr(NextIndex(), 2)` | `var tmp = NextIndex();` … `other.get_Qr(tmp, 2)` … `other.set_Qr(tmp, 2, arg)` |
+| `GetC().Qr(1, 2)`, `GetC().Plain` | `var tmp = GetC();` … `tmp.set_Qr(1, 2, arg)`, `tmp.Plain = arg` |
+| `other(NextIndex())` (default property or indexer) | `var tmp = other; var tmp1 = NextIndex();` … `tmp[tmp1] = arg` (the container is always copied, as before) |
+| `Two(other.Qr(i, 2), i)` | `var tmp = i;` … `other.set_Qr(tmp, 2, arg)` |
+
 Known gaps:
+* A field that the called method itself assigns is read again for the write-back, where VB uses its original value. Detecting it needs analysis of the callee.
 * In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, every case that would use the local function instead writes back after the statement. That covers operands, conditions, block headers, `Dim` declarators, and compound or receiver-target assignments. The code compiles, but the write-back is late. Loop conditions still use a local function there and give CS1673, because writing back once would be wrong in a different way.
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
