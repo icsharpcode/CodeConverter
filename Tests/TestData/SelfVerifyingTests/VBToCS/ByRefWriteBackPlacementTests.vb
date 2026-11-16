@@ -368,6 +368,62 @@ Public Class ByRefWriteBackPlacementTests
         End Sub
     End Class
 
+    <Fact>
+    Public Sub CallWritesBackItsArgumentsInReverseOrder()
+        Dim probe As New Probe
+        Two(probe.Value, probe.Value)
+        Assert.Equal(1, probe.Stored)
+        Assert.Equal("get,get,set,set", probe.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub NestedCallWritesBackBeforeTheOuterCallsReversedWriteBacks()
+        Dim probe As New Probe
+        Three(SetToNine(probe.Value), probe.Value, probe.Value)
+        Assert.Equal(1, probe.Stored)
+    End Sub
+
+    <Fact>
+    Public Sub ReturnWritesBackInReverseOrderBeforeReturning()
+        Dim probe As New Probe
+        Assert.Equal(3, ReturnTwo(probe))
+        Assert.Equal(1, probe.Stored)
+    End Sub
+
+    Private Shared Function ReturnTwo(probe As Probe) As Integer
+        Return TwoAndSum(probe.Value, probe.Value)
+    End Function
+
+    <Fact>
+    Public Sub BlockHeaderWritesBackInReverseOrderBeforeTheBody()
+        Dim probe As New Probe
+        Select Case TwoAndSum(probe.Value, probe.Value)
+            Case 3
+                Assert.Equal(1, probe.Stored)
+            Case Else
+                Assert.Fail("Unexpected case")
+        End Select
+    End Sub
+
+    Private Shared Sub Two(ByRef a As Integer, ByRef b As Integer)
+        a = 1
+        b = 2
+    End Sub
+
+    Private Shared Function TwoAndSum(ByRef a As Integer, ByRef b As Integer) As Integer
+        Two(a, b)
+        Return a + b
+    End Function
+
+    Private Shared Sub Three(x As Integer, ByRef a As Integer, ByRef b As Integer)
+        Two(a, b)
+    End Sub
+
+    Private Shared Function SetToNine(ByRef value As Integer) As Integer
+        value = 9
+        Return value
+    End Function
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value

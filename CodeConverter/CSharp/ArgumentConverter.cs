@@ -10,6 +10,11 @@ internal class ArgumentConverter
     private readonly SemanticModel _semanticModel;
     private CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
 
+    /// <summary>
+    /// The write-backs of each argument list being converted, innermost call on top.
+    /// </summary>
+    private readonly Stack<List<AdditionalAssignment>> _writeBacksPerCall = new();
+
     public ArgumentConverter(VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions)
     {
         CommonConversions = commonConversions;
@@ -54,7 +59,7 @@ internal class ArgumentConverter
         var invocationHasOverloads = invocationSymbol.HasOverloads();
 
         var processedParameters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
+        var argumentSyntaxs = (await WithWriteBacksInVbOrderAsync(() => node.Arguments.SelectAsync(ConvertArg))).Where(a => a != null);
         return Enumerable.Concat(argumentSyntaxs, GetAdditionalRequiredArgs(node.Arguments, processedParameters, invocationSymbol, invocationHasOverloads));
 
         async Task<CSSyntax.ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax arg, int argIndex)
@@ -119,6 +124,24 @@ internal class ArgumentConverter
     }
 
 
+    /// <summary>
+    /// VB copies back a call's ByRef arguments from the last to the first (copyBackArray.ReverseContents() in Roslyn's LocalRewriter_Call.vb),
+    /// which is observable when two arguments write back to the same place.
+    /// A nested call has already written back by then, so only this call's own write-backs are reversed.
+    /// </summary>
+    private async Task<T> WithWriteBacksInVbOrderAsync<T>(Func<Task<T>> convertArguments)
+    {
+        _writeBacksPerCall.Push(new List<AdditionalAssignment>());
+        T converted;
+        try {
+            converted = await convertArguments();
+        } finally {
+            var writeBacks = _writeBacksPerCall.Pop();
+            foreach (var writeBack in Enumerable.Reverse(writeBacks)) _typeContext.PerScopeState.Hoist(writeBack);
+        }
+        return converted;
+    }
+
     internal CSSyntax.ExpressionSyntax HoistByRefDeclaration(VBSyntax.ExpressionSyntax node, CSSyntax.ExpressionSyntax refLValue, SemanticModelExtensions.RefConversion refType, string argName, RefKind refKind)
     {
         string prefix = $"arg{argName}";
@@ -138,7 +161,9 @@ internal class ArgumentConverter
 
         if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
             var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-            _typeContext.PerScopeState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
+            var writeBack = new AdditionalAssignment(refLValue, convertedLocalIdentifier);
+            if (_writeBacksPerCall.Count > 0) _writeBacksPerCall.Peek().Add(writeBack);
+            else _typeContext.PerScopeState.Hoist(writeBack);
         }
 
         return local.IdentifierName;

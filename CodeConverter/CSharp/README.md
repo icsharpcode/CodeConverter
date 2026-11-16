@@ -8,6 +8,7 @@ Sources: [passing arguments by value and by reference](https://learn.microsoft.c
 
 * A ByRef parameter accepts any expression. If it isn't a variable (a property, a method result, a constant, an omitted `Optional` argument), VB passes a temporary.
 * For a writable property (or a `ReadOnly` auto-property inside its constructor), VB copies the temporary back **straight after the call returns**, before the rest of the enclosing expression or statement runs.
+* One call copies back its arguments from the last to the first (`copyBackArray.ReverseContents()` in `LocalRewriter_Call.vb`). It's observable when two arguments write back to the same place, e.g. `Two(p.Value, p.Value)`. A call nested in an argument has already copied back by then.
 
 ### C#
 
@@ -25,10 +26,11 @@ Sources: [passing arguments by value and by reference](https://learn.microsoft.c
 | Followed by other evaluation, or in a condition or block header (`If`, `ElseIf`, loops, `Select Case`, `Case`, `For`, `For Each`, `Using`, `SyncLock`, `With`, `Catch When`) | a local function that declares, calls and writes back, called in place | `NameExpressionNodeVisitor.RequiresLocalFunction`, `HoistAndCallLocalFunctionAsync` |
 | A field initializer | a method that declares, writes back and returns, called from the field (static) or the constructor (instance) | `CommonConversions.WithHoistedNodesInMethodAsync`, `PerScopeState.CreateReturnBlockAsync` |
 
+Within each of these, one call's write-backs are hoisted after its whole argument list, last argument first, so a nested call's come before them: `ArgumentConverter.WithWriteBacksInVbOrderAsync`.
+
 Known gaps:
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
-* VB copies back a call's arguments in reverse order (`copyBackArray.ReverseContents()` in `LocalRewriter_Call.vb`); the converter writes back in argument order. Only observable when two arguments write back to aliasing targets, e.g. `Two(p.Value, p.Value)`. A fix needs per-call grouping in `ArgumentConverter`, since nested calls write back before the outer call.
 * `Dim a = Inc(P), b = Inc(P)` writes back after all declarators, so `b` reads a stale `P`.
 * A lambda parameter inside a ByRef argument (`Function(x) Inc(x.P)`) hoists the local function outside the lambda, where `x` isn't in scope (CS0103).
 * An auto-property initializer (`Public Property X As Integer = Inc(P)`) leaves a `ph…` placeholder (CS0103): it doesn't go through the field initializer path.
