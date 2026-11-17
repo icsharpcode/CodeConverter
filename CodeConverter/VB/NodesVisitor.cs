@@ -1914,6 +1914,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     public override VisualBasicSyntaxNode VisitIdentifierName(CSSyntax.IdentifierNameSyntax node)
     {
+        if (_semanticModel.GetNativeIntegerTypeOrNull(node) is { } nativeIntegerType) {
+            return _commonConversions.GetFullyQualifiedNameSyntax(nativeIntegerType, allowGlobalPrefix: false);
+        }
         return WrapTypedNameIfNecessary(SyntaxFactory.IdentifierName(_commonConversions.ConvertIdentifier(node.Identifier)), node);
     }
 
