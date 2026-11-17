@@ -83,9 +83,9 @@ internal class ByRefTargetTemporaries
         return CS.SyntaxFactory.SeparatedList(csArgs.Select((csArg, i) => {
             var parameter = csArg.NameColon is { } nameColon
                 ? parameters.FirstOrDefault(p => string.Equals(p.Name, nameColon.Name.Identifier.ValueText, StringComparison.OrdinalIgnoreCase))
-                : parameters.ElementAtOrDefault(Math.Min(i, parameters.Length - 1));
+                : parameters.ElementAtOrDefault(i);
             var vbArg = pro.Arguments.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.Parameter, parameter));
-            return IsReusable(vbArg, i - parameters.IndexOf(parameter)) ? csArg : csArg.WithExpression(HoistValue(csArg.Expression));
+            return IsReusable(vbArg) ? csArg : csArg.WithExpression(HoistValue(csArg.Expression));
         }));
     }
 
@@ -95,12 +95,10 @@ internal class ByRefTargetTemporaries
             IsReusable(indices.ElementAtOrDefault(i)) ? csArg : csArg.WithExpression(HoistValue(csArg.Expression))));
     }
 
-    /// <param name="paramArrayIndex">For a ParamArray parameter, which of its elements the C# argument passes.</param>
-    private bool IsReusable(IArgumentOperation vbArg, int paramArrayIndex) => vbArg switch {
+    /// <remarks>A ParamArray's elements don't map one to one onto C# arguments, so they're each copied.</remarks>
+    private bool IsReusable(IArgumentOperation vbArg) => vbArg switch {
         // The converter fills in an omitted argument with a constant or a temporary of its own
         { ArgumentKind: ArgumentKind.DefaultValue } => true,
-        { ArgumentKind: ArgumentKind.ParamArray, Value: IArrayCreationOperation { Initializer.ElementValues: var elements } } =>
-            paramArrayIndex >= 0 && paramArrayIndex < elements.Length && IsReusable(elements[paramArrayIndex]),
         { ArgumentKind: ArgumentKind.Explicit } => IsReusable(vbArg.Value),
         _ => false
     };
@@ -139,8 +137,6 @@ internal class ByRefTargetTemporaries
     }
 
     private static ISymbol GetReferencedVariable(IOperation operation) => operation switch {
-        IParenthesizedOperation p => GetReferencedVariable(p.Operand),
-        IConversionOperation c => GetReferencedVariable(c.Operand),
         ILocalReferenceOperation l => l.Local,
         IParameterReferenceOperation p => p.Parameter,
         IFieldReferenceOperation f => f.Field,
