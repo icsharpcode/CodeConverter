@@ -84,10 +84,10 @@ internal class WriteBackPlacement
         }
 
         if (invocation.ArgumentList == null) return false;
-        var localFunctionCanUseThis = !IsInStructAndUsesThis(invocation);
-        var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation, localFunctionCanUseThis);
-        var assignmentChangesWhatIsWrittenBack = localFunctionCanUseThis && AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
-        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation, localFunctionCanUseThis) && !assignmentChangesWhatIsWrittenBack;
+        if (IsInStructAndUsesThis(invocation)) return false;
+        var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
+        var assignmentChangesWhatIsWrittenBack = AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
+        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation) && !assignmentChangesWhatIsWrittenBack;
         if (definitelyExecutedAfterPrevious && nextStatementDefinitelyExecuted) return false;
         if (assignmentChangesWhatIsWrittenBack && GetWrittenBackReceiver(invocation, invocationSymbol) is not null) return true;
         var possibleInline = definitelyExecutedAfterPrevious ? RefConversion.PreAssigment : RefConversion.Inline;
@@ -171,14 +171,13 @@ internal class WriteBackPlacement
     /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
     /// </summary>
     /// <summary>
-    /// A local function in a struct can't use <c>this</c> (CS1673). Block headers, <c>Dim</c> declarators and assignments
-    /// then keep writing back after the statement, as before they used the local function: compiling but late, a known gap.
+    /// A local function in a struct can't use <c>this</c> (CS1673), so there the write-back stays after the statement: compiling but late, a known gap.
     /// </summary>
     private bool IsInStructAndUsesThis(VBSyntax.InvocationExpressionSyntax invocation) =>
         _semanticModel.GetEnclosingSymbol(invocation.SpanStart) is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
         _semanticModel.GetOperation(invocation)?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() != false;
 
-    private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation, bool localFunctionCanUseThis)
+    private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
     {
         SyntaxNode parent = invocation;
         while (true) {
@@ -193,7 +192,7 @@ internal class WriteBackPlacement
                     // Being the leftmost invocation of an unqualified method call ensures no other code is executed. Could add other cases here, such as a method call on a local variable name, or "this.". A method call on a property is not acceptable.
                     if (argumentSyntax.Parent.Parent is VBSyntax.InvocationExpressionSyntax parentInvocation && parentInvocation.ArgumentList.Arguments.First() == argumentSyntax && FirstArgDefinitelyEvaluated(parentInvocation)) continue;
                     else return false;
-                case VBSyntax.VariableDeclaratorSyntax declarator when localFunctionCanUseThis && IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
+                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
                     if (declarators.First() == declarator) continue;
                     else return false;
                 case VBSyntax.ElseIfStatementSyntax _:
@@ -228,7 +227,7 @@ internal class WriteBackPlacement
     /// A block's header statement is followed by its body, so a write-back placed after the converted block would run too late
     /// (or, for a later Case clause, run when the clause was never evaluated).
     /// </summary>
-    private static bool NextStatementDefinitelyExecutedAfter(VBSyntax.InvocationExpressionSyntax invocation, bool localFunctionCanUseThis)
+    private static bool NextStatementDefinitelyExecutedAfter(VBSyntax.InvocationExpressionSyntax invocation)
     {
         SyntaxNode parent = invocation;
         while (true) {
@@ -239,13 +238,12 @@ internal class WriteBackPlacement
                 case VBSyntax.BinaryExpressionSyntax binaryExpression:
                     if (binaryExpression.Right == invocation) continue;
                     else return false;
-                case VBSyntax.VariableDeclaratorSyntax declarator when localFunctionCanUseThis && IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
+                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
                     if (declarators.Last() == declarator) continue;
                     else return false;
                 case VBSyntax.IfStatementSyntax _:
                 case VBSyntax.ElseIfStatementSyntax _:
                 case VBSyntax.SingleLineIfStatementSyntax _:
-                    return false;
                 case VBSyntax.SelectStatementSyntax _:
                 case VBSyntax.CaseStatementSyntax _:
                 case VBSyntax.ForStatementSyntax _:
@@ -254,7 +252,7 @@ internal class WriteBackPlacement
                 case VBSyntax.SyncLockStatementSyntax _:
                 case VBSyntax.WithStatementSyntax _:
                 case VBSyntax.CatchStatementSyntax _:
-                    return !localFunctionCanUseThis;
+                    return false;
                 case VBSyntax.ExpressionSyntax _:
                 case VBSyntax.StatementSyntax _:
                     return true;

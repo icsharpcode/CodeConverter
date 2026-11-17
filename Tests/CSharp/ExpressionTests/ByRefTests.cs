@@ -1478,4 +1478,49 @@ public partial struct S
     }
 }", incompatibleWithAutomatedCommentTesting: true); // The write-back after the block moves line comments out of order
     }
+
+    [Fact]
+    public async Task StructureKeepsStatementPlacementForOperandsThatWouldNeedThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        Me.P = Inc(Me.P) + 1
+        Dim x = 1 + Inc(P)
+        P = Inc(Inc(P))
+    End Sub
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        int argv = P;
+        var ret = Inc(ref argv) + 1;
+        P = argv;
+        P = ret;
+        int argv1 = P;
+        int x = 1 + Inc(ref argv1);
+        P = argv1;
+        int argv2 = P;
+        int argv3 = Inc(ref argv2);
+        var ret1 = Inc(ref argv3);
+        P = argv2;
+        P = ret1;
+    }
+}");
+    }
 }
