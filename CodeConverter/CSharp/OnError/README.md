@@ -1,7 +1,6 @@
 # VB → C# unstructured error handling (`On Error`, `Resume`) — design
 
-Status: **design only, nothing here is implemented yet.** Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
-Today only one shape is converted (`LambdaConverter.GetWithConvertedGotosOrNull`); everything else is converted statement by statement and marked with `#error`.
+Status: the model, shape selection, `Err` usage and shape 1 (structured) are implemented. Shapes 2–4 are recognised but not emitted yet: those methods keep the previous output (`PendingShapeFallback`: one `try`/`catch` when there's exactly one label and one `On Error GoTo`, otherwise statement by statement with `#error`). Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
 
 Sources:
 * VB: [`LocalRewriter_UnstructuredExceptionHandling.vb`](https://github.com/dotnet/roslyn/blob/main/src/Compilers/VisualBasic/Portable/Lowering/LocalRewriter/LocalRewriter_UnstructuredExceptionHandling.vb) (the lowering, with pseudo-code of the emitted method), the `RegisterUnstructuredExceptionHandlingResumeTarget` calls in the sibling `LocalRewriter_*.vb` files (which statements are resume points), and the [On Error](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/on-error-statement) / [Resume](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/resume-statement) docs.
@@ -141,18 +140,16 @@ Alternatives considered:
 * its containing type (all partial parts) references `Err` (`Microsoft.VisualBasic.Information.Err`);
 * the project contains an **`Err` helper**: a method that references `Err` but has no `On Error` statement of its own, so it can only be reading an error that some other method caught (typically a shared `LogError()` called from handlers anywhere).
 
-The helper search is one pass per compilation, cached: find identifiers named `Err`, bind only those, and check the containing method for `On Error` statements.
+The helper search is one pass per project, cached: find identifiers named `Err`, bind only those, and check the containing method for `On Error` statements. Only reads count: `Err.Raise` and `Err.Clear` don't depend on an earlier error. A read inside a `Catch` block reads that block's own error, so doesn't make an `Err` helper.
 
 When `Err` is maintained:
 
 * each catch starts with `SetProjectError(ex)`;
-* `ClearProjectError()` goes where an `On Error` or `Resume*` statement was, and on leaving a handler by exit.
+* `ClearProjectError()` goes where an `On Error` or `Resume*` statement was, and on leaving a handler by exit. `Return expr` is wrapped in `try { return expr; } finally { ProjectData.ClearProjectError(); }` unless `expr` is a literal or the return variable, since VB evaluates it (possibly reading `Err`) before clearing.
 
 Otherwise catches are bare `catch { }` and need no `Microsoft.VisualBasic` reference.
 
-Known difference: `Err` read through reflection, late binding, or from another project isn't seen.
-
-The existing structured conversion emits `catch { }` followed by `Information.Err().Number`, which reads 0 at runtime (see `BasicGotoAsync`); under this rule it gets the `SetProjectError` call.
+Known differences: `Err` read through reflection, late binding, or from another project isn't seen. After `GoTo L` out of a handler, VB clears `Err` when the method is left; the C# leaves it set.
 
 ### Throwing loop headers skip the loop
 
@@ -177,14 +174,19 @@ The same applies to handler code reached without an error (no `Exit Sub` before 
 
 VB re-enters `H`, which here means log, close, fail, log, close … forever. Looping forever is never what was meant, so by default only the code before the first resume label is in the `try`, and a secondary error propagates to the caller.
 
-The exact form is cheap, because the handler never resumes into the middle of the cleanup: split the covered statements into **segments** at the labels the handler resumes to, and give each segment its own `try` calling the handler:
+The exact form is cheap, because the handler never resumes into the middle of the cleanup: split the covered statements into **segments** at the labels the handler resumes to, give each segment its own `try`, and put the handler after them, at method level, where each `catch` jumps to it:
 
 ```csharp
-OnErrorAction H() { /* handler */ }
-try { Work(); } catch { if (H() == OnErrorAction.Exit) return; }
+try { Work(); } catch (Exception ex) { ProjectData.SetProjectError(ex); goto H; }
 Cleanup:
-try { conn.Close(); return; } catch { if (H() == OnErrorAction.Exit) return; goto Cleanup; }
+try { conn.Close(); return; } catch (Exception ex) { ProjectData.SetProjectError(ex); goto H; }
+H:
+Log(Information.Err().Description);
+ProjectData.ClearProjectError();
+goto Cleanup;
 ```
+
+All its ways out are method-level jumps or exits, so it needs no local function and no action value to say how it left (C# has no local enums, and a nested one would clash between partial parts). The segmented form isn't used when the handler leaves by `GoTo L` (the code at `L` would still be "in a handler" in VB, so isn't protected) or is also reached without an error.
 
 Which form is used:
 
@@ -202,17 +204,21 @@ Conditions on `Err.Number` alone don't count: they distinguish kinds of first er
 
 * Formatting: the guards rely on `try { … } catch { }` staying on one line. If the formatter expands them, shape 2 is four lines per statement.
 
-## Where each part will live
+## Where each part lives
 
-To be filled in as it's implemented. Intended split, all in this directory:
+All in this directory unless stated. Planned parts are in italics.
 
 | Requirement | Class |
 |---|---|
-| Active handler per statement, handler regions, exits | `OnErrorModel` (analysis only, no C# syntax) |
-| Which statements are resume points, and where a failing condition resumes | `ResumePoints` |
-| `Err` usage in the type, `Err` helpers in the project (cached) | `ErrUsage` |
-| Re-entry guard detection, segments | `OnErrorModel` |
+| Entry point, one emitter per shape | `OnErrorMethodBodyConverter`, called from `LambdaConverter.ConvertMethodBodyStatementsAsync` |
+| Active handler per statement, dynamic detection, handler regions and exits | `OnErrorModel`, `ActiveHandler`, `HandlerRegion`, `HandlerExit` (analysis only, no C# syntax) |
+| Which statements are resume points, and where a failing condition resumes | *`ResumePoints`* |
+| `Err` usage in the type, `Err` helpers in the project (one cached pass per project) | `ErrUsage`, created in `VBToCSProjectContentsConverter`, reached through `CommonConversions.ErrUsage` |
 | Choosing a shape | `OnErrorShapeSelector` |
-| Guards, handler local function, hoisting | one emitter per shape, called from `MethodBodyExecutableStatementVisitor` |
+| Structured layout, segments | `StructuredPlanner`, `StructuredPlan` |
+| Secondary errors: can the resumed-to code throw, re-entry guard | `ThrowAnalysis`, `ReEntryGuard` |
+| `On Error` / `Resume` statements met by the method body visitor | `IOnErrorStatementConverter`, set on `MethodBodyExecutableStatementVisitor.OnErrorStatementConverter`; `StructuredStatementConverter` |
+| Shape 1 output, hoisting, `Err` calls | `StructuredShapeEmitter`, `LocalHoisting`, `ErrStatements`, `ClearErrOnReturnRewriter` |
+| Shapes 2–4 output | *one emitter each*; until then `PendingShapeFallback` |
 
-Tests: a conversion test per shape in `Tests/CSharp/StatementTests/OnErrorStatementTests.cs`, and self-verifying tests in `Tests/TestData/SelfVerifyingTests/VBToCS/` that log each step and compare the VB and C# logs (the scenarios used to check this design: failing `If`/`ElseIf`/`While`/`Loop Until` conditions, `Select`, `Using`, multiple declarators, `Return`, `On Error GoTo 0`, handler with `Resume Next` inside a loop, `Resume` retry with a counter, fall-through into a handler, handler that throws, cleanup idiom, conditional `On Error`).
+Tests: conversion tests in `Tests/CSharp/StatementTests/OnErrorStatementTests.cs`, and self-verifying tests in `Tests/TestData/SelfVerifyingTests/VBToCS/OnError*.vb` that log each step and compare the VB and C# logs (the scenarios used to check this design: failing `If`/`ElseIf`/`While`/`Loop Until` conditions, `Select`, `Using`, multiple declarators, `Return`, `On Error GoTo 0`, handler with `Resume Next` inside a loop, `Resume` retry with a counter, fall-through into a handler, handler that throws, cleanup idiom, conditional `On Error`).
