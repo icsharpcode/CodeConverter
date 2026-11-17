@@ -86,6 +86,18 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub SettersAreCalledFromTheLastArgumentToTheFirst()
+        Dim db As New Db(_log)
+        SetTwoValues(db.Qr(1, 1), db.Qr(NextIndex(), 2))
+        Assert.Equal("get 1,1;index 1;get 1,2;set 1,2=second;set 1,1=first", LogText())
+    End Sub
+
+    Private Shared Sub SetTwoValues(ByRef first As String, ByRef second As String)
+        first = "first"
+        second = "second"
+    End Sub
+
+    <Fact>
     Public Sub StructureReceiverInAnArrayIsWrittenInPlace()
         Dim cells(2) As Cell
         SetValue(cells(NextIndex()).Text)
