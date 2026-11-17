@@ -105,17 +105,41 @@ internal class WriteBackPlacement
     /// VB writes back straight after the call, before the enclosing assignment stores its result.
     /// A write-back emitted after the assignment statement would overwrite the assigned target (<c>h.P = F(h.P)</c>),
     /// or write to a different place if the assignment changes something the write-back target reads (<c>x = F(h.Items(x))</c>, <c>h = F(h.P)</c>).
-    /// Other assignments keep the write-back after the statement.
+    /// A simple target is handled by the statement instead (see <see cref="IsSimpleTargetReadByWriteBack"/>), so only a compound assignment
+    /// or a target with a receiver or index to evaluate first needs the local function.
     /// </summary>
     private bool AssignmentChangesWhatIsWrittenBack(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
     {
         if (invocation.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax) is not VBSyntax.AssignmentStatementSyntax assignment ||
-            !assignment.Right.Span.Contains(invocation.Span)) {
+            !assignment.Right.Span.Contains(invocation.Span) || IsSimpleTarget(assignment)) {
             return false;
         }
 
-        var assignedSymbol = _semanticModel.GetSymbolInfo(assignment.Left).Symbol ??
-                             (assignment.Left is VBSyntax.InvocationExpressionSyntax { Expression: var indexed } ? _semanticModel.GetSymbolInfo(indexed).Symbol : null);
+        return WritesBackSomethingReading(invocation, invocationSymbol, GetAssignedSymbol(assignment));
+    }
+
+    /// <summary>
+    /// For <c>P = F(P)</c> or <c>x = F(h.Items(x))</c>, where the target has nothing to evaluate before the call,
+    /// <c>var ret = F(...); write-backs; P = ret;</c> keeps VB's order without a local function (which couldn't use <c>this</c> in a struct).
+    /// </summary>
+    public bool IsSimpleTargetReadByWriteBack(VBSyntax.AssignmentStatementSyntax assignment)
+    {
+        if (!IsSimpleTarget(assignment)) return false;
+        var assignedSymbol = GetAssignedSymbol(assignment);
+        return assignment.Right.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax).OfType<VBSyntax.InvocationExpressionSyntax>()
+            .Any(i => i.ArgumentList != null && _semanticModel.GetSymbolInfo(i).Symbol is IMethodSymbol method && WritesBackSomethingReading(i, method, assignedSymbol));
+    }
+
+    private static bool IsSimpleTarget(VBSyntax.AssignmentStatementSyntax assignment) =>
+        assignment.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) &&
+        assignment.Left.SkipIntoParens() is VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax { Expression: VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax };
+
+    private ISymbol GetAssignedSymbol(VBSyntax.AssignmentStatementSyntax assignment) =>
+        _semanticModel.GetSymbolInfo(assignment.Left).Symbol ??
+        (assignment.Left is VBSyntax.InvocationExpressionSyntax { Expression: var indexed } ? _semanticModel.GetSymbolInfo(indexed).Symbol : null);
+
+    private bool WritesBackSomethingReading(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, ISymbol assignedSymbol)
+    {
         var writtenBackExpressions = invocation.ArgumentList.Arguments.OfType<VBSyntax.SimpleArgumentSyntax>()
             .Where(a => CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) == RefConversion.PreAndPostAssignment)
             .Select(a => a.Expression);

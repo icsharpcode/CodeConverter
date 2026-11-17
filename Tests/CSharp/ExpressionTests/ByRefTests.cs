@@ -1385,6 +1385,7 @@ public partial class C
 
     Sub Assignments(h As C)
         P = F(P)
+        h.Q = F(h.Q)
         h = G(h.P)
         Q = F(P)
     End Sub
@@ -1406,15 +1407,20 @@ public partial class C
 
     public void Assignments(C h)
     {
-        string localF() { string argv = P; var ret = F(ref argv); P = argv; return ret; }
-
-        P = localF();
-        C localG() { string argv1 = h.P; var ret = G(ref argv1); h.P = argv1; return ret; }
-
-        h = localG();
         string argv = P;
-        Q = F(ref argv);
+        var ret = F(ref argv);
         P = argv;
+        P = ret;
+        string localF() { string argv = h.Q; var ret = F(ref argv); h.Q = argv; return ret; }
+
+        h.Q = localF();
+        string argv1 = h.P;
+        var ret1 = G(ref argv1);
+        h.P = argv1;
+        h = ret1;
+        string argv2 = P;
+        Q = F(ref argv2);
+        P = argv2;
     }
 }");
     }

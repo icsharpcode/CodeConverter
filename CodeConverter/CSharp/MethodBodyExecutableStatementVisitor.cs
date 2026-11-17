@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.Operations;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ICSharpCode.CodeConverter.VB;
 using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
@@ -28,6 +29,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _generatedNames = new();
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private readonly PerScopeState _perScopeState;
+    private readonly WriteBackPlacement _writeBackPlacement;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -64,6 +66,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         _extraUsingDirectives = extraUsingDirectives;
         _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
         _perScopeState = typeContext.PerScopeState;
+        _writeBackPlacement = new WriteBackPlacement(semanticModel, _generatedNames, typeContext, commonConversions);
         var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
         CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
         _localsToInlineInLoop = localsToInlineInLoop;
@@ -288,9 +291,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SingleStatement(lhs);
         }
 
-        var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
         var postAssignment = GetPostAssignmentStatements(node);
-        return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+        StatementSyntax AssignTo(ExpressionSyntax value) => SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(kind, lhs, value));
+        if (kind == SyntaxKind.SimpleAssignmentExpression && _writeBackPlacement.IsSimpleTargetReadByWriteBack(node)) {
+            return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
+        }
+        return postAssignment.Insert(0, AssignTo(rhs));
     }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)

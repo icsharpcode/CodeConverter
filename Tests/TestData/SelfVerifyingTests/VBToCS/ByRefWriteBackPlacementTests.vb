@@ -508,6 +508,26 @@ Public Class ByRefWriteBackPlacementTests
         Return Increment(ret.Value) + 1
     End Function
 
+    <Fact>
+    Public Sub StructureAssignmentWritesBackBeforeAssigning()
+        Dim s As New Counter
+        s.Go()
+        Assert.Equal(5, s.P)
+    End Sub
+
+    Private Structure Counter
+        Public Property P As Integer
+
+        Public Sub Go()
+            P = SetToTwoReturnFive(P)
+        End Sub
+    End Structure
+
+    Private Shared Function SetToTwoReturnFive(ByRef value As Integer) As Integer
+        value = 2
+        Return 5
+    End Function
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value
