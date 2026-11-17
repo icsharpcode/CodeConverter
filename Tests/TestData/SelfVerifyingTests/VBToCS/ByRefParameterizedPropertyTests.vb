@@ -163,6 +163,21 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub StaticLocalIndexChangedByARecursiveCallUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        SetWithStaticIndex(db, True)
+        Assert.Equal("get 1,1;get 2,1;set 2,1=changed;set 1,1=changed", LogText())
+    End Sub
+
+    Private Sub SetWithStaticIndex(db As Db, recurse As Boolean)
+        Static index As Integer = 0
+        index += 1
+        SetValueAndRun(db.Qr(index, 1), Sub()
+                                            If recurse Then SetWithStaticIndex(db, False)
+                                        End Sub)
+    End Sub
+
+    <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
         SetValue(Db.SharedQr(NextIndex()))

@@ -112,7 +112,8 @@ internal class ByRefTargetTemporaries
         IInstanceReferenceOperation => true,
         IParenthesizedOperation p => IsReusable(p.Operand),
         IConversionOperation { OperatorMethod: null } c => IsReusable(c.Operand),
-        ILocalReferenceOperation l => !_writtenSymbols.Value.Contains(l.Local),
+        // A Static local lives as long as its method's object (or type), so another call of the method can change it
+        ILocalReferenceOperation l => !l.Local.IsStatic && !_writtenSymbols.Value.Contains(l.Local),
         // A ByRef parameter aliases a variable of the caller's, which the call could reach some other way
         IParameterReferenceOperation p => p.Parameter.RefKind == RefKind.None && !_writtenSymbols.Value.Contains(p.Parameter),
         IFieldReferenceOperation f => !_writtenSymbols.Value.Contains(f.Field) && !_fieldMutations.MayChangeDuringCall(f.Field, GetCall()) && IsReusable(f.Instance),
