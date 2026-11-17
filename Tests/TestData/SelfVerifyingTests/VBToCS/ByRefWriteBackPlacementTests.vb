@@ -497,6 +497,17 @@ Public Class ByRefWriteBackPlacementTests
         Return New Holder
     End Function
 
+    <Fact>
+    Public Sub LocalFunctionResultAvoidsANameInScope()
+        Dim probe As New Probe
+        Assert.Equal(2, AddOne(probe))
+        Assert.Equal(1, probe.Stored)
+    End Sub
+
+    Private Shared Function AddOne(ret As Probe) As Integer
+        Return Increment(ret.Value) + 1
+    End Function
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value

@@ -32,7 +32,8 @@ internal class WriteBackPlacement
     /// </summary>
     public async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
     {
-        const string retVariableName = "ret";
+        // Each local function is its own scope, so only names visible at the call can clash, e.g. a parameter used in the argument
+        var retVariableName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, new HashSet<string>(), invocation, "ret");
         var localFuncName = $"local{invocationSymbol.Name}";
 
         var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
