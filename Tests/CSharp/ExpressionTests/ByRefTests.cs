@@ -2139,4 +2139,73 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ByRefPropertyTargetReusesIntrinsicOperatorsOnReusableOperandsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Public Structure Money
+    Public Shared Operator +(a As Money, b As Money) As Integer
+        Return 0
+    End Operator
+End Structure
+
+Public Class C
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Sub UsesOperators(i As Integer, o As Object, m As Money)
+        SetValue(Qr(i + 1, -i))
+        SetValue(Qr(o + 1, 2))
+        SetValue(Qr(m + m, 2))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial struct Money
+{
+    public static int operator +(Money a, Money b)
+    {
+        return 0;
+    }
+}
+
+public partial class C
+{
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+
+    public void UsesOperators(int i, object o, Money m)
+    {
+        string argvalue = get_Qr(i + 1, -i);
+        SetValue(ref argvalue);
+        set_Qr(i + 1, -i, argvalue);
+        var tmp = Conversions.ToInteger(Operators.AddObject(o, 1));
+        string argvalue1 = get_Qr(tmp, 2);
+        SetValue(ref argvalue1);
+        set_Qr(tmp, 2, argvalue1);
+        var tmp1 = m + m;
+        string argvalue2 = get_Qr(tmp1, 2);
+        SetValue(ref argvalue2);
+        set_Qr(tmp1, 2, argvalue2);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The comment on Option Strict Off is lost before the added using directive
+    }
 }

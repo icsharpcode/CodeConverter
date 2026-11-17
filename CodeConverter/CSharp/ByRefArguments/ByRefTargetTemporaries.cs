@@ -112,6 +112,10 @@ internal class ByRefTargetTemporaries
         IInstanceReferenceOperation => true,
         IParenthesizedOperation p => IsReusable(p.Operand),
         IConversionOperation { OperatorMethod: null } c => IsReusable(c.Operand),
+        // An intrinsic operator gives the same result (or exception) from the same operands. On Object it's late bound, which can run user code.
+        IUnaryOperation { OperatorMethod: null } u when !IsObject(u.Operand) => IsReusable(u.Operand),
+        IBinaryOperation { OperatorMethod: null } b when !IsObject(b.LeftOperand) && !IsObject(b.RightOperand) =>
+            IsReusable(b.LeftOperand) && IsReusable(b.RightOperand),
         // A Static local lives as long as its method's object (or type), so another call of the method can change it
         ILocalReferenceOperation l => !l.Local.IsStatic && !_writtenSymbols.Value.Contains(l.Local),
         // A ByRef parameter aliases a variable of the caller's, which the call could reach some other way
@@ -122,6 +126,8 @@ internal class ByRefTargetTemporaries
 
     /// <returns>The call (or object creation, or event raise) that the ByRef target is an argument of.</returns>
     private IOperation GetCall() => _semanticModel.GetOperation(_vbTarget)?.Parent is IArgumentOperation { Parent: var call } ? call : null;
+
+    private static bool IsObject(IOperation operand) => operand.Type is null or { SpecialType: SpecialType.System_Object };
 
     private CSSyntax.ExpressionSyntax HoistValue(CSSyntax.ExpressionSyntax value) =>
         _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", value, ValidSyntaxFactory.VarType)).IdentifierName;
