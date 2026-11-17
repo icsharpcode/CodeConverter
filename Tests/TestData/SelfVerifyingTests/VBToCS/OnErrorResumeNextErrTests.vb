@@ -93,4 +93,23 @@ Public Class OnErrorResumeNextErrTests
         Assert.Equal(5, Err.Number)
         Err.Clear()
     End Sub
+
+    Private Sub DynamicRecordsErr(ignoreErrors As Boolean)
+        If ignoreErrors Then On Error Resume Next
+        Boom("a")
+        L("err " & Err.Number)
+    End Sub
+
+    <Fact>
+    Sub DynamicGuardsRecordErrWhenTheyCatch()
+        Err.Clear()
+        DynamicRecordsErr(True)
+        Assert.Equal("eval a, err 5", Logged())
+        Assert.Equal(5, Err.Number)
+        Err.Clear()
+        _log.Clear()
+        Assert.Throws(Of InvalidOperationException)(Sub() DynamicRecordsErr(False))
+        Assert.Equal("eval a", Logged())
+        Err.Clear()
+    End Sub
 End Class

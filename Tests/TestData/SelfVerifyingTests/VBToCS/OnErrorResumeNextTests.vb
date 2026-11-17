@@ -313,4 +313,65 @@ Public Class OnErrorResumeNextTests
         Assert.Throws(Of InvalidOperationException)(Sub() StatementsBeforeOnErrorAreNotGuarded())
         Assert.Equal("before, eval early", Logged())
     End Sub
+
+    Private Sub Toggled(ignoreErrors As Boolean, stopIgnoring As Boolean)
+        If ignoreErrors Then On Error Resume Next
+        Boom("a")
+        If stopIgnoring Then On Error GoTo 0
+        L("b")
+        Boom("c")
+        L("d")
+    End Sub
+
+    <Fact>
+    Sub ErrorsAreIgnoredOnlyWhenTheOnErrorStatementRan()
+        Toggled(True, False)
+        Assert.Equal("eval a, b, eval c, d", Logged())
+        _log.Clear()
+        Assert.Throws(Of InvalidOperationException)(Sub() Toggled(False, False))
+        Assert.Equal("eval a", Logged())
+    End Sub
+
+    <Fact>
+    Sub OnErrorGoTo0InsideAnIfStopsIgnoringErrors()
+        Assert.Throws(Of InvalidOperationException)(Sub() Toggled(True, True))
+        Assert.Equal("eval a, b, eval c", Logged())
+    End Sub
+
+    Private Sub DynamicConditionsAndLoops(ignoreErrors As Boolean)
+        If ignoreErrors Then On Error Resume Next
+        Dim n = 0
+        If Boom("if") = 1 Then
+            L("in if body")
+        End If
+        While If(n < 1, Boom("while"), 0) = 1
+            n += 1
+            L("body " & n)
+        End While
+        L("end")
+    End Sub
+
+    <Fact>
+    Sub DynamicGuardsResumeInTheBranchAndTheLoopBody()
+        DynamicConditionsAndLoops(True)
+        Assert.Equal("eval if, in if body, eval while, body 1, end", Logged())
+    End Sub
+
+    <Fact>
+    Sub DynamicGuardsLetErrorsPropagateWhenNotIgnoring()
+        Assert.Throws(Of InvalidOperationException)(Sub() DynamicConditionsAndLoops(False))
+        Assert.Equal("eval if", Logged())
+    End Sub
+
+    Private Function DynamicFunction(ignoreErrors As Boolean) As Integer
+        If ignoreErrors Then On Error Resume Next
+        Dim value As Integer = Boom("value")
+        Return Ok("result", 4) + value
+    End Function
+
+    <Fact>
+    Sub DynamicGuardsKeepHoistedLocalsAndReturns()
+        Assert.Equal(4, DynamicFunction(True))
+        Assert.Equal("eval value, eval result", Logged())
+    End Sub
 End Class

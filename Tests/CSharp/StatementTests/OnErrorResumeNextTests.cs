@@ -735,4 +735,119 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task DynamicHandlerUsesAFlagFilterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Sub Run(flag As Boolean)
+        If flag Then On Error Resume Next
+        Console.WriteLine(""a"")
+        Dim n As Integer = Integer.Parse(""x"")
+        If flag Then On Error GoTo 0
+        Console.WriteLine(n)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void Run(bool flag)
+    {
+        bool resumeNext = false;
+        if (flag)
+            resumeNext = true;
+        try
+        {
+            Console.WriteLine(""a"");
+        }
+        catch when (resumeNext)
+        {
+        }
+        int n = default;
+        try
+        {
+            n = int.Parse(""x"");
+        }
+        catch when (resumeNext)
+        {
+        }
+        if (flag)
+            resumeNext = false;
+        try
+        {
+            Console.WriteLine(n);
+        }
+        catch when (resumeNext)
+        {
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DynamicHandlerRecordsErrAndGuardsConditionsAndLoopsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Function Run(flag As Boolean) As Integer
+        If flag Then On Error Resume Next
+        Dim n As Integer = Integer.Parse(""x"")
+        If Err.Number <> 0 Then Return -1
+        While n > Integer.Parse(""2"")
+            n -= 1
+        End While
+        Return n
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Run(bool flag)
+    {
+        bool resumeNext = false;
+        if (flag)
+        {
+            resumeNext = true;
+            ProjectData.ClearProjectError();
+        }
+        int n = default;
+        try
+        {
+            n = int.Parse(""x"");
+        }
+        catch (Exception ex) when (resumeNext)
+        {
+            ProjectData.SetProjectError(ex);
+        }
+        bool condition = true;
+        try
+        {
+            condition = Information.Err().Number != 0;
+        }
+        catch (Exception ex) when (resumeNext)
+        {
+            ProjectData.SetProjectError(ex);
+        }
+
+        if (condition)
+            return -1;
+        bool LoopCondition() { try { return n > int.Parse(""2""); } catch (Exception ex) when (resumeNext) { ProjectData.SetProjectError(ex); return true; } }
+
+        while (LoopCondition())
+        {
+            try
+            {
+                n -= 1;
+            }
+            catch (Exception ex) when (resumeNext)
+            {
+                ProjectData.SetProjectError(ex);
+            }
+        }
+        return n;
+    }
+}");
+    }
 }
