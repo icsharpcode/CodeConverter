@@ -33,6 +33,12 @@ Known gaps:
 * In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, block headers, `Dim` declarators, and compound or receiver-target assignments keep writing back after the statement: the code compiles but the write-back is late. (`If`/`ElseIf` and loop conditions used local functions before this, so they still give CS1673 there.)
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
+* An assignment is only seen to change what's written back when the same symbol appears in both, e.g. `h.P = F(h.P)`. So:
+  * `h1.P = F(h2.P)` where `h1 Is h2` still writes back after the assignment.
+  * `a.P = F(b.P)` takes the local function even when `a` and `b` are different objects, because two names can always refer to the same object.
+* `WF = New W(WF.Name)`, a ByRef constructor argument in an assignment, writes back to the new object: object creation doesn't take the assignment placement.
+* The write-back re-evaluates the target's receiver, so `F(GetH(h).P)` calls `GetH` twice. Hoisting the receiver into a temporary is left to the parameterized-property work (#909), which adds that for its own targets.
+* A setter with side effects on the written-back target, e.g. `Other = F(P)` where `Other`'s setter writes `P`, runs before the write-back instead of after it.
 * A lambda parameter inside a ByRef argument (`Function(x) Inc(x.P)`) hoists the local function outside the lambda, where `x` isn't in scope (CS0103).
 * An auto-property initializer (`Public Property X As Integer = Inc(P)`) leaves a `ph…` placeholder (CS0103): it doesn't go through the field initializer path.
 * Partial-class instance initializers run in part order rather than declaration order.
