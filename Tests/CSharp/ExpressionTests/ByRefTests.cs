@@ -1523,4 +1523,38 @@ public partial struct S
     }
 }");
     }
+
+    [Fact]
+    public async Task LateBoundAssignmentTargetTakesTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Public Class C
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M(o As Object)
+        o.X = Inc(P)
+    End Sub
+End Class", @"
+public partial class C
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M(object o)
+    {
+        int localInc() { int argv = P; var ret = Inc(ref argv); P = argv; return ret; } ((dynamic)o).X = localInc();
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The late-bound assignment is emitted on the local function's line
+    }
 }

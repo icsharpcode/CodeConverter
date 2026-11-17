@@ -543,6 +543,45 @@ Public Class ByRefWriteBackPlacementTests
         Return 5
     End Function
 
+    <Fact>
+    Public Sub ParenthesizedCallAssignedToTheWrittenBackPropertyKeepsTheCallResult()
+        Dim h As New Holder
+        h.Plain = (SetValueReturnOther(h.Plain))
+        Assert.Equal("result", h.Plain)
+    End Sub
+
+    <Fact>
+    Public Sub LastDeclaratorWritesBackAfterTheDeclaration()
+        Dim probe As New Probe
+        Dim a = Increment(probe.Value), b = Increment(probe.Value)
+        Assert.Equal(1, a)
+        Assert.Equal(2, b)
+        Assert.Equal(2, probe.Stored)
+    End Sub
+
+    <Fact>
+    Public Sub MidAssignmentToTheWrittenBackProperty()
+        Dim h As New Holder With {.Plain = "abcdef"}
+        Mid(h.Plain, 1) = SetValueReturnZZ(h.Plain)
+        Assert.Equal("ZZcdef", h.Plain)
+    End Sub
+
+    Private Shared Function SetValueReturnZZ(ByRef value As String) As String
+        value = "changed"
+        Return "ZZ"
+    End Function
+
+    <Fact>
+    Public Sub ExtensionReceiverInLoopConditionWritesBackEachTime()
+        Dim h As New Holder
+        Dim count = 0
+        Do While h.Plain.GrowIsShort()
+            count += 1
+        Loop
+        Assert.Equal(2, count)
+        Assert.Equal("xxx", h.Plain)
+    End Sub
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value
@@ -582,5 +621,11 @@ Public Module ByRefWriteBackPlacementExtensions
     Public Function SetToChangedReturnResult(ByRef value As String) As String
         value = "changed"
         Return "result"
+    End Function
+
+    <Extension>
+    Public Function GrowIsShort(ByRef value As String) As Boolean
+        value &= "x"
+        Return value.Length < 3
     End Function
 End Module
