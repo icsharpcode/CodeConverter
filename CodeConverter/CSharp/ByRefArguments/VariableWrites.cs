@@ -10,7 +10,8 @@ internal static class VariableWrites
     /// <param name="reference">A local, parameter or field reference.</param>
     public static bool IsWrite(IOperation reference) => IsWrittenBySyntax(reference.Syntax) || reference.Parent switch {
         IAssignmentOperation a => a.Target == reference,
-        IArgumentOperation a => a.Parameter?.RefKind is not RefKind.None,
+        // Without a known parameter (in code that doesn't compile), assume it could be ByRef
+        IArgumentOperation a => a.Parameter is null || a.Parameter.RefKind != RefKind.None,
         IForToLoopOperation l => l.LoopControlVariable == reference,
         IForEachLoopOperation l => l.LoopControlVariable == reference,
         IReDimClauseOperation => true,

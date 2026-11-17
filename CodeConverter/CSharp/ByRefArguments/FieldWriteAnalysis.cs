@@ -104,13 +104,10 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
     private static bool IsConstructing(IMethodSymbol constructor, IFieldSymbol field) =>
         SymbolEqualityComparer.Default.Equals(constructor?.ContainingType, field.ContainingType) && constructor.IsStatic == field.IsStatic;
 
+    /// <param name="declaration">A field declaration or property statement.</param>
     private static bool IsSharedDeclaration(SyntaxNode declaration)
     {
-        var modifiers = declaration switch {
-            VBSyntax.FieldDeclarationSyntax f => f.Modifiers,
-            VBSyntax.PropertyStatementSyntax p => p.Modifiers,
-            _ => default
-        };
+        var modifiers = declaration is VBSyntax.FieldDeclarationSyntax f ? f.Modifiers : ((VBSyntax.PropertyStatementSyntax)declaration).Modifiers;
         return modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.SharedKeyword)) ||
                declaration.FirstAncestorOrSelf<VBSyntax.TypeBlockSyntax>() is VBSyntax.ModuleBlockSyntax;
     }
