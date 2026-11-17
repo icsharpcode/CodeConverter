@@ -1,0 +1,209 @@
+# VB → C# unstructured error handling (`On Error`, `Resume`) — design
+
+Status: **design only, nothing here is implemented yet.** Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
+Today only one shape is converted (`LambdaConverter.GetWithConvertedGotosOrNull`); everything else is converted statement by statement and marked with `#error`.
+
+Sources:
+* VB: [`LocalRewriter_UnstructuredExceptionHandling.vb`](https://github.com/dotnet/roslyn/blob/main/src/Compilers/VisualBasic/Portable/Lowering/LocalRewriter/LocalRewriter_UnstructuredExceptionHandling.vb) (the lowering, with pseudo-code of the emitted method), the `RegisterUnstructuredExceptionHandlingResumeTarget` calls in the sibling `LocalRewriter_*.vb` files (which statements are resume points), and the [On Error](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/on-error-statement) / [Resume](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/resume-statement) docs.
+* C#: [the `goto` statement](https://learn.microsoft.com/dotnet/csharp/language-reference/language-specification/statements#13104-the-goto-statement) (a label is only in scope within its block, so no jumping into a block or a `try`) and [exception filters](https://learn.microsoft.com/dotnet/csharp/language-reference/statements/exception-handling-statements#exception-filters).
+* Every behaviour in "Requirements" was checked by compiling and running VB (.NET 10). Every C# shape in "Output shapes" was hand-written, run, and compared with the VB output, except where marked *not spiked*.
+
+## Requirements
+
+### VB
+
+A method containing `On Error` or `Resume` is compiled as one `Try` around the whole body, with three hidden locals:
+
+| Local | Meaning |
+|---|---|
+| active handler | none, resume-next, or one of the method's handler labels. Set by each `On Error` statement **when it executes**. |
+| resume target | non-zero while "in a handler", i.e. from an error being caught until `Resume*` or `On Error GoTo -1`. |
+| current statement | index of the statement being executed, only tracked if the method contains `Resume` / `Resume Next` / `On Error Resume Next`. |
+
+The single catch is `Catch ex As Exception When activeHandler <> 0 And resumeTarget = 0`. Consequences:
+
+* The active handler is runtime state, not lexical: `If flag Then On Error Resume Next` changes how every later statement behaves.
+* Any exception is caught, including ones thrown deep inside callees.
+* An error while in a handler fails the filter and propagates to the caller. As it is a filter, nothing is unwound first.
+* The resume point is the innermost statement. Each declarator of `Dim a = F(), b = G()` is its own resume point. After `If c Then Boom()` fails, `Resume` re-runs `Boom()` without re-testing `c`.
+* A failing condition resumes at the next resume point in source order, which is usually **inside** the block:
+
+  | Failing expression | `Resume Next` continues at |
+  |---|---|
+  | `If` / `ElseIf` condition | first statement of that branch |
+  | `While` / `Do While` condition (tested at the top) | first statement of the body |
+  | `Loop Until` / `Loop While` condition (tested at the bottom) | after the loop |
+  | `Select Case` expression | after `End Select` |
+  | `Case` expression | first statement of that case |
+  | `For` start value, `For Each` collection | the body, once, with a default loop variable; then after the loop |
+
+* `Using`, `SyncLock` and any other statement lowered to a compiler-generated `Try` is a single resume point: an error inside resumes after the block, and the dispose/unlock runs. `On Error` can't appear inside them, in a method with `Try`, or in lambdas, iterators and async methods.
+* `Err`:
+  * set on every caught error;
+  * cleared by every `On Error` statement and every `Resume*` statement;
+  * cleared on leaving the method only if it is still in a handler. So after `On Error Resume Next` swallows an error, `Err` stays set, even after the method returns.
+* Code that runs into a handler label without an error is ordinary code: an error in it is caught and enters the handler from the top. This includes cleanup code reached by `Resume Cleanup` while the same handler is still active: if the cleanup fails, the handler runs again, resumes to the cleanup again, and can loop forever.
+
+### C#
+
+* `goto` can leave a block, a `try` or a `catch`, but can't enter one. So a method-level catch can never resume in the middle of a loop or `If`.
+* Iterators and async methods are compiled to state machines that can re-enter nested blocks, but not after an exception: an exception leaving `MoveNext` finishes the iterator, and `yield` isn't allowed in a `try` that has a `catch`.
+* `catch (Exception ex) when (flag)` matches VB's filter, including not unwinding when it's false.
+* Local functions can capture locals, but not `ref`/`out` parameters.
+* Locals are block scoped and must be definitely assigned. VB locals are method-lifetime and zero-initialised, so declaring them earlier as `= default` is exact.
+
+## Approach
+
+Every idea that catches at method level needs to jump back in, which needs the whole body flattened to a `switch` in a loop. Instead, **catch at the statement that fails**. Then nothing needs to jump inwards:
+
+| VB | C#, inside the failing statement's own `catch` |
+|---|---|
+| `Resume Next` | leave the catch |
+| `Resume` | `goto` a label directly before that `try` (same block) |
+| `Resume L` / `GoTo L`, `L` at method level | `goto L` (out of a catch is legal) |
+| handler code | a local function called from the catch. An exception in it propagates, like VB's "in a handler". |
+| `Exit Sub` / `Return` in the handler | the local function returns "exit", the catch returns |
+
+The method keeps its structure, loops stay loops, and the cost is proportional to how much of the method is covered by a resuming handler.
+
+### Model
+
+A pass over the method body builds a model before any statement is converted, so the statement visitors don't each need to know the rules:
+
+* **Active handler per statement**: none, resume-next, or a handler label. Static when every `On Error` statement is a direct child of the method body and no label/`GoTo` crosses the regions between them. Otherwise *dynamic*: a local records the handler and the catches filter on it.
+* **Handler regions**: for each handler label, the statements from the label to where control leaves, and the set of ways it leaves: `Resume Next`, `Resume`, `Resume L`, `GoTo L`, exit, falls off the end.
+* **Guards**: the resume points that have an active handler (per the table in "VB" above).
+* **Hoisted locals**: locals declared within a guard and used outside it.
+* **`Err` is used**: see below.
+
+### Output shapes
+
+Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` is used.
+
+1. **Structured.** One `On Error GoTo H` covering a run of method-level statements, `H` at method level, and the handler never resumes into the covered statements (it exits, falls off the end, or does `Resume L`/`GoTo L` to a method-level label after the covered statements).
+
+   ```csharp
+   try
+   {
+       // covered statements
+   }
+   catch (Exception ex)
+   {
+       // handler
+   }
+   // statements from L onwards
+   ```
+   This is the existing conversion, generalised, with locals hoisted (fixes the existing `RemainingScopeIssueCharacterizationAsync` output).
+
+2. **Resume next.** The active handler is resume-next. Each guard becomes
+
+   ```csharp
+   try { Statement(); } catch { }
+   ```
+   * `If` condition: `bool cond = true; try { cond = …; } catch { }` then `if (cond)`. `ElseIf` chains become nested `if`/`else` so each condition has somewhere to go.
+   * Loop condition: a local function, so the loop stays a loop: `bool Cond() { try { return …; } catch { return true; } }` and `while (Cond())`. Bottom-tested conditions return whichever value leaves the loop.
+   * `Using`, `SyncLock`, `Select Case` and `For`/`For Each`: one guard around the whole statement, with the statements inside guarded individually where VB makes them resume points (not inside `Using`/`SyncLock`). A failing header skips the block.
+   * `Case` expressions: *not spiked*. Only matters when the case expressions aren't constants, where the converter already emits `when` clauses or an `if` chain.
+
+3. **Handler function.** `On Error GoTo H` where the handler resumes into the covered statements. The handler becomes a local function and each guard calls it:
+
+   ```csharp
+   void H() { /* handler */ }
+   try { Statement(); } catch { H(); }
+   ```
+   If the handler leaves in more than one way, it returns which:
+
+   ```csharp
+   s3: try { Statement(); } catch { switch (H()) { case OnErrorAction.Resume: goto s3; case OnErrorAction.Exit: return; } }
+   ```
+   Labels are only emitted for `Resume`. A method that reaches the handler label without an error calls `H()` there as an ordinary statement.
+
+4. **Dynamic.** The active handler isn't statically known. Same guards, filtered: `catch (Exception) when (resumeNext)`, with `resumeNext` (or an `int` when there are several handlers) assigned where the `On Error` statements were.
+
+5. **Fallback.** Anything else keeps today's behaviour, statement-by-statement conversion plus `#error`:
+   * the handler jumps to a label inside a nested block;
+   * `On Error GoTo -1`;
+   * a handler local function would need to capture a `ref`/`out` parameter.
+
+   A flattened `switch`-in-a-loop state machine would cover these, but the output is something nobody would keep.
+
+Alternatives considered:
+* *Iterator of thunks*: `IEnumerable<Action> Steps() { …; yield return () => Statement(); … }` driven by `foreach (var step in Steps()) try { step(); } catch { }`. It works (the iterator survives because the exception is thrown by the driver, not inside `MoveNext`) and is one line per statement, but lambdas can't capture `ref`/`out` parameters, `Return`/`Exit`/`GoTo` need extra plumbing, it allocates per statement, and stepping through it is unpleasant.
+* *`Guard(() => Statement())` helper* (issue comment 6): same capture limits. Not factored out to start with; the inline `try`/`catch` is the only form.
+* *Filter that inspects the stack trace* (issue comment 6): not needed, VB catches errors from callees too.
+
+## Decisions
+
+### `Err` is only maintained when it seems to be used
+
+`ProjectData.SetProjectError(ex)` / `ClearProjectError()` are emitted only in methods that reference `Err` (`Microsoft.VisualBasic.Information.Err`). Then:
+
+* each catch starts with `SetProjectError(ex)`;
+* `ClearProjectError()` goes where an `On Error` or `Resume*` statement was, and on leaving a handler by exit.
+
+Otherwise catches are bare `catch { }` and need no `Microsoft.VisualBasic` reference.
+
+Known difference: a caller or callee that reads `Err` set by a method which doesn't itself mention `Err` will see it unset. The check could be widened to the containing type or the project if this turns out to matter.
+
+The existing structured conversion emits `catch { }` followed by `Information.Err().Number`, which reads 0 at runtime (see `BasicGotoAsync`); under this rule it gets the `SetProjectError` call.
+
+### Throwing loop headers skip the loop
+
+VB runs the body once with a default loop variable. C# output skips the loop (one guard around the whole statement). Not worth lowering loops for.
+
+### Secondary errors propagate
+
+A *secondary error* is one raised in code that runs after the handler has finished but while that same handler is still the active one:
+
+```vb
+    On Error GoTo H
+    Work()
+Cleanup:
+    conn.Close()   ' a failure here is a secondary error
+    Exit Sub
+H:
+    Log(Err.Description)
+    Resume Cleanup
+```
+
+The same applies to handler code reached without an error (no `Exit Sub` before the label).
+
+VB re-enters `H`, which here means log, close, fail, log, close … forever. The structured shape puts the cleanup after the `try`, so in C# the secondary error propagates to the caller. This is a deliberate difference: looping forever is never what was meant.
+
+Where the author did deal with it in the usual ways, the model already has it right and there's no difference:
+* `On Error Resume Next` or `On Error GoTo 0` at the start of the cleanup: the cleanup has a different active handler, so it gets resume-next guards or none.
+* cleanup that can't fail (only exits, jumps and assignments of locals/constants).
+
+### Warn when the handler looks written for re-entry
+
+The remaining case is a handler that relies on being entered a second time. That can't be decided in general, but, like the `Err` check, a cheap test catches what people actually write. Emit `#warning` on the `catch` when both hold:
+
+1. a secondary error is possible: the code after the resume label (or the handler code, when it can be reached without an error) is still covered by the handler and contains something that can throw;
+2. the handler has a **re-entry guard**: a condition (`If`, `Select Case`, loop condition, `If(…)`) reading a local, field or property that is assigned in the handler or in the code from 1. For example `attempts += 1 : If attempts > 3 Then Exit Sub`, or `If cleaningUp Then Exit Sub` with `cleaningUp = True` in the cleanup.
+
+Conditions on `Err.Number` alone don't count: they nearly always distinguish kinds of first error, and warning on them would be noise. `Erl` could be added as a signal if it turns up in practice.
+
+Suggested text: `#warning Conversion: in VB an error in the code after 'Cleanup' re-enters this handler; here it propagates to the caller`.
+
+When the warning would fire, the handler-function shape is the exact alternative (guard each cleanup statement with a call to the handler). Whether to switch to it automatically instead of warning is open, see below.
+
+## Open questions
+
+* `#warning` vs a comment: `#warning` matches the existing `#error` convention and is visible in the build, but breaks builds that treat warnings as errors.
+* On a detected re-entry guard: warn (proposed), or emit the exact handler-function shape?
+* Scope of the `Err` check: method (proposed), containing type, or project.
+* Formatting: the guards rely on `try { … } catch { }` staying on one line. If the formatter expands them, shape 2 is four lines per statement.
+
+## Where each part will live
+
+To be filled in as it's implemented. Intended split, all in this directory:
+
+| Requirement | Class |
+|---|---|
+| Active handler per statement, handler regions, exits | `OnErrorModel` (analysis only, no C# syntax) |
+| Which statements are resume points, and where a failing condition resumes | `ResumePoints` |
+| `Err` usage, re-entry guard detection | `OnErrorModel` |
+| Choosing a shape | `OnErrorShapeSelector` |
+| Guards, handler local function, hoisting | one emitter per shape, called from `MethodBodyExecutableStatementVisitor` |
+
+Tests: a conversion test per shape in `Tests/CSharp/StatementTests/OnErrorStatementTests.cs`, and self-verifying tests in `Tests/TestData/SelfVerifyingTests/VBToCS/` that log each step and compare the VB and C# logs (the scenarios used to check this design: failing `If`/`ElseIf`/`While`/`Loop Until` conditions, `Select`, `Using`, multiple declarators, `Return`, `On Error GoTo 0`, handler with `Resume Next` inside a loop, `Resume` retry with a counter, fall-through into a handler, handler that throws, cleanup idiom, conditional `On Error`).
