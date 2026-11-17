@@ -771,6 +771,824 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task ErrRaiseAndClearAreNotReadsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Sub Save()
+        On Error GoTo Failed
+        Console.WriteLine(""saving"")
+        Exit Sub
+Failed:
+        Console.WriteLine(""failed"")
+    End Sub
+End Class
+
+Module Errors
+    Sub Fail()
+        Err.Clear()
+        Err.Raise(5)
+    End Sub
+End Module", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void Save()
+    {
+        try
+        {
+            Console.WriteLine(""saving"");
+            return;
+        }
+        catch
+        {
+
+            Console.WriteLine(""failed"");
+        }
+    }
+}
+
+internal static partial class Errors
+{
+    public static void Fail()
+    {
+        Information.Err().Clear();
+        Information.Err().Raise(5);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task HandlerReturnsTheReturnVariableAndIgnoresLambdaReturnsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Code() As Integer
+        On Error GoTo Failed
+        Code = 1
+        Console.WriteLine(""saving"")
+        Exit Function
+Failed:
+        Dim describe = Function()
+                           Return Err.Description
+                       End Function
+        Console.WriteLine(describe())
+        Code = Err.Number
+        Exit Function
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Code()
+    {
+        int CodeRet = default;
+        ProjectData.ClearProjectError();
+        try
+        {
+            CodeRet = 1;
+            Console.WriteLine(""saving"");
+            return CodeRet;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            string describe() => Information.Err().Description;
+            Console.WriteLine(describe());
+            CodeRet = Information.Err().Number;
+            ProjectData.ClearProjectError();
+            return CodeRet;
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task HoistingKeepsDeclarationOrderAndLeavesStaticLocalsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Sub Save()
+        On Error GoTo Failed
+        Dim first = 1, second = first + 1, third = second + 1
+        Dim kept, used As Integer
+        Static calls As Integer
+        calls += 1
+        Exit Sub
+Failed:
+        Console.WriteLine(second & used & calls)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int _Save_calls = default;
+    public void Save()
+    {
+        int second = default;
+        int used = default;
+        try
+        {
+            int first = 1;
+            second = first + 1;
+            int third = second + 1;
+            int kept;
+            _Save_calls += 1;
+            return;
+        }
+        catch
+        {
+
+            Console.WriteLine(second.ToString() + used + _Save_calls);
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ShapesWithoutAnEmitterYetKeepTheirOutputAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Sub ConditionalOnError(flag As Boolean)
+        If flag Then On Error GoTo Failed
+        Console.WriteLine(""work"")
+        Exit Sub
+Failed:
+        Console.WriteLine(""failed"")
+    End Sub
+
+    Sub ResumeNextEverywhere()
+        On Error Resume Next
+        Console.WriteLine(""work"")
+    End Sub
+
+    Sub ResetsHandlerState()
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+        Exit Sub
+Failed:
+        On Error GoTo -1
+        Console.WriteLine(""failed"")
+    End Sub
+
+    Sub HandlerLabelInsideABlock(flag As Boolean)
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+        If flag Then
+Failed:
+            Console.WriteLine(""failed"")
+        End If
+    End Sub
+
+    Sub Retries()
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+        Exit Sub
+Failed:
+        Resume
+    End Sub
+
+    Sub HandlerBeforeOnError()
+        GoTo Start
+Failed:
+        Console.WriteLine(""failed"")
+        Exit Sub
+Start:
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+    End Sub
+
+    Sub RunsIntoHandlerThatResumes()
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+Done:
+        Console.WriteLine(""done"")
+Failed:
+        Resume Done
+    End Sub
+
+    Sub JumpsIntoHandler(skip As Boolean)
+        On Error GoTo Failed
+        If skip Then GoTo Failed
+        Console.WriteLine(""work"")
+        Exit Sub
+Failed:
+        Console.WriteLine(""failed"")
+    End Sub
+
+    Sub JumpsBackIntoCoveredCode(retry As Boolean)
+        On Error GoTo Failed
+Again:
+        Console.WriteLine(""work"")
+Cleanup:
+        If retry Then GoTo Again
+        Exit Sub
+Failed:
+        Resume Cleanup
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void ConditionalOnError(bool flag)
+    {
+        if (flag)
+            ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 106
+
+
+                    Input:
+                    On Error GoTo Failed
+
+                     */
+        Console.WriteLine(""work"");
+        return;
+    Failed:
+        ;
+
+        Console.WriteLine(""failed"");
+    }
+
+    public void ResumeNextEverywhere()
+    {
+        ;
+#error Cannot convert OnErrorResumeNextStatementSyntax - see comment for details
+        /* Cannot convert OnErrorResumeNextStatementSyntax, CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 310
+
+
+                Input:
+                        On Error Resume Next
+
+                 */
+        Console.WriteLine(""work"");
+    }
+
+    public void ResetsHandlerState()
+    {
+        try
+        {
+            Console.WriteLine(""work"");
+            return;
+        }
+        catch
+        {
+            ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+            /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToMinusOneStatement not implemented, please report this issue in 'On Error GoTo -1' at character 540
+
+
+                        Input:
+
+                                On Error GoTo -1
+
+                         */
+            Console.WriteLine(""failed"");
+        }
+    }
+
+    public void HandlerLabelInsideABlock(bool flag)
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 683
+
+
+                Input:
+                        On Error GoTo Failed
+
+                 */
+        Console.WriteLine(""work"");
+        if (flag)
+        {
+        Failed:
+            ;
+
+            Console.WriteLine(""failed"");
+        }
+    }
+
+    public void Retries()
+    {
+        try
+        {
+            Console.WriteLine(""work"");
+            return;
+        }
+        catch
+        {
+            ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 1004
+
+
+            Input:
+
+                    Resume
+
+             */
+        }
+    }
+
+    public void HandlerBeforeOnError()
+    {
+        goto Start;
+    Failed:
+        ;
+
+        Console.WriteLine(""failed"");
+        return;
+    Start:
+        ;
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1173
+
+
+                Input:
+
+                        On Error GoTo Failed
+
+                 */
+        Console.WriteLine(""work"");
+    }
+
+    public void RunsIntoHandlerThatResumes()
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1305
+
+
+                Input:
+                        On Error GoTo Failed
+
+                 */
+        Console.WriteLine(""work"");
+    Done:
+        ;
+
+        Console.WriteLine(""done"");
+    Failed:
+        ;
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Done' at character 1449
+
+
+                Input:
+
+                        Resume Done
+
+                 */
+    }
+
+    public void JumpsIntoHandler(bool skip)
+    {
+        try
+        {
+            if (skip)
+                goto Failed;
+            Console.WriteLine(""work"");
+            return;
+        }
+        catch
+        {
+
+            Console.WriteLine(""failed"");
+        }
+    }
+
+    public void JumpsBackIntoCoveredCode(bool retry)
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+    /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1788
+
+
+    Input:
+            On Error GoTo Failed
+
+     */
+    Again:
+        ;
+
+        Console.WriteLine(""work"");
+    Cleanup:
+        ;
+
+        if (retry)
+            goto Again;
+        return;
+    Failed:
+        ;
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 1946
+
+
+                Input:
+
+                        Resume Cleanup
+
+                 */
+    }
+}----- Exception 1 of 11 -----
+
+1 target compilation errors:
+CS0159: No such label 'Failed' within the scope of the goto statement
+----- Exception 2 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 106
+
+----- Exception 3 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 310
+
+----- Exception 4 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorGoToMinusOneStatement not implemented, please report this issue in 'On Error GoTo -1' at character 540
+
+----- Exception 5 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 683
+
+----- Exception 6 of 11 -----
+CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 1004
+
+----- Exception 7 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1173
+
+----- Exception 8 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1305
+
+----- Exception 9 of 11 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Done' at character 1449
+
+----- Exception 10 of 11 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1788
+
+----- Exception 11 of 11 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 1946", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
+    public async Task ReEntryGuardsAreFoundInAnyConditionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Private _attempts As Integer
+
+    Sub IfElseIfGuard()
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+Cleanup:
+        Console.WriteLine(""cleanup"")
+        Exit Sub
+Failed:
+        _attempts += 1
+        If _attempts > 3 Then
+            Exit Sub
+        ElseIf _attempts > 2 Then
+            Console.WriteLine(""last try"")
+        End If
+        Resume Cleanup
+    End Sub
+
+    Sub SelectGuard()
+        Dim attempts = 0
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+Cleanup:
+        Console.WriteLine(""cleanup"")
+        Exit Sub
+Failed:
+        attempts += 1
+        Select Case attempts
+            Case Is > 3
+                Exit Sub
+        End Select
+        Resume Cleanup
+    End Sub
+
+    Sub LoopGuard()
+        Dim attempts = 0
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+Cleanup:
+        Console.WriteLine(""cleanup"")
+        Exit Sub
+Failed:
+        attempts += 1
+        While attempts < 2
+            attempts += 1
+        End While
+        Do Until attempts > 0
+        Loop
+        Console.WriteLine(If(attempts > 3, ""giving up"", ""retrying""))
+        Resume Cleanup
+    End Sub
+
+    Sub TwoResumeLabels(early As Boolean)
+        Dim attempts = 0
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+First:
+        Console.WriteLine(""first"")
+Second:
+        Console.WriteLine(""second"")
+        Exit Sub
+Failed:
+        attempts += 1
+        If attempts > 3 Then Exit Sub
+        If early Then Resume First
+        Resume Second
+    End Sub
+
+    Sub ErrNumberIsNotAGuard()
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+Cleanup:
+        Console.WriteLine(""cleanup"")
+        Exit Sub
+Failed:
+        If Err.Number = 5 Then Exit Sub
+        Resume Cleanup
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private int _attempts;
+
+    public void IfElseIfGuard()
+    {
+        ProjectData.ClearProjectError();
+        try
+        {
+            Console.WriteLine(""work"");
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Cleanup:
+        ;
+        try
+        {
+
+            Console.WriteLine(""cleanup"");
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Failed:
+        ;
+
+        _attempts += 1;
+        if (_attempts > 3)
+        {
+            ProjectData.ClearProjectError();
+            return;
+        }
+        else if (_attempts > 2)
+        {
+            Console.WriteLine(""last try"");
+        }
+        ProjectData.ClearProjectError();
+        goto Cleanup;
+    }
+
+    public void SelectGuard()
+    {
+        int attempts = 0;
+        ProjectData.ClearProjectError();
+        try
+        {
+            Console.WriteLine(""work"");
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Cleanup:
+        ;
+        try
+        {
+
+            Console.WriteLine(""cleanup"");
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Failed:
+        ;
+
+        attempts += 1;
+        switch (attempts)
+        {
+            case > 3:
+                {
+                    ProjectData.ClearProjectError();
+                    return;
+                }
+        }
+        ProjectData.ClearProjectError();
+        goto Cleanup;
+    }
+
+    public void LoopGuard()
+    {
+        int attempts = 0;
+        ProjectData.ClearProjectError();
+        try
+        {
+            Console.WriteLine(""work"");
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Cleanup:
+        ;
+        try
+        {
+
+            Console.WriteLine(""cleanup"");
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Failed:
+        ;
+
+        attempts += 1;
+        while (attempts < 2)
+            attempts += 1;
+        while (attempts <= 0)
+        {
+        }
+        Console.WriteLine(attempts > 3 ? ""giving up"" : ""retrying"");
+        ProjectData.ClearProjectError();
+        goto Cleanup;
+    }
+
+    public void TwoResumeLabels(bool early)
+    {
+        int attempts = 0;
+        ProjectData.ClearProjectError();
+        try
+        {
+            Console.WriteLine(""work"");
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    First:
+        ;
+        try
+        {
+
+            Console.WriteLine(""first"");
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Second:
+        ;
+        try
+        {
+
+            Console.WriteLine(""second"");
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            goto Failed;
+        }
+
+    Failed:
+        ;
+
+        attempts += 1;
+        if (attempts > 3)
+        {
+            ProjectData.ClearProjectError();
+            return;
+        }
+        if (early)
+        {
+            ProjectData.ClearProjectError();
+            goto First;
+        }
+        ProjectData.ClearProjectError();
+        goto Second;
+    }
+
+    public void ErrNumberIsNotAGuard()
+    {
+        ProjectData.ClearProjectError();
+        try
+        {
+            Console.WriteLine(""work"");
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            if (Information.Err().Number == 5)
+            {
+                ProjectData.ClearProjectError();
+                return;
+            }
+            ProjectData.ClearProjectError();
+        }
+
+        Console.WriteLine(""cleanup"");
+        return;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
+    public async Task CleanupOfOnlyJumpsAndConstantsIsNotSegmentedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Save(fallback As Integer) As Integer
+        Dim attempts = 0
+        On Error GoTo Failed
+        Console.WriteLine(""saving"")
+Cleanup:
+        Dim finished As Boolean = True
+        Dim result As Integer = fallback
+        GoTo Done
+Done:
+        Return result
+Failed:
+        attempts += 1
+        If attempts > 3 Then Exit Function
+        Resume Cleanup
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public int Save(int fallback)
+    {
+        int attempts = 0;
+        try
+        {
+            Console.WriteLine(""saving"");
+        }
+        catch
+        {
+
+            attempts += 1;
+            if (attempts > 3)
+                return default;
+        }
+
+        bool finished = true;
+        int result = fallback;
+        goto Done;
+    Done:
+        ;
+
+        return result;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
     public async Task HandlerThatResumesNextKeepsPendingOutputAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System
