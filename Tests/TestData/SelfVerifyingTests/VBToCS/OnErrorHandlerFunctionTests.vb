@@ -326,4 +326,28 @@ H:
         FailingCaseWithRetryingHandler(1)
         Assert.Equal("eval retry, handler 1, eval retry, handler 0, body", Logged())
     End Sub
+
+    Private Sub EveryBranchOfTheHandlerLeaves(resumeOn As Integer)
+        On Error GoTo H
+        L("a")
+        Boom("b")
+        L("c")
+        Exit Sub
+H:
+        Select Case Err.Number
+            Case resumeOn
+                L("resuming")
+                Resume Next
+            Case Else
+                L("giving up")
+                Exit Sub
+        End Select
+    End Sub
+
+    <Fact>
+    Sub HandlerWhoseEveryBranchResumesOrExitsDecidesByErrNumber()
+        EveryBranchOfTheHandlerLeaves(5)
+        EveryBranchOfTheHandlerLeaves(6)
+        Assert.Equal("a, eval b, resuming, c, a, eval b, giving up", Logged())
+    End Sub
 End Class

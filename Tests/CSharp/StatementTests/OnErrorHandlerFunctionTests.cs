@@ -674,4 +674,58 @@ internal partial class TestClass
 1 target compilation errors:
 CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    [Fact]
+    public async Task HandlerWhoseEveryBranchLeavesHasNoTrailingExitAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Sub Run()
+        On Error GoTo Failed
+        Console.WriteLine(Integer.Parse(""a""))
+        Console.WriteLine(Integer.Parse(""b""))
+        Exit Sub
+Failed:
+        Select Case Err.Number
+            Case 5
+                Resume Next
+            Case Else
+                Exit Sub
+        End Select
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void Run()
+    {
+        ProjectData.ClearProjectError();
+
+        bool FailedExits() { switch (Information.Err().Number) { case 5: ProjectData.ClearProjectError(); return false; default: { ProjectData.ClearProjectError(); return true; } } }
+        try
+        {
+            Console.WriteLine(int.Parse(""a""));
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            if (FailedExits())
+                return;
+        }
+        try
+        {
+            Console.WriteLine(int.Parse(""b""));
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            if (FailedExits())
+                return;
+        }
+        return;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
