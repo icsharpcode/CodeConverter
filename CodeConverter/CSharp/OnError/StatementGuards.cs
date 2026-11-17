@@ -55,6 +55,7 @@ internal sealed class StatementGuards
             ResumePointKind.If => GuardConditions(statement, converted),
             ResumePointKind.TopTestedLoop => GuardLoopCondition(statement, converted, valueWhenFailed: true),
             ResumePointKind.BottomTestedLoop => GuardLoopCondition(statement, converted, valueWhenFailed: false),
+            ResumePointKind.Select => GuardSelect((VBSyntax.SelectBlockSyntax)statement, converted),
             _ => converted
         };
     }
@@ -62,7 +63,7 @@ internal sealed class StatementGuards
     private StatementSyntax Try(VBasic.VisualBasicSyntaxNode node, IEnumerable<StatementSyntax> body, IEnumerable<StatementSyntax> afterHandler = null)
     {
         var bodyStatements = body.ToList();
-        GuardedAReturn |= bodyStatements.Any(ContainsReturn);
+        GuardedAReturn |= afterHandler == null && bodyStatements.Any(ContainsReturn);
         var retryLabel = _policy.CanRetry ? _uniqueName(node, "retry") : null;
         var catchStatements = _policy.OnError(retryLabel).Concat(afterHandler ?? Enumerable.Empty<StatementSyntax>());
         var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.Block(bodyStatements),
@@ -129,6 +130,58 @@ internal sealed class StatementGuards
     }
 
     /// <summary>
+    /// A failing <c>Case</c> expression enters that case, and VB doesn't evaluate the ones after it, so the <c>when</c> condition of a label that can fail moves into a local function
+    /// that returns true if evaluating it fails. The pattern variable is replaced by a local that holds the <c>Select</c> expression, which the function captures.
+    /// A failing <c>Select</c> expression skips the whole statement.
+    /// </summary>
+    private SyntaxList<StatementSyntax> GuardSelect(VBSyntax.SelectBlockSyntax vbSelect, SyntaxList<StatementSyntax> converted)
+    {
+        if (converted.Count != 1 || converted[0] is not SwitchStatementSyntax csSwitch ||
+            csSwitch.Sections.Count != vbSelect.CaseBlocks.Count) {
+            throw new InvalidOperationException("A Select statement is expected to convert to a switch statement with a section per case");
+        }
+
+        var valueName = _uniqueName(vbSelect, "selectValue");
+        var functions = new List<StatementSyntax>();
+        var usesValue = false;
+        var sections = csSwitch.Sections.Select((section, i) => {
+            var vbClauses = vbSelect.CaseBlocks[i].CaseStatement.Cases;
+            if (section.Labels.Count != vbClauses.Count) throw new InvalidOperationException("A case is expected to convert to a switch label per clause");
+            return section.WithLabels(SyntaxFactory.List(section.Labels.Select((label, j) => {
+                if (!_points.CanThrow(vbClauses[j]) || label is not CasePatternSwitchLabelSyntax { WhenClause: { } when } pattern) return label;
+                var patternVariable = (pattern.Pattern as DeclarationPatternSyntax)?.Designation as SingleVariableDesignationSyntax;
+                var condition = patternVariable == null ? when.Condition : ReplaceName(when.Condition, patternVariable.Identifier.ValueText, valueName);
+                usesValue |= patternVariable != null;
+                var functionName = _uniqueName(vbClauses[j], "CaseMatches");
+                functions.Add(BoolLocalFunction(functionName, Try(vbClauses[j], new[] { SyntaxFactory.ReturnStatement(condition) },
+                    new[] { SyntaxFactory.ReturnStatement(SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)) })));
+                var call = SyntaxFactory.InvocationExpression(SyntaxFactory.IdentifierName(functionName));
+                var newPattern = patternVariable == null ? pattern.Pattern
+                    : SyntaxFactory.DeclarationPattern(ValidSyntaxFactory.VarType, SyntaxFactory.DiscardDesignation());
+                return pattern.WithPattern(newPattern).WithWhenClause(when.WithCondition(call));
+            })));
+        }).ToList();
+
+        var statements = new List<StatementSyntax>();
+        var newSwitch = csSwitch.WithSections(SyntaxFactory.List(sections));
+        if (usesValue) {
+            statements.Add(SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(ValidSyntaxFactory.VarType, SyntaxFactory.SingletonSeparatedList(
+                SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(valueName), null, SyntaxFactory.EqualsValueClause(csSwitch.Expression))))));
+            newSwitch = newSwitch.WithExpression(SyntaxFactory.IdentifierName(valueName));
+        }
+        statements.AddRange(functions);
+        statements.Add(newSwitch);
+        return SyntaxFactory.List(_points.CanThrow(vbSelect.SelectStatement.Expression) ? new[] { Try(vbSelect, statements) } : statements.ToArray());
+    }
+
+    private static ExpressionSyntax ReplaceName(ExpressionSyntax expression, string name, string replacement) =>
+        expression.ReplaceNodes(expression.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Where(i => i.Identifier.ValueText == name),
+            (original, _) => SyntaxFactory.IdentifierName(replacement).WithTriviaFrom(original));
+
+    private static LocalFunctionStatementSyntax BoolLocalFunction(string name, StatementSyntax body) =>
+        SyntaxFactory.LocalFunctionStatement(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword)), name).WithBody(SyntaxFactory.Block(body));
+
+    /// <summary>
     /// A loop must stay a loop, so the condition moves into a local function that a failure leaves with the value VB resumes with:
     /// a condition tested at the top resumes in the body, one tested at the bottom resumes after the loop.
     /// </summary>
@@ -144,8 +197,7 @@ internal sealed class StatementGuards
         };
         var body = Try(vbCondition, new[] { SyntaxFactory.ReturnStatement(condition) },
             new[] { SyntaxFactory.ReturnStatement(SyntaxFactory.LiteralExpression(valueWhenFailed ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression)) });
-        var function = SyntaxFactory.LocalFunctionStatement(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword)), functionName)
-            .WithBody(SyntaxFactory.Block(body));
+        var function = BoolLocalFunction(functionName, body);
         return SyntaxFactory.List(converted.Take(converted.Count - 1).Append(function).Append(loop));
     }
 }

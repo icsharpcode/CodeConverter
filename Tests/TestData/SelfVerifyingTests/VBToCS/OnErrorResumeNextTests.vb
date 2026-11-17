@@ -412,4 +412,142 @@ Public Class OnErrorResumeNextTests
         DeclarationInLoopKeepsItsValue()
         Assert.Equal("i=1 q=5 w=7, eval q2, i=2 q=5 w=7, eval q3, i=3 q=5 w=7", Logged())
     End Sub
+
+    Private Function BoomText(name As String) As String
+        L("eval " & name)
+        Throw New InvalidOperationException(name)
+    End Function
+
+    Private Sub CaseThrows(v As Integer)
+        On Error Resume Next
+        Select Case v
+            Case Boom("first")
+                L("body first")
+            Case 2
+                L("body 2")
+            Case Else
+                L("else")
+        End Select
+        L("after")
+    End Sub
+
+    <Fact>
+    Sub FailingCaseExpressionEntersThatCaseAndSkipsTheLaterOnes()
+        CaseThrows(2)
+        CaseThrows(9)
+        Assert.Equal("eval first, body first, after, eval first, body first, after", Logged())
+    End Sub
+
+    Private Sub CaseThrowsAfterAnother(v As Integer)
+        On Error Resume Next
+        Select Case v
+            Case 2
+                L("body 2")
+            Case Boom("second")
+                L("body second")
+            Case Else
+                L("else")
+        End Select
+        L("after")
+    End Sub
+
+    <Fact>
+    Sub CasesBeforeAFailingCaseExpressionAreStillTried()
+        CaseThrowsAfterAnother(2)
+        CaseThrowsAfterAnother(9)
+        Assert.Equal("body 2, after, eval second, body second, after", Logged())
+    End Sub
+
+    Private Sub CaseList(v As Integer)
+        On Error Resume Next
+        Select Case v
+            Case 1, Boom("list")
+                L("list body")
+        End Select
+        L("after")
+    End Sub
+
+    Private Sub CaseRelational(v As Integer)
+        On Error Resume Next
+        Select Case v
+            Case 1
+                L("one")
+            Case Is > Boom("relational")
+                L("relational body")
+        End Select
+        L("after")
+    End Sub
+
+    Private Sub CaseRange(v As Integer)
+        On Error Resume Next
+        Select Case v
+            Case 1
+                L("one")
+            Case 5 To Boom("range")
+                L("range body")
+        End Select
+        L("after")
+    End Sub
+
+    <Fact>
+    Sub FailingExpressionsInAnyKindOfCaseClauseEnterTheCase()
+        CaseList(1)
+        CaseList(7)
+        CaseRelational(1)
+        CaseRelational(7)
+        CaseRange(1)
+        CaseRange(7)
+        Assert.Equal("list body, after, eval list, list body, after, one, after, eval relational, relational body, after, one, after, eval range, range body, after", Logged())
+    End Sub
+
+    Private Sub CaseOnText(text As String)
+        On Error Resume Next
+        Select Case text
+            Case "a"
+                L("a")
+            Case BoomText("text")
+                L("text body")
+        End Select
+        L("after")
+    End Sub
+
+    <Fact>
+    Sub FailingCaseExpressionOnAStringSelectEntersThatCase()
+        CaseOnText("a")
+        CaseOnText("b")
+        Assert.Equal("a, after, eval text, text body, after", Logged())
+    End Sub
+
+    Private Sub CaseOnBoolean(v As Integer)
+        On Error Resume Next
+        Select Case True
+            Case v = 1
+                L("one")
+            Case Boom("bool") = 2
+                L("bool body")
+        End Select
+        L("after")
+    End Sub
+
+    <Fact>
+    Sub FailingCaseExpressionOnABooleanSelectEntersThatCase()
+        CaseOnBoolean(1)
+        CaseOnBoolean(5)
+        Assert.Equal("one, after, eval bool, bool body, after", Logged())
+    End Sub
+
+    Private Sub SelectExpressionAndCaseBothFail()
+        On Error Resume Next
+        Select Case Boom("select")
+            Case Boom("case")
+                L("body")
+        End Select
+        L("after")
+    End Sub
+
+    <Fact>
+    Sub FailingSelectExpressionStillSkipsTheWholeSelect()
+        SelectExpressionAndCaseBothFail()
+        Assert.Equal("eval select, after", Logged())
+    End Sub
 End Class

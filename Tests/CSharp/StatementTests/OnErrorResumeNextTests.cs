@@ -990,4 +990,228 @@ internal partial class TestClass
     }
 }CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 161", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    [Fact]
+    public async Task FailingCaseExpressionEntersThatCaseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run(v As Integer)
+        On Error Resume Next
+        Select Case v
+            Case 1, Boom()
+                System.Console.WriteLine(""list"")
+            Case Is > Boom()
+                System.Console.WriteLine(""relational"")
+            Case 5 To Boom()
+                System.Console.WriteLine(""range"")
+        End Select
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run(int v)
+    {
+        var selectValue = v;
+        bool CaseMatches() { try { return selectValue == Boom(); } catch { return true; } }
+        bool CaseMatches1() { try { return selectValue > Boom(); } catch { return true; } }
+        bool CaseMatches2() { try { return 5 <= selectValue && selectValue <= Boom(); } catch { return true; } }
+
+        switch (selectValue)
+        {
+            case 1:
+            case var _ when CaseMatches():
+                try
+                {
+                    Console.WriteLine(""list"");
+                }
+                catch
+                {
+                }
+
+                break;
+            case var _ when CaseMatches1():
+                try
+                {
+                    Console.WriteLine(""relational"");
+                }
+                catch
+                {
+                }
+
+                break;
+            case var _ when CaseMatches2():
+                try
+                {
+                    Console.WriteLine(""range"");
+                }
+                catch
+                {
+                }
+
+                break;
+        }
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
+    public async Task FailingSelectAndCaseExpressionsAreBothGuardedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run()
+        On Error Resume Next
+        Select Case Boom()
+            Case Boom()
+                System.Console.WriteLine(""body"")
+        End Select
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run()
+    {
+        try
+        {
+            var selectValue = Boom();
+            bool CaseMatches() { try { return selectValue == Boom(); } catch { return true; } }
+
+            switch (selectValue)
+            {
+                case var _ when CaseMatches():
+                    try
+                    {
+                        Console.WriteLine(""body"");
+                    }
+                    catch
+                    {
+                    }
+
+                    break;
+            }
+        }
+        catch
+        {
+        }
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code");
+    }
+
+    [Fact]
+    public async Task FailingCaseExpressionOnABooleanSelectAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run(v As Integer)
+        On Error Resume Next
+        Select Case True
+            Case Boom() = v
+                System.Console.WriteLine(""body"")
+        End Select
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run(int v)
+    {
+        bool CaseMatches() { try { return Boom() == v; } catch { return true; } }
+
+        switch (true)
+        {
+            case object _ when CaseMatches():
+                try
+                {
+                    Console.WriteLine(""body"");
+                }
+                catch
+                {
+                }
+
+                break;
+        }
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
+    public async Task FailingCaseExpressionReadingARefParameterKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom(i As Integer) As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run(v As Integer, ByRef limit As Integer)
+        On Error Resume Next
+        Select Case v
+            Case Boom(limit)
+                System.Console.WriteLine(""body"")
+        End Select
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom(int i)
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run(int v, ref int limit)
+    {
+        ;
+#error Cannot convert OnErrorResumeNextStatementSyntax - see comment for details
+        /* Cannot convert OnErrorResumeNextStatementSyntax, CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 209
+
+
+                Input:
+                        On Error Resume Next
+
+                 */
+        switch (v)
+        {
+            case var @case when @case == Boom(limit):
+                Console.WriteLine(""body"");
+                break;
+        }
+    }
+}----- Exception 1 of 2 -----
+
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code
+----- Exception 2 of 2 -----
+CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 209", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

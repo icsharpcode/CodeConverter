@@ -17,7 +17,9 @@ internal enum ResumePointKind
     /// <summary><c>Do</c> ... <c>Loop While/Until</c>: a failing condition leaves the loop.</summary>
     BottomTestedLoop,
     /// <summary>A statement with a header that can fail and statements inside that are resume points of their own.</summary>
-    Block
+    Block,
+    /// <summary><c>Select Case</c> where a <c>Case</c> expression can fail: that case is entered. The <c>Select</c> expression can fail too, which skips the whole statement.</summary>
+    Select
 }
 
 /// <summary>
@@ -68,7 +70,7 @@ internal sealed class ResumePoints
             VBSyntax.DoLoopBlockSyntax doLoop => KindOfDoLoop(doLoop),
             VBSyntax.ForBlockSyntax forBlock => ThrowAnalysis.CanThrow(forBlock.ForStatement, _semanticModel) ? ResumePointKind.Block : ResumePointKind.None,
             VBSyntax.ForEachBlockSyntax or VBSyntax.UsingBlockSyntax or VBSyntax.SyncLockBlockSyntax => ResumePointKind.Block,
-            VBSyntax.SelectBlockSyntax select => CanSelectThrow(select) ? ResumePointKind.Block : ResumePointKind.None,
+            VBSyntax.SelectBlockSyntax select => KindOfSelect(select),
             VBSyntax.WithBlockSyntax with => CanThrow(with.WithStatement.Expression) ? ResumePointKind.Block : ResumePointKind.None,
             _ => ThrowAnalysis.CanThrow(statement, _semanticModel) ? ResumePointKind.Statement : ResumePointKind.None
         };
@@ -84,17 +86,32 @@ internal sealed class ResumePoints
     public static VBSyntax.ExpressionSyntax LoopCondition(VBSyntax.DoLoopBlockSyntax doLoop) =>
         (doLoop.DoStatement.WhileOrUntilClause ?? doLoop.LoopStatement.WhileOrUntilClause)?.Condition;
 
+    /// <summary>Whether one <c>try</c> surrounds the statement and so everything inside it.</summary>
+    public bool GuardsWholeStatement(VBSyntax.StatementSyntax statement) => KindOf(statement) switch {
+        ResumePointKind.Block => true,
+        ResumePointKind.Select => CanThrow(((VBSyntax.SelectBlockSyntax)statement).SelectStatement.Expression),
+        _ => false
+    };
+
     /// <summary>
-    /// Whether a loop condition would be captured by a local function from a <c>ref</c>/<c>out</c> parameter, which C# doesn't allow.
+    /// Whether the statement is guarded by moving a condition into a local function: a loop condition, or the <c>Case</c> expressions of a <c>Select</c>.
+    /// A local function can't return from the method, so it can't carry out a handler that exits.
     /// </summary>
-    public bool HasLoopConditionCapturingARefParameter(VBSyntax.StatementSyntax statement)
+    public bool GuardsInALocalFunction(VBSyntax.StatementSyntax statement) =>
+        KindOf(statement) is ResumePointKind.TopTestedLoop or ResumePointKind.BottomTestedLoop or ResumePointKind.Select;
+
+    /// <summary>
+    /// Whether a condition moved into a local function would capture a <c>ref</c>/<c>out</c> parameter, which C# doesn't allow.
+    /// </summary>
+    public bool HasConditionCapturingARefParameter(VBSyntax.StatementSyntax statement)
     {
-        var condition = statement switch {
-            VBSyntax.WhileBlockSyntax whileBlock => whileBlock.WhileStatement.Condition,
-            VBSyntax.DoLoopBlockSyntax doLoop => LoopCondition(doLoop),
-            _ => null
+        var conditions = statement switch {
+            VBSyntax.WhileBlockSyntax whileBlock => whileBlock.WhileStatement.Condition.Yield(),
+            VBSyntax.DoLoopBlockSyntax doLoop => LoopCondition(doLoop).Yield().Where(c => c != null),
+            VBSyntax.SelectBlockSyntax select => select.CaseBlocks.SelectMany(c => c.CaseStatement.Cases).SelectMany(CaseExpressions),
+            _ => Enumerable.Empty<VBSyntax.ExpressionSyntax>()
         };
-        return condition != null && condition.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>()
+        return conditions.SelectMany(c => c.DescendantNodesAndSelf()).OfType<VBSyntax.IdentifierNameSyntax>()
             .Any(i => _semanticModel.GetSymbolInfo(i).Symbol is IParameterSymbol { RefKind: not RefKind.None });
     }
 
@@ -107,12 +124,16 @@ internal sealed class ResumePoints
 
     private bool AnyCanThrow(IEnumerable<VBSyntax.ExpressionSyntax> expressions) => expressions.Any(CanThrow);
 
-    /// <summary>Only constant case expressions are known not to fail; others become <c>when</c> clauses or an <c>if</c> chain.</summary>
-    private bool CanSelectThrow(VBSyntax.SelectBlockSyntax select) =>
-        CanThrow(select.SelectStatement.Expression) || select.CaseBlocks.SelectMany(c => c.CaseStatement.Cases).SelectMany(CaseExpressions)
-            .Any(e => !_semanticModel.GetConstantValue(e).HasValue);
+    private ResumePointKind KindOfSelect(VBSyntax.SelectBlockSyntax select)
+    {
+        if (select.CaseBlocks.SelectMany(c => c.CaseStatement.Cases).Any(CanThrow)) return ResumePointKind.Select;
+        return CanThrow(select.SelectStatement.Expression) ? ResumePointKind.Block : ResumePointKind.None;
+    }
 
-    private static IEnumerable<VBSyntax.ExpressionSyntax> CaseExpressions(VBSyntax.CaseClauseSyntax clause) => clause switch {
+    /// <summary>Constants, and comparisons of locals and parameters, are known not to fail.</summary>
+    public bool CanThrow(VBSyntax.CaseClauseSyntax clause) => CaseExpressions(clause).Any(CanThrow);
+
+    public static IEnumerable<VBSyntax.ExpressionSyntax> CaseExpressions(VBSyntax.CaseClauseSyntax clause) => clause switch {
         VBSyntax.SimpleCaseClauseSyntax simple => simple.Value.Yield(),
         VBSyntax.RangeCaseClauseSyntax range => new[] { range.LowerBound, range.UpperBound },
         VBSyntax.RelationalCaseClauseSyntax relational => relational.Value.Yield(),

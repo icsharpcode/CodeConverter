@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.CSharp.OnError;
 /// * the function would capture a <c>ref</c>/<c>out</c> parameter, which C# doesn't allow;
 /// * a guard inside a guarded block: a secondary error, thrown by the handler inside the inner <c>catch</c>, would be caught again by the outer one,
 ///   but VB's filter lets it propagate;
-/// * a failing loop condition that must leave the method, which a local function can't do;
+/// * a failing loop condition or <c>Case</c> expression when the handler can leave the method, which a local function can't do;
 /// * a local that must be declared before its guard, or at the top for the handler, but whose type can't be written (anonymous type).
 /// </remarks>
 internal static class HandlerFunctionPlanner
@@ -87,9 +87,9 @@ internal static class HandlerFunctionPlanner
         if (!points.CanGuardAllDeclarations(others)) return false;
         var all = others.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.StatementSyntax>().ToArray();
         var guarded = all.Where(s => IsGuarded(points, s, semanticModel)).ToArray();
-        var loops = guarded.Where(s => points.KindOf(s) is ResumePointKind.TopTestedLoop or ResumePointKind.BottomTestedLoop).ToArray();
-        if (loops.Any(points.HasLoopConditionCapturingARefParameter) || loops.Any() && plan.CanExit) return false;
-        return !guarded.Any(s => s.Ancestors().OfType<VBSyntax.StatementSyntax>().Any(a => model.MethodLevelIndexOf(a) >= 0 && points.KindOf(a) == ResumePointKind.Block));
+        var inLocalFunctions = guarded.Where(points.GuardsInALocalFunction).ToArray();
+        if (inLocalFunctions.Any(points.HasConditionCapturingARefParameter) || inLocalFunctions.Any() && plan.CanExit) return false;
+        return !guarded.Any(s => s.Ancestors().OfType<VBSyntax.StatementSyntax>().Any(a => model.MethodLevelIndexOf(a) >= 0 && points.GuardsWholeStatement(a)));
     }
 
     private static bool IsGuarded(ResumePoints points, VBSyntax.StatementSyntax statement, SemanticModel semanticModel) => points.KindOf(statement) switch {

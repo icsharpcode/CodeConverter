@@ -619,4 +619,59 @@ internal partial class TestClass
     }
 }CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 307", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    [Fact]
+    public async Task FailingCaseExpressionCallsTheHandlerFromALocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run(v As Integer)
+        On Error GoTo Failed
+        Select Case v
+            Case Boom()
+                System.Console.WriteLine(""body"")
+        End Select
+        Exit Sub
+Failed:
+        Resume Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run(int v)
+    {
+
+        void Failed() { return; }
+        var selectValue = v;
+        bool CaseMatches() { try { return selectValue == Boom(); } catch { Failed(); return true; } }
+
+        switch (selectValue)
+        {
+            case var _ when CaseMatches():
+                try
+                {
+                    Console.WriteLine(""body"");
+                }
+                catch
+                {
+                    Failed();
+                }
+
+                break;
+        }
+        return;
+    }
+}
+1 target compilation errors:
+CS0825: The contextual keyword 'var' may only appear within a local variable declaration or in script code", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

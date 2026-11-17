@@ -46,7 +46,7 @@ internal sealed class ResumeNextShapeEmitter
         var points = CreateResumePoints(model, semanticModel);
         if (!points.CanGuardAllDeclarations(model.Statements)) return false;
         return !model.Statements.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.StatementSyntax>()
-            .Any(s => points.KindOf(s) is ResumePointKind.TopTestedLoop or ResumePointKind.BottomTestedLoop && points.HasLoopConditionCapturingARefParameter(s));
+            .Any(s => points.GuardsInALocalFunction(s) && points.HasConditionCapturingARefParameter(s));
     }
 
     private static ResumePoints CreateResumePoints(OnErrorModel model, SemanticModel semanticModel) =>

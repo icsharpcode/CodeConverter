@@ -102,10 +102,10 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * `If` condition: `bool cond = true; try { cond = …; } catch { }` then `if (cond)`. `ElseIf` chains become nested `if`/`else` so each condition has somewhere to go.
    * Loop condition: a local function, so the loop stays a loop: `bool Cond() { try { return …; } catch { return true; } }` and `while (Cond())`. Bottom-tested conditions return whichever value leaves the loop.
    * `Using`, `SyncLock`, `Select Case` and `For`/`For Each`: one guard around the whole statement, with the statements inside guarded individually where VB makes them resume points (not inside `Using`/`SyncLock`). A failing header skips the block.
-   * `Case` expressions: *not spiked*. Only matters when the case expressions aren't constants, where the converter already emits `when` clauses or an `if` chain. A `Select` is only guarded when its expression or a case expression can fail, and then a failing `Case` expression skips the whole block rather than resuming in that case.
+   * `Case` expressions: a failing one enters that case, and the cases after it aren't tried (spiked: `Case 2` / `Case Boom()` / `Case Else` on 9 runs the body of the `Boom()` case). The `when` condition of each label whose expressions can fail moves into a local function that returns true if evaluating it fails (`bool CaseMatches() { try { return selectValue == Boom(); } catch { return true; } }`), so the cases before it are still tried and the ones after it are not. The pattern variable is replaced by a local holding the `Select` expression. Evaluating every case up front would run side effects VB wouldn't. A failing `Select` expression skips the whole statement, as before.
    * A `Dim` inside a loop whose initializer can fail is declared (`= default`) before the outermost loop, because a VB local keeps its value from the previous iteration when the initializer fails.
    * A statement is only guarded when it can fail (`ThrowAnalysis`): constants, locals and parameters of primitive types, their comparisons, `Exit`, `GoTo` and labels aren't. Every `Dim` gets `= default` so that skipping its assignment still compiles.
-   * `With` is guarded like `Select`, and loops whose condition can fail and which read a `ref`/`out` parameter aren't expressible (a local function can't capture it): the method keeps the fallback.
+   * `With` is guarded like a `Select` whose expression fails. A loop whose condition can fail, or a `Select` with a `Case` expression that can fail, isn't expressible when it reads a `ref`/`out` parameter (a local function can't capture it): the method keeps the fallback.
 
 3. **Handler function.** `On Error GoTo H` where the handler resumes into the covered statements. The handler becomes a local function and each guard calls it:
 
@@ -129,7 +129,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * a handler local function would need to capture a `ref`/`out` parameter;
    * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;
    * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
-   * (handler function) several handlers; a guard inside a guarded block (`For Each` with statements inside): the handler's own error would be caught again by the outer guard, but VB lets it propagate; a failing loop condition when the handler can leave the method (a local function can't return from the method).
+   * (handler function) several handlers; a guard inside a guarded block (`For Each` with statements inside): the handler's own error would be caught again by the outer guard, but VB lets it propagate; a failing loop condition or `Case` expression when the handler can leave the method (a local function can't return from the method).
 
    A flattened `switch`-in-a-loop state machine would cover these, but the output is something nobody would keep.
 

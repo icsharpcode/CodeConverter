@@ -279,4 +279,51 @@ H:
         Assert.Equal(42, HandlerWithALambdaReturn())
         Assert.Equal("eval a", Logged())
     End Sub
+
+    Private Sub FailingCaseWithResumeNextHandler(v As Integer)
+        On Error GoTo H
+        Select Case v
+            Case 2
+                L("body 2")
+            Case Boom("case")
+                L("body case")
+            Case Else
+                L("else")
+        End Select
+        L("after")
+        Exit Sub
+H:
+        L("handler " & Err.Description)
+        Resume Next
+    End Sub
+
+    <Fact>
+    Sub FailingCaseExpressionRunsTheHandlerThenEntersThatCase()
+        FailingCaseWithResumeNextHandler(2)
+        FailingCaseWithResumeNextHandler(9)
+        Assert.Equal("body 2, after, eval case, handler case, body case, after", Logged())
+    End Sub
+
+    Private _caseFailuresLeft As Integer
+
+    Private Sub FailingCaseWithRetryingHandler(v As Integer)
+        On Error GoTo H
+        Select Case v
+            Case Boom("retry")
+                L("body")
+        End Select
+        Exit Sub
+H:
+        _caseFailuresLeft -= 1
+        L("handler " & _caseFailuresLeft)
+        If _caseFailuresLeft > 0 Then Resume
+        Resume Next
+    End Sub
+
+    <Fact>
+    Sub FailingCaseExpressionCanBeRetriedByTheHandler()
+        _caseFailuresLeft = 2
+        FailingCaseWithRetryingHandler(1)
+        Assert.Equal("eval retry, handler 1, eval retry, handler 0, body", Logged())
+    End Sub
 End Class
