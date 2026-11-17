@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
@@ -40,8 +41,9 @@ internal class CommonConversions
     public CommonConversions(Document document, SemanticModel semanticModel,
         TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
         Compilation compilation,
-        CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison)
+        CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison, ErrUsage errUsage)
     {
+        ErrUsage = errUsage;
         TypeConversionAnalyzer = typeConversionAnalyzer;
         Document = document;
         SemanticModel = semanticModel;
@@ -55,6 +57,7 @@ internal class CommonConversions
     }
 
     public KnownNamedTypes KnownTypes { get; }
+    public ErrUsage ErrUsage { get; }
 
     public record VariablePair(CSSyntax.VariableDeclaratorSyntax CsVar, VBSyntax.ModifiedIdentifierSyntax VbVar);
     public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VariablePair> Variables);
