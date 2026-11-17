@@ -23,7 +23,7 @@ Sources: [passing arguments by value and by reference](https://learn.microsoft.c
 |---|---|---|
 | A statement, as the last thing evaluated | temporary before, write-back after the statement | `PerScopeState.CreateLocalsAsync` |
 | `Return`, `Throw`, `Yield` | `var ret = call; write-back; return ret;` (only when there is a write-back) | `PerScopeState.WithWriteBacksBefore` |
-| Followed by other evaluation, or in a condition or block header (`If`, `ElseIf`, loops, `Select Case`, `Case`, `For`, `For Each`, `Using`, `SyncLock`, `With`, `Catch When`) | a local function that declares, calls and writes back, called in place | `NameExpressionNodeVisitor.RequiresLocalFunction`, `HoistAndCallLocalFunctionAsync` |
+| Followed by other evaluation, or in a condition or block header (`If`, `ElseIf`, loops, `Select Case`, `Case`, `For`, `For Each`, `Using`, `SyncLock`, `With`, `Catch When`), or in a `Dim` declarator that isn't the only one | a local function that declares, calls and writes back, called in place | `NameExpressionNodeVisitor.RequiresLocalFunction`, `HoistAndCallLocalFunctionAsync` |
 | A field initializer | a method that declares, writes back and returns, called from the field (static) or the constructor (instance) | `CommonConversions.WithHoistedNodesInMethodAsync`, `PerScopeState.CreateReturnBlockAsync` |
 
 Within each of these, one call's write-backs are hoisted after its whole argument list, last argument first, so a nested call's come before them: `ArgumentConverter.WithWriteBacksInVbOrderAsync`.
@@ -31,7 +31,6 @@ Within each of these, one call's write-backs are hoisted after its whole argumen
 Known gaps:
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
-* `Dim a = Inc(P), b = Inc(P)` writes back after all declarators, so `b` reads a stale `P`.
 * A lambda parameter inside a ByRef argument (`Function(x) Inc(x.P)`) hoists the local function outside the lambda, where `x` isn't in scope (CS0103).
 * An auto-property initializer (`Public Property X As Integer = Inc(P)`) leaves a `ph…` placeholder (CS0103): it doesn't go through the field initializer path.
 * Partial-class instance initializers run in part order rather than declaration order.

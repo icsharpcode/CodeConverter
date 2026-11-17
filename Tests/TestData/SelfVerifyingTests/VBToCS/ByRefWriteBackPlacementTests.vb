@@ -424,6 +424,17 @@ Public Class ByRefWriteBackPlacementTests
         Return value
     End Function
 
+    <Fact>
+    Public Sub EachDeclaratorOfALocalDeclarationWritesBackBeforeTheNext()
+        Dim probe As New Probe
+        Dim a = Increment(probe.Value), b = Increment(probe.Value), c = probe.Stored
+        Assert.Equal(1, a)
+        Assert.Equal(2, b)
+        Assert.Equal(2, c)
+        Assert.Equal(2, probe.Stored)
+        Assert.Equal("get,set,get,set", probe.LogText)
+    End Sub
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value
