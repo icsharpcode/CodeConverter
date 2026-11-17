@@ -225,4 +225,68 @@ Failed:
         CleanupWithoutHandler()
         Assert.Equal("work, handler 5, cleanup 0", Logged())
     End Sub
+
+    Private Function Boom(s As String) As Integer
+        _log.Add("boom " & s)
+        Throw New InvalidOperationException(s)
+    End Function
+
+    Private Function HandlerSetsReturnValue() As Integer
+        On Error GoTo H
+        HandlerSetsReturnValue = Boom("a")
+        Exit Function
+H:
+        HandlerSetsReturnValue = -1
+    End Function
+
+    <Fact>
+    Sub FunctionWhoseHandlerFallsOffTheEndReturnsWhatItAssigned()
+        Assert.Equal(-1, HandlerSetsReturnValue())
+        Assert.Equal("boom a", Logged())
+    End Sub
+
+    Private Function HandlerOnlyLogs() As Integer
+        On Error GoTo H
+        Dim x = Boom("b")
+        Return x
+H:
+        _log.Add("handled " & Err.Number)
+    End Function
+
+    <Fact>
+    Sub FunctionWhoseHandlerOnlyLogsReturnsTheDefault()
+        Assert.Equal(0, HandlerOnlyLogs())
+        Assert.Equal("boom b, handled 5", Logged())
+    End Sub
+
+    Private ReadOnly Property Guarded As Integer
+        Get
+            On Error GoTo H
+            Guarded = Boom("c")
+            Exit Property
+H:
+            Guarded = -2
+        End Get
+    End Property
+
+    <Fact>
+    Sub PropertyGetWhoseHandlerFallsOffTheEndReturnsWhatItAssigned()
+        Assert.Equal(-2, Guarded)
+    End Sub
+
+    Private Function HandlerSelectCanFallOff(code As Integer) As Integer
+        On Error GoTo H
+        Return Boom("d" & code)
+H:
+        Select Case code
+            Case 1
+                Return 11
+        End Select
+    End Function
+
+    <Fact>
+    Sub FunctionWhoseSelectCaseHandlerFallsOffTheEndReturnsTheDefault()
+        Assert.Equal(11, HandlerSelectCanFallOff(1))
+        Assert.Equal(0, HandlerSelectCanFallOff(2))
+    End Sub
 End Class

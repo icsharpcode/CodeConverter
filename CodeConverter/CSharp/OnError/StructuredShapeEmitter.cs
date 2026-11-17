@@ -41,7 +41,8 @@ internal sealed class StructuredShapeEmitter
         var before = DefaultInitializers.Add(await ConvertRangeAsync(0, _plan.OnErrorIndex)).ToList();
         var protectedAndHandler = _plan.IsSegmented ? await EmitSegmentedAsync() : await EmitPlainAsync();
         var statements = before.Concat(_err.Clear()).Concat(_hoisting.Declarations).Concat(protectedAndHandler).ToList();
-        return WithoutUnreferencedLabels(statements);
+        var labelsRemoved = WithoutUnreferencedLabels(statements);
+        return _plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) ? MissingReturn.Add(_context, _model, labelsRemoved).ToList() : labelsRemoved;
     }
 
     private async Task<IEnumerable<StatementSyntax>> EmitPlainAsync()

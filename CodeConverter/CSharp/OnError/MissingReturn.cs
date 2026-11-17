@@ -9,7 +9,14 @@ internal static class MissingReturn
 {
     public static IEnumerable<StatementSyntax> Add(OnErrorConversionContext context, OnErrorModel model, StatementGuards guards, List<StatementSyntax> statements)
     {
-        if (!guards.GuardedAReturn) return statements;
+        return guards.GuardedAReturn ? Add(context, model, statements) : statements;
+    }
+
+    /// <summary>
+    /// For emitters that know the end can be reached although VB's flow analysis says otherwise, e.g. a handler that falls off the end of the method but is only reached by an error.
+    /// </summary>
+    public static IEnumerable<StatementSyntax> Add(OnErrorConversionContext context, OnErrorModel model, List<StatementSyntax> statements)
+    {
         var exit = context.Visitor.CreateMethodExitStatement(model.Statements.First());
         var endIsReachable = context.SemanticModel.AnalyzeControlFlow(model.Statements.First(), model.Statements.Last()).EndPointIsReachable;
         var endsInExit = statements.LastOrDefault() is ReturnStatementSyntax or ThrowStatementSyntax;

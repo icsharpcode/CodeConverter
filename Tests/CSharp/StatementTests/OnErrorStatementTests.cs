@@ -1599,4 +1599,196 @@ internal partial class TestClass
 }
 ", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    [Fact]
+    public async Task FunctionWhoseHandlerFallsOffTheEndStillReturnsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom(s As String) As Integer
+        Throw New System.InvalidOperationException(s)
+    End Function
+
+    Private Function B1() As Integer
+        On Error GoTo H
+        B1 = Boom(""a"")
+        Exit Function
+H:
+        B1 = -1
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom(string s)
+    {
+        throw new InvalidOperationException(s);
+    }
+
+    private int B1()
+    {
+        int B1Ret = default;
+        try
+        {
+            B1Ret = Boom(""a"");
+            return B1Ret;
+        }
+        catch
+        {
+
+            B1Ret = -1;
+        }
+
+        return B1Ret;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task FunctionWithReturnValueAndLoggingHandlerStillReturnsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Private Function Boom() As Integer
+        Throw New InvalidOperationException()
+    End Function
+
+    Private Function Run() As Integer
+        On Error GoTo H
+        Dim x = Boom()
+        Return x
+H:
+        Console.WriteLine(""failed"")
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    private int Run()
+    {
+        try
+        {
+            int x = Boom();
+            return x;
+        }
+        catch
+        {
+
+            Console.WriteLine(""failed"");
+        }
+
+        return default;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task PropertyGetWhoseHandlerFallsOffTheEndStillReturnsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Private Function Boom() As Integer
+        Throw New InvalidOperationException()
+    End Function
+
+    Public ReadOnly Property P As Integer
+        Get
+            On Error GoTo H
+            P = Boom()
+            Exit Property
+H:
+            P = -1
+        End Get
+    End Property
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public int P
+    {
+        get
+        {
+            int PRet = default;
+            try
+            {
+                PRet = Boom();
+                return PRet;
+            }
+            catch
+            {
+
+                PRet = -1;
+            }
+
+            return PRet;
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task FunctionWhoseSelectCaseHandlerCanFallOffTheEndStillReturnsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Private Function Boom() As Integer
+        Throw New InvalidOperationException()
+    End Function
+
+    Private Function Run() As Integer
+        On Error GoTo H
+        Return Boom()
+H:
+        Select Case Err.Number
+            Case 5
+                Return 5
+        End Select
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    private int Run()
+    {
+        ProjectData.ClearProjectError();
+        try
+        {
+            return Boom();
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            switch (Information.Err().Number)
+            {
+                case 5:
+                    {
+                        ProjectData.ClearProjectError();
+                        return 5;
+                    }
+            }
+
+            ProjectData.ClearProjectError();
+        }
+
+        return default;
+    }
+}");
+    }
 }
