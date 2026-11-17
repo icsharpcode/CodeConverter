@@ -1837,4 +1837,220 @@ public partial class Fields
     }
 }");
     }
+
+    [Fact]
+    public async Task ByRefPropertyTargetCopiesFieldsWrittenAfterConstructionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Public Class Db
+    Public Property Qr(a As Object) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Structure Point
+    Public X As Integer
+End Structure
+
+Public Class C
+    Private _forVar As Integer
+    Private _forEachVar As Integer
+    Private _reDimmed As Integer()
+    Private _erased As Integer()
+    Private _midText As String
+    Private _lateBoundArg As Integer
+    Private _writtenInConstructorLambda As Integer
+    Private _writtenOnOtherInstance As Integer
+    Private Shared _sharedWrittenInInstanceConstructor As Integer
+    Private _byInitializer As Integer
+    Private _initialized As Integer = Inc(_byInitializer)
+    Private Shared _sharedByInitializer As Integer
+    Private Shared _sharedInitialized As Integer = Inc(_sharedByInitializer)
+    Private Shared _sharedInSharedConstructor As Integer
+    Friend _friendNeverWritten As Integer
+    Private _point As Point
+    Private ReadOnly _db As New Db
+
+    Shared Sub New()
+        _sharedInSharedConstructor = 1
+    End Sub
+
+    Public Sub New(other As C)
+        Dim a As Action = Sub() _writtenInConstructorLambda = 1
+        other._writtenOnOtherInstance = 1
+        _sharedWrittenInInstanceConstructor = 1
+    End Sub
+
+    Sub Writes(o As Object)
+        For _forVar = 1 To 2
+        Next
+        For Each _forEachVar In {1}
+        Next
+        ReDim _reDimmed(3)
+        Erase _erased
+        Mid(_midText, 1) = ""x""
+        o.Foo(_lateBoundArg)
+    End Sub
+
+    Sub UsesFields()
+        SetValue(_db.Qr(_forVar))
+        SetValue(_db.Qr(_forEachVar))
+        SetValue(_db.Qr(_reDimmed))
+        SetValue(_db.Qr(_erased))
+        SetValue(_db.Qr(_midText))
+        SetValue(_db.Qr(_lateBoundArg))
+        SetValue(_db.Qr(_writtenInConstructorLambda))
+        SetValue(_db.Qr(_writtenOnOtherInstance))
+        SetValue(_db.Qr(_sharedWrittenInInstanceConstructor))
+        SetValue(_db.Qr(_byInitializer)) ' Reused from here on
+        SetValue(_db.Qr(_sharedByInitializer))
+        SetValue(_db.Qr(_sharedInSharedConstructor))
+        SetValue(_db.Qr(_friendNeverWritten))
+        SetValue(_db.Qr(_point)) ' A structure can change without being assigned
+    End Sub
+
+    Shared Function Inc(ByRef x As Integer) As Integer
+        x += 1
+        Return x
+    End Function
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Db
+{
+    public string get_Qr(object a)
+    {
+        return """";
+    }
+    public void set_Qr(object a, string value)
+    {
+    }
+}
+
+public partial struct Point
+{
+    public int X;
+}
+
+public partial class C
+{
+    private int _forVar;
+    private int _forEachVar;
+    private int[] _reDimmed;
+    private int[] _erased;
+    private string _midText;
+    private int _lateBoundArg;
+    private int _writtenInConstructorLambda;
+    private int _writtenOnOtherInstance;
+    private static int _sharedWrittenInInstanceConstructor;
+    private int _byInitializer;
+    private int _initialized;
+    private static int _sharedByInitializer;
+    private static int _sharedInitialized = Inc(ref _sharedByInitializer);
+    private static int _sharedInSharedConstructor;
+    internal int _friendNeverWritten;
+    private Point _point;
+    private readonly Db _db = new Db();
+
+    static C()
+    {
+        _sharedInSharedConstructor = 1;
+    }
+
+    public C(C other)
+    {
+        _initialized = Inc(ref _byInitializer);
+        Action a = () => _writtenInConstructorLambda = 1;
+        other._writtenOnOtherInstance = 1;
+        _sharedWrittenInInstanceConstructor = 1;
+    }
+
+    public void Writes(object o)
+    {
+        for (_forVar = 1; _forVar <= 2; _forVar++)
+        {
+        }
+        foreach (var current_forEachVar in new[] { 1 })
+            _forEachVar = current_forEachVar;
+        _reDimmed = new int[4];
+        _erased = null;
+        StringType.MidStmtStr(ref _midText, 1, ""x"".Length, ""x"");
+        ((dynamic)o).Foo(_lateBoundArg);
+    }
+
+    public void UsesFields()
+    {
+        var tmp = _forVar;
+        string argvalue = _db.get_Qr(tmp);
+        SetValue(ref argvalue);
+        _db.set_Qr(tmp, argvalue);
+        var tmp1 = _forEachVar;
+        string argvalue1 = _db.get_Qr(tmp1);
+        SetValue(ref argvalue1);
+        _db.set_Qr(tmp1, argvalue1);
+        var tmp2 = _reDimmed;
+        string argvalue2 = _db.get_Qr(tmp2);
+        SetValue(ref argvalue2);
+        _db.set_Qr(tmp2, argvalue2);
+        var tmp3 = _erased;
+        string argvalue3 = _db.get_Qr(tmp3);
+        SetValue(ref argvalue3);
+        _db.set_Qr(tmp3, argvalue3);
+        var tmp4 = _midText;
+        string argvalue4 = _db.get_Qr(tmp4);
+        SetValue(ref argvalue4);
+        _db.set_Qr(tmp4, argvalue4);
+        var tmp5 = _lateBoundArg;
+        string argvalue5 = _db.get_Qr(tmp5);
+        SetValue(ref argvalue5);
+        _db.set_Qr(tmp5, argvalue5);
+        var tmp6 = _writtenInConstructorLambda;
+        string argvalue6 = _db.get_Qr(tmp6);
+        SetValue(ref argvalue6);
+        _db.set_Qr(tmp6, argvalue6);
+        var tmp7 = _writtenOnOtherInstance;
+        string argvalue7 = _db.get_Qr(tmp7);
+        SetValue(ref argvalue7);
+        _db.set_Qr(tmp7, argvalue7);
+        var tmp8 = _sharedWrittenInInstanceConstructor;
+        string argvalue8 = _db.get_Qr(tmp8);
+        SetValue(ref argvalue8);
+        _db.set_Qr(tmp8, argvalue8);
+        string argvalue9 = _db.get_Qr(_byInitializer);
+        SetValue(ref argvalue9);
+        _db.set_Qr(_byInitializer, argvalue9); // Reused from here on
+        string argvalue10 = _db.get_Qr(_sharedByInitializer);
+        SetValue(ref argvalue10);
+        _db.set_Qr(_sharedByInitializer, argvalue10);
+        string argvalue11 = _db.get_Qr(_sharedInSharedConstructor);
+        SetValue(ref argvalue11);
+        _db.set_Qr(_sharedInSharedConstructor, argvalue11);
+        string argvalue12 = _db.get_Qr(_friendNeverWritten);
+        SetValue(ref argvalue12);
+        _db.set_Qr(_friendNeverWritten, argvalue12);
+        var tmp9 = _point;
+        string argvalue13 = _db.get_Qr(tmp9);
+        SetValue(ref argvalue13);
+        _db.set_Qr(tmp9, argvalue13); // A structure can change without being assigned
+    }
+
+    public static int Inc(ref int x)
+    {
+        x += 1;
+        return x;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
 }
