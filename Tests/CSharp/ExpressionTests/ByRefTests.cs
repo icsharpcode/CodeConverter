@@ -1367,4 +1367,55 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task WritesBackBeforeAssignmentCompletesWhenItChangesTheWriteBackTargetAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Public Property P As String
+    Public Property Q As String
+
+    Function F(ByRef v As String) As String
+        Return v
+    End Function
+
+    Function G(ByRef v As String) As C
+        Return New C
+    End Function
+
+    Sub Assignments(h As C)
+        P = F(P)
+        h = G(h.P)
+        Q = F(P)
+    End Sub
+End Class", @"
+public partial class C
+{
+    public string P { get; set; }
+    public string Q { get; set; }
+
+    public string F(ref string v)
+    {
+        return v;
+    }
+
+    public C G(ref string v)
+    {
+        return new C();
+    }
+
+    public void Assignments(C h)
+    {
+        string localF() { string argv = P; var ret = F(ref argv); P = argv; return ret; }
+
+        P = localF();
+        C localG() { string argv1 = h.P; var ret = G(ref argv1); h.P = argv1; return ret; }
+
+        h = localG();
+        string argv = P;
+        Q = F(ref argv);
+        P = argv;
+    }
+}");
+    }
 }

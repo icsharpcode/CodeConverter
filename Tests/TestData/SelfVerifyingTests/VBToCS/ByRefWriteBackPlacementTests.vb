@@ -435,6 +435,68 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal("get,set,get,set", probe.LogText)
     End Sub
 
+    <Fact>
+    Public Sub AssignmentToTheWrittenBackPropertyKeepsTheCallResult()
+        Dim h As New Holder
+        h.Plain = SetValueReturnOther(h.Plain)
+        Assert.Equal("result", h.Plain)
+    End Sub
+
+    <Fact>
+    Public Sub AssignmentToAnIndexOfTheWriteBackWritesBackAtTheOldIndex()
+        Dim h As New Holder
+        Dim x = 0
+        x = SetValueReturnOne(h.Items(x))
+        Assert.Equal(1, x)
+        Assert.Equal("changed", h.Items(0))
+        Assert.Equal("b", h.Items(1))
+        x += SetValueReturnOne(h.Items(x))
+        Assert.Equal(2, x)
+        Assert.Equal("changed", h.Items(1))
+    End Sub
+
+    <Fact>
+    Public Sub AssignmentToTheWriteBackReceiverWritesBackToTheOldReceiver()
+        Dim h As New Holder
+        Dim original = h
+        h = SetValueReturnHolder(h.Plain)
+        Assert.NotSame(original, h)
+        Assert.Equal("changed", original.Plain)
+        Assert.Equal("", h.Plain)
+        Dim second = h
+        h = SetValueReturnHolder(h.Items(1))
+        Assert.Equal("changed", second.Items(1))
+        Assert.Equal("b", h.Items(1))
+    End Sub
+
+    <Fact>
+    Public Sub CompoundAssignmentReadsItsTargetBeforeTheCall()
+        Dim probe As New Probe
+        probe.Value += Increment(probe.Value)
+        Assert.Equal(1, probe.Stored)
+        Assert.Equal("get,get,set,set", probe.LogText)
+    End Sub
+
+    Private Class Holder
+        Public Property Plain As String = ""
+        Public Property Items As New List(Of String) From {"a", "b"}
+    End Class
+
+    Private Shared Function SetValueReturnOther(ByRef value As String) As String
+        value = "changed"
+        Return "result"
+    End Function
+
+    Private Shared Function SetValueReturnOne(ByRef value As String) As Integer
+        value = "changed"
+        Return 1
+    End Function
+
+    Private Shared Function SetValueReturnHolder(ByRef value As String) As Holder
+        value = "changed"
+        Return New Holder
+    End Function
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value

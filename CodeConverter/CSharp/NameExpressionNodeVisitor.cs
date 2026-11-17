@@ -542,7 +542,7 @@ internal class NameExpressionNodeVisitor
 
         if (invocation.ArgumentList == null) return false;
         var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
-        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation);
+        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation) && !AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
         if (definitelyExecutedAfterPrevious && nextStatementDefinitelyExecuted) return false;
         var possibleInline = definitelyExecutedAfterPrevious ? RefConversion.PreAssigment : RefConversion.Inline;
         return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(possibleInline, invocation, invocationSymbol, a));
@@ -556,6 +556,28 @@ internal class NameExpressionNodeVisitor
             if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
             return !_semanticModel.GetConstantValue(argExpression).HasValue;
         }
+    }
+
+    /// <summary>
+    /// VB writes back straight after the call, before the enclosing assignment stores its result.
+    /// A write-back emitted after the assignment statement would overwrite the assigned target (<c>h.P = F(h.P)</c>),
+    /// or write to a different place if the assignment changes something the write-back target reads (<c>x = F(h.Items(x))</c>, <c>h = F(h.P)</c>).
+    /// Other assignments keep the write-back after the statement.
+    /// </summary>
+    private bool AssignmentChangesWhatIsWrittenBack(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
+    {
+        if (invocation.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax) is not VBSyntax.AssignmentStatementSyntax assignment ||
+            !assignment.Right.Span.Contains(invocation.Span)) {
+            return false;
+        }
+
+        var assignedSymbol = _semanticModel.GetSymbolInfo(assignment.Left).Symbol ??
+                             (assignment.Left is VBSyntax.InvocationExpressionSyntax { Expression: var indexed } ? _semanticModel.GetSymbolInfo(indexed).Symbol : null);
+        var writtenBackExpressions = invocation.ArgumentList.Arguments.OfType<VBSyntax.SimpleArgumentSyntax>()
+            .Where(a => CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) == RefConversion.PreAndPostAssignment)
+            .Select(a => a.Expression);
+        return writtenBackExpressions.Any(e => assignedSymbol is null ||
+            e.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().Any(n => SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(n).Symbol, assignedSymbol)));
     }
 
     private static bool IsLoopCondition(SyntaxNode node)
