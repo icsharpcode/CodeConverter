@@ -38,7 +38,7 @@ internal sealed class StructuredShapeEmitter
 
     public async Task<IReadOnlyCollection<StatementSyntax>> EmitAsync()
     {
-        var before = WithDefaultInitializers(await ConvertRangeAsync(0, _plan.OnErrorIndex));
+        var before = DefaultInitializers.Add(await ConvertRangeAsync(0, _plan.OnErrorIndex)).ToList();
         var protectedAndHandler = _plan.IsSegmented ? await EmitSegmentedAsync() : await EmitPlainAsync();
         var statements = before.Concat(_err.Clear()).Concat(_hoisting.Declarations).Concat(protectedAndHandler).ToList();
         return WithoutUnreferencedLabels(statements);
@@ -88,16 +88,6 @@ internal sealed class StructuredShapeEmitter
         if (_plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd)) withClearedErr.AddRange(_err.Clear());
         return withClearedErr;
     }
-
-    /// <summary>
-    /// The converter leaves out an initializer that VB's flow analysis says isn't needed, but that analysis doesn't know a handler can run after any statement.
-    /// VB locals start zeroed, so <c>= default</c> is exact.
-    /// </summary>
-    private static List<StatementSyntax> WithDefaultInitializers(List<StatementSyntax> statements) =>
-        statements.Select(s => s is LocalDeclarationStatementSyntax { IsConst: false } declaration
-            ? declaration.WithDeclaration(declaration.Declaration.WithVariables(SyntaxFactory.SeparatedList(declaration.Declaration.Variables.Select(v =>
-                v.Initializer != null ? v : v.WithInitializer(SyntaxFactory.EqualsValueClause(SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression)))))))
-            : s).ToList();
 
     private TryStatementSyntax Try(IEnumerable<StatementSyntax> statements, IEnumerable<StatementSyntax> catchStatements) =>
         SyntaxFactory.TryStatement(SyntaxFactory.Block(statements), SyntaxFactory.SingletonList(_err.CatchClause(_exceptionVariableName, catchStatements)), null);

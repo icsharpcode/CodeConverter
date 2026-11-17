@@ -24,13 +24,15 @@ internal sealed class ErrStatements
         IsMaintained ? SyntaxFactory.SingletonList(ProjectDataCall("ClearProjectError")) : default;
 
     /// <summary>A catch-all, as VB catches any exception, recording it in <c>Err</c> first as VB's catch does.</summary>
-    public CatchClauseSyntax CatchClause(string exceptionVariableName, IEnumerable<StatementSyntax> statements)
+    /// <param name="filter">VB's catch has a filter on the active handler; an exception filter doesn't unwind the stack when it's false, as in VB.</param>
+    public CatchClauseSyntax CatchClause(string exceptionVariableName, IEnumerable<StatementSyntax> statements, ExpressionSyntax filter = null)
     {
-        if (!IsMaintained) return SyntaxFactory.CatchClause().WithBlock(SyntaxFactory.Block(statements));
+        var filterClause = filter == null ? null : SyntaxFactory.CatchFilterClause(filter);
+        if (!IsMaintained) return SyntaxFactory.CatchClause().WithFilter(filterClause).WithBlock(SyntaxFactory.Block(statements));
         _extraUsingDirectives.Add("System");
         var declaration = SyntaxFactory.CatchDeclaration(SyntaxFactory.IdentifierName(nameof(Exception)), SyntaxFactory.Identifier(exceptionVariableName));
         var setError = ProjectDataCall("SetProjectError", SyntaxFactory.IdentifierName(exceptionVariableName));
-        return SyntaxFactory.CatchClause(declaration, null, SyntaxFactory.Block(statements.Prepend(setError)));
+        return SyntaxFactory.CatchClause(declaration, filterClause, SyntaxFactory.Block(statements.Prepend(setError)));
     }
 
     private StatementSyntax ProjectDataCall(string methodName, params ExpressionSyntax[] arguments)
