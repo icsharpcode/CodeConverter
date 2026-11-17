@@ -10,9 +10,10 @@ namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 /// The C# read and write-back are separate expressions, so a part that could have a different value the second time is hoisted into a temporary.
 /// </summary>
 /// <remarks>
-/// VB copies every part except constants and Me. A local or ByVal parameter gives the same value again unless it's written while the
+/// VB copies every part except constants and Me. A (non-Static) local or ByVal parameter gives the same value again unless it's written while the
 /// enclosing expression runs, so it's only copied when that expression, or a lambda the call could run, writes it.
 /// A field is also copied when the call could change it (<see cref="IFieldMutationOracle"/>).
+/// An intrinsic operator on such parts gives the same value again too.
 /// </remarks>
 internal class ByRefTargetTemporaries
 {
