@@ -9,6 +9,7 @@ internal class ByRefArgumentHoister
 {
     private readonly ITypeContext _typeContext;
     private readonly SemanticModel _semanticModel;
+    private readonly IFieldMutationOracle _fieldMutations;
     private CommonConversions CommonConversions { get; }
 
     /// <summary>
@@ -20,6 +21,7 @@ internal class ByRefArgumentHoister
     {
         _typeContext = typeContext;
         _semanticModel = semanticModel;
+        _fieldMutations = FieldWriteAnalysis.For(semanticModel.Compilation);
         CommonConversions = commonConversions;
     }
 
@@ -55,7 +57,7 @@ internal class ByRefArgumentHoister
         }
 
         if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
-            refLValue = ByRefTargetTemporaries.Hoist(_semanticModel, _typeContext, node, refLValue);
+            refLValue = ByRefTargetTemporaries.Hoist(_semanticModel, _typeContext, _fieldMutations, node, refLValue);
         }
 
         var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, refLValue, defaultToCast: refKind != RefKind.None);

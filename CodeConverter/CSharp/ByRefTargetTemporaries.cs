@@ -18,20 +18,23 @@ internal class ByRefTargetTemporaries
 {
     private readonly SemanticModel _semanticModel;
     private readonly ITypeContext _typeContext;
+    private readonly IFieldMutationOracle _fieldMutations;
     private readonly VBSyntax.ExpressionSyntax _vbTarget;
     private readonly Lazy<HashSet<ISymbol>> _writtenSymbols;
 
-    private ByRefTargetTemporaries(SemanticModel semanticModel, ITypeContext typeContext, VBSyntax.ExpressionSyntax vbTarget)
+    private ByRefTargetTemporaries(SemanticModel semanticModel, ITypeContext typeContext, IFieldMutationOracle fieldMutations, VBSyntax.ExpressionSyntax vbTarget)
     {
         _semanticModel = semanticModel;
         _typeContext = typeContext;
+        _fieldMutations = fieldMutations;
         _vbTarget = vbTarget;
         _writtenSymbols = new Lazy<HashSet<ISymbol>>(GetSymbolsWrittenInEnclosingExpression);
     }
 
     /// <returns>The C# target with each part VB evaluates once replaced by a hoisted temporary, where its value could otherwise differ.</returns>
-    public static CSSyntax.ExpressionSyntax Hoist(SemanticModel semanticModel, ITypeContext typeContext, VBSyntax.ExpressionSyntax vbTarget, CSSyntax.ExpressionSyntax csTarget) =>
-        new ByRefTargetTemporaries(semanticModel, typeContext, vbTarget).Hoist(csTarget);
+    public static CSSyntax.ExpressionSyntax Hoist(SemanticModel semanticModel, ITypeContext typeContext, IFieldMutationOracle fieldMutations,
+        VBSyntax.ExpressionSyntax vbTarget, CSSyntax.ExpressionSyntax csTarget) =>
+        new ByRefTargetTemporaries(semanticModel, typeContext, fieldMutations, vbTarget).Hoist(csTarget);
 
     private CSSyntax.ExpressionSyntax Hoist(CSSyntax.ExpressionSyntax csTarget)
     {
@@ -111,9 +114,12 @@ internal class ByRefTargetTemporaries
         IConversionOperation { OperatorMethod: null } c => IsReusable(c.Operand),
         ILocalReferenceOperation l => !_writtenSymbols.Value.Contains(l.Local),
         IParameterReferenceOperation p => !_writtenSymbols.Value.Contains(p.Parameter),
-        IFieldReferenceOperation f => !_writtenSymbols.Value.Contains(f.Field) && IsReusable(f.Instance),
+        IFieldReferenceOperation f => !_writtenSymbols.Value.Contains(f.Field) && !_fieldMutations.MayChangeDuringCall(f.Field, GetCall()) && IsReusable(f.Instance),
         _ => false
     };
+
+    /// <returns>The call (or object creation, or event raise) that the ByRef target is an argument of.</returns>
+    private IOperation GetCall() => _semanticModel.GetOperation(_vbTarget)?.Parent is IArgumentOperation { Parent: var call } ? call : null;
 
     private CSSyntax.ExpressionSyntax HoistValue(CSSyntax.ExpressionSyntax value) =>
         _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", value, ValidSyntaxFactory.VarType)).IdentifierName;
