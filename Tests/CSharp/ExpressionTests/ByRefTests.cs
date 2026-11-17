@@ -1578,7 +1578,7 @@ public partial class C
     End Property
 End Class
 
-Public Module Euro_Str
+Module Euro_Str
     Public Db As New ClsDb
     Public QAdr As Integer
     Public CourseBuffer As Integer
@@ -1608,7 +1608,7 @@ public partial class ClsDb
     }
 }
 
-public static partial class Euro_Str
+internal static partial class Euro_Str
 {
     public static ClsDb Db = new ClsDb();
     public static int QAdr;
@@ -1745,6 +1745,95 @@ public partial class C
         string argvalue5 = other.get_Qr(tmp5, 2);
         SetValueAndIndex(ref argvalue5, ref i);
         other.set_Qr(tmp5, 2, argvalue5); // i is written by the call
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefPropertyTargetCopiesOnlyFieldsThatCanChangeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Db
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Class Fields
+    Private ReadOnly _readOnlyIndex As Integer = 1
+    Private _neverWritten As Integer
+    Private _assignedInConstructor As Integer
+    Private _writtenElsewhere As Integer
+    Public PublicIndex As Integer
+    Private _db As New Db
+
+    Public Sub New()
+        _assignedInConstructor = 2
+    End Sub
+
+    Sub Reset()
+        _writtenElsewhere = 0
+    End Sub
+
+    Sub UsesFields()
+        SetValue(_db.Qr(_readOnlyIndex, _neverWritten))
+        SetValue(_db.Qr(_assignedInConstructor, _writtenElsewhere))
+        SetValue(_db.Qr(PublicIndex, 1))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"
+public partial class Db
+{
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+}
+
+public partial class Fields
+{
+    private readonly int _readOnlyIndex = 1;
+    private int _neverWritten;
+    private int _assignedInConstructor;
+    private int _writtenElsewhere;
+    public int PublicIndex;
+    private Db _db = new Db();
+
+    public Fields()
+    {
+        _assignedInConstructor = 2;
+    }
+
+    public void Reset()
+    {
+        _writtenElsewhere = 0;
+    }
+
+    public void UsesFields()
+    {
+        string argvalue = _db.get_Qr(_readOnlyIndex, _neverWritten);
+        SetValue(ref argvalue);
+        _db.set_Qr(_readOnlyIndex, _neverWritten, argvalue);
+        var tmp = _writtenElsewhere;
+        string argvalue1 = _db.get_Qr(_assignedInConstructor, tmp);
+        SetValue(ref argvalue1);
+        _db.set_Qr(_assignedInConstructor, tmp, argvalue1);
+        var tmp1 = PublicIndex;
+        string argvalue2 = _db.get_Qr(tmp1, 1);
+        SetValue(ref argvalue2);
+        _db.set_Qr(tmp1, 1, argvalue2);
+    }
+
+    public static void SetValue(ref string value)
+    {
     }
 }");
     }

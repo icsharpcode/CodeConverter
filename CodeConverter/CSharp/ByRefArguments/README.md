@@ -34,13 +34,17 @@ The classes in this folder hold the ByRef-specific decisions. The placement mech
 Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/main/src/Compilers/VisualBasic/Portable/Lowering/UseTwiceRewriter.vb), which `RewriteByRefArgumentWithCopyBack` uses to read the target and then write it with the setter. Behaviour is covered by `Tests/TestData/SelfVerifyingTests/VBToCS/ByRefParameterizedProperty*.vb`.
 
 * VB evaluates the target's receiver and index arguments once, and the write-back reuses their values. It copies each into a temporary except literals, constants and `Me`.
-* The converter hoists a `tmp` only where the second evaluation could give a different value. A local, parameter or field is reused unless the enclosing expression writes it (as a ByRef argument, or in a lambda): `ByRefTargetTemporaries`.
+* The converter hoists a `tmp` only where the second evaluation could give a different value: `ByRefTargetTemporaries`.
+  * A local or parameter is reused unless the enclosing expression writes it (as a ByRef argument, or in a lambda). Nothing else can.
+  * A field is reused only if, in addition, the call can't change it (`IFieldMutationOracle.MayChangeDuringCall`). `FieldWriteAnalysis` answers that once per compilation, soundly without knowing what the call reaches: a field can't change if it's `Const` or `ReadOnly`, or if only this compilation can write it (it, or a type containing it, is `Private`, or `Friend` with no `InternalsVisibleTo`) and nothing in it writes it outside construction. A write is an assignment, compound assignment, ByRef or late-bound argument, `For`/`For Each` control variable, `ReDim`, `Erase` or `Mid` statement. Construction (a constructor writing its own instance's field, a shared constructor writing a shared field, or a field or property initializer) has finished before anything can read the field, but a lambda in it may run later, so that isn't excluded. A structure field (other than a primitive or enum) is always treated as changeable, since calling a method on it can change it.
+  * A call graph of method references could narrow this to the fields the call can transitively write. To stay sound it would treat overridable and interface calls as reaching every implementation, delegate invocations and late-bound calls as reaching anything a delegate or late-bound call could, and calls outside the compilation as reaching any field they can see.
 * A parameterized property (not the default one) becomes `get_X`/`set_X` methods, so its write-back calls the setter with the same index arguments: `ByRefArgumentHoister.CreateWriteBack`, `AdditionalAssignment.ViaSetter`. It takes its place in the call's reversed write-back order like any other.
 * A `ReadOnly` property isn't written back (`GetRefConversionForExpression`), so it's evaluated once and needs no temporaries.
 
 | VB target | C# |
 |---|---|
-| `Qr(i, 2)`, `other.Qr(_index, 2)` | `get_Qr(i, 2)` … `set_Qr(i, 2, arg)` |
+| `Qr(i, 2)`, `other.Qr(_index, 2)` (`_index` a `Private` field written only in constructors) | `get_Qr(i, 2)` … `set_Qr(i, 2, arg)` |
+| `other.Qr(_writtenElsewhere, 2)`, `other.Qr(PublicIndex, 2)` | `var tmp = _writtenElsewhere;` … `other.set_Qr(tmp, 2, arg)` |
 | `other.Qr(NextIndex(), 2)` | `var tmp = NextIndex();` … `other.get_Qr(tmp, 2)` … `other.set_Qr(tmp, 2, arg)` |
 | `GetC().Qr(1, 2)`, `GetC().Plain` | `var tmp = GetC();` … `tmp.set_Qr(1, 2, arg)`, `tmp.Plain = arg` |
 | `other(NextIndex())` (default property or indexer) | `var tmp = other; var tmp1 = NextIndex();` … `tmp[tmp1] = arg` (the container is always copied, as before) |
@@ -48,7 +52,6 @@ Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/m
 | `cells(NextIndex()).Text`, `GetHolder().Cell.Text` (`Cell` is a structure) | `var tmp = NextIndex();` … `cells[tmp].Text = arg`, `var tmp = GetHolder();` … `tmp.Cell.Text = arg`: a structure variable is written in place (`ByRefTargetTemporaries.HoistInstance`) |
 
 Known gaps:
-* A field that the called method itself assigns is read again for the write-back, where VB uses its original value. Detecting it needs analysis of the callee. (The container of an element access is always copied, so `Issue567ExtendedAsync`'s reassigned list keeps VB's behaviour.)
 * A parameterized property with a `ParamArray` converts to a setter with `params` before the value (CS0231), so it can't be written back.
 * In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, every case that would use the local function instead writes back after the statement. That covers operands, conditions, block headers, `Dim` declarators, and compound or receiver-target assignments. The code compiles, but the write-back is late. Loop conditions still use a local function there and give CS1673, because writing back once would be wrong in a different way.
 * Arguments of `New` (object creation) in a block header still write back after the block.

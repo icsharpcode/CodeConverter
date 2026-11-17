@@ -5,6 +5,8 @@ Imports Xunit
 Public Class ByRefParameterizedPropertyTests
     Private ReadOnly _log As New List(Of String)
     Private _fieldIndex As Integer = 1
+    Private _db As Db
+    Private _index As Integer = 1
 
     <Fact>
     Public Sub ParameterizedPropertyIsWrittenBackThroughItsSetterIssue909()
@@ -64,6 +66,35 @@ Public Class ByRefParameterizedPropertyTests
         SetValueAndIndex(db.Qr(_fieldIndex, 21), _fieldIndex)
         Assert.Equal(5, _fieldIndex)
         Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub FieldReceiverReassignedByTheCalledMethodIsWrittenBackToTheOriginal()
+        _db = New Db(_log)
+        Dim original = _db
+        ReplaceDbAndSetValue(_db.Qr(1, 21))
+        Assert.NotSame(original, _db)
+        Assert.Equal("changed", original.Qr(1, 21))
+        Assert.Equal("get 1,21;set 1,21=changed;get 1,21", LogText())
+    End Sub
+
+    Private Sub ReplaceDbAndSetValue(ByRef value As String)
+        _db = New Db(New List(Of String))
+        value = "changed"
+    End Sub
+
+    <Fact>
+    Public Sub FieldIndexChangedByTheCalledMethodUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        _index = 1
+        ChangeIndexAndSetValue(db.Qr(_index, 21))
+        Assert.Equal(7, _index)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    Private Sub ChangeIndexAndSetValue(ByRef value As String)
+        _index = 7
+        value = "changed"
     End Sub
 
     <Fact>
