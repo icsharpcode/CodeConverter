@@ -93,7 +93,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    }
    // statements from L onwards
    ```
-   This is the existing conversion, generalised, with locals hoisted (fixes the existing `RemainingScopeIssueCharacterizationAsync` output).
+   This is the existing conversion, generalised, with locals hoisted (fixes the existing `RemainingScopeIssueCharacterizationAsync` output). When the handler is written for re-entry, the statements after `L` get their own `try` too (see "Secondary errors").
 
 2. **Resume next.** The active handler is resume-next. Each guard becomes
 
@@ -136,14 +136,21 @@ Alternatives considered:
 
 ### `Err` is only maintained when it seems to be used
 
-`ProjectData.SetProjectError(ex)` / `ClearProjectError()` are emitted only in methods that reference `Err` (`Microsoft.VisualBasic.Information.Err`). Then:
+`ProjectData.SetProjectError(ex)` / `ClearProjectError()` are emitted in a converted method when either holds:
+
+* its containing type (all partial parts) references `Err` (`Microsoft.VisualBasic.Information.Err`);
+* the project contains an **`Err` helper**: a method that references `Err` but has no `On Error` statement of its own, so it can only be reading an error that some other method caught (typically a shared `LogError()` called from handlers anywhere).
+
+The helper search is one pass per compilation, cached: find identifiers named `Err`, bind only those, and check the containing method for `On Error` statements.
+
+When `Err` is maintained:
 
 * each catch starts with `SetProjectError(ex)`;
 * `ClearProjectError()` goes where an `On Error` or `Resume*` statement was, and on leaving a handler by exit.
 
 Otherwise catches are bare `catch { }` and need no `Microsoft.VisualBasic` reference.
 
-Known difference: a caller or callee that reads `Err` set by a method which doesn't itself mention `Err` will see it unset. The check could be widened to the containing type or the project if this turns out to matter.
+Known difference: `Err` read through reflection, late binding, or from another project isn't seen.
 
 The existing structured conversion emits `catch { }` followed by `Information.Err().Number`, which reads 0 at runtime (see `BasicGotoAsync`); under this rule it gets the `SetProjectError` call.
 
@@ -151,7 +158,7 @@ The existing structured conversion emits `catch { }` followed by `Information.Er
 
 VB runs the body once with a default loop variable. C# output skips the loop (one guard around the whole statement). Not worth lowering loops for.
 
-### Secondary errors propagate
+### Secondary errors: propagate, unless the handler is written for re-entry
 
 A *secondary error* is one raised in code that runs after the handler has finished but while that same handler is still the active one:
 
@@ -168,30 +175,31 @@ H:
 
 The same applies to handler code reached without an error (no `Exit Sub` before the label).
 
-VB re-enters `H`, which here means log, close, fail, log, close … forever. The structured shape puts the cleanup after the `try`, so in C# the secondary error propagates to the caller. This is a deliberate difference: looping forever is never what was meant.
+VB re-enters `H`, which here means log, close, fail, log, close … forever. Looping forever is never what was meant, so by default only the code before the first resume label is in the `try`, and a secondary error propagates to the caller.
 
-Where the author did deal with it in the usual ways, the model already has it right and there's no difference:
-* `On Error Resume Next` or `On Error GoTo 0` at the start of the cleanup: the cleanup has a different active handler, so it gets resume-next guards or none.
-* cleanup that can't fail (only exits, jumps and assignments of locals/constants).
+The exact form is cheap, because the handler never resumes into the middle of the cleanup: split the covered statements into **segments** at the labels the handler resumes to, and give each segment its own `try` calling the handler:
 
-### Warn when the handler looks written for re-entry
+```csharp
+OnErrorAction H() { /* handler */ }
+try { Work(); } catch { if (H() == OnErrorAction.Exit) return; }
+Cleanup:
+try { conn.Close(); return; } catch { if (H() == OnErrorAction.Exit) return; goto Cleanup; }
+```
 
-The remaining case is a handler that relies on being entered a second time. That can't be decided in general, but, like the `Err` check, a cheap test catches what people actually write. Emit `#warning` on the `catch` when both hold:
+Which form is used:
 
-1. a secondary error is possible: the code after the resume label (or the handler code, when it can be reached without an error) is still covered by the handler and contains something that can throw;
-2. the handler has a **re-entry guard**: a condition (`If`, `Select Case`, loop condition, `If(…)`) reading a local, field or property that is assigned in the handler or in the code from 1. For example `attempts += 1 : If attempts > 3 Then Exit Sub`, or `If cleaningUp Then Exit Sub` with `cleaningUp = True` in the cleanup.
+| Situation | Output |
+|---|---|
+| No secondary error possible: the code after the resume label can't throw (only exits, jumps, assignments of locals/constants), or starts with its own `On Error` statement | plain structured (they're the same thing) |
+| Secondary error possible and the handler has a **re-entry guard** | exact, segmented form |
+| Secondary error possible, no re-entry guard | plain structured: the secondary error propagates |
 
-Conditions on `Err.Number` alone don't count: they nearly always distinguish kinds of first error, and warning on them would be noise. `Erl` could be added as a signal if it turns up in practice.
+A re-entry guard is a condition in the handler (`If`, `Select Case`, loop condition, `If(…)`) that reads a local, field or property which is assigned in the handler or in the code after the resume label. For example `attempts += 1 : If attempts > 3 Then Exit Sub`, or `If cleaningUp Then Exit Sub` with `cleaningUp = True` in the cleanup. Without one, a second pass through the handler does exactly what the first did, so re-entry can't have been relied on to terminate.
 
-Suggested text: `#warning Conversion: in VB an error in the code after 'Cleanup' re-enters this handler; here it propagates to the caller`.
-
-When the warning would fire, the handler-function shape is the exact alternative (guard each cleanup statement with a call to the handler). Whether to switch to it automatically instead of warning is open, see below.
+Conditions on `Err.Number` alone don't count: they distinguish kinds of first error. No warnings are emitted in any of these cases.
 
 ## Open questions
 
-* `#warning` vs a comment: `#warning` matches the existing `#error` convention and is visible in the build, but breaks builds that treat warnings as errors.
-* On a detected re-entry guard: warn (proposed), or emit the exact handler-function shape?
-* Scope of the `Err` check: method (proposed), containing type, or project.
 * Formatting: the guards rely on `try { … } catch { }` staying on one line. If the formatter expands them, shape 2 is four lines per statement.
 
 ## Where each part will live
@@ -202,7 +210,8 @@ To be filled in as it's implemented. Intended split, all in this directory:
 |---|---|
 | Active handler per statement, handler regions, exits | `OnErrorModel` (analysis only, no C# syntax) |
 | Which statements are resume points, and where a failing condition resumes | `ResumePoints` |
-| `Err` usage, re-entry guard detection | `OnErrorModel` |
+| `Err` usage in the type, `Err` helpers in the project (cached) | `ErrUsage` |
+| Re-entry guard detection, segments | `OnErrorModel` |
 | Choosing a shape | `OnErrorShapeSelector` |
 | Guards, handler local function, hoisting | one emitter per shape, called from `MethodBodyExecutableStatementVisitor` |
 
