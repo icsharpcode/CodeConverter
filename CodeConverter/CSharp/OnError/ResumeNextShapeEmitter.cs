@@ -56,7 +56,7 @@ internal sealed class ResumeNextShapeEmitter
         visitor.OnErrorStatementConverter = new ResumeNextStatementConverter(_err, _ignoringErrorsFlag);
         visitor.DecorateStatementVisitor(wrapped => new GuardingStatementVisitor(wrapped, _guards));
         var statements = await _context.ConvertAsync(_model.Statements);
-        return DeclareFlag().Concat(WithReturnAfterGuardedReturn(statements)).ToList();
+        return DeclareFlag().Concat(MissingReturn.Add(_context, _model, _guards, statements)).ToList();
     }
 
     private IEnumerable<StatementSyntax> DeclareFlag()
@@ -65,17 +65,5 @@ internal sealed class ResumeNextShapeEmitter
         yield return SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword)),
             SyntaxFactory.SingletonSeparatedList(SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(_ignoringErrorsFlag), null,
                 SyntaxFactory.EqualsValueClause(SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
-    }
-
-    /// <summary>
-    /// VB's flow analysis says a method ending in <c>Return</c> can't reach its end, so the caller adds no final return, but a guarded <c>return</c> can fall through.
-    /// </summary>
-    private IEnumerable<StatementSyntax> WithReturnAfterGuardedReturn(List<StatementSyntax> statements)
-    {
-        if (!_guards.GuardedAReturn) return statements;
-        var exit = _context.Visitor.CreateMethodExitStatement(_model.Statements.First());
-        var endIsReachable = _context.SemanticModel.AnalyzeControlFlow(_model.Statements.First(), _model.Statements.Last()).EndPointIsReachable;
-        var endsInExit = statements.LastOrDefault() is ReturnStatementSyntax or ThrowStatementSyntax;
-        return exit is ReturnStatementSyntax { Expression: not null } && !endIsReachable && !endsInExit ? statements.Append(exit) : statements;
     }
 }

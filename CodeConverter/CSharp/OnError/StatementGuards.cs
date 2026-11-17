@@ -20,10 +20,13 @@ internal sealed class StatementGuards
     private readonly SemanticModel _semanticModel;
     private readonly Func<VBasic.VisualBasicSyntaxNode, string, string> _uniqueName;
     private readonly string _exceptionName;
+    private readonly Func<ILocalSymbol, bool> _isDeclaredAtTop;
 
+    /// <param name="isDeclaredAtTop">Locals whose declaration must come before the guards, because something declared earlier (a handler function) uses them.</param>
     public StatementGuards(ResumePoints points, GuardPolicy policy, ErrStatements err, DeclarationSplitter splitter, SemanticModel semanticModel,
-        Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueName, string exceptionName)
+        Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueName, string exceptionName, Func<ILocalSymbol, bool> isDeclaredAtTop = null)
     {
+        _isDeclaredAtTop = isDeclaredAtTop ?? (_ => false);
         _points = points;
         _policy = policy;
         _err = err;
@@ -32,6 +35,9 @@ internal sealed class StatementGuards
         _uniqueName = uniqueName;
         _exceptionName = exceptionName;
     }
+
+    /// <summary>The declarations to place before the statements that were guarded, for the locals selected by <c>isDeclaredAtTop</c>.</summary>
+    public List<StatementSyntax> TopDeclarations { get; } = new();
 
     /// <summary>Whether a <c>return</c> was put in a guard. It then doesn't end the method, so a function may need a <c>return</c> after the guard.</summary>
     public bool GuardedAReturn { get; private set; }
@@ -73,9 +79,15 @@ internal sealed class StatementGuards
             ? new HashSet<ILocalSymbol>(SymbolEqualityComparer.Default)
             : new HashSet<ILocalSymbol>(declaration.Declarators.Where(d => ThrowAnalysis.CanThrow(d, _semanticModel))
                 .SelectMany(d => d.Names).Select(n => _semanticModel.GetDeclaredSymbol(n) as ILocalSymbol).Where(l => l != null), SymbolEqualityComparer.Default);
+        var topLocals = declaration.Declarators.SelectMany(d => d.Names).Select(n => _semanticModel.GetDeclaredSymbol(n) as ILocalSymbol)
+            .Where(l => l != null && _isDeclaredAtTop(l)).ToArray();
         var declarations = new List<StatementSyntax>();
-        var inPlace = _splitter.Split(declaration, converted, guardedLocals.Contains, declarations, (_, assignment) => Try(declaration, new[] { assignment }));
-        return SyntaxFactory.List(declarations.Concat(DefaultInitializers.Add(inPlace)));
+        var inPlace = _splitter.Split(declaration, converted, l => guardedLocals.Contains(l) || topLocals.Contains(l, SymbolEqualityComparer.Default), declarations,
+            (local, assignment) => guardedLocals.Contains(local) ? Try(declaration, new[] { assignment }) : assignment);
+        var topNames = new HashSet<string>(topLocals.Select(l => l.Name), StringComparer.OrdinalIgnoreCase);
+        var isAtTop = declarations.Select(d => d is LocalDeclarationStatementSyntax l && topNames.Contains(l.Declaration.Variables[0].Identifier.ValueText)).ToArray();
+        TopDeclarations.AddRange(declarations.Where((_, i) => isAtTop[i]));
+        return SyntaxFactory.List(declarations.Where((_, i) => !isAtTop[i]).Concat(DefaultInitializers.Add(inPlace)));
     }
 
     /// <summary>

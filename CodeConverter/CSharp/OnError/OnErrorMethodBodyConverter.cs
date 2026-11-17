@@ -22,6 +22,8 @@ internal static class OnErrorMethodBodyConverter
                 return await new StructuredShapeEmitter(context, model, shape.Structured, await CreateErrStatementsAsync(context)).EmitAsync();
             case OnErrorShapeKind.ResumeNext or OnErrorShapeKind.Dynamic when ResumeNextShapeEmitter.CanEmit(model, context.SemanticModel):
                 return await new ResumeNextShapeEmitter(context, model, await CreateErrStatementsAsync(context)).EmitAsync();
+            case OnErrorShapeKind.HandlerFunction when HandlerFunctionPlanner.TryPlan(model, context.SemanticModel) is { } plan:
+                return await new HandlerFunctionShapeEmitter(context, model, plan, await CreateErrStatementsAsync(context)).EmitAsync();
             default:
                 return await PendingShapeFallback.ConvertOrNullAsync(statements, context.ConvertAsync);
         }

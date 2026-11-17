@@ -1567,7 +1567,7 @@ internal partial class TestClass
     }
 
     [Fact]
-    public async Task HandlerThatResumesNextKeepsPendingOutputAsync()
+    public async Task HandlerThatOnlyResumesNextBecomesAVoidFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System
 Class TestClass
@@ -1584,26 +1584,19 @@ internal partial class TestClass
 {
     public void Save()
     {
+
+        void Failed() { return; }
         try
         {
             Console.WriteLine(""saving"");
-            return;
         }
         catch
         {
-            ;
-#error Cannot convert ResumeStatementSyntax - see comment for details
-            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 172
-
-
-            Input:
-
-                    Resume Next
-
-             */
+            Failed();
         }
+        return;
     }
-}CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 172
+}
 ", incompatibleWithAutomatedCommentTesting: true);
     }
 }

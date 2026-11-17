@@ -1,6 +1,6 @@
 # VB → C# unstructured error handling (`On Error`, `Resume`) — design
 
-Status: the model, shape selection, `Err` usage, shape 1 (structured) and shape 2 (resume next) are implemented. Shapes 3 and 4 are recognised but not emitted yet: those methods keep the previous output (`PendingShapeFallback`: one `try`/`catch` when there's exactly one label and one `On Error GoTo`, otherwise statement by statement with `#error`). Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
+Status: the model, shape selection, `Err` usage, shapes 1 (structured), 2 (resume next), 3 (handler function) and 4 (dynamic, for resume next only) are implemented. What the emitters can't express keeps the previous output (`PendingShapeFallback`: one `try`/`catch` when there's exactly one label and one `On Error GoTo`, otherwise statement by statement with `#error`). Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
 
 Sources:
 * VB: [`LocalRewriter_UnstructuredExceptionHandling.vb`](https://github.com/dotnet/roslyn/blob/main/src/Compilers/VisualBasic/Portable/Lowering/LocalRewriter/LocalRewriter_UnstructuredExceptionHandling.vb) (the lowering, with pseudo-code of the emitted method), the `RegisterUnstructuredExceptionHandlingResumeTarget` calls in the sibling `LocalRewriter_*.vb` files (which statements are resume points), and the [On Error](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/on-error-statement) / [Resume](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/resume-statement) docs.
@@ -112,20 +112,22 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    void H() { /* handler */ }
    try { Statement(); } catch { H(); }
    ```
-   If the handler leaves in more than one way, it returns which:
+   If the handler leaves in two ways, it returns a `bool` and its name says what `true` means (`Retries`: run the statement again; `Exits`: leave the method):
 
    ```csharp
-   s3: try { Statement(); } catch { switch (H()) { case OnErrorAction.Resume: goto s3; case OnErrorAction.Exit: return; } }
+   bool FailedRetries() { /* handler */ }
+   s3: try { Statement(); } catch { if (FailedRetries()) goto s3; }
    ```
-   Labels are only emitted for `Resume`. A method that reaches the handler label without an error calls `H()` there as an ordinary statement.
+   Labels are only emitted for `Resume`. `Return expr` in the handler of a function is assigned to the return variable (or a `result` local) that the caller returns. A handler with three ways out, `Resume L` or `GoTo L` keeps the fallback, as does a method that reaches the handler label without an error (an error inside the inline run would resume after the call, not after the failing statement).
 
-4. **Dynamic.** The active handler isn't statically known. Same guards, filtered: `catch (Exception) when (resumeNext)`, with `resumeNext` (or an `int` when there are several handlers) assigned where the `On Error` statements were.
+4. **Dynamic.** The active handler isn't statically known. Same guards, filtered: `catch (Exception) when (resumeNext)`, with `resumeNext` assigned where the `On Error` statements were. Only implemented when the only handlers are resume-next and none; with handler labels (an `int` flag) the fallback stays.
 
 5. **Fallback.** Anything else keeps today's behaviour, statement-by-statement conversion plus `#error`:
    * the handler jumps to a label inside a nested block;
    * `On Error GoTo -1`;
    * a handler local function would need to capture a `ref`/`out` parameter;
-   * `On Error Resume Next` and `On Error GoTo <label>` in the same method.
+   * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
+   * (handler function) several handlers; a guard inside a guarded block (`For Each` with statements inside): the handler's own error would be caught again by the outer guard, but VB lets it propagate; a failing loop condition when the handler can leave the method (a local function can't return from the method).
 
    A flattened `switch`-in-a-loop state machine would cover these, but the output is something nobody would keep.
 
@@ -223,6 +225,7 @@ All in this directory unless stated. Planned parts are in italics.
 | `On Error` / `Resume` statements met by the method body visitor | `IOnErrorStatementConverter`, set on `MethodBodyExecutableStatementVisitor.OnErrorStatementConverter`; `StructuredStatementConverter` |
 | Shape 1 output, hoisting, `Err` calls | `StructuredShapeEmitter`, `LocalHoisting`, `ErrStatements`, `ClearErrOnReturnRewriter` |
 | Shape 2 output: guards for every resume point, `Dim` splitting, `If`/loop condition guards | `ResumeNextShapeEmitter`, `GuardingStatementVisitor` (put in front of the method body visitor with `DecorateStatementVisitor`, so each statement at any depth is guarded), `StatementGuards`, `GuardPolicy`, `DeclarationSplitter`, `DefaultInitializers`, `ResumeNextStatementConverter` |
-| Shapes 3–4 output | *one emitter each*; until then `PendingShapeFallback` |
+| Shape 3 output: which ways the handler leaves, what the function returns, what each guard's `catch` does | `HandlerFunctionPlanner`, `HandlerFunctionPlan`, `HandlerFunctionShapeEmitter`, `HandlerFunctionGuardPolicy`, `HandlerFunctionStatementConverter`, `HandlerExitRewriter`, `MissingReturn` |
+| Shape 4 output | `ResumeNextShapeEmitter` with `DynamicGuardPolicy` |
 
 Tests: conversion tests in `Tests/CSharp/StatementTests/OnErrorStatementTests.cs`, and self-verifying tests in `Tests/TestData/SelfVerifyingTests/VBToCS/OnError*.vb` that log each step and compare the VB and C# logs (the scenarios used to check this design: failing `If`/`ElseIf`/`While`/`Loop Until` conditions, `Select`, `Using`, multiple declarators, `Return`, `On Error GoTo 0`, handler with `Resume Next` inside a loop, `Resume` retry with a counter, fall-through into a handler, handler that throws, cleanup idiom, conditional `On Error`).
