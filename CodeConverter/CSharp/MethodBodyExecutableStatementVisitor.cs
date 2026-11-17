@@ -525,27 +525,35 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 return SingleStatement(SyntaxFactory.ReturnStatement());
             case VBasic.SyntaxKind.FunctionKeyword:
             case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) == true:
-                VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
-                                                             ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
-                                                             ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
-                var enclosingMethodInfo = typeContainer switch {
-                    VBSyntax.LambdaExpressionSyntax e => _semanticModel.GetSymbolInfo(e).Symbol,
-                    VBSyntax.MethodBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.SubOrFunctionStatement),
-                    VBSyntax.AccessorBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.AccessorStatement),
-                    _ => null
-                } as IMethodSymbol;
-
-                if (IsIterator) return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
-
-                if (!enclosingMethodInfo.ReturnsVoidOrAsyncTask()) {
-                    ExpressionSyntax expr = HasReturnVariable ? ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
-                    return SingleStatement(SyntaxFactory.ReturnStatement(expr));
-                }
-
-                return SingleStatement(SyntaxFactory.ReturnStatement());
+                return SingleStatement(CreateMethodExitStatement(node));
             default:
                 return SyntaxFactory.List(_perScopeState.ConvertExit(vbBlockKeywordKind));
         }
+    }
+
+    /// <summary>
+    /// What leaving the method containing <paramref name="node"/> without a <c>Return</c> statement does: for a function, return its return variable or the default value.
+    /// </summary>
+    public StatementSyntax CreateMethodExitStatement(VBasic.VisualBasicSyntaxNode node)
+    {
+        VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
+                                                     ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
+                                                     ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
+        var enclosingMethodInfo = typeContainer switch {
+            VBSyntax.LambdaExpressionSyntax e => _semanticModel.GetSymbolInfo(e).Symbol,
+            VBSyntax.MethodBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.SubOrFunctionStatement),
+            VBSyntax.AccessorBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.AccessorStatement),
+            _ => null
+        } as IMethodSymbol;
+
+        if (IsIterator) return SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement);
+
+        if (!enclosingMethodInfo.ReturnsVoidOrAsyncTask()) {
+            ExpressionSyntax expr = HasReturnVariable ? ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+            return SyntaxFactory.ReturnStatement(expr);
+        }
+
+        return SyntaxFactory.ReturnStatement();
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitRaiseEventStatement(VBSyntax.RaiseEventStatementSyntax node)
@@ -1098,7 +1106,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         }
     }
 
-    private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
+    public string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
     {
         return NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, variableNameBase);
     }
