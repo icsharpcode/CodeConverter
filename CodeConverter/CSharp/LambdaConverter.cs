@@ -201,12 +201,8 @@ internal class LambdaConverter
     {
 
         var innerMethodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, CommonConversions.TriviaConvertingExpressionVisitor, CommonConversions, CommonConversions.VisualBasicEqualityComparison, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
-        return await OnErrorMethodBodyConverter.ConvertOrNullAsync(statements, ConvertStatementsAsync) ?? await ConvertStatementsAsync(statements);
-
-        async Task<List<StatementSyntax>> ConvertStatementsAsync(IEnumerable<VBSyntax.StatementSyntax> vbStatements)
-        {
-            return (await vbStatements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(innerMethodBodyVisitor.CommentConvertingVisitor))).ToList();
-        }
+        var onErrorContext = new OnErrorConversionContext(node, _semanticModel, CommonConversions, innerMethodBodyVisitor, _extraUsingDirectives);
+        return await OnErrorMethodBodyConverter.ConvertOrNullAsync(onErrorContext, statements) ?? await onErrorContext.ConvertAsync(statements);
     }
 
     /// <summary>

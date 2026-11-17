@@ -8,6 +8,7 @@ using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ICSharpCode.CodeConverter.VB;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -33,6 +34,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public IdentifierNameSyntax ReturnVariable { get; set; }
     public bool HasReturnVariable => ReturnVariable != null;
     public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; }
+
+    /// <summary>Set by the On Error conversion for the shape it emits. Until then, On Error and Resume statements can't be converted.</summary>
+    public IOnErrorStatementConverter OnErrorStatementConverter { get; set; }
 
     private CommonConversions CommonConversions { get; }
 
@@ -74,6 +78,15 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
             .WithNodeInformation(node);
     }
+
+    public override Task<SyntaxList<StatementSyntax>> VisitOnErrorGoToStatement(VBSyntax.OnErrorGoToStatementSyntax node) =>
+        OnErrorStatementConverter is { } converter ? Task.FromResult(converter.ConvertOnError(node)) : DefaultVisit(node);
+
+    public override Task<SyntaxList<StatementSyntax>> VisitOnErrorResumeNextStatement(VBSyntax.OnErrorResumeNextStatementSyntax node) =>
+        OnErrorStatementConverter is { } converter ? Task.FromResult(converter.ConvertOnError(node)) : DefaultVisit(node);
+
+    public override Task<SyntaxList<StatementSyntax>> VisitResumeStatement(VBSyntax.ResumeStatementSyntax node) =>
+        OnErrorStatementConverter is { } converter ? Task.FromResult(converter.ConvertResume(node)) : DefaultVisit(node);
 
     public override async Task<SyntaxList<StatementSyntax>> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
     {

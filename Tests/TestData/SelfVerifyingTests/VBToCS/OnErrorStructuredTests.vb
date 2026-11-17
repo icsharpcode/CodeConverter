@@ -1,0 +1,228 @@
+Imports System
+Imports System.Collections.Generic
+Imports Xunit
+
+Public Class OnErrorStructuredTests
+    Private ReadOnly _log As New List(Of String)
+    Private _closeFailuresLeft As Integer
+
+    Private Sub Work(succeed As Boolean)
+        _log.Add("work")
+        If Not succeed Then Throw New InvalidOperationException("work failed")
+    End Sub
+
+    Private Sub Close()
+        _log.Add("close")
+        If _closeFailuresLeft > 0 Then
+            _closeFailuresLeft -= 1
+            Throw New InvalidOperationException("close failed")
+        End If
+    End Sub
+
+    Private Function Logged() As String
+        Return String.Join(", ", _log)
+    End Function
+
+    Private Sub HandlerExits(succeed As Boolean)
+        On Error GoTo Failed
+        Work(succeed)
+        _log.Add("after work")
+        Exit Sub
+Failed:
+        _log.Add("handler " & Err.Number & " " & Err.Description)
+    End Sub
+
+    <Fact>
+    Sub HandlerSeesErrAndErrIsClearedOnLeaving()
+        HandlerExits(False)
+        Assert.Equal("work, handler 5 work failed", Logged())
+        Assert.Equal(0, Err.Number)
+        _log.Clear()
+        HandlerExits(True)
+        Assert.Equal("work, after work", Logged())
+    End Sub
+
+    Private Function SelfDivisionPossible(x As Integer) As Boolean
+        On Error GoTo ErrorHandler
+        Dim i As Integer = x / x
+        Return True
+ErrorHandler:
+        Return Err.Number = 6
+    End Function
+
+    <Fact>
+    Sub HandlerReturnsValueReadFromErr()
+        Assert.True(SelfDivisionPossible(0))
+        Assert.Equal(0, Err.Number)
+        Assert.True(SelfDivisionPossible(3))
+    End Sub
+
+    Private Function LastStage(succeed As Boolean) As String
+        On Error GoTo Failed
+        Dim stage = "started"
+        Work(succeed)
+        stage = "worked"
+        Dim count As Integer = 1
+Failed:
+        Return stage & " " & count
+    End Function
+
+    <Fact>
+    Sub LocalsDeclaredInCoveredCodeAreVisibleToTheHandler()
+        Assert.Equal("started 0", LastStage(False))
+        Assert.Equal("worked 1", LastStage(True))
+    End Sub
+
+    Private Sub CleanupWithCounterGuard()
+        Dim attempts = 0
+        On Error GoTo Failed
+        Work(False)
+Cleanup:
+        _log.Add("cleanup")
+        Close()
+        _log.Add("closed")
+        Exit Sub
+Failed:
+        attempts += 1
+        _log.Add("handler " & attempts & " " & Err.Description)
+        If attempts > 3 Then Exit Sub
+        Resume Cleanup
+    End Sub
+
+    <Fact>
+    Sub CleanupErrorReentersHandlerWithCounterGuard()
+        _closeFailuresLeft = 1
+        CleanupWithCounterGuard()
+        Assert.Equal("work, handler 1 work failed, cleanup, close, handler 2 close failed, cleanup, close, closed", Logged())
+        Assert.Equal(0, Err.Number)
+    End Sub
+
+    <Fact>
+    Sub CounterGuardStopsReentry()
+        _closeFailuresLeft = 10
+        CleanupWithCounterGuard()
+        Assert.Equal("work, handler 1 work failed, cleanup, close, handler 2 close failed, cleanup, close, handler 3 close failed, cleanup, close, handler 4 close failed", Logged())
+        Assert.Equal(0, Err.Number)
+    End Sub
+
+    Private Sub CleanupWithFlagGuard()
+        Dim cleaningUp As Boolean
+        On Error GoTo Failed
+        Work(False)
+Cleanup:
+        cleaningUp = True
+        Close()
+        _log.Add("closed")
+        Exit Sub
+Failed:
+        _log.Add("handler " & cleaningUp)
+        If cleaningUp Then Exit Sub
+        Resume Cleanup
+    End Sub
+
+    <Fact>
+    Sub FlagGuardStopsReentry()
+        _closeFailuresLeft = 10
+        CleanupWithFlagGuard()
+        Assert.Equal("work, handler False, close, handler True", Logged())
+    End Sub
+
+    Private Function Retried(retry As Boolean) As Integer
+        On Error GoTo Failed
+        Work(False)
+Done:
+        _log.Add("done")
+        Retried = 1
+        Exit Function
+Failed:
+        If retry Then Resume Done
+        _log.Add("gave up " & Err.Number)
+        Retried = -1
+    End Function
+
+    <Fact>
+    Sub HandlerThatFallsOffTheEndLeavesTheMethod()
+        Assert.Equal(-1, Retried(False))
+        Assert.Equal("work, gave up 5", Logged())
+        Assert.Equal(0, Err.Number)
+        _log.Clear()
+        Assert.Equal(1, Retried(True))
+        Assert.Equal("work, done", Logged())
+    End Sub
+
+    Private Sub ReachesHandlerLabel(succeed As Boolean)
+        On Error GoTo Finish
+        Work(succeed)
+        On Error GoTo 0
+        _log.Add("worked")
+Finish:
+        _log.Add("finish " & Err.Number)
+    End Sub
+
+    <Fact>
+    Sub HandlerLabelReachedWithAndWithoutError()
+        ReachesHandlerLabel(True)
+        Assert.Equal("work, worked, finish 0", Logged())
+        _log.Clear()
+        ReachesHandlerLabel(False)
+        Assert.Equal("work, finish 5", Logged())
+    End Sub
+
+    Private Function FirstNegative(values As Integer()) As Integer
+        On Error GoTo Failed
+        For Each v In values
+            If v < 0 Then
+                Return v
+            End If
+        Next
+        Return 0
+Failed:
+        Return -100
+    End Function
+
+    <Fact>
+    Sub ReturnFromNestedBlocksInCoveredCode()
+        Assert.Equal(-2, FirstNegative({1, -2, 3}))
+        Assert.Equal(0, FirstNegative({1}))
+        Assert.Equal(-100, FirstNegative(Nothing))
+    End Sub
+
+    Private Sub GoesToReport()
+        On Error GoTo Failed
+        Work(False)
+        Exit Sub
+Report:
+        _log.Add("report " & Err.Number)
+        Exit Sub
+Failed:
+        _log.Add("failed")
+        GoTo Report
+    End Sub
+
+    <Fact>
+    Sub HandlerGoToKeepsErr()
+        GoesToReport()
+        Assert.Equal("work, failed, report 5", Logged())
+    End Sub
+
+    Private Sub CleanupWithoutHandler()
+        Dim attempts = 0
+        On Error GoTo Failed
+        Work(False)
+Cleanup:
+        On Error GoTo 0
+        _log.Add("cleanup " & Err.Number)
+        Exit Sub
+Failed:
+        attempts += 1
+        If attempts > 3 Then Exit Sub
+        _log.Add("handler " & Err.Number)
+        Resume Cleanup
+    End Sub
+
+    <Fact>
+    Sub CleanupStartingWithOnErrorGoToZero()
+        CleanupWithoutHandler()
+        Assert.Equal("work, handler 5, cleanup 0", Logged())
+    End Sub
+End Class
