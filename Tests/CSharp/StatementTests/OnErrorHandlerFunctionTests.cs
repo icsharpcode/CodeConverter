@@ -34,7 +34,7 @@ internal partial class TestClass
     {
         ProjectData.ClearProjectError();
 
-        void Failed() { Console.WriteLine(Information.Err().Description); ProjectData.ClearProjectError(); return; }
+        void Failed() { Console.WriteLine(Information.Err().Description); ProjectData.ClearProjectError(); }
         try
         {
             Console.WriteLine(""a"");
@@ -649,8 +649,7 @@ internal partial class TestClass
 
     public void Run(int v)
     {
-
-        void Failed() { return; }
+        void Failed() { }
         var selectValue = v;
         bool CaseMatches() { try { return selectValue == Boom(); } catch { Failed(); return true; } }
 

@@ -1584,8 +1584,7 @@ internal partial class TestClass
 {
     public void Save()
     {
-
-        void Failed() { return; }
+        void Failed() { }
         try
         {
             Console.WriteLine(""saving"");

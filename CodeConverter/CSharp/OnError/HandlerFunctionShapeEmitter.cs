@@ -93,6 +93,7 @@ internal sealed class HandlerFunctionShapeEmitter
         if (_plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) && StatementReachability.EndIsReachable(statements)) {
             statements.AddRange(HandlerExitRewriter.Exit(_err, exitValue));
         }
+        if (_plan.Ways == HandlerWays.ResumeNext && statements.LastOrDefault() is ReturnStatementSyntax { Expression: null }) statements.RemoveAt(statements.Count - 1);
         var returnType = _plan.Ways == HandlerWays.ResumeNext
             ? SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.VoidKeyword))
             : SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword));
