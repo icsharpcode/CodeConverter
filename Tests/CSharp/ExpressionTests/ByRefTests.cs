@@ -1424,4 +1424,58 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task StructureKeepsStatementPlacementWhereALocalFunctionWouldNeedThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        Select Case Inc(P)
+            Case 1
+                Console.WriteLine(1)
+        End Select
+        Dim a = Inc(P), b = Inc(P)
+        P += Inc(P)
+    End Sub
+End Structure", @"using System;
+
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        int argv = P;
+        switch (Inc(ref argv))
+        {
+            case 1:
+                Console.WriteLine(1);
+                break;
+        }
+        P = argv;
+        int argv1 = P;
+        int argv2 = P;
+        int a = Inc(ref argv1);
+        int b = Inc(ref argv2);
+        P = argv1;
+        P = argv2;
+        int argv3 = P;
+        P += Inc(ref argv3);
+        P = argv3;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The write-back after the block moves line comments out of order
+    }
 }
