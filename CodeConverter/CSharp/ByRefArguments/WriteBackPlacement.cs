@@ -1,0 +1,231 @@
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
+using static ICSharpCode.CodeConverter.CSharp.SemanticModelExtensions;
+
+namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+
+/// <summary>
+/// Decides whether a call's ByRef temporaries can be declared before, and written back after, the converted statement,
+/// and otherwise moves the call into a local function that writes back straight after it, as VB does.
+/// </summary>
+internal class WriteBackPlacement
+{
+    private readonly SemanticModel _semanticModel;
+    private readonly HashSet<string> _generatedNames;
+    private readonly ITypeContext _typeContext;
+
+    public WriteBackPlacement(SemanticModel semanticModel, HashSet<string> generatedNames, ITypeContext typeContext, CommonConversions commonConversions)
+    {
+        _semanticModel = semanticModel;
+        _generatedNames = generatedNames;
+        _typeContext = typeContext;
+        CommonConversions = commonConversions;
+    }
+
+    private CommonConversions CommonConversions { get; }
+
+    /// <summary>
+    /// The VB compiler actually just hoists the conditions within the same method, but that leads to the original logic looking very different.
+    /// This should be equivalent but keep closer to the look of the original source code.
+    /// See https://github.com/icsharpcode/CodeConverter/issues/310 and https://github.com/icsharpcode/CodeConverter/issues/324
+    /// </summary>
+    public async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
+    {
+        const string retVariableName = "ret";
+        var localFuncName = $"local{invocationSymbol.Name}";
+
+        var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
+
+        var statements = await _typeContext.PerScopeState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, _generatedNames, _semanticModel);
+
+        var block = SyntaxFactory.Block(
+            statements.Concat(SyntaxFactory.ReturnStatement(ValidSyntaxFactory.IdentifierName(retVariableName)).Yield())
+        );
+        var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
+
+        // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
+        var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
+        var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
+            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
+            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
+            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
+        var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
+
+        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
+        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
+
+        (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
+        {
+            var arguments = new List<ArgumentSyntax>();
+            var parameters = new List<ParameterSyntax>();
+            foreach (var p in parameterSymbols) {
+                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
+                arguments.Add(arg);
+                var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
+                parameters.Add(par.WithDefault(null));
+            }
+            return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
+        }
+    }
+
+    public bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
+    {
+        if (IsLoopCondition(invocation)) {
+            // A loop condition needs fresh argument temporaries and copy-back on every evaluation.
+            return invocationSymbol.ReducedFrom?.Parameters.FirstOrDefault() is { RefKind: not RefKind.None } &&
+                   invocation.Expression is VBSyntax.MemberAccessExpressionSyntax member &&
+                   _semanticModel.GetRefConversionForExpression(member.Expression) != RefConversion.Inline ||
+                   invocation.ArgumentList?.Arguments.Any(a =>
+                       CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) != RefConversion.Inline) == true ||
+                   _semanticModel.GetOperation(invocation) is IInvocationOperation operation && operation.Arguments.Any(a =>
+                       a.ArgumentKind == ArgumentKind.DefaultValue && a.Parameter.RefKind != RefKind.None);
+        }
+
+        if (invocation.ArgumentList == null) return false;
+        var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
+        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation) && !AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
+        if (definitelyExecutedAfterPrevious && nextStatementDefinitelyExecuted) return false;
+        var possibleInline = definitelyExecutedAfterPrevious ? RefConversion.PreAssigment : RefConversion.Inline;
+        return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(possibleInline, invocation, invocationSymbol, a));
+
+        bool RequiresLocalFunction(RefConversion possibleInline, VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
+        {
+            var refConversion = CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out string _, out _);
+            if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
+            if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
+            var argExpression = sas.Expression.SkipIntoParens();
+            if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
+            return !_semanticModel.GetConstantValue(argExpression).HasValue;
+        }
+    }
+
+    /// <summary>
+    /// VB writes back straight after the call, before the enclosing assignment stores its result.
+    /// A write-back emitted after the assignment statement would overwrite the assigned target (<c>h.P = F(h.P)</c>),
+    /// or write to a different place if the assignment changes something the write-back target reads (<c>x = F(h.Items(x))</c>, <c>h = F(h.P)</c>).
+    /// Other assignments keep the write-back after the statement.
+    /// </summary>
+    private bool AssignmentChangesWhatIsWrittenBack(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
+    {
+        if (invocation.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax) is not VBSyntax.AssignmentStatementSyntax assignment ||
+            !assignment.Right.Span.Contains(invocation.Span)) {
+            return false;
+        }
+
+        var assignedSymbol = _semanticModel.GetSymbolInfo(assignment.Left).Symbol ??
+                             (assignment.Left is VBSyntax.InvocationExpressionSyntax { Expression: var indexed } ? _semanticModel.GetSymbolInfo(indexed).Symbol : null);
+        var writtenBackExpressions = invocation.ArgumentList.Arguments.OfType<VBSyntax.SimpleArgumentSyntax>()
+            .Where(a => CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) == RefConversion.PreAndPostAssignment)
+            .Select(a => a.Expression);
+        return writtenBackExpressions.Any(e => assignedSymbol is null ||
+            e.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().Any(n => SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(n).Symbol, assignedSymbol)));
+    }
+
+    public static bool IsLoopCondition(SyntaxNode node)
+    {
+        var containingStatement = node.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax);
+        return containingStatement is VBSyntax.WhileStatementSyntax or VBSyntax.DoStatementSyntax or VBSyntax.LoopStatementSyntax;
+    }
+
+    /// <summary>
+    /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
+    /// </summary>
+    private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
+    {
+        SyntaxNode parent = invocation;
+        while (true) {
+            parent = parent.Parent;
+            switch (parent) {
+                case VBSyntax.ParenthesizedExpressionSyntax _:
+                    continue;
+                case VBSyntax.BinaryExpressionSyntax binaryExpression:
+                    if (binaryExpression.Left == invocation) continue;
+                    else return false;
+                case VBSyntax.ArgumentSyntax argumentSyntax:
+                    // Being the leftmost invocation of an unqualified method call ensures no other code is executed. Could add other cases here, such as a method call on a local variable name, or "this.". A method call on a property is not acceptable.
+                    if (argumentSyntax.Parent.Parent is VBSyntax.InvocationExpressionSyntax parentInvocation && parentInvocation.ArgumentList.Arguments.First() == argumentSyntax && FirstArgDefinitelyEvaluated(parentInvocation)) continue;
+                    else return false;
+                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
+                    if (declarators.First() == declarator) continue;
+                    else return false;
+                case VBSyntax.ElseIfStatementSyntax _:
+                case VBSyntax.ExpressionSyntax _:
+                    return false;
+                case VBSyntax.StatementSyntax _:
+                    return true;
+            }
+        }
+    }
+
+    private bool FirstArgDefinitelyEvaluated(VBSyntax.InvocationExpressionSyntax parentInvocation) =>
+        parentInvocation.Expression.SkipIntoParens() switch {
+            VBSyntax.IdentifierNameSyntax _ => true,
+            VBSyntax.MemberAccessExpressionSyntax maes => maes.Expression is { } exp && !MayThrow(exp),
+            _ => true
+        };
+
+    /// <summary>
+    /// Safe overapproximation of whether an expression may throw.
+    /// </summary>
+    private bool MayThrow(VBSyntax.ExpressionSyntax expression)
+    {
+        expression = expression.SkipIntoParens();
+        if (expression is VBSyntax.InstanceExpressionSyntax) return false;
+        var symbol = _semanticModel.GetSymbolInfo(expression).Symbol;
+        return !symbol.IsKind(SymbolKind.Local) && !symbol.IsKind(SymbolKind.Field);
+    }
+
+    /// <summary>
+    /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions.
+    /// A block's header statement is followed by its body, so a write-back placed after the converted block would run too late
+    /// (or, for a later Case clause, run when the clause was never evaluated).
+    /// </summary>
+    private static bool NextStatementDefinitelyExecutedAfter(VBSyntax.InvocationExpressionSyntax invocation)
+    {
+        SyntaxNode parent = invocation;
+        while (true) {
+            parent = parent.Parent;
+            switch (parent) {
+                case VBSyntax.ParenthesizedExpressionSyntax _:
+                    continue;
+                case VBSyntax.BinaryExpressionSyntax binaryExpression:
+                    if (binaryExpression.Right == invocation) continue;
+                    else return false;
+                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
+                    if (declarators.Last() == declarator) continue;
+                    else return false;
+                case VBSyntax.IfStatementSyntax _:
+                case VBSyntax.ElseIfStatementSyntax _:
+                case VBSyntax.SingleLineIfStatementSyntax _:
+                case VBSyntax.SelectStatementSyntax _:
+                case VBSyntax.CaseStatementSyntax _:
+                case VBSyntax.ForStatementSyntax _:
+                case VBSyntax.ForEachStatementSyntax _:
+                case VBSyntax.UsingStatementSyntax _:
+                case VBSyntax.SyncLockStatementSyntax _:
+                case VBSyntax.WithStatementSyntax _:
+                case VBSyntax.CatchStatementSyntax _:
+                    return false;
+                case VBSyntax.ExpressionSyntax _:
+                case VBSyntax.StatementSyntax _:
+                    return true;
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// VB evaluates each declarator of <c>Dim a = F(p.X), b = F(p.X)</c> in turn, writing back before the next one starts,
+    /// but temporaries and write-backs are hoisted around the whole converted declaration.
+    /// A Static local's declarators become fields, where a local function couldn't be called, so those keep the old placement.
+    /// </summary>
+    private static bool IsInLocalDeclarationWithMultipleDeclarators(VBSyntax.VariableDeclaratorSyntax declarator, out SeparatedSyntaxList<VBSyntax.VariableDeclaratorSyntax> declarators)
+    {
+        declarators = declarator.Parent is VBSyntax.LocalDeclarationStatementSyntax localDeclaration &&
+                      !localDeclaration.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.StaticKeyword))
+            ? localDeclaration.Declarators
+            : default;
+        return declarators.Count > 1;
+    }
+}
