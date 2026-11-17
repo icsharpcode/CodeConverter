@@ -15,7 +15,7 @@ internal static class StructuredPlanner
     public static StructuredPlan TryPlan(OnErrorModel model, SemanticModel semanticModel)
     {
         var onErrorGoTos = model.OnErrorStatements.Where(s => s.IsKind(VBasicSyntaxKind.OnErrorGoToLabelStatement)).ToArray();
-        if (onErrorGoTos.Length != 1 || model.Handlers.Count != 1) return null;
+        if (onErrorGoTos.Length != 1) return null;
         var handler = model.Handlers.Single();
         var onErrorIndex = model.MethodLevelIndexOf(onErrorGoTos.Single());
         if (handler.LabelIndex < onErrorIndex) return null;
