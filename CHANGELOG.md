@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Don't emit Me on the first parameter of an extension method - [#1118](https://github.com/icsharpcode/CodeConverter/issues/1118)
 
 ## [10.0.2] - 2026-11-08
 
