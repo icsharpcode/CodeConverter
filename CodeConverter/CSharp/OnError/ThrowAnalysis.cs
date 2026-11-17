@@ -1,23 +1,75 @@
+using Microsoft.CodeAnalysis.Operations;
 namespace ICSharpCode.CodeConverter.CSharp.OnError;
 
 /// <summary>
-/// A conservative "can this statement raise an error" check, used to tell when a secondary error is impossible.
+/// A conservative "can this statement or expression raise an error" check, used to tell when a secondary error is impossible,
+/// and which resume points need a guard when errors are being ignored.
 /// </summary>
 /// <remarks>
 /// Only exits, jumps, labels and copies of constants, locals and parameters without a conversion are treated as safe.
 /// Compound assignment isn't: <c>x += 1</c> can overflow.
+/// Conditions and loop bounds are safe when they only compare or combine constants, locals and parameters of primitive types.
 /// </remarks>
 internal static class ThrowAnalysis
 {
     public static bool CanThrow(VBSyntax.StatementSyntax statement, SemanticModel semanticModel) => statement switch {
-        VBSyntax.LabelStatementSyntax or VBSyntax.GoToStatementSyntax or VBSyntax.ResumeStatementSyntax or VBSyntax.ExitStatementSyntax => false,
+        VBSyntax.LabelStatementSyntax or VBSyntax.GoToStatementSyntax or VBSyntax.ResumeStatementSyntax or VBSyntax.ExitStatementSyntax or
+            VBSyntax.ContinueStatementSyntax or VBSyntax.StopOrEndStatementSyntax => false,
         VBSyntax.ReturnStatementSyntax r => r.Expression != null && !IsSafeValue(r.Expression, semanticModel),
         VBSyntax.AssignmentStatementSyntax a when a.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) =>
             !IsLocal(a.Left, semanticModel) || !IsSafeValue(a.Right, semanticModel),
-        VBSyntax.LocalDeclarationStatementSyntax d => d.Declarators.Any(v => v.AsClause is VBSyntax.AsNewClauseSyntax || v.Names.Any(n => n.ArrayBounds != null) ||
-                                                                           v.Initializer != null && !IsSafeValue(v.Initializer.Value, semanticModel)),
+        VBSyntax.LocalDeclarationStatementSyntax d => d.Declarators.Any(v => CanThrow(v, semanticModel)),
         _ => true
     };
+
+    public static bool CanThrow(VBSyntax.VariableDeclaratorSyntax declarator, SemanticModel semanticModel) =>
+        declarator.AsClause is VBSyntax.AsNewClauseSyntax || declarator.Names.Any(n => n.ArrayBounds != null) ||
+        declarator.Initializer != null && !IsSafeValue(declarator.Initializer.Value, semanticModel);
+
+    /// <summary>A condition, loop bound or similar: safe when no operation in it can fail, whichever way it's converted.</summary>
+    public static bool CanThrow(VBSyntax.ExpressionSyntax expression, SemanticModel semanticModel) =>
+        !IsSafeValue(expression, semanticModel) && !IsSafeCombination(expression, semanticModel);
+
+    /// <summary>Comparisons and logical operators over safe primitive operands. Strings and objects are excluded: they bind to runtime helpers.</summary>
+    private static bool IsSafeCombination(VBSyntax.ExpressionSyntax expression, SemanticModel semanticModel) => expression switch {
+        VBSyntax.ParenthesizedExpressionSyntax p => IsSafeCombination(p.Expression, semanticModel) || IsSafeValue(p.Expression, semanticModel),
+        VBSyntax.BinaryExpressionSyntax b when SafeBinaryKinds.Contains(VBasic.VisualBasicExtensions.Kind(b)) =>
+            IsSafeOperand(b.Left, semanticModel) && IsSafeOperand(b.Right, semanticModel),
+        VBSyntax.UnaryExpressionSyntax u when u.IsKind(VBasic.SyntaxKind.NotExpression) => IsSafeOperand(u.Operand, semanticModel),
+        _ => false
+    };
+
+    private static readonly HashSet<VBasic.SyntaxKind> SafeBinaryKinds = new() {
+        VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression, VBasic.SyntaxKind.LessThanExpression,
+        VBasic.SyntaxKind.LessThanOrEqualExpression, VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression,
+        VBasic.SyntaxKind.AndExpression, VBasic.SyntaxKind.OrExpression, VBasic.SyntaxKind.ExclusiveOrExpression,
+        VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression
+    };
+
+    private static bool IsSafeOperand(VBSyntax.ExpressionSyntax operand, SemanticModel semanticModel)
+    {
+        if (!IsPrimitiveNonString(semanticModel.GetTypeInfo(operand).Type)) return false;
+        return semanticModel.GetConstantValue(operand).HasValue ||
+               semanticModel.GetSymbolInfo(operand).Symbol is ILocalSymbol or IParameterSymbol ||
+               IsSafeCombination(operand, semanticModel);
+    }
+
+    private static bool IsPrimitiveNonString(ITypeSymbol type) =>
+        type?.SpecialType is SpecialType.System_Boolean or SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_Int16 or SpecialType.System_UInt16 or
+            SpecialType.System_Int32 or SpecialType.System_UInt32 or SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_Single or
+            SpecialType.System_Double or SpecialType.System_Decimal or SpecialType.System_Char;
+
+    /// <summary>
+    /// Whether every operand of a <c>For</c> header is a constant or variable of the control variable's own type: a different type needs a conversion that can overflow.
+    /// </summary>
+    public static bool CanThrow(VBSyntax.ForStatementSyntax header, SemanticModel semanticModel)
+    {
+        var control = semanticModel.GetSymbolInfo(header.ControlVariable).Symbol ?? (semanticModel.GetOperation(header.ControlVariable) as IVariableDeclaratorOperation)?.Symbol;
+        var controlType = (control as ILocalSymbol)?.Type;
+        var bounds = new[] { header.FromValue, header.ToValue, header.StepClause?.StepValue }.Where(e => e != null);
+        return !IsPrimitiveNonString(controlType) || bounds.Any(b => CanThrow(b, semanticModel) ||
+            !semanticModel.GetConstantValue(b).HasValue && !SymbolEqualityComparer.Default.Equals(semanticModel.GetTypeInfo(b).Type, controlType));
+    }
 
     private static bool IsLocal(VBSyntax.ExpressionSyntax expression, SemanticModel semanticModel) =>
         semanticModel.GetSymbolInfo(expression).Symbol is ILocalSymbol;

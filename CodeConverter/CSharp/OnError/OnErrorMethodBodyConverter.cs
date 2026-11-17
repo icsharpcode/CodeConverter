@@ -19,10 +19,14 @@ internal static class OnErrorMethodBodyConverter
             case OnErrorShapeKind.None:
                 return null;
             case OnErrorShapeKind.Structured:
-                var err = new ErrStatements(await context.CommonConversions.ErrUsage.IsMaintainedInAsync(context.ContainingType), context.ExtraUsingDirectives);
-                return await new StructuredShapeEmitter(context, model, shape.Structured, err).EmitAsync();
+                return await new StructuredShapeEmitter(context, model, shape.Structured, await CreateErrStatementsAsync(context)).EmitAsync();
+            case OnErrorShapeKind.ResumeNext or OnErrorShapeKind.Dynamic when ResumeNextShapeEmitter.CanEmit(model, context.SemanticModel):
+                return await new ResumeNextShapeEmitter(context, model, await CreateErrStatementsAsync(context)).EmitAsync();
             default:
                 return await PendingShapeFallback.ConvertOrNullAsync(statements, context.ConvertAsync);
         }
     }
+
+    private static async Task<ErrStatements> CreateErrStatementsAsync(OnErrorConversionContext context) =>
+        new(await context.CommonConversions.ErrUsage.IsMaintainedInAsync(context.ContainingType), context.ExtraUsingDirectives);
 }

@@ -922,11 +922,6 @@ Failed:
         Console.WriteLine(""failed"")
     End Sub
 
-    Sub ResumeNextEverywhere()
-        On Error Resume Next
-        Console.WriteLine(""work"")
-    End Sub
-
     Sub ResetsHandlerState()
         On Error GoTo Failed
         Console.WriteLine(""work"")
@@ -1015,20 +1010,6 @@ internal partial class TestClass
         Console.WriteLine(""failed"");
     }
 
-    public void ResumeNextEverywhere()
-    {
-        ;
-#error Cannot convert OnErrorResumeNextStatementSyntax - see comment for details
-        /* Cannot convert OnErrorResumeNextStatementSyntax, CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 310
-
-
-                Input:
-                        On Error Resume Next
-
-                 */
-        Console.WriteLine(""work"");
-    }
-
     public void ResetsHandlerState()
     {
         try
@@ -1040,7 +1021,7 @@ internal partial class TestClass
         {
             ;
 #error Cannot convert OnErrorGoToStatementSyntax - see comment for details
-            /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToMinusOneStatement not implemented, please report this issue in 'On Error GoTo -1' at character 540
+            /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToMinusOneStatement not implemented, please report this issue in 'On Error GoTo -1' at character 414
 
 
                         Input:
@@ -1056,7 +1037,7 @@ internal partial class TestClass
     {
         ;
 #error Cannot convert OnErrorGoToStatementSyntax - see comment for details
-        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 683
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 557
 
 
                 Input:
@@ -1084,7 +1065,7 @@ internal partial class TestClass
         {
             ;
 #error Cannot convert ResumeStatementSyntax - see comment for details
-            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 1004
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 878
 
 
             Input:
@@ -1107,7 +1088,7 @@ internal partial class TestClass
         ;
         ;
 #error Cannot convert OnErrorGoToStatementSyntax - see comment for details
-        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1173
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1047
 
 
                 Input:
@@ -1122,7 +1103,7 @@ internal partial class TestClass
     {
         ;
 #error Cannot convert OnErrorGoToStatementSyntax - see comment for details
-        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1305
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1179
 
 
                 Input:
@@ -1138,7 +1119,7 @@ internal partial class TestClass
         ;
         ;
 #error Cannot convert ResumeStatementSyntax - see comment for details
-        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Done' at character 1449
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Done' at character 1323
 
 
                 Input:
@@ -1168,7 +1149,7 @@ internal partial class TestClass
     {
         ;
 #error Cannot convert OnErrorGoToStatementSyntax - see comment for details
-    /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1788
+    /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1662
 
 
     Input:
@@ -1189,7 +1170,7 @@ internal partial class TestClass
         ;
         ;
 #error Cannot convert ResumeStatementSyntax - see comment for details
-        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 1946
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 1820
 
 
                 Input:
@@ -1198,39 +1179,36 @@ internal partial class TestClass
 
                  */
     }
-}----- Exception 1 of 11 -----
+}----- Exception 1 of 10 -----
 
 1 target compilation errors:
 CS0159: No such label 'Failed' within the scope of the goto statement
------ Exception 2 of 11 -----
+----- Exception 2 of 10 -----
 CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 106
 
------ Exception 3 of 11 -----
-CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 310
+----- Exception 3 of 10 -----
+CONVERSION ERROR: Conversion for OnErrorGoToMinusOneStatement not implemented, please report this issue in 'On Error GoTo -1' at character 414
 
------ Exception 4 of 11 -----
-CONVERSION ERROR: Conversion for OnErrorGoToMinusOneStatement not implemented, please report this issue in 'On Error GoTo -1' at character 540
+----- Exception 4 of 10 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 557
 
------ Exception 5 of 11 -----
-CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 683
+----- Exception 5 of 10 -----
+CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 878
 
------ Exception 6 of 11 -----
-CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 1004
+----- Exception 6 of 10 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1047
 
------ Exception 7 of 11 -----
-CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1173
+----- Exception 7 of 10 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1179
 
------ Exception 8 of 11 -----
-CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1305
+----- Exception 8 of 10 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Done' at character 1323
 
------ Exception 9 of 11 -----
-CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Done' at character 1449
+----- Exception 9 of 10 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1662
 
------ Exception 10 of 11 -----
-CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 1788
-
------ Exception 11 of 11 -----
-CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 1946", incompatibleWithAutomatedCommentTesting: true);
+----- Exception 10 of 10 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 1820", incompatibleWithAutomatedCommentTesting: true);
     }
 
     [Fact]

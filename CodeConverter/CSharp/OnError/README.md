@@ -1,6 +1,6 @@
 # VB → C# unstructured error handling (`On Error`, `Resume`) — design
 
-Status: the model, shape selection, `Err` usage and shape 1 (structured) are implemented. Shapes 2–4 are recognised but not emitted yet: those methods keep the previous output (`PendingShapeFallback`: one `try`/`catch` when there's exactly one label and one `On Error GoTo`, otherwise statement by statement with `#error`). Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
+Status: the model, shape selection, `Err` usage, shape 1 (structured) and shape 2 (resume next) are implemented. Shapes 3 and 4 are recognised but not emitted yet: those methods keep the previous output (`PendingShapeFallback`: one `try`/`catch` when there's exactly one label and one `On Error GoTo`, otherwise statement by statement with `#error`). Tracks [icsharpcode/CodeConverter#426](https://github.com/icsharpcode/CodeConverter/issues/426).
 
 Sources:
 * VB: [`LocalRewriter_UnstructuredExceptionHandling.vb`](https://github.com/dotnet/roslyn/blob/main/src/Compilers/VisualBasic/Portable/Lowering/LocalRewriter/LocalRewriter_UnstructuredExceptionHandling.vb) (the lowering, with pseudo-code of the emitted method), the `RegisterUnstructuredExceptionHandlingResumeTarget` calls in the sibling `LocalRewriter_*.vb` files (which statements are resume points), and the [On Error](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/on-error-statement) / [Resume](https://learn.microsoft.com/dotnet/visual-basic/language-reference/statements/resume-statement) docs.
@@ -102,7 +102,9 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * `If` condition: `bool cond = true; try { cond = …; } catch { }` then `if (cond)`. `ElseIf` chains become nested `if`/`else` so each condition has somewhere to go.
    * Loop condition: a local function, so the loop stays a loop: `bool Cond() { try { return …; } catch { return true; } }` and `while (Cond())`. Bottom-tested conditions return whichever value leaves the loop.
    * `Using`, `SyncLock`, `Select Case` and `For`/`For Each`: one guard around the whole statement, with the statements inside guarded individually where VB makes them resume points (not inside `Using`/`SyncLock`). A failing header skips the block.
-   * `Case` expressions: *not spiked*. Only matters when the case expressions aren't constants, where the converter already emits `when` clauses or an `if` chain.
+   * `Case` expressions: *not spiked*. Only matters when the case expressions aren't constants, where the converter already emits `when` clauses or an `if` chain. A `Select` is only guarded when its expression or a case expression can fail, and then a failing `Case` expression skips the whole block rather than resuming in that case.
+   * A statement is only guarded when it can fail (`ThrowAnalysis`): constants, locals and parameters of primitive types, their comparisons, `Exit`, `GoTo` and labels aren't. Every `Dim` gets `= default` so that skipping its assignment still compiles.
+   * `With` is guarded like `Select`, and loops whose condition can fail and which read a `ref`/`out` parameter aren't expressible (a local function can't capture it): the method keeps the fallback.
 
 3. **Handler function.** `On Error GoTo H` where the handler resumes into the covered statements. The handler becomes a local function and each guard calls it:
 
@@ -122,7 +124,8 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
 5. **Fallback.** Anything else keeps today's behaviour, statement-by-statement conversion plus `#error`:
    * the handler jumps to a label inside a nested block;
    * `On Error GoTo -1`;
-   * a handler local function would need to capture a `ref`/`out` parameter.
+   * a handler local function would need to capture a `ref`/`out` parameter;
+   * `On Error Resume Next` and `On Error GoTo <label>` in the same method.
 
    A flattened `switch`-in-a-loop state machine would cover these, but the output is something nobody would keep.
 
@@ -212,13 +215,14 @@ All in this directory unless stated. Planned parts are in italics.
 |---|---|
 | Entry point, one emitter per shape | `OnErrorMethodBodyConverter`, called from `LambdaConverter.ConvertMethodBodyStatementsAsync` |
 | Active handler per statement, dynamic detection, handler regions and exits | `OnErrorModel`, `ActiveHandler`, `HandlerRegion`, `HandlerExit` (analysis only, no C# syntax) |
-| Which statements are resume points, and where a failing condition resumes | *`ResumePoints`* |
+| Which statements are resume points, and where a failing condition resumes | `ResumePoints`, `ThrowAnalysis` |
 | `Err` usage in the type, `Err` helpers in the project (one cached pass per project) | `ErrUsage`, created in `VBToCSProjectContentsConverter`, reached through `CommonConversions.ErrUsage` |
 | Choosing a shape | `OnErrorShapeSelector` |
 | Structured layout, segments | `StructuredPlanner`, `StructuredPlan` |
 | Secondary errors: can the resumed-to code throw, re-entry guard | `ThrowAnalysis`, `ReEntryGuard` |
 | `On Error` / `Resume` statements met by the method body visitor | `IOnErrorStatementConverter`, set on `MethodBodyExecutableStatementVisitor.OnErrorStatementConverter`; `StructuredStatementConverter` |
 | Shape 1 output, hoisting, `Err` calls | `StructuredShapeEmitter`, `LocalHoisting`, `ErrStatements`, `ClearErrOnReturnRewriter` |
-| Shapes 2–4 output | *one emitter each*; until then `PendingShapeFallback` |
+| Shape 2 output: guards for every resume point, `Dim` splitting, `If`/loop condition guards | `ResumeNextShapeEmitter`, `GuardingStatementVisitor` (put in front of the method body visitor with `DecorateStatementVisitor`, so each statement at any depth is guarded), `StatementGuards`, `GuardPolicy`, `DeclarationSplitter`, `DefaultInitializers`, `ResumeNextStatementConverter` |
+| Shapes 3–4 output | *one emitter each*; until then `PendingShapeFallback` |
 
 Tests: conversion tests in `Tests/CSharp/StatementTests/OnErrorStatementTests.cs`, and self-verifying tests in `Tests/TestData/SelfVerifyingTests/VBToCS/OnError*.vb` that log each step and compare the VB and C# logs (the scenarios used to check this design: failing `If`/`ElseIf`/`While`/`Loop Until` conditions, `Select`, `Using`, multiple declarators, `Return`, `On Error GoTo 0`, handler with `Resume Next` inside a loop, `Resume` retry with a counter, fall-through into a handler, handler that throws, cleanup idiom, conditional `On Error`).
