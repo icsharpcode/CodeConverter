@@ -112,10 +112,9 @@ internal class ByRefTargetTemporaries
         { ConstantValue.HasValue: true } => true,
         IInstanceReferenceOperation => true,
         IParenthesizedOperation p => IsReusable(p.Operand),
-        IConversionOperation { OperatorMethod: null } c => IsReusable(c.Operand),
-        // An intrinsic operator gives the same result (or exception) from the same operands. On Object it's late bound, which can run user code.
-        IUnaryOperation { OperatorMethod: null } u when !IsObject(u.Operand) => IsReusable(u.Operand),
-        IBinaryOperation { OperatorMethod: null } b when !IsObject(b.LeftOperand) && !IsObject(b.RightOperand) =>
+        IConversionOperation { OperatorMethod: null } c when IsRepeatable(c) => IsReusable(c.Operand),
+        IUnaryOperation { OperatorMethod: null } u when IsCultureFree(u.Type) && IsCultureFree(u.Operand.Type) => IsReusable(u.Operand),
+        IBinaryOperation { OperatorMethod: null } b when IsCultureFree(b.Type) && IsCultureFree(b.LeftOperand.Type) && IsCultureFree(b.RightOperand.Type) =>
             IsReusable(b.LeftOperand) && IsReusable(b.RightOperand),
         // A Static local lives as long as its method's object (or type), so another call of the method can change it
         ILocalReferenceOperation l => !l.Local.IsStatic && !_writtenSymbols.Value.Contains(l.Local),
@@ -128,7 +127,25 @@ internal class ByRefTargetTemporaries
     /// <returns>The call (or object creation, or event raise) that the ByRef target is an argument of.</returns>
     private IOperation GetCall() => _semanticModel.GetOperation(_vbTarget)?.Parent is IArgumentOperation { Parent: var call } ? call : null;
 
-    private static bool IsObject(IOperation operand) => operand.Type is null or { SpecialType: SpecialType.System_Object };
+    /// <summary>
+    /// An intrinsic operator or conversion between these types gives the same result (or exception) from the same operands.
+    /// One involving String or Date can read the current culture, which the call could change, and one on Object is late bound, which can run user code.
+    /// </summary>
+    private static bool IsCultureFree(ITypeSymbol type)
+    {
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable) type = nullable.TypeArguments[0];
+        return type is { TypeKind: TypeKind.Enum } or { SpecialType: SpecialType.System_Boolean or SpecialType.System_Char or SpecialType.System_SByte
+            or SpecialType.System_Byte or SpecialType.System_Int16 or SpecialType.System_UInt16 or SpecialType.System_Int32 or SpecialType.System_UInt32
+            or SpecialType.System_Int64 or SpecialType.System_UInt64 or SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal };
+    }
+
+    /// <summary>
+    /// Besides conversions between culture-free types, a widening reference or boxing conversion only changes the static type.
+    /// </summary>
+    private static bool IsRepeatable(IConversionOperation conversion) =>
+        conversion.Conversion.IsIdentity ||
+        conversion.Conversion.IsImplicit && (conversion.Conversion.IsReference || conversion.Operand.Type is { IsValueType: true } && conversion.Type is { IsReferenceType: true }) ||
+        IsCultureFree(conversion.Operand.Type) && IsCultureFree(conversion.Type);
 
     private CSSyntax.ExpressionSyntax HoistValue(CSSyntax.ExpressionSyntax value) =>
         _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", value, ValidSyntaxFactory.VarType)).IdentifierName;

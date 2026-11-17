@@ -188,6 +188,26 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub NumberToStringIndexUsesTheCultureBeforeTheCall()
+        Dim original = Threading.Thread.CurrentThread.CurrentCulture
+        Try
+            Threading.Thread.CurrentThread.CurrentCulture = Globalization.CultureInfo.InvariantCulture
+            Dim db As New Db(_log)
+            Dim d As Double = 1.5
+            SetTwoValuesInGermanCulture(db.Qs(d & ""), db.Qs(CStr(d)))
+            Assert.Equal("get 1.5;get 1.5;set 1.5=changed;set 1.5=changed", LogText())
+        Finally
+            Threading.Thread.CurrentThread.CurrentCulture = original
+        End Try
+    End Sub
+
+    Private Shared Sub SetTwoValuesInGermanCulture(ByRef first As String, ByRef second As String)
+        Threading.Thread.CurrentThread.CurrentCulture = New Globalization.CultureInfo("de-DE")
+        first = "changed"
+        second = "changed"
+    End Sub
+
+    <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
         SetValue(Db.SharedQr(NextIndex()))
@@ -436,6 +456,16 @@ Public Class ByRefParameterizedPropertyTests
             End Get
             Set(value As String)
                 _log.Add("set " & a & "," & b & "=" & value)
+            End Set
+        End Property
+
+        Public Property Qs(key As String) As String
+            Get
+                _log.Add("get " & key)
+                Return Nothing
+            End Get
+            Set(value As String)
+                _log.Add("set " & key & "=" & value)
             End Set
         End Property
 
