@@ -37,6 +37,8 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
     {
         field = field.OriginalDefinition;
         if (field.IsConst || field.IsReadOnly) return false;
+        // An auto-property's backing field (or a WithEvents variable's) is written through the property, which this doesn't follow
+        if (field.AssociatedSymbol is IPropertySymbol) return true;
         if (CanBeWrittenOutsideCompilation(field) || CanBeMutatedThroughMembers(field)) return true;
         return _fieldsWrittenAfterConstruction.Value.Contains(field);
     }

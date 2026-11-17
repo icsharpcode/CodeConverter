@@ -177,6 +177,16 @@ Public Class ByRefParameterizedPropertyTests
                                         End Sub)
     End Sub
 
+    Private Property Idx As Integer = 1
+
+    <Fact>
+    Public Sub AutoPropertyBackingFieldIndexChangedThroughThePropertyUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        SetValueAndRun(db.Qr(_Idx, 1), Sub() Idx = 9)
+        Assert.Equal(9, Idx)
+        Assert.Equal("get 1,1;set 1,1=changed", LogText())
+    End Sub
+
     <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
