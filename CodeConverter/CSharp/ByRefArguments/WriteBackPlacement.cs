@@ -86,9 +86,10 @@ internal class WriteBackPlacement
         if (invocation.ArgumentList == null) return false;
         var localFunctionCanUseThis = !IsInStructAndUsesThis(invocation);
         var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation, localFunctionCanUseThis);
-        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation, localFunctionCanUseThis) &&
-                                              !(localFunctionCanUseThis && AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol));
+        var assignmentChangesWhatIsWrittenBack = localFunctionCanUseThis && AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
+        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation, localFunctionCanUseThis) && !assignmentChangesWhatIsWrittenBack;
         if (definitelyExecutedAfterPrevious && nextStatementDefinitelyExecuted) return false;
+        if (assignmentChangesWhatIsWrittenBack && GetWrittenBackReceiver(invocation, invocationSymbol) is not null) return true;
         var possibleInline = definitelyExecutedAfterPrevious ? RefConversion.PreAssigment : RefConversion.Inline;
         return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(possibleInline, invocation, invocationSymbol, a));
 
@@ -132,6 +133,16 @@ internal class WriteBackPlacement
             .Any(i => i.ArgumentList != null && _semanticModel.GetSymbolInfo(i).Symbol is IMethodSymbol method && WritesBackSomethingReading(i, method, assignedSymbol));
     }
 
+    /// <summary>
+    /// The receiver of an extension method whose first parameter is ByRef, e.g. <c>h.P</c> in <c>h.P.Ext()</c>, is written back like an argument.
+    /// </summary>
+    private VBSyntax.ExpressionSyntax GetWrittenBackReceiver(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol) =>
+        invocationSymbol.ReducedFrom?.Parameters.FirstOrDefault() is { RefKind: not RefKind.None } &&
+        invocation.Expression is VBSyntax.MemberAccessExpressionSyntax { Expression: { } receiver } &&
+        _semanticModel.GetRefConversionForExpression(receiver) == RefConversion.PreAndPostAssignment
+            ? receiver
+            : null;
+
     private static bool IsSimpleTarget(VBSyntax.AssignmentStatementSyntax assignment) =>
         assignment.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) &&
         assignment.Left.SkipIntoParens() is VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax { Expression: VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax };
@@ -144,7 +155,8 @@ internal class WriteBackPlacement
     {
         var writtenBackExpressions = invocation.ArgumentList.Arguments.OfType<VBSyntax.SimpleArgumentSyntax>()
             .Where(a => CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) == RefConversion.PreAndPostAssignment)
-            .Select(a => a.Expression);
+            .Select(a => a.Expression)
+            .Concat(GetWrittenBackReceiver(invocation, invocationSymbol) is { } receiver ? new[] { receiver } : Array.Empty<VBSyntax.ExpressionSyntax>());
         return writtenBackExpressions.Any(e => assignedSymbol is null ||
             e.DescendantNodesAndSelf().OfType<VBSyntax.ExpressionSyntax>().Any(n => SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(n).Symbol, assignedSymbol)));
     }

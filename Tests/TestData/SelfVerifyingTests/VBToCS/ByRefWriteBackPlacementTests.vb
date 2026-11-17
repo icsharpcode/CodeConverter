@@ -1,5 +1,6 @@
 Imports System
 Imports System.Collections.Generic
+Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
 Imports Xunit
 
@@ -477,9 +478,23 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal("get,get,set,set", probe.LogText)
     End Sub
 
-    Private Class Holder
+    <Fact>
+    Public Sub AssignmentToTheWrittenBackExtensionReceiverKeepsTheCallResult()
+        Dim h As New Holder
+        h.Plain = h.Plain.SetToChangedReturnResult()
+        Assert.Equal("result", h.Plain)
+        h.Plain = ""
+        h.AssignOwnPlain()
+        Assert.Equal("result", h.Plain)
+    End Sub
+
+    Public Class Holder
         Public Property Plain As String = ""
         Public Property Items As New List(Of String) From {"a", "b"}
+
+        Public Sub AssignOwnPlain()
+            Plain = Plain.SetToChangedReturnResult()
+        End Sub
     End Class
 
     Private Shared Function SetValueReturnOther(ByRef value As String) As String
@@ -561,3 +576,11 @@ Public Class ByRefWriteBackPlacementTests
         End Property
     End Class
 End Class
+
+Public Module ByRefWriteBackPlacementExtensions
+    <Extension>
+    Public Function SetToChangedReturnResult(ByRef value As String) As String
+        value = "changed"
+        Return "result"
+    End Function
+End Module
