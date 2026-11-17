@@ -40,7 +40,7 @@ internal sealed class HandlerFunctionShapeEmitter
         var exceptionName = err.IsMaintained ? visitor.GetUniqueVariableNameInScope(first, "ex") : null;
         _guards = new StatementGuards(points, new HandlerFunctionGuardPolicy(plan, _functionName, exitStatement), err,
             new DeclarationSplitter(context.SemanticModel, context.CommonConversions), context.SemanticModel, visitor.GetUniqueVariableNameInScope, exceptionName,
-            DeclaredAtTop());
+            visitor.TryHoistOutOfLoop, DeclaredAtTop());
     }
 
     /// <summary>The suffix says what <c>true</c> means, for the functions that return a <c>bool</c>.</summary>

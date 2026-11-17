@@ -396,4 +396,20 @@ Public Class OnErrorResumeNextTests
         SelectWithVariableCases(1, 5)
         Assert.Equal("range, eval after, end, above, eval after, end, below, eval after, end", Logged())
     End Sub
+
+    Private Sub DeclarationInLoopKeepsItsValue()
+        On Error Resume Next
+        For i = 1 To 3
+            Dim q As Integer = If(i = 1, 5, Boom("q" & i))
+            Dim w As Integer
+            If i = 1 Then w = 7
+            L("i=" & i & " q=" & q & " w=" & w)
+        Next
+    End Sub
+
+    <Fact>
+    Sub LocalDeclaredInALoopKeepsItsPreviousValueWhenItsInitializerFails()
+        DeclarationInLoopKeepsItsValue()
+        Assert.Equal("i=1 q=5 w=7, eval q2, i=2 q=5 w=7, eval q3, i=3 q=5 w=7", Logged())
+    End Sub
 End Class

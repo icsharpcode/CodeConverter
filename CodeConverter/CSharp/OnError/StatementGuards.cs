@@ -21,11 +21,15 @@ internal sealed class StatementGuards
     private readonly Func<VBasic.VisualBasicSyntaxNode, string, string> _uniqueName;
     private readonly string _exceptionName;
     private readonly Func<ILocalSymbol, bool> _isDeclaredAtTop;
+    private readonly Func<string, TypeSyntax, bool> _hoistOutOfLoop;
 
+    /// <param name="hoistOutOfLoop">Declares a local before the loop that the statement being guarded is in, returning false if it isn't in one.</param>
     /// <param name="isDeclaredAtTop">Locals whose declaration must come before the guards, because something declared earlier (a handler function) uses them.</param>
     public StatementGuards(ResumePoints points, GuardPolicy policy, ErrStatements err, DeclarationSplitter splitter, SemanticModel semanticModel,
-        Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueName, string exceptionName, Func<ILocalSymbol, bool> isDeclaredAtTop = null)
+        Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueName, string exceptionName,
+        Func<string, TypeSyntax, bool> hoistOutOfLoop, Func<ILocalSymbol, bool> isDeclaredAtTop = null)
     {
+        _hoistOutOfLoop = hoistOutOfLoop;
         _isDeclaredAtTop = isDeclaredAtTop ?? (_ => false);
         _points = points;
         _policy = policy;
@@ -72,6 +76,7 @@ internal sealed class StatementGuards
     /// <summary>
     /// Each declarator is a resume point, and a local declared in a guard would be out of scope after it, so a guarded local is declared before as <c>= default</c>.
     /// Every local gets an initializer: an error can skip the assignment VB's flow analysis relied on.
+    /// In a loop the declaration goes before the loop: VB locals keep their value across iterations, so when the initializer fails the previous iteration's value is still there.
     /// </summary>
     private SyntaxList<StatementSyntax> GuardDeclaration(VBSyntax.LocalDeclarationStatementSyntax declaration, SyntaxList<StatementSyntax> converted)
     {
@@ -87,8 +92,12 @@ internal sealed class StatementGuards
         var topNames = new HashSet<string>(topLocals.Select(l => l.Name), StringComparer.OrdinalIgnoreCase);
         var isAtTop = declarations.Select(d => d is LocalDeclarationStatementSyntax l && topNames.Contains(l.Declaration.Variables[0].Identifier.ValueText)).ToArray();
         TopDeclarations.AddRange(declarations.Where((_, i) => isAtTop[i]));
-        return SyntaxFactory.List(declarations.Where((_, i) => !isAtTop[i]).Concat(DefaultInitializers.Add(inPlace)));
+        return SyntaxFactory.List(declarations.Where((d, i) => !isAtTop[i] && !HoistedOutOfLoop(d)).Concat(DefaultInitializers.Add(inPlace)));
     }
+
+    private bool HoistedOutOfLoop(StatementSyntax declaration) =>
+        declaration is LocalDeclarationStatementSyntax { IsConst: false } local && local.Declaration.Variables.Count == 1 &&
+        _hoistOutOfLoop(local.Declaration.Variables[0].Identifier.ValueText, local.Declaration.Type);
 
     /// <summary>
     /// A failing condition resumes in the branch: it's evaluated into a <c>bool</c> that is true if evaluating it fails.

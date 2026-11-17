@@ -850,4 +850,105 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task DeclarationWithAFailingInitializerInALoopIsDeclaredBeforeTheLoopAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run()
+        On Error Resume Next
+        For i = 1 To 3
+            Dim q As Integer = Boom()
+            System.Console.WriteLine(q)
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run()
+    {
+        int q = default;
+        for (int i = 1; i <= 3; i++)
+        {
+            try
+            {
+                q = Boom();
+            }
+            catch
+            {
+            }
+            try
+            {
+                Console.WriteLine(q);
+            }
+            catch
+            {
+            }
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DeclarationWithAFailingInitializerInNestedLoopsIsDeclaredBeforeTheOuterLoopAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run()
+        On Error Resume Next
+        For i = 1 To 3
+            For j = 1 To 3
+                Dim q As Integer = Boom()
+                System.Console.WriteLine(q)
+            Next
+        Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run()
+    {
+        int q = default;
+        for (int i = 1; i <= 3; i++)
+        {
+            for (int j = 1; j <= 3; j++)
+            {
+                try
+                {
+                    q = Boom();
+                }
+                catch
+                {
+                }
+                try
+                {
+                    Console.WriteLine(q);
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+}");
+    }
 }

@@ -173,6 +173,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return SyntaxFactory.List(declarations);
     }
 
+    /// <summary>
+    /// Declares a local that was converted in a loop body before the outermost loop instead, as a VB local keeps its value from one iteration to the next.
+    /// Call it after the declaration has been converted, as the scope of the declaration itself has then been left.
+    /// </summary>
+    /// <returns>False when the declaration isn't in a loop, so the caller declares it where it is.</returns>
+    public bool TryHoistOutOfLoop(string name, TypeSyntax type)
+    {
+        if (!_perScopeState.IsWithinLoopBody()) return false;
+        _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(name, SyntaxFactory.DefaultExpression(type), type, _perScopeState.IsWithinNestedLoopBody()));
+        return true;
+    }
+
     private IEnumerable<VariableDeclarationSyntax> HoistVariablesBeforeLoopWhenNeeded(IEnumerable<CommonConversions.VariablesDeclaration> variablesDeclarations)
     {
         foreach (var variablesDecl in variablesDeclarations) {

@@ -103,6 +103,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * Loop condition: a local function, so the loop stays a loop: `bool Cond() { try { return …; } catch { return true; } }` and `while (Cond())`. Bottom-tested conditions return whichever value leaves the loop.
    * `Using`, `SyncLock`, `Select Case` and `For`/`For Each`: one guard around the whole statement, with the statements inside guarded individually where VB makes them resume points (not inside `Using`/`SyncLock`). A failing header skips the block.
    * `Case` expressions: *not spiked*. Only matters when the case expressions aren't constants, where the converter already emits `when` clauses or an `if` chain. A `Select` is only guarded when its expression or a case expression can fail, and then a failing `Case` expression skips the whole block rather than resuming in that case.
+   * A `Dim` inside a loop whose initializer can fail is declared (`= default`) before the outermost loop, because a VB local keeps its value from the previous iteration when the initializer fails.
    * A statement is only guarded when it can fail (`ThrowAnalysis`): constants, locals and parameters of primitive types, their comparisons, `Exit`, `GoTo` and labels aren't. Every `Dim` gets `= default` so that skipping its assignment still compiles.
    * `With` is guarded like `Select`, and loops whose condition can fail and which read a `ref`/`out` parameter aren't expressible (a local function can't capture it): the method keeps the fallback.
 

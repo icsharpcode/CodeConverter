@@ -57,6 +57,13 @@ internal class PerScopeState
         return _hoistedNodesPerScope.Skip(1).Any(x => _loopKinds.Contains(x.ExitableKind));
     }
 
+    /// <summary>
+    /// Unlike <see cref="IsInsideLoop"/>, the scope being converted counts: use it once the scope of a statement has been popped, so the innermost scope is the loop's own.
+    /// </summary>
+    public bool IsWithinLoopBody() => _hoistedNodesPerScope.Any(x => _loopKinds.Contains(x.ExitableKind));
+
+    public bool IsWithinNestedLoopBody() => _hoistedNodesPerScope.Count(x => _loopKinds.Contains(x.ExitableKind)) > 1;
+
     public bool IsInsideNestedLoop()
     {
         return _hoistedNodesPerScope.Skip(1).Count(x => _loopKinds.Contains(x.ExitableKind)) > 1;
