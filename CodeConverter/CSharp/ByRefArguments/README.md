@@ -48,7 +48,8 @@ Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/m
 | `cells(NextIndex()).Text`, `GetHolder().Cell.Text` (`Cell` is a structure) | `var tmp = NextIndex();` … `cells[tmp].Text = arg`, `var tmp = GetHolder();` … `tmp.Cell.Text = arg`: a structure variable is written in place (`ByRefTargetTemporaries.HoistInstance`) |
 
 Known gaps:
-* A field that the called method itself assigns is read again for the write-back, where VB uses its original value. Detecting it needs analysis of the callee.
+* A field that the called method itself assigns is read again for the write-back, where VB uses its original value. Detecting it needs analysis of the callee. (The container of an element access is always copied, so `Issue567ExtendedAsync`'s reassigned list keeps VB's behaviour.)
+* A parameterized property with a `ParamArray` converts to a setter with `params` before the value (CS0231), so it can't be written back.
 * In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, every case that would use the local function instead writes back after the statement. That covers operands, conditions, block headers, `Dim` declarators, and compound or receiver-target assignments. The code compiles, but the write-back is late. Loop conditions still use a local function there and give CS1673, because writing back once would be wrong in a different way.
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
