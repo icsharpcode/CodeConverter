@@ -2208,4 +2208,53 @@ public partial class C
     }
 }", incompatibleWithAutomatedCommentTesting: true); // The comment on Option Strict Off is lost before the added using directive
     }
+
+    [Fact]
+    public async Task ModuleParameterizedPropertyIsWrittenBackThroughItsSetterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module M
+    Private ReadOnly _values As New System.Collections.Generic.Dictionary(Of Integer, String)
+
+    Property Qr(i As Integer) As String
+        Get
+            Return _values(i)
+        End Get
+        Set(value As String)
+            _values(i) = value
+        End Set
+    End Property
+
+    Sub UsesQr()
+        SetValue(Qr(1))
+    End Sub
+
+    Sub SetValue(ByRef value As String)
+    End Sub
+End Module", @"using System.Collections.Generic;
+
+internal static partial class M
+{
+    private readonly static Dictionary<int, string> _values = new Dictionary<int, string>();
+
+    public static string get_Qr(int i)
+    {
+        return _values[i];
+    }
+    public static void set_Qr(int i, string value)
+    {
+        _values[i] = value;
+    }
+
+    public static void UsesQr()
+    {
+        string argvalue = get_Qr(1);
+        SetValue(ref argvalue);
+        set_Qr(1, argvalue);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
 }

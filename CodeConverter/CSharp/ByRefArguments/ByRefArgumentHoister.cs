@@ -85,12 +85,8 @@ internal class ByRefArgumentHoister
 
     private static CSSyntax.InvocationExpressionSyntax CreateSetterCall(CSSyntax.InvocationExpressionSyntax getterCall, IPropertySymbol property, CSSyntax.ExpressionSyntax value)
     {
-        var setterName = ValidSyntaxFactory.IdentifierName(property.SetMethod.Name);
-        CSSyntax.ExpressionSyntax setter = getterCall.Expression switch {
-            CSSyntax.MemberAccessExpressionSyntax maes => maes.WithName(setterName),
-            CSSyntax.SimpleNameSyntax => setterName,
-            var other => throw new NotSupportedException($"Parameterized property getter call {other.Kind()}")
-        };
+        var getterName = getterCall.Expression.DescendantTokens().Last(t => t.IsKind(CS.SyntaxKind.IdentifierToken));
+        var setter = getterCall.Expression.ReplaceToken(getterName, CS.SyntaxFactory.Identifier(property.SetMethod.Name).WithTriviaFrom(getterName));
         return CS.SyntaxFactory.InvocationExpression(setter, CommonConversions.AddSetterValueArgument(getterCall.ArgumentList, property, value));
     }
 }
