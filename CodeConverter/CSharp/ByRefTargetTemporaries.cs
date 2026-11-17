@@ -10,8 +10,8 @@ namespace ICSharpCode.CodeConverter.CSharp;
 /// The C# read and write-back are separate expressions, so a part that could have a different value the second time is hoisted into a temporary.
 /// </summary>
 /// <remarks>
-/// VB copies every part except constants and Me. A local or parameter gives the same value again unless it's written while the
-/// enclosing expression runs, so it's only copied when that expression writes it (as a ByRef argument, or by assignment in a lambda).
+/// VB copies every part except constants and Me. A local or ByVal parameter gives the same value again unless it's written while the
+/// enclosing expression runs, so it's only copied when that expression, or a lambda the call could run, writes it.
 /// A field is also copied when the call could change it (<see cref="IFieldMutationOracle"/>).
 /// </remarks>
 internal class ByRefTargetTemporaries
@@ -113,7 +113,8 @@ internal class ByRefTargetTemporaries
         IParenthesizedOperation p => IsReusable(p.Operand),
         IConversionOperation { OperatorMethod: null } c => IsReusable(c.Operand),
         ILocalReferenceOperation l => !_writtenSymbols.Value.Contains(l.Local),
-        IParameterReferenceOperation p => !_writtenSymbols.Value.Contains(p.Parameter),
+        // A ByRef parameter aliases a variable of the caller's, which the call could reach some other way
+        IParameterReferenceOperation p => p.Parameter.RefKind == RefKind.None && !_writtenSymbols.Value.Contains(p.Parameter),
         IFieldReferenceOperation f => !_writtenSymbols.Value.Contains(f.Field) && !_fieldMutations.MayChangeDuringCall(f.Field, GetCall()) && IsReusable(f.Instance),
         _ => false
     };
@@ -125,7 +126,8 @@ internal class ByRefTargetTemporaries
         _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", value, ValidSyntaxFactory.VarType)).IdentifierName;
 
     /// <summary>
-    /// The temporaries and write-back are placed around the enclosing expression, so that's what could change a variable in between.
+    /// The temporaries and write-back are placed around the enclosing expression, so that's what could change a local variable in between.
+    /// So could any lambda in the same method, since the call could run it.
     /// </summary>
     private HashSet<ISymbol> GetSymbolsWrittenInEnclosingExpression()
     {
@@ -133,14 +135,20 @@ internal class ByRefTargetTemporaries
         while (enclosing.Parent is VBSyntax.ExpressionSyntax or VBSyntax.ArgumentSyntax or VBSyntax.ArgumentListSyntax) {
             enclosing = enclosing.Parent;
         }
+        var lambdasInMember = _vbTarget.Ancestors().LastOrDefault(a => a is VBSyntax.MethodBlockBaseSyntax)?.DescendantNodes().OfType<VBSyntax.LambdaExpressionSyntax>()
+                              ?? Enumerable.Empty<VBSyntax.LambdaExpressionSyntax>();
 
-        var written = _semanticModel.GetOperation(enclosing)?.DescendantsAndSelf().Select(o => o switch {
+        var written = lambdasInMember.Prepend<SyntaxNode>(enclosing)
+            .SelectMany(GetVariablesWrittenIn);
+        return new HashSet<ISymbol>(written, SymbolEqualityComparer.Default);
+    }
+
+    private IEnumerable<ISymbol> GetVariablesWrittenIn(SyntaxNode node) =>
+        _semanticModel.GetOperation(node)?.DescendantsAndSelf().Select(o => o switch {
             IArgumentOperation { Parameter.RefKind: not RefKind.None } a => a.Value,
             IAssignmentOperation a => a.Target,
             _ => null
-        }).Select(GetReferencedVariable).Where(s => s != null);
-        return new HashSet<ISymbol>(written ?? Enumerable.Empty<ISymbol>(), SymbolEqualityComparer.Default);
-    }
+        }).Select(GetReferencedVariable).Where(s => s != null) ?? Enumerable.Empty<ISymbol>();
 
     private static ISymbol GetReferencedVariable(IOperation operation) => operation switch {
         ILocalReferenceOperation l => l.Local,

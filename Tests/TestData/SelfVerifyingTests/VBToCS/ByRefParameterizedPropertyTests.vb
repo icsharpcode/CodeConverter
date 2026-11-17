@@ -98,6 +98,29 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub LocalIndexChangedByALambdaTheCalledMethodRunsUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        Dim index = 1
+        Dim changeIndex As Action = Sub() index = 7
+        SetValueAndRun(db.Qr(index, 21), changeIndex)
+        Assert.Equal(7, index)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub ByRefParameterIndexChangedByTheCalledMethodUsesItsOriginalValue()
+        _index = 1
+        SetValueIndexedBy(_index)
+        Assert.Equal(7, _index)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    Private Sub SetValueIndexedBy(ByRef index As Integer)
+        Dim db As New Db(_log)
+        ChangeIndexAndSetValue(db.Qr(index, 21))
+    End Sub
+
+    <Fact>
     Public Sub ReadOnlyParameterizedPropertyIsNotWrittenBack()
         Dim db As New Db(_log)
         SetValue(db.ReadOnlyQr(NextIndex()))
