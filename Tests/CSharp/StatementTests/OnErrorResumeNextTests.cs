@@ -951,4 +951,43 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task GuardedDeclarationOfAnAnonymousTypeKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run()
+        On Error Resume Next
+        Dim q = New With {.X = Boom()}
+        System.Console.WriteLine(q.X)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run()
+    {
+        ;
+#error Cannot convert OnErrorResumeNextStatementSyntax - see comment for details
+        /* Cannot convert OnErrorResumeNextStatementSyntax, CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 161
+
+
+                Input:
+                        On Error Resume Next
+
+                 */
+        var q = new { X = Boom() };
+        Console.WriteLine(q.X);
+    }
+}CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 161", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

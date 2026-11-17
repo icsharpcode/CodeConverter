@@ -12,7 +12,8 @@ namespace ICSharpCode.CodeConverter.CSharp.OnError;
 /// * the function would capture a <c>ref</c>/<c>out</c> parameter, which C# doesn't allow;
 /// * a guard inside a guarded block: a secondary error, thrown by the handler inside the inner <c>catch</c>, would be caught again by the outer one,
 ///   but VB's filter lets it propagate;
-/// * a failing loop condition that must leave the method, which a local function can't do.
+/// * a failing loop condition that must leave the method, which a local function can't do;
+/// * a local that must be declared before its guard, or at the top for the handler, but whose type can't be written (anonymous type).
 /// </remarks>
 internal static class HandlerFunctionPlanner
 {
@@ -26,7 +27,10 @@ internal static class HandlerFunctionPlanner
 
         var handlerStatements = model.Statements.Skip(handler.LabelIndex).Take(handler.EndIndex - handler.LabelIndex).ToArray();
         var others = model.Statements.Where((_, i) => !handler.Contains(i)).ToArray();
-        if (CapturesRefParameter(handlerStatements, semanticModel) || OutsideUsesLocalsOfHandler(handlerStatements, others, semanticModel)) return null;
+        if (CapturesRefParameter(handlerStatements, semanticModel) || OutsideUsesLocalsOfHandler(handlerStatements, others, semanticModel) ||
+            HandlerUsesLocalsThatCantBeDeclaredEarly(handlerStatements, others, semanticModel)) {
+            return null;
+        }
 
         var firstOnErrorIndex = model.OnErrorStatements.Select(model.MethodLevelIndexOf).Min();
         var plan = new HandlerFunctionPlan(handler, firstOnErrorIndex, ways.Value, ReturnsValue(handlerStatements));
@@ -67,9 +71,20 @@ internal static class HandlerFunctionPlanner
             .Any(i => declared.Contains(semanticModel.GetSymbolInfo(i).Symbol, SymbolEqualityComparer.Default));
     }
 
+    /// <summary>The handler is declared before the guards, so a local it uses that is declared after it has to be declared at the top.</summary>
+    private static bool HandlerUsesLocalsThatCantBeDeclaredEarly(IEnumerable<VBSyntax.StatementSyntax> handlerStatements, IEnumerable<VBSyntax.StatementSyntax> others, SemanticModel semanticModel)
+    {
+        var declaredElsewhere = others.SelectMany(s => s.DescendantNodesAndSelf()).OfType<VBSyntax.ModifiedIdentifierSyntax>()
+            .Select(n => semanticModel.GetDeclaredSymbol(n)).OfType<ILocalSymbol>().ToArray();
+        return handlerStatements.SelectMany(s => s.DescendantNodesAndSelf()).OfType<VBSyntax.IdentifierNameSyntax>()
+            .Select(i => semanticModel.GetSymbolInfo(i).Symbol).OfType<ILocalSymbol>()
+            .Any(l => !DeclarationSplitter.CanSplit(l) && declaredElsewhere.Contains(l, SymbolEqualityComparer.Default));
+    }
+
     private static bool GuardsAreSupported(OnErrorModel model, HandlerFunctionPlan plan, IEnumerable<VBSyntax.StatementSyntax> others, SemanticModel semanticModel)
     {
         var points = CreateResumePoints(model, plan.Handler, semanticModel);
+        if (!points.CanGuardAllDeclarations(others)) return false;
         var all = others.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.StatementSyntax>().ToArray();
         var guarded = all.Where(s => IsGuarded(points, s, semanticModel)).ToArray();
         var loops = guarded.Where(s => points.KindOf(s) is ResumePointKind.TopTestedLoop or ResumePointKind.BottomTestedLoop).ToArray();

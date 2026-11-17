@@ -22,6 +22,8 @@ internal sealed class LocalHoisting
         _hoisted = new HashSet<ILocalSymbol>(segments.SelectMany(s => FindUsedOutside(model, s)), SymbolEqualityComparer.Default);
     }
 
+    public bool CanDeclareAll => _hoisted.All(DeclarationSplitter.CanSplit);
+
     /// <summary>The declarations that go before the first <c>try</c>, in order.</summary>
     public List<StatementSyntax> Declarations { get; } = new();
 

@@ -34,7 +34,8 @@ internal sealed class ResumeNextShapeEmitter
     }
 
     /// <summary>
-    /// Only when the model has nothing the guards can't express: handlers that are labels, <c>Resume</c> statements, and loop conditions that a local function can't capture.
+    /// Only when the model has nothing the guards can't express: handlers that are labels, <c>Resume</c> statements, loop conditions that a local function can't capture,
+    /// and guarded declarations of a type that can't be written.
     /// </summary>
     public static bool CanEmit(OnErrorModel model, SemanticModel semanticModel)
     {
@@ -43,6 +44,7 @@ internal sealed class ResumeNextShapeEmitter
             return false;
         }
         var points = CreateResumePoints(model, semanticModel);
+        if (!points.CanGuardAllDeclarations(model.Statements)) return false;
         return !model.Statements.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.StatementSyntax>()
             .Any(s => points.KindOf(s) is ResumePointKind.TopTestedLoop or ResumePointKind.BottomTestedLoop && points.HasLoopConditionCapturingARefParameter(s));
     }

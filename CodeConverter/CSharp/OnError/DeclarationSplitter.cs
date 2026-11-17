@@ -79,6 +79,18 @@ internal sealed class DeclarationSplitter
         }
     }
 
+    /// <summary>
+    /// Splitting declares the local before the statement that assigns it, so its type has to be written out.
+    /// An anonymous type, or the anonymous delegate type of a lambda, has no name, so such a local can't be split.
+    /// </summary>
+    public static bool CanSplit(ILocalSymbol local) => CanBeNamed(local.Type);
+
+    private static bool CanBeNamed(ITypeSymbol type) => type switch {
+        IArrayTypeSymbol array => CanBeNamed(array.ElementType),
+        INamedTypeSymbol named => !named.IsAnonymousType && named.TypeArguments.All(CanBeNamed),
+        _ => true
+    };
+
     private LocalDeclarationStatementSyntax DeclareDefault(SyntaxToken identifier, ILocalSymbol local)
     {
         var declarator = SyntaxFactory.VariableDeclarator(identifier.WithoutTrivia())

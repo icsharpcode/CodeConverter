@@ -32,6 +32,12 @@ internal sealed class StructuredShapeEmitter
         context.Visitor.OnErrorStatementConverter = new StructuredStatementConverter(err, model);
     }
 
+    /// <summary>
+    /// Whether every local that has to be declared before the <c>try</c>, because it is used outside it, can be (see <see cref="DeclarationSplitter.CanSplit"/>).
+    /// </summary>
+    public static bool CanEmit(OnErrorConversionContext context, OnErrorModel model, StructuredPlan plan) =>
+        new LocalHoisting(context, model, plan.Segments.Append(UnprotectedRange(plan))).CanDeclareAll;
+
     private VBSyntax.StatementSyntax OnErrorStatement => _model.Statements[_plan.OnErrorIndex];
     private int HandlerLabelIndex => _plan.Handler.LabelIndex;
     private string HandlerLabel => _model.LabelText(_plan.Handler.Label);

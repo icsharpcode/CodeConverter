@@ -127,6 +127,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * the handler jumps to a label inside a nested block;
    * `On Error GoTo -1`;
    * a handler local function would need to capture a `ref`/`out` parameter;
+   * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;
    * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
    * (handler function) several handlers; a guard inside a guarded block (`For Each` with statements inside): the handler's own error would be caught again by the outer guard, but VB lets it propagate; a failing loop condition when the handler can leave the method (a local function can't return from the method).
 

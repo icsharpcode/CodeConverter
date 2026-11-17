@@ -1791,4 +1791,48 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task HoistedLocalOfAnAnonymousTypeKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub Boom()
+        Throw New System.InvalidOperationException()
+    End Sub
+
+    Sub Run()
+        On Error GoTo Failed
+        Dim q = New With {.X = 1}
+        Boom()
+        Exit Sub
+Failed:
+        System.Console.WriteLine(q.X)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run()
+    {
+        try
+        {
+            var q = new { X = 1 };
+            Boom();
+            return;
+        }
+        catch
+        {
+
+            Console.WriteLine(q.X);
+        }
+    }
+}
+1 target compilation errors:
+CS0103: The name 'q' does not exist in the current context");
+    }
 }

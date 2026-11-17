@@ -80,10 +80,7 @@ internal sealed class StatementGuards
     /// </summary>
     private SyntaxList<StatementSyntax> GuardDeclaration(VBSyntax.LocalDeclarationStatementSyntax declaration, SyntaxList<StatementSyntax> converted)
     {
-        var guardedLocals = !_points.IsCovered(declaration)
-            ? new HashSet<ILocalSymbol>(SymbolEqualityComparer.Default)
-            : new HashSet<ILocalSymbol>(declaration.Declarators.Where(d => ThrowAnalysis.CanThrow(d, _semanticModel))
-                .SelectMany(d => d.Names).Select(n => _semanticModel.GetDeclaredSymbol(n) as ILocalSymbol).Where(l => l != null), SymbolEqualityComparer.Default);
+        var guardedLocals = new HashSet<ILocalSymbol>(_points.GuardedLocals(declaration), SymbolEqualityComparer.Default);
         var topLocals = declaration.Declarators.SelectMany(d => d.Names).Select(n => _semanticModel.GetDeclaredSymbol(n) as ILocalSymbol)
             .Where(l => l != null && _isDeclaredAtTop(l)).ToArray();
         var declarations = new List<StatementSyntax>();

@@ -569,4 +569,54 @@ CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please rep
 ----- Exception 4 of 4 -----
 CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 300", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    [Fact]
+    public async Task GuardedDeclarationOfAnAnonymousTypeKeepsTheFallbackInAHandlerFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Function Boom() As Integer
+        Throw New System.InvalidOperationException()
+    End Function
+
+    Sub Run()
+        On Error GoTo Failed
+        Dim q = New With {.X = Boom()}
+        System.Console.WriteLine(q.X)
+        Exit Sub
+Failed:
+        Resume Next
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int Boom()
+    {
+        throw new InvalidOperationException();
+    }
+
+    public void Run()
+    {
+        try
+        {
+            var q = new { X = Boom() };
+            Console.WriteLine(q.X);
+            return;
+        }
+        catch
+        {
+            ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 307
+
+
+            Input:
+
+                    Resume Next
+
+             */
+        }
+    }
+}CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 307", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

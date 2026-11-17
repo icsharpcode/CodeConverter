@@ -45,6 +45,18 @@ internal sealed class ResumePoints
         _isCoveredStatement(_model.MethodLevelIndexOf(statement)) &&
         !statement.Ancestors().Any(a => a is VBSyntax.UsingBlockSyntax or VBSyntax.SyncLockBlockSyntax);
 
+    /// <summary>The locals declared by the declarators of a <c>Dim</c> that are resume points, so are split into a declaration and a guarded assignment.</summary>
+    public IEnumerable<ILocalSymbol> GuardedLocals(VBSyntax.LocalDeclarationStatementSyntax declaration) =>
+        !IsCovered(declaration)
+            ? Enumerable.Empty<ILocalSymbol>()
+            : declaration.Declarators.Where(d => ThrowAnalysis.CanThrow(d, _semanticModel))
+                .SelectMany(d => d.Names).Select(n => _semanticModel.GetDeclaredSymbol(n) as ILocalSymbol).Where(l => l != null);
+
+    /// <summary>Whether every local that would be split in these statements (and the statements inside them) can be (see <see cref="DeclarationSplitter.CanSplit"/>).</summary>
+    public bool CanGuardAllDeclarations(IEnumerable<VBSyntax.StatementSyntax> statements) =>
+        statements.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.LocalDeclarationStatementSyntax>()
+            .SelectMany(GuardedLocals).All(DeclarationSplitter.CanSplit);
+
     public ResumePointKind KindOf(VBSyntax.StatementSyntax statement)
     {
         if (statement is VBSyntax.LocalDeclarationStatementSyntax) return ResumePointKind.Declaration;
