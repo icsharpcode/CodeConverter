@@ -45,6 +45,7 @@ Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/m
 | `GetC().Qr(1, 2)`, `GetC().Plain` | `var tmp = GetC();` … `tmp.set_Qr(1, 2, arg)`, `tmp.Plain = arg` |
 | `other(NextIndex())` (default property or indexer) | `var tmp = other; var tmp1 = NextIndex();` … `tmp[tmp1] = arg` (the container is always copied, as before) |
 | `Two(other.Qr(i, 2), i)` | `var tmp = i;` … `other.set_Qr(tmp, 2, arg)` |
+| `cells(NextIndex()).Text`, `GetHolder().Cell.Text` (`Cell` is a structure) | `var tmp = NextIndex();` … `cells[tmp].Text = arg`, `var tmp = GetHolder();` … `tmp.Cell.Text = arg`: a structure variable is written in place (`ByRefTargetTemporaries.HoistInstance`) |
 
 Known gaps:
 * A field that the called method itself assigns is read again for the write-back, where VB uses its original value. Detecting it needs analysis of the callee.

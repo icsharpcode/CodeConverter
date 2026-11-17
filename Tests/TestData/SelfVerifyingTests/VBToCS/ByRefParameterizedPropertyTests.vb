@@ -86,6 +86,44 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub StructureReceiverInAnArrayIsWrittenInPlace()
+        Dim cells(2) As Cell
+        SetValue(cells(NextIndex()).Text)
+        Assert.Equal("changed", cells(1).Text)
+        Assert.Equal("index 1", LogText())
+    End Sub
+
+    <Fact>
+    Public Sub StructureFieldReceiverIsWrittenInPlace()
+        Dim holder As New CellHolder
+        SetValue(holder.Cell.Text)
+        SetValue(GetHolder(holder).Cell.Text)
+        Assert.Equal("changedchanged", holder.Cell.Text)
+        Assert.Equal("holder", LogText())
+    End Sub
+
+    Private Function GetHolder(holder As CellHolder) As CellHolder
+        _log.Add("holder")
+        Return holder
+    End Function
+
+    Private Class CellHolder
+        Public Cell As Cell
+    End Class
+
+    Private Structure Cell
+        Private _text As String
+        Public Property Text As String
+            Get
+                Return _text
+            End Get
+            Set(value As String)
+                _text &= value
+            End Set
+        End Property
+    End Structure
+
+    <Fact>
     Public Sub ReturnWritesBackThroughTheSetterBeforeReturning()
         Dim db As New Db(_log)
         Assert.Equal("changed", ReturnSetValue(db))

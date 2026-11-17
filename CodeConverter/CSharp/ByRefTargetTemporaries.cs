@@ -51,10 +51,30 @@ internal class ByRefTargetTemporaries
     /// <remarks>The container of an element access is already hoisted by the caller.</remarks>
     private CSSyntax.ExpressionSyntax HoistReceiver(CSSyntax.ExpressionSyntax memberExpression, IPropertyReferenceOperation pro)
     {
-        if (memberExpression is not CSSyntax.MemberAccessExpressionSyntax maes || pro.Property.IsStatic || IsReusable(pro.Instance)) {
+        if (memberExpression is not CSSyntax.MemberAccessExpressionSyntax maes || pro.Property.IsStatic) {
             return memberExpression;
         }
-        return maes.WithExpression(HoistValue(maes.Expression));
+        return maes.WithExpression(HoistInstance(pro.Instance, maes.Expression));
+    }
+
+    /// <summary>
+    /// A reference can be copied, but writing a structure's property through a copy would lose the write.
+    /// So, like VB, a structure variable stays in place and only the parts that locate it are copied.
+    /// </summary>
+    private CSSyntax.ExpressionSyntax HoistInstance(IOperation instance, CSSyntax.ExpressionSyntax csInstance)
+    {
+        if (IsReusable(instance)) return csInstance;
+        if (instance.Type?.IsReferenceType == true) return HoistValue(csInstance);
+        return (instance, csInstance) switch {
+            (ILocalReferenceOperation or IParameterReferenceOperation, _) => csInstance,
+            (IFieldReferenceOperation { Instance: { } fieldInstance }, CSSyntax.MemberAccessExpressionSyntax maes) =>
+                maes.WithExpression(HoistInstance(fieldInstance, maes.Expression)),
+            (IFieldReferenceOperation, _) => csInstance,
+            (IArrayElementReferenceOperation element, CSSyntax.ElementAccessExpressionSyntax elementAccess) =>
+                elementAccess.WithExpression(HoistInstance(element.ArrayReference, elementAccess.Expression))
+                    .WithArgumentList(elementAccess.ArgumentList.WithArguments(HoistIndices(elementAccess.ArgumentList.Arguments, element.Indices))),
+            _ => HoistValue(csInstance)
+        };
     }
 
     private SeparatedSyntaxList<CSSyntax.ArgumentSyntax> HoistArguments(SeparatedSyntaxList<CSSyntax.ArgumentSyntax> csArgs, IPropertyReferenceOperation pro)
