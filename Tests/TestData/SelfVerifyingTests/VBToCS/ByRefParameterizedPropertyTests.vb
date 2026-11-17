@@ -188,6 +188,13 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub ByRefExtensionReceiverPropertyIsWrittenBack()
+        Dim db As New Db(_log)
+        db.Plain.ChangeByRef()
+        Assert.Equal("plain get;plain set=changed", LogText())
+    End Sub
+
+    <Fact>
     Public Sub NumberToStringIndexUsesTheCultureBeforeTheCall()
         Dim original = Threading.Thread.CurrentThread.CurrentCulture
         Try
@@ -542,3 +549,10 @@ Public Class ByRefParameterizedPropertyTests
         End Function
     End Class
 End Class
+
+Public Module ByRefParameterizedPropertyExtensions
+    <System.Runtime.CompilerServices.Extension>
+    Public Sub ChangeByRef(ByRef value As String)
+        value = "changed"
+    End Sub
+End Module
