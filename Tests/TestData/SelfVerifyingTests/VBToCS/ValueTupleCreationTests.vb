@@ -26,6 +26,10 @@ Public Class ValueTupleCreationTests
         Assert.Equal(GetType(ValueTuple(Of Short, Integer)), shortArithmetic.GetType())
         Assert.Equal((CShort(4), 4), shortArithmetic)
 
+        Dim convertedConstants = New ValueTuple(Of Integer, Long, Long)(CShort(1), CByte(2), CSByte(-3))
+        Assert.Equal(GetType(ValueTuple(Of Integer, Long, Long)), convertedConstants.GetType())
+        Assert.Equal((1, 2L, -3L), convertedConstants)
+
         Dim stringAndChar = New ValueTuple(Of String, Char)("a", "b"c)
         Assert.Equal(("a", "b"c), stringAndChar)
     End Sub

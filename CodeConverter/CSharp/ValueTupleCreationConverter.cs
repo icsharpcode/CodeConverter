@@ -1,3 +1,4 @@
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -35,8 +36,34 @@ internal class ValueTupleCreationConverter
         var elements = GetTupleElementsOrNull(node);
         if (elements is not {Count: > 1} || !elements.All(e => _commonConversions.TypeConversionAnalyzer.KeepsConvertedTypeWithoutTargetType(e.Expression))) return null;
 
-        var arguments = await elements.SelectAsync(async e => await e.AcceptAsync<ArgumentSyntax>(_commonConversions.TriviaConvertingExpressionVisitor));
+        var arguments = await elements.SelectAsync(ConvertElementAsync);
         return SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(arguments));
+    }
+
+    private async Task<ArgumentSyntax> ConvertElementAsync(VBSyntax.SimpleArgumentSyntax element)
+    {
+        var argument = await element.AcceptAsync<ArgumentSyntax>(_commonConversions.TriviaConvertingExpressionVisitor);
+        return IsCastOfCast(argument.Expression) && GetIntegralConstantLiteralOrNull(element.Expression) is { } literal
+            ? argument.WithExpression(literal.WithTriviaFrom(argument.Expression))
+            : argument;
+    }
+
+    private static bool IsCastOfCast(ExpressionSyntax expression) =>
+        expression.SkipIntoParens() is CastExpressionSyntax outerCast && outerCast.Expression.SkipIntoParens() is CastExpressionSyntax;
+
+    /// <summary>
+    /// Without a target type, an element needs its converted type explicitly, so a constant the VB code already converted (e.g. <c>CShort(1)</c> passed for an Integer)
+    /// would be cast twice: <c>(int)(short)1</c>. VB evaluates that conversion at compile time, so the literal of its value in the converted type is the same value.
+    /// Only integral constants converted to a type with its own literal form are written this way: they convert exactly, and the literal keeps the converted type.
+    /// </summary>
+    private ExpressionSyntax GetIntegralConstantLiteralOrNull(VBSyntax.ExpressionSyntax expression)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(expression);
+        if (!typeInfo.Type.IsIntegralType() || !typeInfo.ConvertedType.IsIntegralType()) return null;
+        if (_semanticModel.GetConstantValue(expression) is not {HasValue: true, Value: { } value}) return null;
+        return LiteralConversions.ConvertLiteralNumericValueOrNull(value, typeInfo.ConvertedType) is { } convertedValue
+            ? LiteralConversions.GetLiteralExpression(convertedValue, convertedType: typeInfo.ConvertedType)
+            : null;
     }
 
     /// <summary>

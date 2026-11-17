@@ -2420,6 +2420,35 @@ End Sub",
     }
 
     [Fact]
+    public async Task ValueTupleConstructorWithConstantElementsBecomesTupleLiteralOfTheirValuesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class C
+    Const Small As Short = 1
+
+    Sub Foo(x As Integer)
+        Dim widenedConstants = New ValueTuple(Of Integer, Long)(CShort(1), CByte(2))
+        Dim negativeAndConstantField = New ValueTuple(Of Long, Integer)(CSByte(-1), CShort(Small))
+        Dim constantField = New ValueTuple(Of Integer, Double)(Small, CShort(1))
+        Dim narrowedVariable = New ValueTuple(Of Integer, Integer)(CShort(x), CByte(3))
+    End Sub
+End Class",
+            @"
+internal partial class C
+{
+    private const short Small = 1;
+
+    public void Foo(int x)
+    {
+        var widenedConstants = (1, 2L);
+        var negativeAndConstantField = (-1L, (int)Small);
+        var constantField = ((int)Small, (double)(short)1);
+        var narrowedVariable = ((int)(short)x, 3);
+    }
+}");
+    }
+
+    [Fact]
     public async Task ValueTupleConstructorWithConvertedElementsBecomesTupleLiteralAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
