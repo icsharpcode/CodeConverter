@@ -261,4 +261,22 @@ H:
         Assert.Throws(Of InvalidOperationException)(Sub() ErrorsAfterGoTo0Propagate())
         Assert.Equal("eval a, handler, eval b", Logged())
     End Sub
+
+    Private Function HandlerWithALambdaReturn() As Integer
+        On Error GoTo H
+        Boom("a")
+        Return 1
+H:
+        Dim twice As Func(Of Integer, Integer) = Function(x)
+                                                     Return x * 2
+                                                 End Function
+        If twice(1) = 3 Then Resume Next
+        Return twice(21)
+    End Function
+
+    <Fact>
+    Sub ReturnsInsideALambdaInTheHandlerAreNotTheMethodsReturns()
+        Assert.Equal(42, HandlerWithALambdaReturn())
+        Assert.Equal("eval a", Logged())
+    End Sub
 End Class

@@ -374,4 +374,26 @@ Public Class OnErrorResumeNextTests
         Assert.Equal(4, DynamicFunction(True))
         Assert.Equal("eval value, eval result", Logged())
     End Sub
+
+    Private Sub SelectWithVariableCases(value As Integer, limit As Integer)
+        On Error Resume Next
+        Select Case value
+            Case limit To limit + 2
+                L("range")
+            Case Is > limit
+                L("above")
+            Case Else
+                L("below")
+        End Select
+        Boom("after")
+        L("end")
+    End Sub
+
+    <Fact>
+    Sub SelectWithCasesThatAreNotConstantsStillRunsTheMatchingCase()
+        SelectWithVariableCases(5, 5)
+        SelectWithVariableCases(9, 5)
+        SelectWithVariableCases(1, 5)
+        Assert.Equal("range, eval after, end, above, eval after, end, below, eval after, end", Logged())
+    End Sub
 End Class

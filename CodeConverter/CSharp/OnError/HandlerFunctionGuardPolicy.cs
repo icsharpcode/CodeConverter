@@ -20,7 +20,6 @@ internal sealed class HandlerFunctionGuardPolicy : GuardPolicy
     }
 
     public override bool CanRetry => _plan.CanRetry;
-    public override bool CanExitMethod => _plan.CanExit;
 
     public override IEnumerable<StatementSyntax> OnError(string retryLabel)
     {

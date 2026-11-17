@@ -14,9 +14,6 @@ internal abstract class GuardPolicy
     /// <summary>Whether <see cref="OnError"/> may jump back to the label placed before the guarded statement, which VB's <c>Resume</c> does.</summary>
     public virtual bool CanRetry => false;
 
-    /// <summary>Whether <see cref="OnError"/> may leave the method, which can't be done from a local function.</summary>
-    public virtual bool CanExitMethod => false;
-
     /// <param name="retryLabel">Null unless <see cref="CanRetry"/>.</param>
     public virtual IEnumerable<StatementSyntax> OnError(string retryLabel) => Enumerable.Empty<StatementSyntax>();
 }
