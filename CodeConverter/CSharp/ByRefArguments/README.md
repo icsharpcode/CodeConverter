@@ -53,6 +53,7 @@ Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/m
 
 Known gaps:
 * A parameterized property with a `ParamArray` converts to a setter with `params` before the value (CS0231), so it can't be written back.
+* A late-bound parameterized property (`SetValue(o.Qr(1))` with `o As Object`) converts to `((dynamic)o).Qr(1)`, which throws `RuntimeBinderException`, and isn't written back. VB reads and writes it through `NewLateBinding.LateGet`/`LateSet` (or `LateIndexGet`/`LateIndexSet`).
 * In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, every case that would use the local function instead writes back after the statement. That covers operands, conditions, block headers, `Dim` declarators, and compound or receiver-target assignments. The code compiles, but the write-back is late. Loop conditions still use a local function there and give CS1673, because writing back once would be wrong in a different way.
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
