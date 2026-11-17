@@ -208,6 +208,23 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub LocalInALambdaInAFieldInitializerChangedByAnotherLambdaUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        Dim initialized As New InitializedLambda
+        initialized.SetThroughLocal(db)
+        Assert.Equal("get 1,1;set 1,1=changed", LogText())
+    End Sub
+
+    Private Class InitializedLambda
+        Public ReadOnly SetThroughLocal As Func(Of Db, String) = Function(db As Db)
+                                                                    Dim i = 1
+                                                                    Dim changeIndex As Action = Sub() i = 5
+                                                                    SetValueAndRun(db.Qr(i, 1), changeIndex)
+                                                                    Return Nothing
+                                                                End Function
+    End Class
+
+    <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
         SetValue(Db.SharedQr(NextIndex()))

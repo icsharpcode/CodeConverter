@@ -152,7 +152,7 @@ internal class ByRefTargetTemporaries
 
     /// <summary>
     /// The temporaries and write-back are placed around the enclosing expression, so that's what could change a local variable in between.
-    /// So could any lambda in the same method, since the call could run it.
+    /// So could any lambda in the same method (or, outside a method, in the same outermost lambda), since the call could run it.
     /// </summary>
     private HashSet<ISymbol> GetSymbolsWrittenInEnclosingExpression()
     {
@@ -160,7 +160,9 @@ internal class ByRefTargetTemporaries
         while (enclosing.Parent is VBSyntax.ExpressionSyntax or VBSyntax.ArgumentSyntax or VBSyntax.ArgumentListSyntax) {
             enclosing = enclosing.Parent;
         }
-        var lambdasInMember = _vbTarget.Ancestors().LastOrDefault(a => a is VBSyntax.MethodBlockBaseSyntax)?.DescendantNodes().OfType<VBSyntax.LambdaExpressionSyntax>()
+        // A local can only be written in the scope that declares it, which is inside the outermost method or lambda
+        var scopeOfLocals = _vbTarget.Ancestors().LastOrDefault(a => a is VBSyntax.MethodBlockBaseSyntax or VBSyntax.LambdaExpressionSyntax);
+        var lambdasInMember = scopeOfLocals?.DescendantNodes().OfType<VBSyntax.LambdaExpressionSyntax>()
                               ?? Enumerable.Empty<VBSyntax.LambdaExpressionSyntax>();
 
         var written = lambdasInMember.Prepend<SyntaxNode>(enclosing)
