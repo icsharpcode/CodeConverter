@@ -69,38 +69,14 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
             foreach (var name in tree.GetRoot().DescendantNodes().OfType<VBSyntax.IdentifierNameSyntax>()) {
                 if (semanticModel.GetSymbolInfo(name).Symbol is not IFieldSymbol { IsConst: false, IsReadOnly: false } field) continue;
                 var reference = name.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Name == name ? (SyntaxNode)maes : name;
-                if (IsWrite(semanticModel, reference) && !IsDuringConstruction(semanticModel, reference, field)) {
+                if (semanticModel.GetOperation(reference) is { } operation && VariableWrites.IsWrite(operation) &&
+                    !IsDuringConstruction(semanticModel, reference, field)) {
                     written.Add(field.OriginalDefinition);
                 }
             }
         }
         return written;
     }
-
-    private static bool IsWrite(SemanticModel semanticModel, SyntaxNode reference)
-    {
-        if (IsWrittenBySyntax(reference)) return true;
-        var operation = semanticModel.GetOperation(reference);
-        return operation?.Parent switch {
-            IAssignmentOperation a => a.Target == operation,
-            IArgumentOperation a => a.Parameter?.RefKind is not RefKind.None,
-            IForToLoopOperation l => l.LoopControlVariable == operation,
-            IForEachLoopOperation l => l.LoopControlVariable == operation,
-            IReDimClauseOperation => true,
-            // Late-bound arguments are copied back when the method found at runtime takes them ByRef
-            IDynamicInvocationOperation or IDynamicIndexerAccessOperation or IDynamicObjectCreationOperation => true,
-            _ => false
-        };
-    }
-
-    /// <summary>
-    /// Statements whose operation tree doesn't show the field as written.
-    /// </summary>
-    private static bool IsWrittenBySyntax(SyntaxNode reference) => reference.Parent switch {
-        VBSyntax.EraseStatementSyntax => true,
-        VBSyntax.SimpleArgumentSyntax { Parent.Parent: VBSyntax.MidExpressionSyntax mid } arg => mid.ArgumentList.Arguments.First() == arg,
-        _ => false
-    };
 
     private static bool IsDuringConstruction(SemanticModel semanticModel, SyntaxNode reference, IFieldSymbol field)
     {
