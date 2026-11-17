@@ -604,7 +604,7 @@ internal class NameExpressionNodeVisitor
                     // Being the leftmost invocation of an unqualified method call ensures no other code is executed. Could add other cases here, such as a method call on a local variable name, or "this.". A method call on a property is not acceptable.
                     if (argumentSyntax.Parent.Parent is VBSyntax.InvocationExpressionSyntax parentInvocation && parentInvocation.ArgumentList.Arguments.First() == argumentSyntax && FirstArgDefinitelyEvaluated(parentInvocation)) continue;
                     else return false;
-                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithSeveralDeclarators(declarator, out var declarators):
+                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
                     if (declarators.First() == declarator) continue;
                     else return false;
                 case VBSyntax.ElseIfStatementSyntax _:
@@ -650,7 +650,7 @@ internal class NameExpressionNodeVisitor
                 case VBSyntax.BinaryExpressionSyntax binaryExpression:
                     if (binaryExpression.Right == invocation) continue;
                     else return false;
-                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithSeveralDeclarators(declarator, out var declarators):
+                case VBSyntax.VariableDeclaratorSyntax declarator when IsInLocalDeclarationWithMultipleDeclarators(declarator, out var declarators):
                     if (declarators.Last() == declarator) continue;
                     else return false;
                 case VBSyntax.IfStatementSyntax _:
@@ -678,7 +678,7 @@ internal class NameExpressionNodeVisitor
     /// but temporaries and write-backs are hoisted around the whole converted declaration.
     /// A Static local's declarators become fields, where a local function couldn't be called, so those keep the old placement.
     /// </summary>
-    private static bool IsInLocalDeclarationWithSeveralDeclarators(VBSyntax.VariableDeclaratorSyntax declarator, out SeparatedSyntaxList<VBSyntax.VariableDeclaratorSyntax> declarators)
+    private static bool IsInLocalDeclarationWithMultipleDeclarators(VBSyntax.VariableDeclaratorSyntax declarator, out SeparatedSyntaxList<VBSyntax.VariableDeclaratorSyntax> declarators)
     {
         declarators = declarator.Parent is VBSyntax.LocalDeclarationStatementSyntax localDeclaration &&
                       !localDeclaration.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.StaticKeyword))
