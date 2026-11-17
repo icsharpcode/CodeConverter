@@ -121,6 +121,35 @@ Public Class ByRefParameterizedPropertyTests
     End Sub
 
     <Fact>
+    Public Sub AssignedIndexIsWrittenBackWithItsOriginalValue()
+        Dim db As New Db(_log)
+        Dim index = 1
+        index = SetValueReturnFive(db.Qr(index, 21))
+        Assert.Equal(5, index)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    Private Shared Function SetValueReturnFive(ByRef value As String) As Integer
+        value = "changed"
+        Return 5
+    End Function
+
+    <Fact>
+    Public Sub AssignedReceiverIsWrittenBackToTheOriginal()
+        Dim db As New Db(_log)
+        Dim original = db
+        db = SetValueReturnNewDb(db.Qr(1, 21))
+        Assert.NotSame(original, db)
+        Assert.Equal("changed", original.Qr(1, 21))
+        Assert.Equal("get 1,21;set 1,21=changed;get 1,21", LogText())
+    End Sub
+
+    Private Shared Function SetValueReturnNewDb(ByRef value As String) As Db
+        value = "changed"
+        Return New Db(New List(Of String))
+    End Function
+
+    <Fact>
     Public Sub ReadOnlyParameterizedPropertyIsNotWrittenBack()
         Dim db As New Db(_log)
         SetValue(db.ReadOnlyQr(NextIndex()))
