@@ -1667,7 +1667,7 @@ public partial class Caller
 
     Sub UsesTwice(other As C)
         Dim i = 1
-        SetValue(Qr(i, 2)) ' Locals, constants and fields are evaluated again
+        SetValue(Qr((i), 2)) ' Locals, constants and fields are evaluated again
         SetValue(other.Qr(_index, NextIndex()))
         SetValue(GetC().Qr(1, 2))
         SetValue(GetC().Plain)

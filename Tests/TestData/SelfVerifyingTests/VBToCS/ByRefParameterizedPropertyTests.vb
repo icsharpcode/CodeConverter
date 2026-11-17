@@ -1,3 +1,4 @@
+Imports System
 Imports System.Collections.Generic
 Imports Xunit
 
@@ -114,6 +115,39 @@ Public Class ByRefParameterizedPropertyTests
         Assert.Equal("holder", LogText())
     End Sub
 
+    <Fact>
+    Public Sub StructureLocalWrittenByAnotherArgumentIsWrittenInPlace()
+        Dim cell As Cell
+        SetValueAndCell(cell.Text, cell)
+        Assert.Equal("replacedchanged", cell.Text)
+    End Sub
+
+    Private Shared Sub SetValueAndCell(ByRef value As String, ByRef cell As Cell)
+        value = "changed"
+        cell = New Cell With {.Text = "replaced"}
+    End Sub
+
+    <Fact>
+    Public Sub LocalIndexAssignedInALambdaUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        Dim index = 1
+        SetValueAndRun(db.Qr(index, 21), Sub() index = 5)
+        Assert.Equal(5, index)
+        Assert.Equal("get 1,21;set 1,21=changed", LogText())
+    End Sub
+
+    Private Shared Sub SetValueAndRun(ByRef value As String, action As Action)
+        action()
+        value = "changed"
+    End Sub
+
+    <Fact>
+    Public Sub OmittedIndexBeforeAGivenOneIsWrittenBackThroughTheSetter()
+        Dim db As New Db(_log)
+        SetValue(db.TwoDefaults(, NextIndex()))
+        Assert.Equal("index 1;get 7,1;set 7,1=changed", LogText())
+    End Sub
+
     Private Function GetHolder(holder As CellHolder) As CellHolder
         _log.Add("holder")
         Return holder
@@ -207,6 +241,16 @@ Public Class ByRefParameterizedPropertyTests
             Set(value As String)
                 _log.Add("set " & tableBuffer & "," & fieldNumber & "=" & value)
                 _values(tableBuffer & "," & fieldNumber) = value
+            End Set
+        End Property
+
+        Public Property TwoDefaults(Optional a As Integer = 7, Optional b As Integer = 8) As String
+            Get
+                _log.Add("get " & a & "," & b)
+                Return Nothing
+            End Get
+            Set(value As String)
+                _log.Add("set " & a & "," & b & "=" & value)
             End Set
         End Property
 
