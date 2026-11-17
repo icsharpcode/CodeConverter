@@ -144,11 +144,10 @@ internal class ByRefTargetTemporaries
     }
 
     private IEnumerable<ISymbol> GetVariablesWrittenIn(SyntaxNode node) =>
-        _semanticModel.GetOperation(node)?.DescendantsAndSelf().Select(o => o switch {
-            IArgumentOperation { Parameter.RefKind: not RefKind.None } a => a.Value,
-            IAssignmentOperation a => a.Target,
-            _ => null
-        }).Select(GetReferencedVariable).Where(s => s != null) ?? Enumerable.Empty<ISymbol>();
+        _semanticModel.GetOperation(node)?.DescendantsAndSelf()
+            .Select(o => (Operation: o, Variable: GetReferencedVariable(o)))
+            .Where(r => r.Variable != null && VariableWrites.IsWrite(r.Operation))
+            .Select(r => r.Variable) ?? Enumerable.Empty<ISymbol>();
 
     private static ISymbol GetReferencedVariable(IOperation operation) => operation switch {
         ILocalReferenceOperation l => l.Local,

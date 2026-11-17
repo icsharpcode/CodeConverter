@@ -150,6 +150,19 @@ Public Class ByRefParameterizedPropertyTests
     End Function
 
     <Fact>
+    Public Sub LocalIndexChangedByALoopInALambdaUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        Dim index = 1
+        Dim loopOverIndex As Action = Sub()
+                                          For index = 5 To 7
+                                          Next
+                                      End Sub
+        SetValueAndRun(db.Qr(index, 1), loopOverIndex)
+        Assert.Equal(8, index)
+        Assert.Equal("get 1,1;set 1,1=changed", LogText())
+    End Sub
+
+    <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
         SetValue(Db.SharedQr(NextIndex()))
