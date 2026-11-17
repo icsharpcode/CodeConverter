@@ -1834,4 +1834,176 @@ internal partial class TestClass
 1 target compilation errors:
 CS0103: The name 'q' does not exist in the current context");
     }
+
+    [Fact]
+    public async Task HandlerLeavesReturnsInsideReassignedLambdasAloneWhenReturnVariableIsUsedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Code() As Integer
+        On Error GoTo Failed
+        Code = 1
+        Console.WriteLine(""saving"")
+        Exit Function
+Failed:
+        Dim pick As Func(Of Integer, Integer) = Nothing
+        pick = Function(x)
+                   If x > 1 Then Return x
+                   Return 0
+               End Function
+        Dim pickAgain As Func(Of Integer, Integer) = Function(x As Integer)
+                                                         Return x + 1
+                                                     End Function
+        pickAgain = Function(x As Integer) As Integer
+                        Return x + 2
+                    End Function
+        Code = pick(Err.Number) + pickAgain(1)
+        Exit Function
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Code()
+    {
+        int CodeRet = default;
+        ProjectData.ClearProjectError();
+        try
+        {
+            CodeRet = 1;
+            Console.WriteLine(""saving"");
+            return CodeRet;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            Func<int, int> pick = null;
+            pick = new Func<int, int>(x =>
+                {
+                    if (x > 1)
+                        return x;
+                    return 0;
+                });
+            Func<int, int> pickAgain = (x) => x + 1;
+            pickAgain = new Func<int, int>((x) => x + 2);
+            CodeRet = pick(Information.Err().Number) + pickAgain(1);
+            ProjectData.ClearProjectError();
+            return CodeRet;
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task HandlerLeavesReturnsInsideLambdasAloneWithoutAReturnVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Code() As Integer
+        On Error GoTo Failed
+        Console.WriteLine(""saving"")
+        Return 1
+Failed:
+        Dim pick As Func(Of Integer, Integer) = Nothing
+        pick = Function(x)
+                   If x > 1 Then Return x
+                   Return 0
+               End Function
+        Return pick(Err.Number)
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Code()
+    {
+        ProjectData.ClearProjectError();
+        try
+        {
+            Console.WriteLine(""saving"");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            Func<int, int> pick = null;
+            pick = new Func<int, int>(x =>
+                {
+                    if (x > 1)
+                        return x;
+                    return 0;
+                });
+            try
+            {
+                return pick(Information.Err().Number);
+            }
+            finally
+            {
+                ProjectData.ClearProjectError();
+            }
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task HandlerResumingToALabelBeforeOnErrorKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Sub Run(attempts As Integer)
+Start:
+        Console.WriteLine(""start"")
+        On Error GoTo Failed
+        Console.WriteLine(""work"")
+        Exit Sub
+Failed:
+        Resume Start
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void Run(int attempts)
+    {
+    Start:
+        ;
+
+        Console.WriteLine(""start"");
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 140
+
+
+                Input:
+                        On Error GoTo Failed
+
+                 */
+        Console.WriteLine(""work"");
+        return;
+    Failed:
+        ;
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Start' at character 246
+
+
+                Input:
+
+                        Resume Start
+
+                 */
+    }
+}----- Exception 1 of 2 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 140
+
+----- Exception 2 of 2 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Start' at character 246", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

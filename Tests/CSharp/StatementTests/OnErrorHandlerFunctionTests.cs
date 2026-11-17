@@ -727,4 +727,339 @@ internal partial class TestClass
     }
 }", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    [Fact]
+    public async Task HandlerFunctionLeavesReturnsInsideLambdasAloneAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Run() As Integer
+        On Error GoTo Failed
+        Console.WriteLine(Integer.Parse(""a""))
+        Return 1
+Failed:
+        Dim pick As Func(Of Integer, Integer) = Nothing
+        pick = Function(x)
+                   If x > 1 Then Return x
+                   Return 0
+               End Function
+        Dim pickAgain As Func(Of Integer, Integer) = Function(x As Integer)
+                                                         Return x + 1
+                                                     End Function
+        If pick(Err.Number) = 0 Then Resume Next
+        Return pickAgain(1)
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Run()
+    {
+        ProjectData.ClearProjectError();
+        int result = default;
+        bool FailedExits()
+        {
+
+            Func<int, int> pick = null;
+            pick = new Func<int, int>(x =>
+                {
+                    if (x > 1)
+                        return x;
+                    return 0;
+                });
+            Func<int, int> pickAgain = (x) => x + 1;
+            if (pick(Information.Err().Number) == 0)
+            {
+                ProjectData.ClearProjectError();
+                return false;
+            }
+            result = pickAgain(1);
+            ProjectData.ClearProjectError();
+            return true;
+        }
+        try
+        {
+            Console.WriteLine(int.Parse(""a""));
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            if (FailedExits())
+                return result;
+        }
+        return 1;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
+    public async Task HandlersTheFunctionShapeCantExpressKeepTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Imports System.Collections.Generic
+Class TestClass
+    Sub ThreeWaysOut(flag As Boolean)
+        On Error GoTo Failed
+        Console.WriteLine(Integer.Parse(""a""))
+        Exit Sub
+Failed:
+        If flag Then Resume
+        If Err.Number = 5 Then Exit Sub
+        Resume Next
+    End Sub
+
+    Sub TwoHandlers()
+        On Error GoTo First
+        Console.WriteLine(Integer.Parse(""a""))
+        On Error GoTo Second
+        Console.WriteLine(Integer.Parse(""b""))
+        Exit Sub
+First:
+        Resume Next
+Second:
+        Resume Next
+    End Sub
+
+    Sub GuardInsideAGuardedBlock(items As List(Of Integer))
+        On Error GoTo Failed
+        For Each item In items
+            Console.WriteLine(Integer.Parse(""a""))
+        Next
+        Exit Sub
+Failed:
+        Resume Next
+    End Sub
+
+    Sub LoopConditionWithAHandlerThatExits(text As String)
+        On Error GoTo Failed
+        While Integer.Parse(text) > 0
+            Console.WriteLine(""a"")
+        End While
+        Exit Sub
+Failed:
+        If Err.Number = 5 Then Exit Sub
+        Resume Next
+    End Sub
+End Class", @"using System;
+using System.Collections.Generic;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void ThreeWaysOut(bool flag)
+    {
+        try
+        {
+            Console.WriteLine(int.Parse(""a""));
+            return;
+        }
+        catch
+        {
+
+            if (flag)
+                ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 261
+
+
+                            Input:
+                            Resume
+
+                             */
+            if (Information.Err().Number == 5)
+                return;
+            ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 359
+
+
+            Input:
+                    Resume Next
+
+             */
+        }
+    }
+
+    public void TwoHandlers()
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo First' at character 418
+
+
+                Input:
+                        On Error GoTo First
+
+                 */
+        Console.WriteLine(int.Parse(""a""));
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Second' at character 508
+
+
+                Input:
+                        On Error GoTo Second
+
+                 */
+        Console.WriteLine(int.Parse(""b""));
+        return;
+    First:
+        ;
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+    /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 625
+
+
+    Input:
+
+            Resume Next
+
+     */
+    Second:
+        ;
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 655
+
+
+                Input:
+
+                        Resume Next
+
+                 */
+    }
+
+    public void GuardInsideAGuardedBlock(List<int> items)
+    {
+        try
+        {
+            foreach (var item in items)
+                Console.WriteLine(int.Parse(""a""));
+            return;
+        }
+        catch
+        {
+            ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 954
+
+
+            Input:
+
+                    Resume Next
+
+             */
+        }
+    }
+
+    public void LoopConditionWithAHandlerThatExits(string text)
+    {
+        try
+        {
+            while (int.Parse(text) > 0)
+                Console.WriteLine(""a"");
+            return;
+        }
+        catch
+        {
+
+            if (Information.Err().Number == 5)
+                return;
+            ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 1299
+
+
+            Input:
+                    Resume Next
+
+             */
+        }
+    }
+}----- Exception 1 of 8 -----
+CONVERSION ERROR: Conversion for ResumeStatement not implemented, please report this issue in 'Resume' at character 261
+
+----- Exception 2 of 8 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 359
+
+----- Exception 3 of 8 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo First' at character 418
+
+----- Exception 4 of 8 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Second' at character 508
+
+----- Exception 5 of 8 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 625
+
+----- Exception 6 of 8 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 655
+
+----- Exception 7 of 8 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 954
+
+----- Exception 8 of 8 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 1299", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    [Fact]
+    public async Task HandlerDeclaringALocalThatLaterCodeUsesKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Run() As Integer
+        On Error GoTo Failed
+        Console.WriteLine(Integer.Parse(""a""))
+        Return 1
+Failed:
+        Dim code = Err.Number
+        Resume Next
+After:
+        Console.WriteLine(code)
+        Return 2
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Run()
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 79
+
+
+                Input:
+                        On Error GoTo Failed
+
+                 */
+        Console.WriteLine(int.Parse(""a""));
+        return 1;
+    Failed:
+        ;
+
+        int code = Information.Err().Number;
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+    /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 269
+
+
+    Input:
+            Resume Next
+
+     */
+    After:
+        ;
+
+        Console.WriteLine(code);
+        return 2;
+    }
+}----- Exception 1 of 2 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo Failed' at character 79
+
+----- Exception 2 of 2 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 269", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
