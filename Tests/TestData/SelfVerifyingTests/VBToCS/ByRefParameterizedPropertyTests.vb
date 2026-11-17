@@ -150,6 +150,62 @@ Public Class ByRefParameterizedPropertyTests
     End Function
 
     <Fact>
+    Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
+        Db.SharedLog = _log
+        SetValue(Db.SharedQr(NextIndex()))
+        Assert.Equal("index 1;shared get 1;shared set 1=changed", LogText())
+    End Sub
+
+    Private _table As Table
+
+    <Fact>
+    Public Sub StructureFieldReceiverOfAParameterizedPropertyIsWrittenInPlace()
+        SetValue(_table.Cell(NextIndex()))
+        Assert.Equal("1=changed", _table.Last)
+    End Sub
+
+    <Fact>
+    Public Sub StructureReturnedByAFunctionIsWrittenBackToItsCopy()
+        SetValue(GetCell().Text)
+        Assert.Equal("cell", LogText())
+    End Sub
+
+    Private Function GetCell() As Cell
+        _log.Add("cell")
+        Return New Cell
+    End Function
+
+    <Fact>
+    Public Sub ByRefTargetInAFieldInitializerIsEvaluatedOnce()
+        Dim initialized As New Initialized
+        Assert.Equal("changed", initialized.Value)
+        Assert.Equal("index 1;get 1,1;set 1,1=changed", String.Join(";", initialized.Log))
+    End Sub
+
+    Private Class Initialized
+        Public ReadOnly Log As New List(Of String)
+        Private ReadOnly _db As New Db(Log)
+        Public Value As String = SetValue(_db.Qr(NextLoggedIndex(), 1))
+
+        Private Function NextLoggedIndex() As Integer
+            Log.Add("index 1")
+            Return 1
+        End Function
+    End Class
+
+    Private Structure Table
+        Public Last As String
+        Public Property Cell(index As Integer) As String
+            Get
+                Return Nothing
+            End Get
+            Set(value As String)
+                Last = index & "=" & value
+            End Set
+        End Property
+    End Structure
+
+    <Fact>
     Public Sub ReadOnlyParameterizedPropertyIsNotWrittenBack()
         Dim db As New Db(_log)
         SetValue(db.ReadOnlyQr(NextIndex()))
@@ -334,6 +390,18 @@ Public Class ByRefParameterizedPropertyTests
             End Get
             Set(value As String)
                 _log.Add("set " & a & "," & b & "=" & value)
+            End Set
+        End Property
+
+        Public Shared SharedLog As List(Of String)
+
+        Public Shared Property SharedQr(index As Integer) As String
+            Get
+                SharedLog.Add("shared get " & index)
+                Return Nothing
+            End Get
+            Set(value As String)
+                SharedLog.Add("shared set " & index & "=" & value)
             End Set
         End Property
 

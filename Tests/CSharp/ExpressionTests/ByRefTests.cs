@@ -2053,4 +2053,90 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ByRefPropertyTargetCopiesFriendFieldsVisibleToFriendAssembliesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"<Assembly: System.Runtime.CompilerServices.InternalsVisibleTo(""Other"")>
+
+Public Class Db
+    Public Property Qr(a As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Class C
+    Friend _friendNeverWritten As Integer
+    Private _privateNeverWritten As Integer
+    Private Shared _sharedWrittenByAnotherTypesConstructor As Integer
+    Private ReadOnly _db As New Db
+
+    Private Class Other
+        Sub New()
+            C._sharedWrittenByAnotherTypesConstructor = 1
+        End Sub
+    End Class
+
+    Sub UsesFields()
+        SetValue(_db.Qr(_friendNeverWritten))
+        SetValue(_db.Qr(_privateNeverWritten))
+        SetValue(_db.Qr(_sharedWrittenByAnotherTypesConstructor))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo(""Other"")]
+
+public partial class Db
+{
+    public string get_Qr(int a)
+    {
+        return """";
+    }
+    public void set_Qr(int a, string value)
+    {
+    }
+}
+
+public partial class C
+{
+    internal int _friendNeverWritten;
+    private int _privateNeverWritten;
+    private static int _sharedWrittenByAnotherTypesConstructor;
+    private readonly Db _db = new Db();
+
+    private partial class Other
+    {
+        public Other()
+        {
+            _sharedWrittenByAnotherTypesConstructor = 1;
+        }
+    }
+
+    public void UsesFields()
+    {
+        var tmp = _friendNeverWritten;
+        string argvalue = _db.get_Qr(tmp);
+        SetValue(ref argvalue);
+        _db.set_Qr(tmp, argvalue);
+        string argvalue1 = _db.get_Qr(_privateNeverWritten);
+        SetValue(ref argvalue1);
+        _db.set_Qr(_privateNeverWritten, argvalue1);
+        var tmp1 = _sharedWrittenByAnotherTypesConstructor;
+        string argvalue2 = _db.get_Qr(tmp1);
+        SetValue(ref argvalue2);
+        _db.set_Qr(tmp1, argvalue2);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
 }
