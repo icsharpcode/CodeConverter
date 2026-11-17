@@ -29,16 +29,28 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _generatedNames = new();
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private readonly PerScopeState _perScopeState;
+    private VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> _statementVisitor;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
     public bool HasReturnVariable => ReturnVariable != null;
-    public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; }
+    /// <summary>How nested statements are converted: every statement is visited through this, whatever its depth.</summary>
+    public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; private set; }
 
     /// <summary>Set by the On Error conversion for the shape it emits. Until then, On Error and Resume statements can't be converted.</summary>
     public IOnErrorStatementConverter OnErrorStatementConverter { get; set; }
 
     private CommonConversions CommonConversions { get; }
+
+    /// <summary>
+    /// Lets another class change the conversion of each statement at every nesting depth, without this visitor knowing why.
+    /// The decorator sits inside the comment conversion, so comments attach to whatever it returns for the statement.
+    /// </summary>
+    public void DecorateStatementVisitor(Func<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> decorate)
+    {
+        _statementVisitor = decorate(_statementVisitor);
+        CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(_statementVisitor);
+    }
 
     public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VisualBasicSyntaxNode node, SemanticModel semanticModel,
         CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, VisualBasicEqualityComparison visualBasicEqualityComparison,
@@ -68,8 +80,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         _extraUsingDirectives = extraUsingDirectives;
         _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
         _perScopeState = typeContext.PerScopeState;
-        var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
-        CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
+        _statementVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
+        CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(_statementVisitor);
         _localsToInlineInLoop = localsToInlineInLoop;
     }
 
