@@ -202,6 +202,14 @@ Public Class ByRefParameterizedPropertyTests
         Assert.Equal("1=changed", _table.Last)
     End Sub
 
+    Private Shared _sharedTable As Table
+
+    <Fact>
+    Public Sub SharedStructureFieldReceiverIsWrittenInPlace()
+        SetValue(_sharedTable.Cell(NextIndex()))
+        Assert.Equal("1=changed", _sharedTable.Last)
+    End Sub
+
     <Fact>
     Public Sub StructureReturnedByAFunctionIsWrittenBackToItsCopy()
         SetValue(GetCell().Text)
