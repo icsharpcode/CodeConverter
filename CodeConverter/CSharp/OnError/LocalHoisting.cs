@@ -1,5 +1,4 @@
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp.OnError;
@@ -8,18 +7,18 @@ namespace ICSharpCode.CodeConverter.CSharp.OnError;
 /// Declares before a <c>try</c> the locals that are declared in it but used after it or in the handler.
 /// </summary>
 /// <remarks>
-/// A C# local is scoped to its block, but a VB local lives for the whole method and starts zeroed, so declaring it earlier as <c>= default</c> is exact.
-/// The declaration in the <c>try</c> becomes an assignment, or nothing when VB had no initializer.
-/// Constants move whole. <c>Static</c> locals already become fields.
+/// See <see cref="DeclarationSplitter"/> for how a declaration is split. <c>Static</c> locals already become fields, so are left alone.
 /// </remarks>
 internal sealed class LocalHoisting
 {
     private readonly OnErrorConversionContext _context;
     private readonly HashSet<ILocalSymbol> _hoisted;
+    private readonly DeclarationSplitter _splitter;
 
     public LocalHoisting(OnErrorConversionContext context, OnErrorModel model, IEnumerable<StatementRange> segments)
     {
         _context = context;
+        _splitter = new DeclarationSplitter(context.SemanticModel, context.CommonConversions);
         _hoisted = new HashSet<ILocalSymbol>(segments.SelectMany(s => FindUsedOutside(model, s)), SymbolEqualityComparer.Default);
     }
 
@@ -34,7 +33,9 @@ internal sealed class LocalHoisting
         var converted = new List<StatementSyntax>();
         foreach (var statement in statements) {
             var csStatements = await _context.ConvertAsync(new[] { statement });
-            converted.AddRange(statement is VBSyntax.LocalDeclarationStatementSyntax declaration ? Split(declaration, csStatements) : csStatements);
+            converted.AddRange(statement is VBSyntax.LocalDeclarationStatementSyntax declaration
+                ? _splitter.Split(declaration, csStatements, _hoisted.Contains, Declarations)
+                : csStatements);
         }
         return converted;
     }
@@ -57,65 +58,4 @@ internal sealed class LocalHoisting
             .ToArray();
         return declared.Where(l => referencedOutside.Contains(l, SymbolEqualityComparer.Default));
     }
-
-    private IEnumerable<StatementSyntax> Split(VBSyntax.LocalDeclarationStatementSyntax vbDeclaration, IEnumerable<StatementSyntax> csStatements)
-    {
-        var hoistedByName = vbDeclaration.Declarators
-            .SelectMany(v => v.Names.Select(n => (Symbol: _context.SemanticModel.GetDeclaredSymbol(n) as ILocalSymbol, NeedsAssignment: NeedsAssignment(v, n))))
-            .Where(x => x.Symbol != null && _hoisted.Contains(x.Symbol))
-            .ToDictionary(x => x.Symbol.Name, x => x, StringComparer.OrdinalIgnoreCase);
-        if (!hoistedByName.Any()) return csStatements;
-
-        var inPlace = new List<StatementSyntax>();
-        foreach (var csStatement in csStatements) {
-            if (csStatement is not LocalDeclarationStatementSyntax csDeclaration ||
-                !csDeclaration.Declaration.Variables.Any(v => hoistedByName.ContainsKey(v.Identifier.ValueText))) {
-                inPlace.Add(csStatement);
-            } else if (csDeclaration.IsConst) {
-                Declarations.Add(csDeclaration);
-            } else {
-                inPlace.AddRange(SplitDeclaration(csDeclaration, hoistedByName));
-            }
-        }
-        return inPlace;
-    }
-
-    private IEnumerable<StatementSyntax> SplitDeclaration(LocalDeclarationStatementSyntax csDeclaration,
-        Dictionary<string, (ILocalSymbol Symbol, bool NeedsAssignment)> hoistedByName)
-    {
-        var inOrder = new List<StatementSyntax>();
-        var kept = new List<VariableDeclaratorSyntax>();
-        foreach (var variable in csDeclaration.Declaration.Variables) {
-            if (!hoistedByName.TryGetValue(variable.Identifier.ValueText, out var hoisted)) {
-                kept.Add(variable);
-                continue;
-            }
-            AddKept();
-            Declarations.Add(DeclareDefault(variable.Identifier, hoisted.Symbol));
-            if (hoisted.NeedsAssignment && variable.Initializer != null) {
-                inOrder.Add(SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    SyntaxFactory.IdentifierName(variable.Identifier.WithoutTrivia()), variable.Initializer.Value.WithoutTrivia())));
-            }
-        }
-        AddKept();
-        return inOrder;
-
-        void AddKept()
-        {
-            if (!kept.Any()) return;
-            inOrder.Add(csDeclaration.WithDeclaration(csDeclaration.Declaration.WithVariables(SyntaxFactory.SeparatedList(kept))));
-            kept.Clear();
-        }
-    }
-
-    private LocalDeclarationStatementSyntax DeclareDefault(SyntaxToken identifier, ILocalSymbol local)
-    {
-        var declarator = SyntaxFactory.VariableDeclarator(identifier.WithoutTrivia())
-            .WithInitializer(SyntaxFactory.EqualsValueClause(SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression)));
-        var type = _context.CommonConversions.GetTypeSyntax(local.Type);
-        return SyntaxFactory.LocalDeclarationStatement(SyntaxFactory.VariableDeclaration(type, SyntaxFactory.SingletonSeparatedList(declarator)));
-    }
-
-    private static bool NeedsAssignment(VBSyntax.VariableDeclaratorSyntax declarator, VBSyntax.ModifiedIdentifierSyntax name) =>
-        declarator.Initializer != null || declarator.AsClause is VBSyntax.AsNewClauseSyntax || name.ArrayBounds != null;
 }
