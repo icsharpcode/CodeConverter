@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis.Operations;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 
-namespace ICSharpCode.CodeConverter.CSharp;
+namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 
 /// <summary>
 /// Sound without knowing what a call reaches: a field can only change during a call if something can write it after construction.

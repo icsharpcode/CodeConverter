@@ -1,4 +1,4 @@
-﻿namespace ICSharpCode.CodeConverter.CSharp;
+﻿namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 
 /// <summary>
 /// Answers whether a field can hold a different value after a call than before it, so the converter knows whether reading it again is safe.

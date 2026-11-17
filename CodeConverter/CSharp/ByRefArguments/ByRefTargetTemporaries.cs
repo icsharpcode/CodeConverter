@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Operations;
 
-namespace ICSharpCode.CodeConverter.CSharp;
+namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 
 /// <summary>
 /// A ByRef argument that VB copies back is used twice: read before the call, and written after it.
