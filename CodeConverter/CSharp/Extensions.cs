@@ -12,7 +12,7 @@ internal static class Extensions
     /// </summary>
     public static StatementSyntax UnpackNonNestedBlock(this BlockSyntax block)
     {
-        return block.Statements.Count == 1 && !block.ContainsNestedStatements() ? block.Statements[0] : block;
+        return block.ContainsNestedStatements() ? block : block.UnpackPossiblyNestedBlock();
     }
 
     /// <summary>
