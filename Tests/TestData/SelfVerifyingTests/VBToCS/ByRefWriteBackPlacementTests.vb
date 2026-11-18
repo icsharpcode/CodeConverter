@@ -666,10 +666,36 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal(1, LoggedValue.SharedValue)
     End Sub
 
+    <Fact>
+    Public Sub WithStructureFieldConditionWritesBackBeforeTheBody()
+        Dim h As New CounterHolder
+        Assert.Equal(1, h.IncrementInWith())
+        Assert.Equal(1, h.Inner.P)
+    End Sub
+
+    Private Class CounterHolder
+        Public Inner As Counter
+
+        Public Function IncrementInWith() As Integer
+            With Inner
+                If Increment(.P) > 0 Then Return .P
+            End With
+            Return -1
+        End Function
+    End Class
+
+    <Fact>
+    Public Sub StructureWithStructureFieldConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(1, s.IncrementInnerInWith())
+        Assert.Equal(1, s.Inner.P)
+    End Sub
+
     Private Structure LoggedValue
         Public Shared SharedValue As Integer
         Private ReadOnly _log As List(Of String)
         Private _value As Integer
+        Public Inner As Counter
 
         Public Sub New(log As List(Of String))
             _log = log
@@ -776,6 +802,13 @@ Public Class ByRefWriteBackPlacementTests
                 _log.Add("then " & _value)
             End If
         End Sub
+
+        Public Function IncrementInnerInWith() As Integer
+            With Inner
+                If Increment(.P) > 0 Then Return .P
+            End With
+            Return -1
+        End Function
 
         Public Shared Function SharedCondition() As Boolean
             If Increment(SharedValue) > 0 Then

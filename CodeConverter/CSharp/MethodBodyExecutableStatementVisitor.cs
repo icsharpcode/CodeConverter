@@ -1010,6 +1010,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             }
 
             var (stmt, id) = CreateLocalVariableWithUniqueName(vbExpr, variableNameBase, expr, forceType);
+            if (forceType != null) id = RefLocalReferences.Mark(id, CommonConversions.GetTypeSyntax(_semanticModel.GetTypeInfo(vbExpr).Type));
             stmts = stmts.Add(stmt);
             reusableExprWithoutSideEffects = exprWithoutSideEffects = id;
         }

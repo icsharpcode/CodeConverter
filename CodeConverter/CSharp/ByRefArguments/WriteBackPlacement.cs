@@ -54,9 +54,7 @@ internal class WriteBackPlacement
             var selfName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "self");
             block = block.ReplaceNodes(block.DescendantNodes().OfType<ThisExpressionSyntax>(), (_, _) => ValidSyntaxFactory.IdentifierName(selfName));
             arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ThisExpression()).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
-            parameters.Add(SyntaxFactory.Parameter(SyntaxFactory.Identifier(selfName))
-                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.RefKeyword)))
-                .WithType(CommonConversions.GetTypeSyntax(enclosingSymbol.ContainingType)));
+            parameters.Add(RefParameter(selfName, CommonConversions.GetTypeSyntax(enclosingSymbol.ContainingType)));
         }
 
         // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
@@ -66,8 +64,18 @@ internal class WriteBackPlacement
             .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
         AddArgumentsAndParameters(refParametersOfParent);
 
+        foreach (var (reference, type) in RefLocalReferences.FindIn(block)) {
+            arguments.Add(SyntaxFactory.Argument(reference).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
+            parameters.Add(RefParameter(reference.Identifier.ValueText, type));
+        }
+
         var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters))));
         return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+
+        static ParameterSyntax RefParameter(string name, TypeSyntax type) =>
+            SyntaxFactory.Parameter(SyntaxFactory.Identifier(name))
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.RefKeyword)))
+                .WithType(type);
 
         void AddArgumentsAndParameters(List<IParameterSymbol> parameterSymbols)
         {

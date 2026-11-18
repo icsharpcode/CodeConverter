@@ -1713,4 +1713,78 @@ public partial struct S
     }
 }");
     }
+    [Fact]
+    public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class C
+    Public Inner As T
+
+    Sub M()
+        With Inner
+            If S.Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class
+
+Public Structure S
+    Public Inner As T
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        With Inner
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Structure", @"
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public T Inner;
+
+    public void M()
+    {
+        {
+            ref var withBlock = ref Inner;
+            int localInc(ref T withBlock) { int argv = withBlock.P; var ret = S.Inc(ref argv); withBlock.P = argv; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.P = 0;
+        }
+    }
+}
+
+public partial struct S
+{
+    public T Inner;
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        {
+            ref var withBlock = ref Inner;
+            int localInc(ref T withBlock) { int argv1 = withBlock.P; var ret = Inc(ref argv1); withBlock.P = argv1; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.P = 0;
+        }
+    }
+}");
+    }
 }
