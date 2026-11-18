@@ -91,6 +91,21 @@ End Class", out var model).Single(m => m.SubOrFunctionStatement.Identifier.Text 
     [InlineData("l += 1", false)]
     [InlineData("l = l + 1", false)]
     [InlineData("ui += 1UI", false)]
+    [InlineData("i = (i + (j * 2)) - 1", false)]
+    [InlineData("i = (i + (j * Foo())) - 1", true)]
+    [InlineData("i = (i + (j * l)) - 1", true)]
+    [InlineData("i = (i + fieldI) - 1", true)]
+    [InlineData("l = i * j", true)]
+    [InlineData("l = i + 1", true)]
+    [InlineData("l = (i + j) * 2", true)]
+    [InlineData("i = l + 1", true)]
+    [InlineData("e += 1", true)]
+    [InlineData("e = e + 1", true)]
+    [InlineData("e = CType(i + 1, System.DayOfWeek)", true)]
+    [InlineData("fieldL = fieldL + 1", true)]
+    [InlineData("i = Foo()", true)]
+    [InlineData("i = Foo() + 1", true)]
+    [InlineData("i = (Foo())", true)]
     [InlineData("i /= 2", true)]
     [InlineData("i \\= 2", true)]
     [InlineData("i = i \\ j", true)]
@@ -113,6 +128,7 @@ End Class", out var model).Single(m => m.SubOrFunctionStatement.Identifier.Text 
     {
         var method = Parse($@"Class C
     Private fieldI As Integer
+    Private fieldL As Long
     Function Foo() As Integer
         Return 1
     End Function
@@ -120,6 +136,7 @@ End Class", out var model).Single(m => m.SubOrFunctionStatement.Identifier.Text 
         Dim i, j As Integer
         Dim l As Long
         Dim ui As UInteger
+        Dim e As System.DayOfWeek
         Dim b As Byte
         Dim d As Double
         Dim sg As Single
