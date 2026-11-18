@@ -236,4 +236,19 @@ Public Class IfElseBindingTests
         End If
         Log("end")
     End Sub
+    <Fact>
+    Public Sub ForContainingIfBeforeElse()
+        Assert.Equal("b,end|b,end|b,end|b,end|end|end|a,end|a,end", RunAllCombinations(AddressOf ForBeforeElse))
+    End Sub
+
+    Private Sub ForBeforeElse(outer As Boolean, f1 As Boolean, f2 As Boolean)
+        If outer Then
+            For i = 1 To 1
+                If f1 Then Log("a")
+            Next
+        Else
+            Log("b")
+        End If
+        Log("end")
+    End Sub
 End Class
