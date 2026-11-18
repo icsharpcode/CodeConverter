@@ -48,6 +48,15 @@ internal class WriteBackPlacement
 
         var arguments = new List<ArgumentSyntax>();
         var parameters = new List<ParameterSyntax>();
+        if (IsInStructAndUsesThis(invocation)) {
+            var selfName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "self");
+            block = block.ReplaceNodes(block.DescendantNodes().OfType<ThisExpressionSyntax>(), (_, _) => ValidSyntaxFactory.IdentifierName(selfName));
+            arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ThisExpression()).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
+            parameters.Add(SyntaxFactory.Parameter(SyntaxFactory.Identifier(selfName))
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.RefKeyword)))
+                .WithType(CommonConversions.GetTypeSyntax(_semanticModel.GetEnclosingSymbol(invocation.SpanStart).ContainingType)));
+        }
+
         // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
         var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
         var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
@@ -84,7 +93,6 @@ internal class WriteBackPlacement
         }
 
         if (invocation.ArgumentList == null) return false;
-        if (IsInStructAndUsesThis(invocation)) return false;
         var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
         var assignmentChangesWhatIsWrittenBack = AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
         var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation) && !assignmentChangesWhatIsWrittenBack;
@@ -168,7 +176,10 @@ internal class WriteBackPlacement
     }
 
     /// <summary>
-    /// A local function in a struct can't use <c>this</c> (CS1673), so there the write-back stays after the statement: compiling but late, a known gap.
+    /// A local function in a struct can't use <c>this</c> (CS1673), but it can take it as a <c>ref</c> parameter: <c>local(ref this)</c>.
+    /// That's legal wherever VB can use <c>Me</c> in a structure: methods, property and event accessors, constructors (C# 11 structs are auto-default),
+    /// iterators and async methods (which work on a copy in both languages). VB has no read-only members, where <c>ref this</c> would be CS1605,
+    /// and doesn't allow <c>Me</c> in a lambda in a structure (BC36638), so the call is never inside one.
     /// </summary>
     private bool IsInStructAndUsesThis(VBasic.VisualBasicSyntaxNode invocation) =>
         _semanticModel.GetEnclosingSymbol(invocation.SpanStart) is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&

@@ -27,10 +27,11 @@ Sources: [passing arguments by value and by reference](https://learn.microsoft.c
 
 Within each of these, one call's write-backs are hoisted after its whole argument list, last argument first, so a nested call's come before them: `ByRefArgumentHoister.WithWriteBacksInVbOrderAsync`.
 
+In a `Structure`, a local function can't use `this` (CS1673). When the call uses an instance member, the local function takes `ref S self` and is called with `ref this`, and its body uses `self` for `this` (the converted body always qualifies instance members, which are only simplified later). `ref this` is legal wherever VB can use `Me` in a structure; VB has no read-only members (where it's CS1605) and no `Me` in a structure's lambdas (BC36638): `WriteBackPlacement.HoistAndCallLocalFunctionAsync`.
+
 The classes in this folder hold the ByRef-specific decisions. The placement mechanics stay with the code they extend: the hoisted node types and `PerScopeState` (the hoisting for every feature), `MethodBodyExecutableStatementVisitor` (jumps) and `CommonConversions` (field initializers, whose method wraps any hoisted statement, not only ByRef ones).
 
 Known gaps:
-* In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, every case that would use the local function instead writes back after the statement. That covers operands, conditions, block headers, `Dim` declarators, and compound or receiver-target assignments. The code compiles, but the write-back is late. Loop conditions still use a local function there and give CS1673, because writing back once would be wrong in a different way.
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
 * An assignment is only seen to change what's written back when the same symbol appears in both, e.g. `h.P = F(h.P)`. So:
