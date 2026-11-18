@@ -22,18 +22,23 @@ internal static class StructuredPlanner
 
         var coverageEnd = model.OnErrorStatements.Select(model.MethodLevelIndexOf)
             .Where(i => onErrorIndex < i && i < handler.LabelIndex).DefaultIfEmpty(handler.LabelIndex).Min();
-        var exitLabelIndexes = handler.ExitLabels.Select(model.MethodLevelIndexOfLabel).ToArray();
-        if (!handler.Exits.All(IsStructuredExit) || exitLabelIndexes.Any(i => i <= onErrorIndex || i >= handler.LabelIndex)) return null;
+        var allExitLabelIndexes = handler.ExitLabels.Select(model.MethodLevelIndexOfLabel).ToArray();
+        if (!handler.Exits.All(IsStructuredExit) || allExitLabelIndexes.Any(i => i <= onErrorIndex || handler.Contains(i))) return null;
+        var hasTail = allExitLabelIndexes.Any(i => i >= handler.EndIndex);
+        var exitLabelIndexes = allExitLabelIndexes.Where(i => i < handler.LabelIndex).ToArray();
 
         var handlerReachedWithoutError = OnErrorModel.EndPointIsReachable(model.Statements[handler.LabelIndex - 1], semanticModel);
-        if (handlerReachedWithoutError && exitLabelIndexes.Any()) return null;
+        if (handlerReachedWithoutError && allExitLabelIndexes.Any()) return null;
 
         var coveredEnd = exitLabelIndexes.Where(i => i < coverageEnd).DefaultIfEmpty(coverageEnd).Min();
         var covered = new StatementRange(-1, onErrorIndex + 1, coveredEnd);
         if (!CanOnlyBeEnteredFromTheTop(model, covered) || IsJumpedIntoFromOutside(model, handler)) return null;
 
+        var tail = new StatementRange(-1, handler.EndIndex, model.Statements.Count);
+        if (hasTail && (IsJumpedIntoNestedBlockFromOutside(model, tail) || TailIsReEnteredByTheHandler(model, handler, tail, semanticModel))) return null;
+
         var segmented = TrySegment(model, handler, covered, coverageEnd, semanticModel);
-        return new StructuredPlan(onErrorIndex, handler, segmented ?? new[] { covered }, handlerReachedWithoutError);
+        return new StructuredPlan(onErrorIndex, handler, segmented ?? new[] { covered }, handlerReachedWithoutError, model.Statements.Count, hasTail);
     }
 
     private static bool IsStructuredExit(HandlerExit exit) =>
@@ -73,6 +78,22 @@ internal static class StructuredPlanner
 
     private static bool CanOnlyBeEnteredFromTheTop(OnErrorModel model, StatementRange segment) =>
         model.Jumps.All(j => !segment.Contains(model.IndexContainingLabel(j.TargetLabel)) || segment.Contains(model.MethodLevelIndexOf(j.Statement)));
+
+    /// <summary>The tail is entered by jumping to its method-level labels, which C# allows, but not into a nested block.</summary>
+    private static bool IsJumpedIntoNestedBlockFromOutside(OnErrorModel model, StatementRange tail) =>
+        model.Jumps.Any(j => tail.Contains(model.IndexContainingLabel(j.TargetLabel)) && !tail.Contains(model.MethodLevelIndexOf(j.Statement)) &&
+                             model.MethodLevelIndexOfLabel(j.TargetLabel) < 0);
+
+    /// <summary>
+    /// In VB the tail still has the handler active, so an error there would enter the handler again. The tail is unprotected, which is only the same if that can't matter:
+    /// the tail can't fail, or the handler isn't written for re-entry (README.md "Secondary errors").
+    /// </summary>
+    private static bool TailIsReEnteredByTheHandler(OnErrorModel model, HandlerRegion handler, StatementRange tail, SemanticModel semanticModel)
+    {
+        var tailStatements = StatementsIn(model, tail);
+        var handlerStatements = model.Statements.Skip(handler.LabelIndex + 1).Take(handler.EndIndex - handler.LabelIndex - 1);
+        return SecondaryErrorIsPossible(tailStatements, semanticModel) && ReEntryGuard.IsPresent(handlerStatements, tailStatements, semanticModel);
+    }
 
     private static bool IsJumpedIntoFromOutside(OnErrorModel model, HandlerRegion handler) =>
         model.Jumps.Any(j => handler.Contains(model.IndexContainingLabel(j.TargetLabel)) && !handler.Contains(model.MethodLevelIndexOf(j.Statement)));

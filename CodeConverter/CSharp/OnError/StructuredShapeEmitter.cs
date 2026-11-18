@@ -11,6 +11,7 @@ namespace ICSharpCode.CodeConverter.CSharp.OnError;
 /// * Only reached by an error: in the <c>catch</c>. When it falls off the end of the method, the <c>catch</c> must return rather than carry on after the <c>try</c>.
 /// * Also reached by running into its label: after the <c>try</c>, as ordinary code, and the <c>catch</c> jumps to it past any statements in between.
 /// * Segmented (re-entrant handler): after all the segments, each segment's <c>catch</c> jumping to it, so a secondary error re-enters it as in VB.
+/// When the handler leaves to a label after itself, the statements from there on (the tail) follow the <c>try</c>, so the handler's jump to the label is a fall through.
 /// </remarks>
 internal sealed class StructuredShapeEmitter
 {
@@ -27,7 +28,7 @@ internal sealed class StructuredShapeEmitter
         _model = model;
         _plan = plan;
         _err = err;
-        _hoisting = new LocalHoisting(context, model, plan.Segments.Append(UnprotectedRange(plan)));
+        _hoisting = new LocalHoisting(context, model, plan.Segments.Append(UnprotectedRange(plan)).Append(plan.Tail));
         _exceptionVariableName = err.IsMaintained ? context.Visitor.GetUniqueVariableNameInScope(model.Statements[plan.OnErrorIndex], "ex") : null;
         context.Visitor.OnErrorStatementConverter = new StructuredStatementConverter(err, model);
     }
@@ -36,7 +37,7 @@ internal sealed class StructuredShapeEmitter
     /// Whether every local that has to be declared before the <c>try</c>, because it is used outside it, can be (see <see cref="DeclarationSplitter.CanSplit"/>).
     /// </summary>
     public static bool CanEmit(OnErrorConversionContext context, OnErrorModel model, StructuredPlan plan) =>
-        new LocalHoisting(context, model, plan.Segments.Append(UnprotectedRange(plan))).CanDeclareAll;
+        new LocalHoisting(context, model, plan.Segments.Append(UnprotectedRange(plan)).Append(plan.Tail)).CanDeclareAll;
 
     private VBSyntax.StatementSyntax OnErrorStatement => _model.Statements[_plan.OnErrorIndex];
     private int HandlerLabelIndex => _plan.Handler.LabelIndex;
@@ -56,6 +57,7 @@ internal sealed class StructuredShapeEmitter
         var covered = await _hoisting.ConvertAsync(StatementsIn(_plan.Covered));
         var unprotected = await _hoisting.ConvertAsync(StatementsIn(UnprotectedRange(_plan)));
         var handler = await ConvertHandlerAsync();
+        var tail = await _hoisting.ConvertAsync(StatementsIn(_plan.Tail));
 
         if (_plan.HandlerReachedWithoutError) {
             if (!unprotected.Any()) return new[] { Try(covered, Enumerable.Empty<StatementSyntax>()) }.Concat(handler);
@@ -65,10 +67,10 @@ internal sealed class StructuredShapeEmitter
         if (unprotected.Any() && _plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd)) {
             handler.Add(_context.Visitor.CreateMethodExitStatement(OnErrorStatement));
         }
-        if (handler.LastOrDefault() is GotoStatementSyntax { Expression: IdentifierNameSyntax target } && IsLabel(unprotected.FirstOrDefault(), target.Identifier.ValueText)) {
+        if (handler.LastOrDefault() is GotoStatementSyntax { Expression: IdentifierNameSyntax target } && IsLabel(unprotected.Concat(tail).FirstOrDefault(), target.Identifier.ValueText)) {
             handler.RemoveAt(handler.Count - 1);
         }
-        return new[] { Try(covered, handler) }.Concat(unprotected);
+        return new[] { Try(covered, handler) }.Concat(unprotected).Concat(tail);
     }
 
     private async Task<IEnumerable<StatementSyntax>> EmitSegmentedAsync()
@@ -81,6 +83,7 @@ internal sealed class StructuredShapeEmitter
         statements.AddRange(await _hoisting.ConvertAsync(StatementsIn(UnprotectedRange(_plan))));
         statements.Add(Label(HandlerLabel));
         statements.AddRange(await ConvertHandlerAsync());
+        statements.AddRange(await _hoisting.ConvertAsync(StatementsIn(_plan.Tail)));
         return statements;
     }
 

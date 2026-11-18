@@ -79,7 +79,7 @@ A pass over the method body builds a model before any statement is converted, so
 
 Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` is used.
 
-1. **Structured.** One `On Error GoTo H` covering a run of method-level statements, `H` at method level, and the handler never resumes into the covered statements (it exits, falls off the end, or does `Resume L`/`GoTo L` to a method-level label after the covered statements).
+1. **Structured.** One `On Error GoTo H` covering a run of method-level statements, `H` at method level, and the handler never resumes into the covered statements (it exits, falls off the end, or does `Resume L`/`GoTo L` to a method-level label after the covered statements or after the handler).
 
    ```csharp
    try
@@ -92,6 +92,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    }
    // statements from L onwards
    ```
+   When the handler leaves to a label after itself (`Resume Done` / `GoTo Done`, with `Done:` following the handler), the statements from the end of the handler's region on come after the `try`, unprotected, and the handler's jump to them is a fall through. Like the code after a resume label, they are only protected (segmented form) when the handler is written for re-entry, which isn't supported for a label after the handler: that keeps the fallback, as does a jump into a nested block of those statements from outside.
    This is the existing conversion, generalised, with locals hoisted (fixes the existing `RemainingScopeIssueCharacterizationAsync` output). When the handler is written for re-entry, the statements after `L` get their own `try` too (see "Secondary errors").
 
 2. **Resume next.** The active handler is resume-next. Each guard becomes

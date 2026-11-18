@@ -289,4 +289,50 @@ H:
         Assert.Equal(11, HandlerSelectCanFallOff(1))
         Assert.Equal(0, HandlerSelectCanFallOff(2))
     End Sub
+
+    Private Function ResumesToALabelAfterTheHandler(succeed As Boolean) As Integer
+        Dim r = 0
+        On Error GoTo H
+        Work(succeed)
+        r = 1
+        GoTo Done
+H:
+        _log.Add("handler " & Err.Description)
+        r = 5
+        Resume Done
+Done:
+        _log.Add("done")
+        Return r
+    End Function
+
+    <Fact>
+    Sub HandlerResumingToALabelAfterItClearsErr()
+        Assert.Equal(5, ResumesToALabelAfterTheHandler(False))
+        Assert.Equal("work, handler work failed, done", Logged())
+        Assert.Equal(0, Err.Number)
+        _log.Clear()
+        Assert.Equal(1, ResumesToALabelAfterTheHandler(True))
+        Assert.Equal("work, done", Logged())
+    End Sub
+
+    Private Sub GoesToALabelAfterTheHandler(succeed As Boolean)
+        Dim r = 0
+        On Error GoTo H
+        Work(succeed)
+        GoTo Done
+H:
+        _log.Add("handler " & Err.Number)
+        GoTo Done
+Done:
+        _log.Add("done")
+    End Sub
+
+    <Fact>
+    Sub HandlerGoingToALabelAfterIt()
+        GoesToALabelAfterTheHandler(False)
+        Assert.Equal("work, handler 5, done", Logged())
+        _log.Clear()
+        GoesToALabelAfterTheHandler(True)
+        Assert.Equal("work, done", Logged())
+    End Sub
 End Class

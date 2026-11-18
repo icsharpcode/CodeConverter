@@ -2006,4 +2006,93 @@ CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, plea
 ----- Exception 2 of 2 -----
 CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Start' at character 246", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// A handler that leaves to a label after itself: the statements from that label come after the try, and the handler's jump to them is a fall through.
+    /// </summary>
+    [Fact]
+    public async Task HandlerResumingToALabelAfterItIsStructuredAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Function Foo() As Integer
+        Return 1
+    End Function
+
+    Function Run() As Integer
+        Dim r = 0
+        On Error GoTo H
+        r = Foo() : GoTo Done
+H:
+        r = 5 : Resume Done
+Done:
+        Return r
+    End Function
+
+    Function RunWithErr() As Integer
+        Dim r = 0
+        On Error GoTo H
+        r = Foo() : GoTo Done
+H:
+        r = Err.Number
+        GoTo Done
+Done:
+        Return r
+    End Function
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Foo()
+    {
+        return 1;
+    }
+
+    public int Run()
+    {
+        int r = 0;
+        ProjectData.ClearProjectError();
+        try
+        {
+            r = Foo();
+            goto Done;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            r = 5;
+            ProjectData.ClearProjectError();
+        }
+
+    Done:
+        ;
+
+        return r;
+    }
+
+    public int RunWithErr()
+    {
+        int r = 0;
+        ProjectData.ClearProjectError();
+        try
+        {
+            r = Foo();
+            goto Done;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            r = Information.Err().Number;
+        }
+
+    Done:
+        ;
+
+        return r;
+    }
+}");
+    }
 }
