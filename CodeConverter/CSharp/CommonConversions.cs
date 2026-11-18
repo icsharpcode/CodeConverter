@@ -760,11 +760,17 @@ internal class CommonConversions
 
     public static ExpressionSyntax ThrowawayParameters(ExpressionSyntax invocable, int paramCount)
     {
-        var names = Enumerable.Range(1, paramCount).Select(i =>
-            new string(Enumerable.Repeat('_', i).ToArray())
-        ).ToArray();
-        var parameters = CreateParameterList(names.Select(n => SyntaxFactory.Parameter(SyntaxFactory.Identifier(n))));
+        var parameters = CreateThrowawayParameterList(paramCount);
         return SyntaxFactory.ParenthesizedLambdaExpression(parameters, SyntaxFactory.InvocationExpression(invocable));
+    }
+
+    /// <summary>
+    /// Parameters named _, __, ___, etc. for when VB allows the parameters of a delegate to be omitted, but C# requires them to be declared
+    /// </summary>
+    public static CSSyntax.ParameterListSyntax CreateThrowawayParameterList(int paramCount)
+    {
+        var names = Enumerable.Range(1, paramCount).Select(i => new string('_', i));
+        return CreateParameterList(names.Select(n => SyntaxFactory.Parameter(SyntaxFactory.Identifier(n))));
     }
 
     public static CSSyntax.ParameterListSyntax CreateParameterList(IEnumerable<SyntaxNode> ps)
