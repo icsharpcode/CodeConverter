@@ -38,6 +38,7 @@ internal static class StructuredPlanner
         if (hasTail && (IsJumpedIntoNestedBlockFromOutside(model, tail) || TailIsReEnteredByTheHandler(model, handler, tail, semanticModel))) return null;
 
         var segmented = TrySegment(model, handler, covered, coverageEnd, semanticModel);
+        if (segmented == null && OnlyTheCodeAfterAResumeLabelCanFail(model, handler, covered, coverageEnd, semanticModel)) return null;
         return new StructuredPlan(onErrorIndex, handler, segmented ?? new[] { covered }, handlerReachedWithoutError, model.Statements.Count, hasTail);
     }
 
@@ -64,6 +65,18 @@ internal static class StructuredPlanner
             return null;
         }
         return new[] { covered }.Concat(segments).ToArray();
+    }
+
+    /// <summary>
+    /// The handler resumes to a label, nothing before the label can fail, and the code after it can. The plain form would leave the only code the handler can be for unprotected,
+    /// so even the first error would escape. Unlike a cleanup after the label, this can't be a case of a handler that VB would loop in forever (README.md "Secondary errors").
+    /// </summary>
+    private static bool OnlyTheCodeAfterAResumeLabelCanFail(OnErrorModel model, HandlerRegion handler, StatementRange covered, int coverageEnd, SemanticModel semanticModel)
+    {
+        var resumesToCoveredLabel = handler.Exits.Any(e => e.Kind == HandlerExitKind.ResumeLabel && model.MethodLevelIndexOfLabel(e.TargetLabel) is var i && i >= covered.End && i < coverageEnd);
+        return resumesToCoveredLabel &&
+               !StatementsIn(model, covered).Any(s => ThrowAnalysis.CanThrow(s, semanticModel)) &&
+               SecondaryErrorIsPossible(StatementsIn(model, new StatementRange(-1, covered.End, coverageEnd)), semanticModel);
     }
 
     /// <summary>

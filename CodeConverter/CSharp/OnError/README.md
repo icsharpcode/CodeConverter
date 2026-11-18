@@ -129,6 +129,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
 5. **Fallback.** Anything else keeps today's behaviour, statement-by-statement conversion plus `#error`:
    * the handler jumps to a label inside a nested block;
    * `On Error GoTo -1`;
+   * a handler that resumes to a label (`Resume Retry`) when nothing before the label can fail and the code after it can, with no re-entry guard (see "Secondary errors"): the first error would come from code the plain form leaves unprotected;
    * a handler local function would need to capture a `ref`/`out` parameter;
    * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;
    * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
@@ -210,8 +211,9 @@ Which form is used:
 | No secondary error possible: the code after the resume label can't throw (only exits, jumps, assignments of locals/constants), or starts with its own `On Error` statement | plain structured (they're the same thing) |
 | Secondary error possible and the handler has a **re-entry guard** | exact, segmented form |
 | Secondary error possible, no re-entry guard | plain structured: the secondary error propagates |
+| Secondary error possible, no guard, and nothing before the resume label can fail | fallback: the first error would come from the unprotected code and propagate, which VB wouldn't do (a retry loop: `i = 0` / `Retry:` / `Work()` / handler `Resume Retry`) |
 
-A re-entry guard is a condition in the handler (`If`, `Select Case`, loop condition, `If(…)`) that reads a local, field or property which is assigned in the handler or in the code after the resume label. For example `attempts += 1 : If attempts > 3 Then Exit Sub`, or `If cleaningUp Then Exit Sub` with `cleaningUp = True` in the cleanup. Without one, a second pass through the handler does exactly what the first did, so re-entry can't have been relied on to terminate.
+A re-entry guard is a condition in the handler or in the code after the resume label (`If`, `Select Case`, loop condition, `If(…)`) that reads a local, field or property which is assigned in the handler or in the code after the resume label. For example `attempts += 1 : If attempts > 3 Then Exit Sub`, or `If cleaningUp Then Exit Sub` with `cleaningUp = True` in the cleanup, or a retry that counts itself: `Retry: i += 1 : If i < 3 Then Work()`. Without one, a second pass through the handler does exactly what the first did, so re-entry can't have been relied on to terminate.
 
 Conditions on `Err.Number` alone don't count: they distinguish kinds of first error. No warnings are emitted in any of these cases.
 

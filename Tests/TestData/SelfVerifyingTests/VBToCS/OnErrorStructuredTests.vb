@@ -374,4 +374,24 @@ Done:
         Assert.Equal("work", Logged())
         Assert.Equal(1, TailEndsWithoutAReturn(True))
     End Sub
+
+    Private Function RetriesFromALabelInTheCoveredCode() As Integer
+        On Error GoTo EH
+        Dim i As Integer = 0
+Retry:
+        i += 1
+        _log.Add("try " & i)
+        If i < 3 Then Work(False)
+        RetriesFromALabelInTheCoveredCode = i
+        Exit Function
+EH:
+        _log.Add("eh")
+        Resume Retry
+    End Function
+
+    <Fact>
+    Sub ResumingToALabelInTheCoveredCodeRetriesUntilItsOwnCounterStopsIt()
+        Assert.Equal(3, RetriesFromALabelInTheCoveredCode())
+        Assert.Equal("try 1, work, eh, try 2, work, eh, try 3", Logged())
+    End Sub
 End Class

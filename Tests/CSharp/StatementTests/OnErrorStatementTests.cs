@@ -2296,4 +2296,147 @@ internal partial class TestClass
     }
 }");
     }
+
+    /// <summary>
+    /// The handler resumes to a label after the only statement that can't fail, so the code after the label has to be protected too: a guard in that code (`i` is assigned and tested after the label) says it can re-enter the handler.
+    /// </summary>
+    [Fact]
+    public async Task ResumingToALabelInTheCoveredCodeIsSegmentedWhenItCountsItsAttemptsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Function Retries() As Integer
+        On Error GoTo EH
+        Dim i As Integer = 0
+Retry:
+        i += 1
+        If i < 3 Then Boom()
+        Retries = i
+        Exit Function
+EH:
+        Resume Retry
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public int Retries()
+    {
+        int RetriesRet = default;
+        int i = default;
+        try
+        {
+            i = 0;
+        }
+        catch
+        {
+            goto EH;
+        }
+
+    Retry:
+        ;
+        try
+        {
+
+            i += 1;
+            if (i < 3)
+                Boom();
+            RetriesRet = i;
+            return RetriesRet;
+        }
+        catch
+        {
+            goto EH;
+        }
+
+    EH:
+        ;
+
+        goto Retry;
+    }
+}");
+    }
+
+    /// <summary>
+    /// The first error can only come from the code after the label, which the plain form would leave unprotected, and with no guard the segmented form isn't used.
+    /// </summary>
+    [Fact]
+    public async Task ResumingToALabelInTheCoveredCodeKeepsTheFallbackWithoutAGuardAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Sub Fix()
+    End Sub
+
+    Sub RetriesWithoutAGuard()
+        On Error GoTo EH
+        Dim i As Integer = 0
+Retry:
+        Boom()
+        Exit Sub
+EH:
+        Fix()
+        Resume Retry
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public void Fix()
+    {
+    }
+
+    public void RetriesWithoutAGuard()
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo EH' at character 163
+
+
+                Input:
+                        On Error GoTo EH
+
+                 */
+        int i = 0;
+    Retry:
+        ;
+
+        Boom();
+        return;
+    EH:
+        ;
+
+        Fix();
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Retry' at character 287
+
+
+                Input:
+                        Resume Retry
+
+                 */
+    }
+}----- Exception 1 of 2 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo EH' at character 163
+
+----- Exception 2 of 2 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Retry' at character 287", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
