@@ -12,6 +12,15 @@ namespace ICSharpCode.CodeConverter.CSharp.OnError;
 /// </remarks>
 internal static class StatementReachability
 {
+    /// <summary>The statements up to and including the first one that always leaves: what follows can never run.</summary>
+    public static IEnumerable<StatementSyntax> UpToFirstLeaving(IEnumerable<StatementSyntax> statements)
+    {
+        foreach (var statement in statements) {
+            yield return statement;
+            if (!EndIsReachable(statement)) yield break;
+        }
+    }
+
     public static bool EndIsReachable(IEnumerable<StatementSyntax> statements) => statements.LastOrDefault() is not { } last || EndIsReachable(last);
 
     private static bool EndIsReachable(StatementSyntax statement) => statement switch {

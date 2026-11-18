@@ -1062,4 +1062,58 @@ CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, plea
 ----- Exception 2 of 2 -----
 CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 269", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// Statements after a Resume Next or Exit in the handler can never run, so the function doesn't repeat them after its return.
+    /// </summary>
+    [Fact]
+    public async Task StatementsAfterTheHandlerLeavesAreNotEmittedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Bar()
+    End Sub
+
+    Function Foo() As Integer
+        Return 1
+    End Function
+
+    Sub Run(flag As Boolean)
+        On Error GoTo H
+        Foo()
+        Exit Sub
+H:
+        Bar()
+        If flag Then Exit Sub
+        Resume Next
+        Bar()
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public void Bar()
+    {
+    }
+
+    public int Foo()
+    {
+        return 1;
+    }
+
+    public void Run(bool flag)
+    {
+
+        bool HExits() { Bar(); if (flag) { return true; } return false; }
+        try
+        {
+            Foo();
+        }
+        catch
+        {
+            if (HExits())
+                return;
+        }
+        return;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

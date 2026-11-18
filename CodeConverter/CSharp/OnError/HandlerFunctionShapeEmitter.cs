@@ -89,7 +89,7 @@ internal sealed class HandlerFunctionShapeEmitter
     {
         var body = await ConvertRangeAsync(_plan.Handler.LabelIndex + 1, _plan.Handler.EndIndex);
         var exitValue = SyntaxFactory.LiteralExpression(_plan.ExitValue ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
-        var statements = HandlerExitRewriter.Rewrite(body, _err, _resultVariable, exitValue).ToList();
+        var statements = StatementReachability.UpToFirstLeaving(HandlerExitRewriter.Rewrite(body, _err, _resultVariable, exitValue)).ToList();
         if (_plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) && StatementReachability.EndIsReachable(statements)) {
             statements.AddRange(HandlerExitRewriter.Exit(_err, exitValue));
         }
