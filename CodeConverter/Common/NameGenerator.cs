@@ -40,8 +40,11 @@ internal class NameGenerator
         return uniqueName;
     }
 
+    /// <summary>
+    /// Labels aren't found by <see cref="SemanticModel.LookupSymbols"/>, and a generated label (e.g. a retry label) mustn't clash with a label of the method.
+    /// </summary>
     private static bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, List<int> scopeStarts, string name) =>
-        !generatedNames.Contains(name) && !scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name)).Any();
+        !generatedNames.Contains(name) && !scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name).Concat(semanticModel.LookupLabels(scopeStart, name))).Any();
 
     private string GenerateUniqueName(string baseName, string extension, Func<string, bool> canUse)
     {
@@ -68,4 +71,4 @@ internal class NameGenerator
             .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
     }
 
-}
+}

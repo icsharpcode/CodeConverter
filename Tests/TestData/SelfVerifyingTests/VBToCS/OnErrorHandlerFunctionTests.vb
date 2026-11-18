@@ -350,4 +350,26 @@ H:
         EveryBranchOfTheHandlerLeaves(6)
         Assert.Equal("a, eval b, resuming, c, a, eval b, giving up", Logged())
     End Sub
+
+    Private Function UserLabelNamedLikeAGeneratedRetryLabel() As Integer
+        Dim n = 0
+        Dim failures = 0
+        On Error GoTo H
+retry:
+        n += 1
+        If n = 1 Then Boom("first")
+        If n < 4 Then GoTo retry
+        Return n
+H:
+        failures += 1
+        L("handler " & failures)
+        If failures < 2 Then Resume
+        Resume Next
+    End Function
+
+    <Fact>
+    Sub GeneratedLabelsDoNotClashWithLabelsOfTheMethod()
+        Assert.Equal(4, UserLabelNamedLikeAGeneratedRetryLabel())
+        Assert.Equal("eval first, handler 1, eval first, handler 2", Logged())
+    End Sub
 End Class
