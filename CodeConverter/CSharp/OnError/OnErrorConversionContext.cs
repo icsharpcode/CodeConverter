@@ -11,6 +11,27 @@ internal sealed record OnErrorConversionContext(VBasic.VisualBasicSyntaxNode Met
     public async Task<List<StatementSyntax>> ConvertAsync(IEnumerable<VBSyntax.StatementSyntax> statements) =>
         (await statements.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(Visitor.CommentConvertingVisitor))).ToList();
 
+    /// <summary>
+    /// Converts the statements of a handler, keeping the comments of those that convert to nothing with the next statement (see <see cref="ElidedStatementTrivia"/>).
+    /// </summary>
+    /// <param name="elidedBefore">Statements before these that aren't converted by themselves (the handler label), whose comments are kept with the first statement.</param>
+    public async Task<List<StatementSyntax>> ConvertHandlerAsync(IEnumerable<VBSyntax.StatementSyntax> statements, IEnumerable<VBSyntax.StatementSyntax> elidedBefore)
+    {
+        var converted = new List<StatementSyntax>();
+        var elided = elidedBefore.ToList();
+        foreach (var statement in statements) {
+            var csStatements = (await statement.Accept(Visitor.CommentConvertingVisitor)).ToList();
+            if (!csStatements.Any()) {
+                elided.Add(statement);
+                continue;
+            }
+            if (elided.Any()) csStatements[0] = ElidedStatementTrivia.PrependTo(csStatements[0], statement, elided);
+            elided.Clear();
+            converted.AddRange(csStatements);
+        }
+        return converted;
+    }
+
     /// <summary>The type of the member being converted: the symbol enclosing the end of the method block is the member itself.</summary>
     public INamedTypeSymbol ContainingType =>
         SemanticModel.GetEnclosingSymbol(MethodNode.Span.End - 1) is { } symbol ? symbol as INamedTypeSymbol ?? symbol.ContainingType : null;

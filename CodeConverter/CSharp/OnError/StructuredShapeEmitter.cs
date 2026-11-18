@@ -99,7 +99,7 @@ internal sealed class StructuredShapeEmitter
     /// </summary>
     private async Task<List<StatementSyntax>> ConvertHandlerAsync()
     {
-        var handler = await ConvertRangeAsync(HandlerLabelIndex + 1, _plan.Handler.EndIndex);
+        var handler = await _context.ConvertHandlerAsync(_model.Statements.Skip(HandlerLabelIndex + 1).Take(_plan.Handler.EndIndex - HandlerLabelIndex - 1), new[] { _model.Statements[HandlerLabelIndex] });
         if (!_err.IsMaintained) return handler;
         var withClearedErr = ClearErrOnReturnRewriter.Rewrite(handler, _err, _context.Visitor.ReturnVariable).ToList();
         if (_plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) && StatementReachability.EndIsReachable(withClearedErr)) withClearedErr.AddRange(_err.Clear());

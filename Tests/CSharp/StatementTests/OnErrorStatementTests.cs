@@ -2593,7 +2593,7 @@ internal partial class WithoutErr
             Boom();
         }
     }
-}", incompatibleWithAutomatedCommentTesting: true);
+}");
     }
 
     /// <summary>
@@ -2999,6 +2999,54 @@ internal partial class TestClass
 
         A = r;
     }
-}", incompatibleWithAutomatedCommentTesting: true);
+}");
+    }
+
+    /// <summary>
+    /// A handler's first statement converts to nothing when Err isn't maintained, so the comments on the handler label and on that line belong in the catch, not in the try before it.
+    /// </summary>
+    [Fact]
+    public async Task CommentsOnHandlerLabelAndElidedErrorHandlingOffStayInTheCatchAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public A As Integer
+
+    Sub Work()
+    End Sub
+
+    Sub M()
+        On Error GoTo EH
+        Work()
+        Exit Sub ' c3
+EH: ' c4
+        ' c4b
+        On Error GoTo 0 ' c5
+        A = 2 ' c6
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public int A;
+
+    public void Work()
+    {
+    }
+
+    public void M()
+    {
+        try
+        {
+            Work();
+            return; // c3
+        }
+        catch
+        {
+            // c4
+            // c4b
+            // c5
+            A = 2; // c6
+        }
+    }
+}");
     }
 }
