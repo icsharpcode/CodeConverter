@@ -19,6 +19,7 @@ internal sealed class StatementGuards
     private readonly DeclarationSplitter _splitter;
     private readonly SemanticModel _semanticModel;
     private readonly Func<VBasic.VisualBasicSyntaxNode, string, string> _uniqueName;
+    private readonly Func<VBasic.VisualBasicSyntaxNode, string, string> _uniqueLabelName;
     private readonly string _exceptionName;
     private readonly Func<ILocalSymbol, bool> _isDeclaredAtTop;
     private readonly Func<string, TypeSyntax, bool> _hoistOutOfLoop;
@@ -26,7 +27,7 @@ internal sealed class StatementGuards
     /// <param name="hoistOutOfLoop">Declares a local before the loop that the statement being guarded is in, returning false if it isn't in one.</param>
     /// <param name="isDeclaredAtTop">Locals whose declaration must come before the guards, because something declared earlier (a handler function) uses them.</param>
     public StatementGuards(ResumePoints points, GuardPolicy policy, ErrStatements err, DeclarationSplitter splitter, SemanticModel semanticModel,
-        Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueName, string exceptionName,
+        Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueName, Func<VBasic.VisualBasicSyntaxNode, string, string> uniqueLabelName, string exceptionName,
         Func<string, TypeSyntax, bool> hoistOutOfLoop, Func<ILocalSymbol, bool> isDeclaredAtTop = null)
     {
         _hoistOutOfLoop = hoistOutOfLoop;
@@ -37,6 +38,7 @@ internal sealed class StatementGuards
         _splitter = splitter;
         _semanticModel = semanticModel;
         _uniqueName = uniqueName;
+        _uniqueLabelName = uniqueLabelName;
         _exceptionName = exceptionName;
     }
 
@@ -64,7 +66,7 @@ internal sealed class StatementGuards
     {
         var bodyStatements = body.ToList();
         GuardedAReturn |= afterHandler == null && bodyStatements.Any(ContainsReturn);
-        var retryLabel = _policy.CanRetry ? _uniqueName(node, "retry") : null;
+        var retryLabel = _policy.CanRetry ? _uniqueLabelName(node, "retry") : null;
         var catchStatements = _policy.OnError(retryLabel).Concat(afterHandler ?? Enumerable.Empty<StatementSyntax>());
         var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.Block(bodyStatements),
             SyntaxFactory.SingletonList(_err.CatchClause(_exceptionName, catchStatements, _policy.Filter)), null);

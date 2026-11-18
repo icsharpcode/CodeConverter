@@ -22,6 +22,18 @@ internal class NameGenerator
         return GenerateUniqueVariableNameInScope(semanticModel, generatedNames, variableNameBase, scopeStarts);
     }
 
+    /// <summary>
+    /// A label is in its own namespace in C#, so only other labels matter. They aren't found by <see cref="SemanticModel.LookupSymbols"/>.
+    /// </summary>
+    public string GetUniqueLabelNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string labelNameBase)
+    {
+        var scopeStarts = GetScopeStarts(node);
+        string uniqueName = GenerateUniqueName(labelNameBase, string.Empty, n => !generatedNames.Contains(n) &&
+            !scopeStarts.SelectMany(scopeStart => semanticModel.LookupLabels(scopeStart, n)).Any());
+        generatedNames.Add(uniqueName);
+        return uniqueName;
+    }
+
     public bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string name) =>
         IsNameFreeInScope(semanticModel, generatedNames, GetScopeStarts(node), name);
 
@@ -40,11 +52,8 @@ internal class NameGenerator
         return uniqueName;
     }
 
-    /// <summary>
-    /// Labels aren't found by <see cref="SemanticModel.LookupSymbols"/>, and a generated label (e.g. a retry label) mustn't clash with a label of the method.
-    /// </summary>
     private static bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, List<int> scopeStarts, string name) =>
-        !generatedNames.Contains(name) && !scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name).Concat(semanticModel.LookupLabels(scopeStart, name))).Any();
+        !generatedNames.Contains(name) && !scopeStarts.SelectMany(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name)).Any();
 
     private string GenerateUniqueName(string baseName, string extension, Func<string, bool> canUse)
     {

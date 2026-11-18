@@ -1148,6 +1148,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, variableNameBase);
     }
 
+    public string GetUniqueLabelNameInScope(VBasic.VisualBasicSyntaxNode node, string labelNameBase)
+    {
+        return NameGenerator.CS.GetUniqueLabelNameInScope(_semanticModel, _generatedNames, node, labelNameBase);
+    }
+
     public override async Task<SyntaxList<StatementSyntax>> VisitTryBlock(VBSyntax.TryBlockSyntax node)
     {
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
@@ -1283,4 +1288,4 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             ? statement
             : SyntaxFactory.ExpressionStatement((ExpressionSyntax)node));
     }
-}
+}

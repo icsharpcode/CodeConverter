@@ -30,7 +30,7 @@ internal sealed class ResumeNextShapeEmitter
         GuardPolicy policy = model.IsDynamic ? new DynamicGuardPolicy(_ignoringErrorsFlag) : new ResumeNextGuardPolicy();
         var exceptionName = err.IsMaintained ? context.Visitor.GetUniqueVariableNameInScope(firstStatement, "ex") : null;
         _guards = new StatementGuards(CreateResumePoints(model, context.SemanticModel), policy, err, new DeclarationSplitter(context.SemanticModel, context.CommonConversions),
-            context.SemanticModel, context.Visitor.GetUniqueVariableNameInScope, exceptionName, context.Visitor.TryHoistOutOfLoop);
+            context.SemanticModel, context.Visitor.GetUniqueVariableNameInScope, context.Visitor.GetUniqueLabelNameInScope, exceptionName, context.Visitor.TryHoistOutOfLoop);
     }
 
     /// <summary>
