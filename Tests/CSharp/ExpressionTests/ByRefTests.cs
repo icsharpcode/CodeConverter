@@ -1968,6 +1968,80 @@ public partial struct S
 }");
     }
     [Fact]
+    public async Task TypeNamedLikeAByRefParameterIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class H
+    Public Shared Property S As Integer
+    Public Property Q As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function GetH(q As Integer) As H
+        Return New H
+    End Function
+
+    Shared Function M(<System.Runtime.InteropServices.Out> ByRef h As H) As Boolean
+        If Inc(H.S) > 0 Then
+            h = New H
+            Return True
+        End If
+        h = Nothing
+        Return False
+    End Function
+
+    Shared Function M2(ByRef h As Integer, x As H) As Boolean
+        If Inc(GetH(New H().Q).Q) > 0 Then Return True
+        Return False
+    End Function
+End Class", @"
+public partial class H
+{
+    public static int S { get; set; }
+    public int Q { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static H GetH(int q)
+    {
+        return new H();
+    }
+
+    public static bool M(out H h)
+    {
+        int localInc() { int argv = H.S; var ret = Inc(ref argv); H.S = argv; return ret; }
+
+        if (localInc() > 0)
+        {
+            h = new H();
+            return true;
+        }
+        h = null;
+        return false;
+    }
+
+    public static bool M2(ref int h, H x)
+    {
+        int localInc() { int argv1 = GetH(new H().Q).Q; var ret = Inc(ref argv1); GetH(new H().Q).Q = argv1; return ret; }
+
+        if (localInc() > 0)
+            return true;
+        return false;
+    }
+}");
+    }
+    [Fact]
     public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure T

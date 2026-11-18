@@ -695,6 +695,24 @@ Public Class ByRefWriteBackPlacementTests
         End With
         Assert.Equal("1,0", original.Total & "," & h.Total)
     End Sub
+    <Fact>
+    Public Sub OutParameterNamedLikeItsTypeIsNotPassedToTheLocalFunction()
+        Tally.Count = 0
+        Dim created As Tally = Nothing
+        Assert.True(TryCreateTally(created))
+        Assert.Equal("1,True", Tally.Count & "," & (created IsNot Nothing))
+    End Sub
+    Private Shared Function TryCreateTally(<Out> ByRef tally As Tally) As Boolean
+        If Increment(Tally.Count) > 0 Then
+            tally = New Tally
+            Return True
+        End If
+        tally = Nothing
+        Return False
+    End Function
+    Private Class Tally
+        Public Shared Property Count As Integer
+    End Class
     Private Class CounterHolder
         Public Inner As Counter
         Public Property Total As Integer

@@ -56,7 +56,7 @@ internal class WriteBackPlacement
             parameters.Add(RefParameter(selfName, CommonConversions.GetTypeSyntax(enclosingSymbol.ContainingType)));
         }
 
-        AddArgumentsAndParameters(RefParametersUsedIn(block, enclosingSymbol));
+        AddArgumentsAndParameters(RefParametersUsedIn(invocation, block, enclosingSymbol));
 
         foreach (var (reference, type) in RefLocalReferences.FindIn(block)) {
             arguments.Add(SyntaxFactory.Argument(reference).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
@@ -84,17 +84,22 @@ internal class WriteBackPlacement
 
     /// <summary>
     /// A local function can't use the enclosing method's ByRef parameters (CS1628), so it takes each one its converted body uses as a <c>ref</c> parameter.
-    /// Deciding from the converted body covers a parameter that's only reached through a <c>With</c> block's implicit receiver
-    /// (<c>With b : Inc(.X)</c> becomes <c>Inc(ref b.X)</c>), and leaves out one that the <c>With</c> header already evaluated into <c>withBlock</c>.
-    /// VB doesn't allow a local or lambda parameter to shadow a parameter, so a name in the body can only refer to that parameter or a member.
+    /// The candidates are the parameters the VB call references, so a type or namespace with the same name as a parameter (<c>H.S</c> beside <c>h As H</c>) isn't one.
+    /// A <c>With</c> block's implicit receiver counts as its <c>With</c> expression, because the converter may reuse that expression directly
+    /// (<c>With b : Inc(.X)</c> becomes <c>Inc(ref b.X)</c>).
+    /// A candidate is then dropped if the converted body doesn't mention it, i.e. the <c>With</c> header was evaluated into <c>withBlock</c> (<c>With arr(i)</c>).
+    /// The converter writes a parameter reference with the declared casing, so the names compare ordinally.
     /// </summary>
-    private static List<IParameterSymbol> RefParametersUsedIn(BlockSyntax block, ISymbol enclosingSymbol)
+    private List<IParameterSymbol> RefParametersUsedIn(VBasic.VisualBasicSyntaxNode invocation, BlockSyntax block, ISymbol enclosingSymbol)
     {
-        var refParameters = (enclosingSymbol as IMethodSymbol)?.Parameters.Where(p => p.RefKind != RefKind.None).ToList();
-        if (refParameters is not { Count: > 0 }) return new List<IParameterSymbol>();
-        var namesUsed = block.DescendantNodes().OfType<IdentifierNameSyntax>().Where(IsNotAMemberName).Select(n => n.Identifier.ValueText).ToList();
-        return refParameters.Where(p => namesUsed.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
-            .OrderBy(p => namesUsed.FindIndex(n => string.Equals(n, p.Name, StringComparison.OrdinalIgnoreCase))).ToList();
+        if (_semanticModel.GetOperation(invocation) is not { } operation) return new List<IParameterSymbol>();
+        var candidates = DescendantsResolvingWithReceivers(operation)
+            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter)
+            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
+            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
+        if (candidates.Count == 0) return candidates;
+        var namesUsed = new HashSet<string>(block.DescendantNodes().OfType<IdentifierNameSyntax>().Where(IsNotAMemberName).Select(n => n.Identifier.ValueText), StringComparer.Ordinal);
+        return candidates.Where(p => namesUsed.Contains(p.Name)).ToList();
 
         static bool IsNotAMemberName(IdentifierNameSyntax name) =>
             name.Parent switch {
@@ -103,6 +108,17 @@ internal class WriteBackPlacement
                 _ => true
             };
     }
+
+    /// <summary>
+    /// The operations within <paramref name="operation"/>, where a <c>With</c> block's implicit receiver is replaced by the operations of the <c>With</c> expression.
+    /// </summary>
+    private IEnumerable<IOperation> DescendantsResolvingWithReceivers(IOperation operation) =>
+        operation.DescendantsAndSelf().SelectMany(o =>
+            o is IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ImplicitReceiver } &&
+            o.Syntax is VBSyntax.ExpressionSyntax { Parent: VBSyntax.WithStatementSyntax } withExpression &&
+            _semanticModel.GetOperation(withExpression) is { } withOperation
+                ? DescendantsResolvingWithReceivers(withOperation)
+                : new[] { o });
 
     public bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
     {
