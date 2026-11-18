@@ -1932,6 +1932,42 @@ public partial class C
 }");
     }
     [Fact]
+    public async Task StructureSharedMemberDoesNotPassThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Shared Property Total As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function M() As Boolean
+        If Inc(Total) > 0 Then Return Total = 1
+        Return False
+    End Function
+End Structure", @"
+public partial struct S
+{
+    public static int Total { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static bool M()
+    {
+        int localInc() { int argv = Total; var ret = Inc(ref argv); Total = argv; return ret; }
+
+        if (localInc() > 0)
+            return Total == 1;
+        return false;
+    }
+}");
+    }
+    [Fact]
     public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
