@@ -191,6 +191,50 @@ internal partial class TestClass
 }");
     }
 
+    [Fact]
+    public async Task BracesKeptAroundStatementsThatCannotBeEmbeddedAsync()
+    {
+        await TestPreferNoBracesConversionAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        If a Then
+            Dim x = F()
+        Else
+            Dim y = F()
+        End If
+        If a Then
+label1:
+        End If
+    End Sub
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        if (a)
+        {
+            int x = F();
+        }
+        else
+        {
+            int y = F();
+        }
+        if (a)
+        {
+        label1:
+            ;
+
+        }
+    }
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
     private Task TestPreferNoBracesConversionAsync(string visualBasicCode, string expectedCsharpCode) =>
         AssertConvertedCodeResultEqualsAsync<VBToCSPreferNoBracesConversion>(visualBasicCode, expectedCsharpCode);
 }

@@ -53,37 +53,48 @@ internal static class DocumentExtensions
         //"private int value = unchecked((int)0x80000010);" is simplified to "private int value = unchecked(0x80000010);"
         // which causes CS0266: "Cannot implicitly convert type 'uint' to 'int'"
         return (n is CSSyntax.CastExpressionSyntax { Parent : CSSyntax.CheckedExpressionSyntax })
-               || n is CSSyntax.BlockSyntax block && BracesGuardElseBinding(block);
+               || n is CSSyntax.BlockSyntax block && MustKeepBraces(block);
     }
 
     /// <summary>
-    /// Roslyn bug: when the user's code style is "Prefer braces: No" (csharp_prefer_braces = false or when_multiline),
-    /// the simplifier unwraps a single-statement block without checking what follows it, so in
-    /// <c>if (a) { if (b) x(); } else y();</c> the else would then bind to the nearest if, i.e. <c>if (b)</c>: https://github.com/icsharpcode/CodeConverter/issues/823
-    /// The user's code style reaches us through the document's options (e.g. Visual Studio's Tools > Options) and is otherwise harmless,
-    /// so rather than overriding it, keep exactly the braces that stop an else changing which if it belongs to.
+    /// Roslyn bug: with the user's code style "Prefer braces: No" (csharp_prefer_braces = false or when_multiline),
+    /// the simplifier unwraps any single-statement block that is an embedded statement, without checking that:
+    /// <list type="bullet">
+    /// <item>the statement can be embedded: <c>if (a) int x = F();</c> is CS1023</item>
+    /// <item>a following else still binds to the same if: in <c>if (a) { if (b) x(); } else y();</c> it would bind to <c>if (b)</c> https://github.com/icsharpcode/CodeConverter/issues/823</item>
+    /// </list>
+    /// The code style reaches us through the document's options (e.g. Visual Studio's Tools > Options), and Roslyn keeps the option internal.
+    /// Rather than override it, keep only the braces it would wrongly remove.
     /// </summary>
-    private static bool BracesGuardElseBinding(CSSyntax.BlockSyntax block) =>
-        block.Parent is CSSyntax.IfStatementSyntax { Else: not null } ifStatement
-        && ifStatement.Statement == block
-        && block.Statements.Count == 1
-        && CouldEndWithIfWithoutElse(block.Statements[0]);
+    private static bool MustKeepBraces(CSSyntax.BlockSyntax block) =>
+        IsEmbeddedStatement(block) && block.Statements.Count == 1
+        && (!CanBeEmbedded(block.Statements[0]) || IsFollowedByElse(block) && CouldEndWithIfWithoutElse(block.Statements[0]));
+
+    private static bool IsEmbeddedStatement(CSSyntax.BlockSyntax block) =>
+        block.Parent is CSSyntax.IfStatementSyntax or CSSyntax.ElseClauseSyntax or CSSyntax.CommonForEachStatementSyntax
+            or CSSyntax.ForStatementSyntax or CSSyntax.WhileStatementSyntax or CSSyntax.DoStatementSyntax
+            or CSSyntax.UsingStatementSyntax or CSSyntax.LockStatementSyntax or CSSyntax.FixedStatementSyntax;
+
+    private static bool CanBeEmbedded(CSSyntax.StatementSyntax statement) =>
+        statement is not (CSSyntax.LocalDeclarationStatementSyntax or CSSyntax.LocalFunctionStatementSyntax or CSSyntax.LabeledStatementSyntax);
+
+    private static bool IsFollowedByElse(CSSyntax.BlockSyntax block) =>
+        block.Parent is CSSyntax.IfStatementSyntax { Else: not null } ifStatement && ifStatement.Statement == block;
 
     /// <summary>
-    /// Whether an else placed right after this statement could bind to an if within it, assuming any single-statement block within it may lose its braces too.
+    /// Whether an else placed right after this statement could bind to an if within it, assuming any block within it that can lose its braces does.
     /// </summary>
     private static bool CouldEndWithIfWithoutElse(CSSyntax.StatementSyntax statement) =>
         statement switch {
             CSSyntax.IfStatementSyntax { Else: null } => true,
             CSSyntax.IfStatementSyntax { Else: { } elseClause } => CouldEndWithIfWithoutElse(elseClause.Statement),
-            CSSyntax.BlockSyntax { Statements.Count: 1 } block => CouldEndWithIfWithoutElse(block.Statements[0]),
+            CSSyntax.BlockSyntax { Statements.Count: 1 } block when IsEmbeddedStatement(block) && CanBeEmbedded(block.Statements[0]) => CouldEndWithIfWithoutElse(block.Statements[0]),
             CSSyntax.CommonForEachStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.ForStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.WhileStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.UsingStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.LockStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.FixedStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
-            CSSyntax.LabeledStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             _ => false
         };
 
