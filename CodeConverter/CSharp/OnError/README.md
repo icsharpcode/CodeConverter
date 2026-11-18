@@ -129,6 +129,8 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
 5. **Fallback.** Anything else keeps today's behaviour, statement-by-statement conversion plus `#error`:
    * the handler jumps to a label inside a nested block;
    * `On Error GoTo -1`;
+   * a handler that falls through into a label, without a `GoTo` or `Resume` to it, when the covered code also jumps to that label (`H:` handler, `Done:` next, `GoTo Done` in the covered code): the label would be reached from the `try` and from the `catch`;
+   * a `Resume Next` handler (`On Error GoTo Failed` ... `Failed: Resume Next`) around a `For Each` (or any loop, `Using`, `SyncLock`, `Select Case`) whose body statements can fail. A common legacy shape, but every body statement needs its own guard inside the guarded statement, and the handler's own error would be caught again by the outer guard where VB lets it propagate. `On Error Resume Next` in the same place is converted (shape 2);
    * a handler that resumes to a label (`Resume Retry`) when nothing before the label can fail and the code after it can, with no re-entry guard (see "Secondary errors"): the first error would come from code the plain form leaves unprotected;
    * a handler local function would need to capture a `ref`/`out` parameter;
    * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;

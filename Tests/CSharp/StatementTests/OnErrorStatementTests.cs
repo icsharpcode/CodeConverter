@@ -2683,4 +2683,61 @@ CONVERSION ERROR: Conversion for OnErrorGoToZeroStatement not implemented, pleas
 ----- Exception 3 of 3 -----
 CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 337", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// The handler runs into Done without a GoTo, and the covered code also jumps there: the label would be reached from the try as well as from the catch.
+    /// </summary>
+    [Fact]
+    public async Task HandlerFallingIntoALabelTheCoveredCodeJumpsToKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Sub M(flag As Boolean)
+        On Error GoTo H
+        Boom()
+        If flag Then GoTo Done
+        Exit Sub
+H:
+        Boom()
+Done:
+        Boom()
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public void M(bool flag)
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo H' at character 129
+
+
+                Input:
+                        On Error GoTo H
+
+                 */
+        Boom();
+        if (flag)
+            goto Done;
+        return;
+    H:
+        ;
+
+        Boom();
+    Done:
+        ;
+
+        Boom();
+    }
+}CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo H' at character 129", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
