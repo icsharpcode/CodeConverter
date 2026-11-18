@@ -1756,6 +1756,48 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task Issue783_LambdaWithOmittedParametersAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Class TestClass
+    Private Sub ShowPopup(x As Integer, Optional onClose As Action(Of TestClass) = Nothing)
+    End Sub
+
+    Private Sub TestMethod()
+        ShowPopup(8, Sub()
+                         'Comment
+                         Console.WriteLine(1)
+                     End Sub)
+        Dim singleLine As Action(Of Integer) = Sub() Console.WriteLine(2)
+        Dim twoParams As Action(Of Integer, String) = Sub() Console.WriteLine(3)
+        Dim func As Func(Of Integer, Integer) = Function() 4
+        Dim handler As EventHandler = Sub() Console.WriteLine(5)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void ShowPopup(int x, Action<TestClass> onClose = null)
+    {
+    }
+
+    private void TestMethod()
+    {
+        ShowPopup(8, _ =>
+        {
+            // Comment
+            Console.WriteLine(1);
+        });
+        Action<int> singleLine = _ => Console.WriteLine(2);
+        Action<int, string> twoParams = (_, __) => Console.WriteLine(3);
+        Func<int, int> func = _ => 4;
+        EventHandler handler = (_, __) => Console.WriteLine(5);
+    }
+}");
+    }
+
+    [Fact]
     public async Task AnonymousLambdaArrayTypeConversionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Imports System

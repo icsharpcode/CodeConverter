@@ -103,6 +103,7 @@ internal class LambdaConverter
         }
 
         var body = (CSharpSyntaxNode)block ?? expressionBody;
+        param = WithParametersOmittedByRelaxation(vbNode, param);
         var isAnonAsync = _semanticModel.GetOperation(vbNode) is IAnonymousFunctionOperation a && a.Symbol.IsAsync;
 
         var asyncKeyword = SyntaxFactory.Token(SyntaxKind.AsyncKeyword);
@@ -118,6 +119,19 @@ internal class LambdaConverter
         return lambda;
     }
 
+
+    /// <summary>
+    /// VB's relaxed delegate conversion allows a lambda with no parameters to be converted to a delegate type that has parameters
+    /// (e.g. <c>Sub() ...</c> to <c>Action(Of T)</c>), whereas C# requires a lambda to declare every parameter of its delegate type.
+    /// </summary>
+    /// <remarks>https://learn.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/delegates/relaxed-delegate-conversion</remarks>
+    private ParameterListSyntax WithParametersOmittedByRelaxation(VBSyntax.LambdaExpressionSyntax vbNode, ParameterListSyntax param)
+    {
+        if (param.Parameters.Any()) return param;
+        var delegateType = CommonConversions.UnwrapLinqDelegateExpression(_semanticModel.GetTypeInfo(vbNode).ConvertedType);
+        var targetParameterCount = delegateType?.GetDelegateInvokeMethod()?.Parameters.Length ?? 0;
+        return targetParameterCount > 0 ? CommonConversions.CreateThrowawayParameterList(targetParameterCount).WithTriviaFrom(param) : param;
+    }
 
     private async Task<CSharpSyntaxNode> ConvertToFunctionDeclarationOrNullAsync(VBSyntax.LambdaExpressionSyntax vbNode,
         ParameterListSyntax param, BlockSyntax block,

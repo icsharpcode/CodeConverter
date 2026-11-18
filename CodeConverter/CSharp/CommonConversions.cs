@@ -229,11 +229,24 @@ internal class CommonConversions
         var requireExplicitType = requireExplicitTypeForAll ||
                                   vbInitializerType != null && !SymbolEqualityComparer.IncludeNullability.Equals(declaredSymbolType, vbInitializerType);
         bool useVar = equalsValueClauseSyntax != null && !preferExplicitType && !requireExplicitType;
-        var typeSyntax = initSymbol == null || !initSymbol.IsAnonymousFunction()
-            ? GetTypeSyntax(declaredSymbolType, useVar)
-            : GetFuncTypeSyntax(declaredSymbolType, initSymbol);
+        var typeSyntax = initSymbol?.IsAnonymousFunction() == true && !IsNamedDelegateOrExpressionOfOne(declaredSymbolType)
+            ? GetFuncTypeSyntax(declaredSymbolType, initSymbol)
+            : GetTypeSyntax(declaredSymbolType, useVar);
         return SyntaxFactory.VariableDeclaration(typeSyntax, SyntaxFactory.SingletonSeparatedList(v));
     }
+
+    /// <summary>
+    /// A lambda's own signature can differ from the declared delegate type, e.g. VB's relaxed delegate conversion allows <c>Dim a As Action(Of Integer) = Sub() ...</c>.
+    /// Only VB's anonymous delegate types (which can't be named in C#) need replacing with an equivalent Action/Func.
+    /// </summary>
+    private bool IsNamedDelegateOrExpressionOfOne(ITypeSymbol declaredSymbolType)
+    {
+        return UnwrapLinqDelegateExpression(declaredSymbolType).IsDelegateReferencableByName();
+    }
+
+    /// <returns>The delegate type T for Expression(Of T), otherwise the type itself</returns>
+    public ITypeSymbol UnwrapLinqDelegateExpression(ITypeSymbol type) =>
+        IsLinqDelegateExpression(type) ? ((INamedTypeSymbol)type).TypeArguments.Single() : type;
 
     public TypeSyntax GetFuncTypeSyntax(ITypeSymbol declaredSymbolType, IMethodSymbol method)
     {
