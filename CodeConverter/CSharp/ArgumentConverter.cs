@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualBasic;
+﻿using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+using Microsoft.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -9,6 +10,7 @@ internal class ArgumentConverter
     private readonly ITypeContext _typeContext;
     private readonly SemanticModel _semanticModel;
     private CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
+    public ByRefArgumentHoister ByRefArgumentHoister { get; }
 
     public ArgumentConverter(VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions)
     {
@@ -17,6 +19,7 @@ internal class ArgumentConverter
         _typeContext = typeContext;
         _semanticModel = semanticModel;
         TriviaConvertingExpressionVisitor = commonConversions.TriviaConvertingExpressionVisitor;
+        ByRefArgumentHoister = new ByRefArgumentHoister(typeContext, semanticModel, commonConversions);
     }
 
     public async Task<CSharpSyntaxNode> ConvertSimpleArgumentAsync(VBSyntax.SimpleArgumentSyntax node)
@@ -35,7 +38,7 @@ internal class ArgumentConverter
             var refType = CommonConversions.GetRefConversionType(node, argList, possibleParameters.Value, out var argName, out var refKind);
             token = CommonConversions.GetRefToken(refKind);
             if (refType != SemanticModelExtensions.RefConversion.Inline) {
-                convertedArgExpression = HoistByRefDeclaration(node.Expression, convertedArgExpression, refType, argName, refKind);
+                convertedArgExpression = ByRefArgumentHoister.HoistByRefDeclaration(node.Expression, convertedArgExpression, refType, argName, refKind);
             } else {
                 convertedArgExpression = typeConversionAnalyzer.AddExplicitConversion(node.Expression, convertedArgExpression, defaultToCast: refKind != RefKind.None);
             }
@@ -54,7 +57,7 @@ internal class ArgumentConverter
         var invocationHasOverloads = invocationSymbol.HasOverloads();
 
         var processedParameters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var argumentSyntaxs = (await node.Arguments.SelectAsync(ConvertArg)).Where(a => a != null);
+        var argumentSyntaxs = (await ByRefArgumentHoister.WithWriteBacksInVbOrderAsync(() => node.Arguments.SelectAsync(ConvertArg))).Where(a => a != null);
         return Enumerable.Concat(argumentSyntaxs, GetAdditionalRequiredArgs(node.Arguments, processedParameters, invocationSymbol, invocationHasOverloads));
 
         async Task<CSSyntax.ArgumentSyntax> ConvertArg(VBSyntax.ArgumentSyntax arg, int argIndex)
@@ -118,31 +121,6 @@ internal class ArgumentConverter
         return await argumentList.AcceptAsync<CSSyntax.ArgumentListSyntax>(TriviaConvertingExpressionVisitor) ?? CreateArgList(_semanticModel.GetSymbolInfo(node).Symbol);
     }
 
-
-    internal CSSyntax.ExpressionSyntax HoistByRefDeclaration(VBSyntax.ExpressionSyntax node, CSSyntax.ExpressionSyntax refLValue, SemanticModelExtensions.RefConversion refType, string argName, RefKind refKind)
-    {
-        string prefix = $"arg{argName}";
-        var expressionTypeInfo = _semanticModel.GetTypeInfo(node);
-        bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node, expressionTypeInfo.ConvertedType, out var _);
-        var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
-
-        if (refLValue is CSSyntax.ElementAccessExpressionSyntax eae) {
-            //Hoist out the container so we can assign back to the same one after (like VB does)
-            var tmpContainer = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
-            refLValue = eae.WithExpression(tmpContainer.IdentifierName);
-        }
-
-        var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, refLValue, defaultToCast: refKind != RefKind.None);
-
-        var local = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration(prefix, withCast, typeSyntax));
-
-        if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
-            var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-            _typeContext.PerScopeState.Hoist(new AdditionalAssignment(refLValue, convertedLocalIdentifier));
-        }
-
-        return local.IdentifierName;
-    }
 
     private static CSSyntax.ExpressionSyntax LiteralOrDefault(object value, ITypeSymbol paramType)
     {

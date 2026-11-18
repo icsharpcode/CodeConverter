@@ -23,7 +23,8 @@ internal static class SyntaxTokenExtensions
 
     public static bool HasMatchingText(this SyntaxToken token, Microsoft.CodeAnalysis.VisualBasic.SyntaxKind kind)
     {
-        return token.ToString() == VBasic.SyntaxFacts.GetText(kind);
+        // A keyword after "." (e.g. "MyBase.New") is lexed as an identifier token, and VB is case insensitive
+        return string.Equals(token.ToString(), VBasic.SyntaxFacts.GetText(kind), StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsKind(this SyntaxToken token, SyntaxKind kind1, SyntaxKind kind2)

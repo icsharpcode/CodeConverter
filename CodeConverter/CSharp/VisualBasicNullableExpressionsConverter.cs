@@ -33,6 +33,12 @@ internal class VisualBasicNullableExpressionsConverter
     /// </summary>
     private static readonly SyntaxAnnotation IsNotNullableAnnotation = new("CodeConverter.Nullable", false.ToString());
 
+    /// <summary>
+    /// Marks a comparison already negated for its parent Not. By the time Not is visited, its operand has already been expanded to the HasValue form,
+    /// so the comparison negates itself while it can still use the lifted operator, and Not skips its own negation.
+    /// </summary>
+    public static readonly SyntaxAnnotation NegatedForParentNotAnnotation = new("CodeConverter.NegatedForParentNot");
+
     public VisualBasicNullableExpressionsConverter(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
     public ExpressionSyntax InvokeConversionWhenNotNull(VBSyntax.ExpressionSyntax vbExpr, ExpressionSyntax csExpr, MemberAccessExpressionSyntax conversionMethod, TypeSyntax castType)
@@ -66,7 +72,7 @@ internal class VisualBasicNullableExpressionsConverter
     private ExpressionSyntax ForExpressionTree(VBSyntax.BinaryExpressionSyntax vbNode, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, BinaryExpressionSyntax csBinExp, ExpressionSyntax lhs, ExpressionSyntax rhs)
     {
         if (IsSupported(vbNode.Kind()) && !vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)) {
-            return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation); // C#'s lifted comparisons are bool
+            return csBinExp.WithAdditionalAnnotations(IsNotNullableAnnotation, CSharpUtil.MayCompareNullAnnotation); // C#'s lifted comparisons are bool
         }
         if (!vbNode.IsKind(VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression) || !vbNode.IsOnlyTestedForTrue(_semanticModel)) return csBinExp;
         var isLhsNullable = IsNullable(vbNode.Left, lhs, lhsTypeInfo);
@@ -100,6 +106,16 @@ internal class VisualBasicNullableExpressionsConverter
         return typeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
     }
 
+    /// <summary>
+    /// In a condition, VB lifts a conversion to Boolean and treats Nothing as False.
+    /// The converted default value isn't necessarily False (e.g. a user-defined operator), so check for a value rather than using GetValueOrDefault.
+    /// </summary>
+    public ExpressionSyntax ConvertWhenNotNullElseFalse(VBSyntax.ExpressionSyntax vbExpr, ExpressionSyntax csExpr, Func<ExpressionSyntax, ExpressionSyntax> convertValue)
+    {
+        var hasValueCheck = HasValue(vbExpr, ref csExpr);
+        return hasValueCheck.And(convertValue(csExpr));
+    }
+
     private string GetArgName() => $"arg{Interlocked.Increment(ref _argCounter)}";
 
     private ExpressionSyntax? PatternVar(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, out ExpressionSyntax lhsName)
@@ -118,7 +134,7 @@ internal class VisualBasicNullableExpressionsConverter
         var identifier = SyntaxFactory.Identifier(arg);
         name = ValidSyntaxFactory.IdentifierName(identifier);
 
-        return SyntaxFactory.IsPatternExpression(expr, SyntaxFactory.VarPattern(SyntaxFactory.SingleVariableDesignation(identifier)));
+        return SyntaxFactory.IsPatternExpression(expr.AddParensUnlessPrimary(), SyntaxFactory.VarPattern(SyntaxFactory.SingleVariableDesignation(identifier)));
     }
 
     private ExpressionSyntax PatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
@@ -128,7 +144,7 @@ internal class VisualBasicNullableExpressionsConverter
         var variable = SyntaxFactory.SingleVariableDesignation(identifier);
 
         var recursivePattern = (RecursivePatternSyntax)NotFormattedIsPattern.Pattern;
-        return NotFormattedIsPattern.WithExpression(expr).WithPattern(recursivePattern.WithDesignation(variable));
+        return NotFormattedIsPattern.WithExpression(expr.AddParensUnlessPrimary()).WithPattern(recursivePattern.WithDesignation(variable));
     }
 
     private ExpressionSyntax NegatedPatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
@@ -140,7 +156,7 @@ internal class VisualBasicNullableExpressionsConverter
         var recursivePattern = (RecursivePatternSyntax)unaryPattern.Pattern;
 
         unaryPattern = unaryPattern.WithPattern(recursivePattern.WithDesignation(variable));
-        return NotFormattedNegatedIsPattern.WithExpression(expr).WithPattern(unaryPattern);
+        return NotFormattedNegatedIsPattern.WithExpression(expr.AddParensUnlessPrimary()).WithPattern(unaryPattern);
     }
 
     private static bool IsSupported(VBasic.SyntaxKind op)
@@ -222,7 +238,11 @@ internal class VisualBasicNullableExpressionsConverter
         bool isLhsNullable, bool isRhsNullable)
     {
         if (vbNode.IsOnlyTestedForTrue(_semanticModel) && IsLiftedOperatorFalseWhenVbIsNothing(vbNode, isLhsNullable, isRhsNullable)) {
-            return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation);
+            return csNode.WithAdditionalAnnotations(IsNotNullableAnnotation, CSharpUtil.MayCompareNullAnnotation);
+        }
+        if (IsNegationOnlyTestedForTrue(vbNode) && IsLiftedOrderingWithTotalOrder(vbNode)) {
+            var negated = SyntaxFactory.BinaryExpression(CSharpUtil.NegateRelationalOperator(csNode.Kind()), csNode.Left, csNode.Right);
+            return negated.WithAdditionalAnnotations(IsNotNullableAnnotation, CSharpUtil.MayCompareNullAnnotation, NegatedForParentNotAnnotation);
         }
 
         ExpressionSyntax? lhsName = lhs, rhsName = rhs;
@@ -262,16 +282,27 @@ internal class VisualBasicNullableExpressionsConverter
         return notNullCondition is null ? bin : notNullCondition.Conditional(bin, Null);
     }
 
+    private bool IsNegationOnlyTestedForTrue(VBSyntax.BinaryExpressionSyntax vbNode) =>
+        vbNode.OutermostParenthesizedOrSelf().Parent is VBSyntax.UnaryExpressionSyntax not && not.IsKind(VBasic.SyntaxKind.NotExpression) &&
+        not.IsOnlyTestedForTrue(_semanticModel);
+
+    /// <summary>
+    /// Where VB's Not of a comparison is only tested for True, the lifted opposite comparison is equivalent: both are false when an operand is Nothing.
+    /// That needs every pair of values to be ordered, which isn't the case for floating point NaN.
+    /// C# has no ordering operators for bool, and a structure's user-defined operators needn't be a total order.
+    /// </summary>
+    private bool IsLiftedOrderingWithTotalOrder(VBSyntax.BinaryExpressionSyntax vbNode) =>
+        vbNode.IsOrderingComparison() && HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Left).ConvertedType) && HasTotalOrder(_semanticModel.GetTypeInfo(vbNode.Right).ConvertedType);
+
+    private static bool HasTotalOrder(ITypeSymbol? type) =>
+        (type?.GetNullableUnderlyingType() ?? type) is { IsValueType: true } valueType &&
+        (valueType.TypeKind == TypeKind.Enum || valueType.SpecialType is not (SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Boolean or SpecialType.None));
+
     /// <summary>
     /// C#'s lifted relational operators are false when an operand is null, as is its lifted == unless both are null
     /// </summary>
     private static bool IsLiftedOperatorFalseWhenVbIsNothing(VBSyntax.BinaryExpressionSyntax vbNode, bool isLhsNullable, bool isRhsNullable) =>
-        vbNode.Kind() switch {
-            VBasic.SyntaxKind.LessThanExpression or VBasic.SyntaxKind.LessThanOrEqualExpression or
-                VBasic.SyntaxKind.GreaterThanExpression or VBasic.SyntaxKind.GreaterThanOrEqualExpression => true,
-            VBasic.SyntaxKind.EqualsExpression => !(isLhsNullable && isRhsNullable),
-            _ => false
-        };
+        vbNode.IsOrderingComparison() || vbNode.IsKind(VBasic.SyntaxKind.EqualsExpression) && !(isLhsNullable && isRhsNullable);
 
     private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode), ref csName);
     private ExpressionSyntax HasValue(bool reusable, ref ExpressionSyntax csName)

@@ -6,7 +6,7 @@ namespace VbLibrary
 /// </summary>
     internal partial class AClass
     {
-        static int[] initialAnArrayWithNonStaticInitializerReferencingOtherPart() => new int[anInt + 1];
+        int[] initialAnArrayWithNonStaticInitializerReferencingOtherPart() => new int[anInt + 1];
 
         private int[] anArrayWithNonStaticInitializerReferencingOtherPart;
     }

@@ -81,6 +81,59 @@ internal partial class TestClass45
     }
 
     [Fact]
+    public async Task TestCustomEventWithParameterlessRaiseEventWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Public Delegate Sub Callback()
+    Private Event backingField As Callback
+
+    Public Custom Event MyEvent As Callback
+        AddHandler(ByVal value As Callback)
+            AddHandler Me.backingField, value
+        End AddHandler
+        RemoveHandler(ByVal value As Callback)
+            RemoveHandler Me.backingField, value
+        End RemoveHandler
+        RaiseEvent
+            Console.WriteLine(""Event Raised"")
+        End RaiseEvent
+    End Event ' RaiseEvent moves outside this block
+
+    Public Sub RaiseCustomEvent()
+        RaiseEvent MyEvent()
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public delegate void Callback();
+    private event Callback backingField;
+
+    public event Callback MyEvent
+    {
+        add
+        {
+            backingField += value;
+        }
+        remove
+        {
+            backingField -= value;
+        }
+    } // RaiseEvent moves outside this block
+    void OnMyEvent()
+    {
+        Console.WriteLine(""Event Raised"");
+    }
+
+    public void RaiseCustomEvent()
+    {
+        OnMyEvent();
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestFullWidthCharacterCustomEventAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
