@@ -22,6 +22,18 @@ internal class NameGenerator
         return GenerateUniqueVariableNameInScope(semanticModel, generatedNames, variableNameBase, scopeStarts);
     }
 
+    /// <summary>
+    /// A label is in its own namespace in C#, so only other labels matter. They aren't found by <see cref="SemanticModel.LookupSymbols"/>.
+    /// </summary>
+    public string GetUniqueLabelNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string labelNameBase)
+    {
+        var scopeStarts = GetScopeStarts(node);
+        string uniqueName = GenerateUniqueName(labelNameBase, string.Empty, n => !generatedNames.Contains(n) &&
+            !scopeStarts.SelectMany(scopeStart => semanticModel.LookupLabels(scopeStart, n)).Any());
+        generatedNames.Add(uniqueName);
+        return uniqueName;
+    }
+
     public bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string name) =>
         IsNameFreeInScope(semanticModel, generatedNames, GetScopeStarts(node), name);
 
@@ -68,4 +80,4 @@ internal class NameGenerator
             .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
     }
 
-}
+}

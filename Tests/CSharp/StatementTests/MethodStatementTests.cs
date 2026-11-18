@@ -1464,6 +1464,41 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task TryCatchWithNullableFilterTreatsNothingAsFalseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+
+Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?)
+        Try
+        Catch e As ArgumentException When x = y
+        Catch e As InvalidOperationException When (b)
+        Catch e As Exception When x < y
+        End Try
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, bool? b)
+    {
+        try
+        {
+        }
+        catch (ArgumentException e) when (x.HasValue && y.HasValue && x.Value == y.Value)
+        {
+        }
+        catch (InvalidOperationException e) when (b == true)
+        {
+        }
+        catch (Exception e) when (x < y)
+        {
+        }
+    }
+}");
+    }
+
+    [Fact]
     public async Task SwitchIntToEnumAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Module Main
@@ -1860,6 +1895,129 @@ public partial class TestClass
         set_Item(0, get_Item(0) << 2);
         set_Item(0, get_Item(0) >> 2);
         set_StrItem(0, get_StrItem(0) + "" World"");
+    }
+}");
+    }
+
+    [Fact]
+    public async Task SingleLineIfWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        If a Then Dim z = F()
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        if (a)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task SingleLineIfElseWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        If a Then F() Else Dim z = F()
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        if (a)
+            F();
+        else
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task SyncLockWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(o As Object)
+        SyncLock o
+            Dim z = F()
+        End SyncLock
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(object o)
+    {
+        lock (o)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task UsingExpressionWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(d As System.IDisposable)
+        Using d
+            Dim z = F()
+        End Using
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(IDisposable d)
+    {
+        using (d)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
     }
 }");
     }

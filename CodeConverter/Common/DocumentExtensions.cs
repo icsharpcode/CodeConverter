@@ -80,7 +80,7 @@ internal static class DocumentExtensions
             );
 
             return document.WithSyntaxRoot(newRoot);
-        } catch (Exception ex) {
+        } catch (Exception ex) when (ex is not OperationCanceledException) {
             var warningText = "Conversion warning: Name qualification failed for this file. " + ex;
             return document.WithSyntaxRoot(WithWarningAnnotation(root, warningText));
         }
@@ -97,7 +97,7 @@ internal static class DocumentExtensions
         }
     }
 
-    private static async Task<Document> WithReducedRootAsync(this Document doc, SyntaxNode syntaxRoot, CancellationToken cancellationToken)
+    internal static async Task<Document> WithReducedRootAsync(this Document doc, SyntaxNode syntaxRoot, CancellationToken cancellationToken)
     {
         var root = syntaxRoot ?? await doc.GetSyntaxRootAsync(cancellationToken);
         var withSyntaxRoot = doc.WithSyntaxRoot(root);
@@ -105,7 +105,7 @@ internal static class DocumentExtensions
             var options = await doc.GetOptionsAsync(cancellationToken);
             var newOptions = doc.Project.Language == LanguageNames.VisualBasic ? GetVBOptions(options) : GetCSOptions(options);
             return await Simplifier.ReduceAsync(withSyntaxRoot, newOptions, cancellationToken: cancellationToken);
-        } catch (Exception ex) {
+        } catch (Exception ex) when (ex is not OperationCanceledException) {
             var warningText = "Conversion warning: Qualified name reduction failed for this file. " + ex;
             return doc.WithSyntaxRoot(WithWarningAnnotation(root, warningText));
         }

@@ -2,6 +2,7 @@
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 using LangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -21,6 +22,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
     private readonly IProgress<ConversionProgress> _progress;
     private readonly CancellationToken _cancellationToken;
     private ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
+    private ErrUsage _errUsage;
 
     public VBToCSProjectContentsConverter(ConversionOptions conversionOptions,
         bool useProjectLevelWinformsAdjustments,
@@ -47,6 +49,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
         _csharpViewOfVbSymbols = (CSharpCompilation)await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
         _designerToResxRelativePath = project.ReadVbEmbeddedResources().ToDictionary(r => r.LastGenOutput, r => r.RelativePath);
         SourceProject = await WithProjectLevelWinformsAdjustmentsAsync(project);
+        _errUsage = new ErrUsage(SourceProject);
 
         var compilation = await project.GetCompilationAsync(_cancellationToken);
 #pragma warning disable RS1024 // Compare symbols correctly - analzyer bug, I'm intentionally using my own comparer, not the default ambiguous one. The default comparer wouldn't manage with cross-compilation comparison in all cases
@@ -76,7 +79,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
 
     public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
     {
-        return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _typeToInheritors, _cancellationToken);
+        return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _typeToInheritors, _errUsage, _cancellationToken);
     }
 
     public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)

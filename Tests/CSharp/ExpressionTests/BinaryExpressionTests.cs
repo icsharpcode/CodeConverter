@@ -421,6 +421,38 @@ internal partial class TestClass
         }
 
         [Fact]
+        public async Task ParenthesizedNullableConditionsTreatNothingAsFalseAsync()
+        {
+            await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer?, y As Integer?, b As Boolean?)
+        If (x < y) Then Return
+        If ((x = y)) Then Return
+        If (b) Then Return
+        If (Not b) Then Return
+        If (b AndAlso x > y) Then Return
+        Dim r = If((x > y), 1, 2)
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int? x, int? y, bool? b)
+    {
+        if (x < y)
+            return;
+        if (x.HasValue && y.HasValue && x.Value == y.Value)
+            return;
+        if (b == true)
+            return;
+        if (b == false)
+            return;
+        if ((!b.HasValue || b.Value) && x > y && b.HasValue)
+            return;
+        int r = x > y ? 1 : 2;
+    }
+}");
+        }
+
+        [Fact]
         public async Task SimplifiesAlreadyCheckedNullableComparison_HasValueAsync()
         {
             await TestConversionVisualBasicToCSharpAsync(@"

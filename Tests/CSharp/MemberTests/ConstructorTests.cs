@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -219,5 +220,374 @@ internal partial class StaticLocalConvertedToField
         Console.WriteLine(_sPrevPosition1);
     }
 }");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithNonCanonicalCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MyBase.new(value)
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithUpperCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MYBASE.NEW(value)
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MyBase.nEw
+        Console.WriteLine(value)
+    End Sub
+End Class", @"using System;
+
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base()
+    {
+        Console.WriteLine(value);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MeAndMyClassNewWithNonCanonicalCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New()
+        Me.new(""a"")
+    End Sub
+    Public Sub New(value As Integer)
+        myclass.NEW(value.ToString())
+        Console.WriteLine(value)
+    End Sub
+    Public Sub New(value As String)
+        MyBase.New(value)
+    End Sub
+End Class", @"using System;
+
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived() : this(""a"")
+    {
+    }
+    public Derived(int value) : this(value.ToString())
+    {
+        Console.WriteLine(value);
+    }
+    public Derived(string value) : base(value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task FirstStatementNotConstructorCallAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New()
+    End Sub
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        Me.Newish(New Base(value))
+        MyBase.ToString()
+    End Sub
+    Private Sub Newish(b As Base)
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base()
+    {
+    }
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value)
+    {
+        Newish(new Base(value));
+        base.ToString();
+    }
+    private void Newish(Base b)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithoutParenthesesKeepsCommentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New()
+        MyBase.nEw ' Comment
+    End Sub
+End Class", @"
+public partial class Base
+{
+}
+
+public partial class Derived : Base
+{
+
+    public Derived() : base() // Comment
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MyBaseNewWithNonCanonicalCasingNamedAndOmittedArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New(value As String, Optional n As Integer = 3)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        MyBase.new(n:=4, value:=value)
+    End Sub
+    Public Sub New(value As Integer)
+        mybase.New(value.ToString(), )
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base(string value, int n = 3)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(n: 4, value: value)
+    {
+    }
+    public Derived(int value) : base(value.ToString())
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task CallStatementConstructorInitializersWithNonCanonicalCasingAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Base
+    Public Sub New(value As String)
+    End Sub
+End Class
+
+Public Class Derived
+    Inherits Base
+
+    Public Sub New(value As String)
+        Call MyBase.new(value)
+    End Sub
+    Public Sub New(value As Integer)
+        call Me.NEW(value.ToString())
+    End Sub
+    Public Sub New()
+        CALL myclass.New(1)
+    End Sub
+End Class", @"
+public partial class Base
+{
+    public Base(string value)
+    {
+    }
+}
+
+public partial class Derived : Base
+{
+
+    public Derived(string value) : base(value)
+    {
+    }
+    public Derived(int value) : this(value.ToString())
+    {
+    }
+    public Derived() : this(1)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task CallStatementNonConstructorWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Public Class Derived
+    Public Sub New()
+        Call Me.Foo
+    End Sub
+    Private Sub Foo()
+    End Sub
+End Class", @"
+public partial class Derived
+{
+    public Derived()
+    {
+        Foo();
+    }
+    private void Foo()
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DictionaryAccessNamedNewIsNotConstructorCallAsync()
+    {
+        // The body conversion drops the invocation of the dictionary-accessed delegate (CS0201), so only the constructor initializer is asserted on
+        var convertedCode = await ConvertAsync<VBToCSConversion>(@"Imports System
+
+Public Class Derived
+    Default ReadOnly Property Item(k As String) As Action
+        Get
+            Return Sub() Console.WriteLine(k)
+        End Get
+    End Property
+
+    Public Sub New()
+        Me!new()
+    End Sub
+    Public Sub New(value As String)
+        Call Me!New()
+    End Sub
+End Class");
+
+        Assert.DoesNotContain(": this(", convertedCode);
+        Assert.Contains("this[\"new\"]", convertedCode);
+        Assert.Contains("this[\"New\"]", convertedCode);
     }
 }

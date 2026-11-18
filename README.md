@@ -11,6 +11,8 @@ Convert code from VB.NET to C# (and vice versa) using Roslyn - all free and open
 
 See [wiki](https://github.com/icsharpcode/CodeConverter/wiki) for advice on getting the best results, or the [changelog](https://github.com/icsharpcode/CodeConverter/blob/master/CHANGELOG.md) for recent improvements.
 
+Automated tests run against Windows 🪟 and Ubuntu Linux 🐧
+
 ## Visual Studio Extension
 
 Adds context menu items to convert projects/files between VB.NET and C#. See the [wiki documentation](https://github.com/icsharpcode/CodeConverter/wiki) for advice / help using it.
