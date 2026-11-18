@@ -1377,4 +1377,44 @@ internal partial class TestClass
     }
 }CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 121", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// Creating a lambda can't fail, whatever its body does, so declaring one needs no guard (which would need to name its anonymous delegate type).
+    /// </summary>
+    [Fact]
+    public async Task CreatingALambdaIsNotGuardedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Function Foo() As Integer
+        Return 1
+    End Function
+
+    Function Run() As Integer
+        On Error Resume Next
+        Dim a = Function(x As Integer) x + Foo()
+        Return a(1)
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    public int Foo()
+    {
+        return 1;
+    }
+
+    public int Run()
+    {
+        int a(int x) => x + Foo();
+        try
+        {
+            return a(1);
+        }
+        catch
+        {
+        }
+
+        return default;
+    }
+}");
+    }
 }

@@ -6,7 +6,7 @@ namespace ICSharpCode.CodeConverter.CSharp.OnError;
 /// and which resume points need a guard when errors are being ignored.
 /// </summary>
 /// <remarks>
-/// Only exits, jumps, labels and copies of constants, locals and parameters without a conversion are treated as safe.
+/// Only exits, jumps, labels, lambdas (creating one runs none of its body) and copies of constants, locals and parameters without a conversion are treated as safe.
 /// Compound assignment isn't: <c>x += 1</c> can overflow.
 /// Conditions and loop bounds are safe when they only compare or combine constants, locals and parameters of primitive types.
 /// </remarks>
@@ -76,7 +76,7 @@ internal static class ThrowAnalysis
 
     private static bool IsSafeValue(VBSyntax.ExpressionSyntax expression, SemanticModel semanticModel)
     {
-        if (semanticModel.GetConstantValue(expression).HasValue) return true;
+        if (expression is VBSyntax.LambdaExpressionSyntax || semanticModel.GetConstantValue(expression).HasValue) return true;
         var typeInfo = semanticModel.GetTypeInfo(expression);
         return semanticModel.GetSymbolInfo(expression).Symbol is ILocalSymbol or IParameterSymbol &&
                SymbolEqualityComparer.Default.Equals(typeInfo.Type, typeInfo.ConvertedType);
