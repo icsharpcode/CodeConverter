@@ -35,6 +35,7 @@ public static class ProcessRunner
         psi.UseShellExecute = false;
         psi.RedirectStandardError = true;
         psi.RedirectStandardOutput = true;
+        DisableMsBuildNodeReuse(psi);
         using var process = new Process { StartInfo = psi };
         var stdOutComplete = new TaskCompletionSource<object?>();
         var stdErrComplete = new TaskCompletionSource<object?>();
@@ -61,4 +62,16 @@ public static class ProcessRunner
 
         return process.ExitCode;
     }
+
+    /// <summary>
+    /// We wait for the redirected stdout/stderr to close, which only happens once every process holding them has exited.
+    /// MSBuild keeps worker nodes alive after the build for reuse, and launches them without redirecting their streams when
+    /// MSBUILDENSURESTDOUTFORTASKPROCESSES=1 (which `dotnet test` sets for its children), so they inherit our pipes and we'd wait
+    /// until they time out. Without node reuse, the nodes exit with the build.
+    /// Streams only redirected when that variable isn't set:
+    /// https://github.com/dotnet/msbuild/blob/2bccd27c1733ff52893ff41e3b4046e51d0334ee/src/Build/BackEnd/Components/Communications/NodeLauncher.cs#L65-L67
+    /// https://github.com/dotnet/msbuild/blob/2bccd27c1733ff52893ff41e3b4046e51d0334ee/src/Framework/Traits.cs#L487-L490
+    /// MSBUILDDISABLENODEREUSE: https://github.com/dotnet/msbuild/blob/2bccd27c1733ff52893ff41e3b4046e51d0334ee/documentation/wiki/MSBuild-Environment-Variables.md
+    /// </summary>
+    private static void DisableMsBuildNodeReuse(ProcessStartInfo psi) => psi.Environment["MSBUILDDISABLENODEREUSE"] = "1";
 }
