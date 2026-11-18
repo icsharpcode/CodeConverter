@@ -105,6 +105,7 @@ internal class WriteBackPlacement
             name.Parent switch {
                 MemberAccessExpressionSyntax member => member.Expression == name,
                 MemberBindingExpressionSyntax or NameColonSyntax or NameEqualsSyntax => false,
+                AssignmentExpressionSyntax { Parent: InitializerExpressionSyntax initializer } assignment when initializer.IsKind(CS.SyntaxKind.ObjectInitializerExpression) => assignment.Left != name,
                 _ => true
             };
     }
