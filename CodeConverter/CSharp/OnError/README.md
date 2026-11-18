@@ -131,7 +131,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * `On Error GoTo -1`;
    * a handler that falls through into a label, without a `GoTo` or `Resume` to it, when the covered code also jumps to that label (`H:` handler, `Done:` next, `GoTo Done` in the covered code): the label would be reached from the `try` and from the `catch`;
    * a `Resume Next` handler (`On Error GoTo Failed` ... `Failed: Resume Next`) around a `For Each` (or any loop, `Using`, `SyncLock`, `Select Case`) whose body statements can fail. A common legacy shape, but every body statement needs its own guard inside the guarded statement, and the handler's own error would be caught again by the outer guard where VB lets it propagate. `On Error Resume Next` in the same place is converted (shape 2);
-   * a handler that resumes to a label (`Resume Retry`) when nothing before the label can fail and the code after it can, with no re-entry guard (see "Secondary errors"): the first error would come from code the plain form leaves unprotected;
+   * a handler that resumes to a label (`Resume Retry`) when the code after the label can fail, with no re-entry guard (see "Secondary errors"), and either nothing before the label can fail or the handler runs `On Error GoTo 0` (a one-shot retry): the first error would come from code the plain form leaves unprotected;
    * a handler local function would need to capture a `ref`/`out` parameter;
    * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;
    * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
@@ -214,6 +214,7 @@ Which form is used:
 | Secondary error possible and the handler has a **re-entry guard** | exact, segmented form |
 | Secondary error possible, no re-entry guard | plain structured: the secondary error propagates |
 | Secondary error possible, no guard, and nothing before the resume label can fail | fallback: the first error would come from the unprotected code and propagate, which VB wouldn't do (a retry loop: `i = 0` / `Retry:` / `Work()` / handler `Resume Retry`) |
+| Secondary error possible, no guard, and the handler runs `On Error GoTo 0` before resuming | fallback: VB protects the first pass through the code after the label but not the retry (`Open()` / `Again:` / `Work()`, handler `On Error GoTo 0` then `Resume Again`), which neither the plain nor the segmented form does |
 
 A re-entry guard is a condition in the handler or in the code after the resume label (`If`, `Select Case`, loop condition, `If(…)`) that reads a local, field or property which is assigned in the handler or in the code after the resume label. For example `attempts += 1 : If attempts > 3 Then Exit Sub`, or `If cleaningUp Then Exit Sub` with `cleaningUp = True` in the cleanup, or a retry that counts itself: `Retry: i += 1 : If i < 3 Then Work()`. Without one, a second pass through the handler does exactly what the first did, so re-entry can't have been relied on to terminate.
 

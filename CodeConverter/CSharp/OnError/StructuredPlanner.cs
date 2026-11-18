@@ -39,7 +39,7 @@ internal static class StructuredPlanner
 
         var segmented = TrySegment(model, handler, covered, coverageEnd, semanticModel);
         if (segmented != null && HandlerTurnsOffErrorHandling(model, handler)) return null;
-        if (segmented == null && OnlyTheCodeAfterAResumeLabelCanFail(model, handler, covered, coverageEnd, semanticModel)) return null;
+        if (segmented == null && TheFirstPassCanFailAfterAResumeLabel(model, handler, covered, coverageEnd, semanticModel)) return null;
         return new StructuredPlan(onErrorIndex, handler, segmented ?? new[] { covered }, handlerReachedWithoutError, model.Statements.Count, hasTail);
     }
 
@@ -69,15 +69,16 @@ internal static class StructuredPlanner
     }
 
     /// <summary>
-    /// The handler resumes to a label, nothing before the label can fail, and the code after it can. The plain form would leave the only code the handler can be for unprotected,
-    /// so even the first error would escape. Unlike a cleanup after the label, this can't be a case of a handler that VB would loop in forever (README.md "Secondary errors").
+    /// The handler resumes to a label in the covered code and the code after the label can fail, but would be left outside the <c>try</c>, so even the first error there would escape.
+    /// That is only acceptable when VB would have looped forever on a secondary error (a cleanup after the label, where the first error can come from before it) and the handler doesn't turn error handling off.
+    /// So it is also refused when nothing before the label can fail (a retry loop has no other source of the first error), and when the handler runs <c>On Error GoTo 0</c>:
+    /// VB then protects the first pass through the code after the label but not the retry, which neither form is (README.md "Secondary errors").
     /// </summary>
-    private static bool OnlyTheCodeAfterAResumeLabelCanFail(OnErrorModel model, HandlerRegion handler, StatementRange covered, int coverageEnd, SemanticModel semanticModel)
+    private static bool TheFirstPassCanFailAfterAResumeLabel(OnErrorModel model, HandlerRegion handler, StatementRange covered, int coverageEnd, SemanticModel semanticModel)
     {
         var resumesToCoveredLabel = handler.Exits.Any(e => e.Kind == HandlerExitKind.ResumeLabel && model.MethodLevelIndexOfLabel(e.TargetLabel) is var i && i >= covered.End && i < coverageEnd);
-        return resumesToCoveredLabel &&
-               !StatementsIn(model, covered).Any(s => ThrowAnalysis.CanThrow(s, semanticModel)) &&
-               SecondaryErrorIsPossible(StatementsIn(model, new StatementRange(-1, covered.End, coverageEnd)), semanticModel);
+        if (!resumesToCoveredLabel || !SecondaryErrorIsPossible(StatementsIn(model, new StatementRange(-1, covered.End, coverageEnd)), semanticModel)) return false;
+        return HandlerTurnsOffErrorHandling(model, handler) || !StatementsIn(model, covered).Any(s => ThrowAnalysis.CanThrow(s, semanticModel));
     }
 
     /// <summary>

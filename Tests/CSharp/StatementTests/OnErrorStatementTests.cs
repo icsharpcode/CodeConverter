@@ -2740,4 +2740,91 @@ internal partial class TestClass
     }
 }CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo H' at character 129", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// The handler turns error handling off and then retries from a label in the covered code, so VB protects the first pass through the code after the label but not the retry.
+    /// The plain form would leave that code outside the try, so even the first error would escape; the segmented form would protect the retry.
+    /// </summary>
+    [Fact]
+    public async Task OneShotRetryFromALabelInTheCoveredCodeKeepsTheFallbackWhenTheCodeAfterTheLabelCanFailAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub OpenIt()
+    End Sub
+
+    Sub Work()
+        Throw New System.Exception()
+    End Sub
+
+    Sub OneShotRetry()
+        On Error GoTo EH
+        OpenIt()
+Again:
+        Work()
+        Exit Sub
+EH:
+        On Error GoTo 0
+        Resume Again
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void OpenIt()
+    {
+    }
+
+    public void Work()
+    {
+        throw new Exception();
+    }
+
+    public void OneShotRetry()
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo EH' at character 158
+
+
+                Input:
+                        On Error GoTo EH
+
+                 */
+        OpenIt();
+    Again:
+        ;
+
+        Work();
+        return;
+    EH:
+        ;
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToZeroStatement not implemented, please report this issue in 'On Error GoTo 0' at character 255
+
+
+        Input:
+
+                On Error GoTo 0
+
+         */
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Again' at character 280
+
+
+                Input:
+                        Resume Again
+
+                 */
+    }
+}----- Exception 1 of 3 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo EH' at character 158
+
+----- Exception 2 of 3 -----
+CONVERSION ERROR: Conversion for OnErrorGoToZeroStatement not implemented, please report this issue in 'On Error GoTo 0' at character 255
+
+----- Exception 3 of 3 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Again' at character 280", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
