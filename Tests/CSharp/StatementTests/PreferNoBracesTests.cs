@@ -235,6 +235,72 @@ internal partial class TestClass
 }");
     }
 
+    [Fact]
+    public async Task LoopLockAndUsingEndingWithIfKeepBracesBeforeElseAsync()
+    {
+        await TestPreferNoBracesConversionAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean, b As Boolean)
+        If a Then
+            For i = 1 To 2
+                If b Then X()
+            Next
+        Else
+            X()
+        End If
+        If a Then
+            SyncLock Me
+                If b Then X()
+            End SyncLock
+        Else
+            X()
+        End If
+        If a Then
+            Using New System.IO.MemoryStream()
+                If b Then X()
+            End Using
+        Else
+            X()
+        End If
+    End Sub
+    Private Sub X()
+    End Sub
+End Class", @"using System.IO;
+
+internal partial class TestClass
+{
+    private void TestMethod(bool a, bool b)
+    {
+        if (a)
+        {
+            for (int i = 1; i <= 2; i++)
+                if (b)
+                    X();
+        }
+        else
+            X();
+        if (a)
+        {
+            lock (this)
+                if (b)
+                    X();
+        }
+        else
+            X();
+        if (a)
+        {
+            using (new MemoryStream())
+                if (b)
+                    X();
+        }
+        else
+            X();
+    }
+    private void X()
+    {
+    }
+}");
+    }
+
     private Task TestPreferNoBracesConversionAsync(string visualBasicCode, string expectedCsharpCode) =>
         AssertConvertedCodeResultEqualsAsync<VBToCSPreferNoBracesConversion>(visualBasicCode, expectedCsharpCode);
 }
