@@ -2316,4 +2316,57 @@ public partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ByRefDefaultPropertyOnMyBaseIsWrittenBackThroughBaseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class B
+    Default Public Property Item(i As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Class C
+    Inherits B
+
+    Sub M(i As Integer)
+        SetValue(MyBase.Item(i))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"
+public partial class B
+{
+    public string this[int i]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+}
+
+public partial class C : B
+{
+
+    public void M(int i)
+    {
+        string argvalue = base[i];
+        SetValue(ref argvalue);
+        base[i] = argvalue;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
 }

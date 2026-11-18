@@ -267,6 +267,25 @@ Public Class ByRefParameterizedPropertyTests
     End Structure
 
     <Fact>
+    Public Sub MyBaseDefaultPropertyIsWrittenBack()
+        Dim db As New DerivedDb(_log)
+        db.SetBaseItem()
+        Assert.Equal("item get 1;item set 1=changed", LogText())
+    End Sub
+
+    Private Class DerivedDb
+        Inherits Db
+
+        Public Sub New(log As List(Of String))
+            MyBase.New(log)
+        End Sub
+
+        Public Sub SetBaseItem()
+            SetValue(MyBase.Item(1))
+        End Sub
+    End Class
+
+    <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
         SetValue(Db.SharedQr(NextIndex()))
