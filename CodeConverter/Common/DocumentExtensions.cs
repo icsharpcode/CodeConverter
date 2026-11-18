@@ -52,8 +52,40 @@ internal static class DocumentExtensions
     {
         //"private int value = unchecked((int)0x80000010);" is simplified to "private int value = unchecked(0x80000010);"
         // which causes CS0266: "Cannot implicitly convert type 'uint' to 'int'"
-        return (n is CSSyntax.CastExpressionSyntax { Parent : CSSyntax.CheckedExpressionSyntax });
+        return (n is CSSyntax.CastExpressionSyntax { Parent : CSSyntax.CheckedExpressionSyntax })
+               || n is CSSyntax.BlockSyntax block && BracesGuardElseBinding(block);
     }
+
+    /// <summary>
+    /// Roslyn bug: when the user's code style is "Prefer braces: No" (csharp_prefer_braces = false or when_multiline),
+    /// the simplifier unwraps a single-statement block without checking what follows it, so in
+    /// <c>if (a) { if (b) x(); } else y();</c> the else would then bind to the nearest if, i.e. <c>if (b)</c>: https://github.com/icsharpcode/CodeConverter/issues/823
+    /// The user's code style reaches us through the document's options (e.g. Visual Studio's Tools > Options) and is otherwise harmless,
+    /// so rather than overriding it, keep exactly the braces that stop an else changing which if it belongs to.
+    /// </summary>
+    private static bool BracesGuardElseBinding(CSSyntax.BlockSyntax block) =>
+        block.Parent is CSSyntax.IfStatementSyntax { Else: not null } ifStatement
+        && ifStatement.Statement == block
+        && block.Statements.Count == 1
+        && CouldEndWithIfWithoutElse(block.Statements[0]);
+
+    /// <summary>
+    /// Whether an else placed right after this statement could bind to an if within it, assuming any single-statement block within it may lose its braces too.
+    /// </summary>
+    private static bool CouldEndWithIfWithoutElse(CSSyntax.StatementSyntax statement) =>
+        statement switch {
+            CSSyntax.IfStatementSyntax { Else: null } => true,
+            CSSyntax.IfStatementSyntax { Else: { } elseClause } => CouldEndWithIfWithoutElse(elseClause.Statement),
+            CSSyntax.BlockSyntax { Statements.Count: 1 } block => CouldEndWithIfWithoutElse(block.Statements[0]),
+            CSSyntax.CommonForEachStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.ForStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.WhileStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.UsingStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.LockStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.FixedStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.LabeledStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            _ => false
+        };
 
     public static async Task<Document> WithExpandedRootAsync(this Document document, CancellationToken cancellationToken)
     {

@@ -21,6 +21,12 @@ public class SelfVerifyingTests
         await verifyConvertedTestPasses.Execute();
     }
 
+    [Theory, MemberData(nameof(GetVisualBasicToCSharpPreferNoBracesTestData))]
+    public async Task VisualBasicToCSharpPreferNoBracesAsync(NamedTest verifyConvertedTestPasses)
+    {
+        await verifyConvertedTestPasses.Execute();
+    }
+
     /// <summary>
     /// Compile VB.NET source, convert it to C#, compile the conversion
     /// and return actions which run each corresponding pair of tests.
@@ -29,6 +35,17 @@ public class SelfVerifyingTests
     {
         var testFiles = Directory.GetFiles(Path.Combine(TestConstants.GetTestDataDirectory(), "SelfVerifyingTests/VBToCS"), "*.vb");
         return testFiles.SelectMany(SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSConversion>)
+            .Select(et => new object[] {et})
+            .ToArray();
+    }
+
+    /// <summary>
+    /// The user's "Prefer braces: No" code style lets the simplifier remove braces, so check that doesn't change which if an else binds to.
+    /// </summary>
+    public static IEnumerable<object[]> GetVisualBasicToCSharpPreferNoBracesTestData()
+    {
+        var testFile = Path.Combine(TestConstants.GetTestDataDirectory(), "SelfVerifyingTests/VBToCS/IfElseBindingTests.vb");
+        return SelfVerifyingTestFactory.GetSelfVerifyingFacts<VisualBasicCompiler, CSharpCompiler, VBToCSPreferNoBracesConversion>(testFile)
             .Select(et => new object[] {et})
             .ToArray();
     }

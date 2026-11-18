@@ -203,4 +203,37 @@ Public Class IfElseBindingTests
         End If
         Log("end")
     End Sub
+    <Fact>
+    Public Sub ForEachContainingIfBeforeElse()
+        Assert.Equal("b,end|b,end|b,end|b,end|end|end|a,end|a,end", RunAllCombinations(AddressOf ForEachBeforeElse))
+    End Sub
+
+    Private Sub ForEachBeforeElse(outer As Boolean, f1 As Boolean, f2 As Boolean)
+        If outer Then
+            For Each x In {1}
+                If f1 Then Log("a")
+            Next
+        Else
+            Log("b")
+        End If
+        Log("end")
+    End Sub
+
+    <Fact>
+    Public Sub ElseIfChainWithoutElseBeforeElse()
+        Assert.Equal("c,end|c,end|c,end|c,end|end|b,end|a,end|a,end", RunAllCombinations(AddressOf ElseIfChainBeforeElse))
+    End Sub
+
+    Private Sub ElseIfChainBeforeElse(outer As Boolean, f1 As Boolean, f2 As Boolean)
+        If outer Then
+            If f1 Then
+                Log("a")
+            ElseIf f2 Then
+                Log("b")
+            End If
+        Else
+            Log("c")
+        End If
+        Log("end")
+    End Sub
 End Class
