@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -56,7 +57,16 @@ internal static class Extensions
     public static StatementSyntax UnpackPossiblyNestedBlock(this BlockSyntax block)
     {
         SyntaxList<StatementSyntax> statementSyntaxs = block.Statements;
-        return statementSyntaxs.Count == 1 ? statementSyntaxs[0] : block;
+        return statementSyntaxs.Count == 1 && statementSyntaxs[0].CanBeEmbedded() ? statementSyntaxs[0] : block;
+    }
+
+    /// <summary>
+    /// C# forbids declarations and labels as the embedded statement of if/else/while/do/for/foreach/lock/using (CS1023),
+    /// see BindPossibleEmbeddedStatement in https://github.com/dotnet/roslyn/blob/main/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs
+    /// </summary>
+    public static bool CanBeEmbedded(this StatementSyntax statement)
+    {
+        return !statement.IsKind(SyntaxKind.LocalDeclarationStatement, SyntaxKind.LabeledStatement, SyntaxKind.LocalFunctionStatement);
     }
 
     private static bool ContainsNestedStatements(this BlockSyntax block)
