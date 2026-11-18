@@ -673,8 +673,29 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal(1, h.Inner.P)
     End Sub
 
+    <Fact>
+    Public Sub WithInsideALambdaArgumentStaysInTheLambda()
+        Dim h As New CounterHolder
+        Assert.Equal(13, h.WithInLambdaArgument())
+    End Sub
     Private Class CounterHolder
         Public Inner As Counter
+        Public Property Total As Integer
+
+        Public Function WithInLambdaArgument() As Integer
+            If AddResult(Total, Function()
+                                    With Inner
+                                        .P = 3
+                                    End With
+                                    Return 1
+                                End Function) > 0 Then Return Total * 10 + Inner.P
+            Return -1
+        End Function
+
+        Private Shared Function AddResult(ByRef target As Integer, f As Func(Of Integer)) As Integer
+            target += f()
+            Return target
+        End Function
 
         Public Function IncrementInWith() As Integer
             With Inner

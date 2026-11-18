@@ -1750,6 +1750,68 @@ public partial struct S
 }");
     }
     [Fact]
+    public async Task RefLocalDeclaredInsideTheLocalFunctionIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class C
+    Public Property Total As Integer
+    Public Inner As T
+
+    Shared Function Apply(ByRef v As Integer, f As System.Func(Of Integer)) As Integer
+        Return v + f()
+    End Function
+
+    Sub M()
+        If Apply(Total, Function()
+                            With Inner
+                                .P = 3
+                            End With
+                            Return 1
+                        End Function) > 0 Then Total = 0
+    End Sub
+End Class", @"using System;
+
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public int Total { get; set; }
+    public T Inner;
+
+    public static int Apply(ref int v, Func<int> f)
+    {
+        return v + f();
+    }
+
+    public void M()
+    {
+        int localApply()
+        {
+            int argv = Total;
+            var ret = Apply(ref argv, () =>
+            {
+                {
+                    ref var withBlock = ref Inner;
+                    withBlock.P = 3;
+                }
+                return 1;
+            });
+            Total = argv;
+            return ret;
+        }
+
+        if (localApply() > 0)
+            Total = 0;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The multi-line lambda is emitted inside the local function, before the If's line
+    }
+    [Fact]
     public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
