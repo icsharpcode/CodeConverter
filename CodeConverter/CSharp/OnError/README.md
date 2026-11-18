@@ -168,6 +168,8 @@ Known differences: `Err` read through reflection, late binding, or from another 
 
 VB runs the body once with a default loop variable. C# output skips the loop (one guard around the whole statement). Not worth lowering loops for.
 
+A failing `Step` expression is worse in VB: it runs the body with a default loop variable and then never leaves the loop (checked by running it: the body ran until stopped by a counter). The C# output skips the loop and terminates, so there is nothing to preserve.
+
 ### Secondary errors: propagate, unless the handler is written for re-entry
 
 A *secondary error* is one raised in code that runs after the handler has finished but while that same handler is still the active one:
