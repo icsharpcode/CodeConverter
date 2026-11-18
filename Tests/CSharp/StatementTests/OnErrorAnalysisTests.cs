@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.CSharp.OnError;
@@ -78,6 +78,57 @@ public class OnErrorAnalysisTests
 End Class", out var model).Single(m => m.SubOrFunctionStatement.Identifier.Text == "M");
         var ifStatement = method.DescendantNodes().OfType<SingleLineIfStatementSyntax>().Single();
         Assert.Equal(canThrow, ThrowAnalysis.CanThrow(ifStatement.Condition, model));
+    }
+
+    /// <summary>The generated C# is unchecked, so integer addition, subtraction and multiplication of locals and constants can't throw.</summary>
+    [Theory]
+    [InlineData("i += 1", false)]
+    [InlineData("i -= j", false)]
+    [InlineData("i *= 2", false)]
+    [InlineData("i = i + 1", false)]
+    [InlineData("i = j - 1", false)]
+    [InlineData("i = (i + j) * 2", false)]
+    [InlineData("l += 1", false)]
+    [InlineData("l = l + 1", false)]
+    [InlineData("ui += 1UI", false)]
+    [InlineData("i /= 2", true)]
+    [InlineData("i \\= 2", true)]
+    [InlineData("i = i \\ j", true)]
+    [InlineData("i = i Mod j", true)]
+    [InlineData("i = i ^ 2", true)]
+    [InlineData("i = i / j", true)]
+    [InlineData("d += 1", true)]
+    [InlineData("d = d + 1", true)]
+    [InlineData("m += 1", true)]
+    [InlineData("sg += 1", true)]
+    [InlineData("s += \"a\"", true)]
+    [InlineData("i += Foo()", true)]
+    [InlineData("i = i + Foo()", true)]
+    [InlineData("i += l", true)]
+    [InlineData("b += 1", true)]
+    [InlineData("i += o", true)]
+    [InlineData("fieldI += 1", true)]
+    [InlineData("i += fieldI", true)]
+    public void IntegerArithmeticOnLocalsCantFailBecauseTheOutputIsUnchecked(string statement, bool canThrow)
+    {
+        var method = Parse($@"Class C
+    Private fieldI As Integer
+    Function Foo() As Integer
+        Return 1
+    End Function
+    Sub M(o As Object)
+        Dim i, j As Integer
+        Dim l As Long
+        Dim ui As UInteger
+        Dim b As Byte
+        Dim d As Double
+        Dim sg As Single
+        Dim m As Decimal
+        Dim s As String
+        {statement}
+    End Sub
+End Class", out var model).Single(m => m.SubOrFunctionStatement.Identifier.Text == "M");
+        Assert.Equal(canThrow, ThrowAnalysis.CanThrow(method.Statements.Last(), model));
     }
 
     [Fact]

@@ -214,21 +214,10 @@ internal partial class TestClass
                     goto retry;
             }
         }
-        bool LoopCondition() { retry3: try { return items.Count > tries; } catch { if (FailedRetries()) goto retry3; return true; } }
+        bool LoopCondition() { retry2: try { return items.Count > tries; } catch { if (FailedRetries()) goto retry2; return true; } }
 
         while (LoopCondition())
-        {
-        retry2:
-            try
-            {
-                tries += 1;
-            }
-            catch
-            {
-                if (FailedRetries())
-                    goto retry2;
-            }
-        }
+            tries += 1;
         return;
     }
 }", incompatibleWithAutomatedCommentTesting: true);

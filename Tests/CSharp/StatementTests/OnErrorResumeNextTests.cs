@@ -122,13 +122,7 @@ internal partial class TestClass
         count = 1;
         if (flag)
             goto Done;
-        try
-        {
-            count = count + 1;
-        }
-        catch
-        {
-        }
+        count = count + 1;
         try
         {
             Console.WriteLine(count);
@@ -373,75 +367,27 @@ internal partial class TestClass
         bool LoopCondition() { try { return items.Count > n; } catch { return true; } }
 
         while (LoopCondition())
-        {
-            try
-            {
-                n += 1;
-            }
-            catch
-            {
-            }
-        }
+            n += 1;
         bool LoopCondition1() { try { return items.Count > n; } catch { return true; } }
 
         while (LoopCondition1())
-        {
-            try
-            {
-                n += 1;
-            }
-            catch
-            {
-            }
-        }
+            n += 1;
         bool LoopCondition2() { try { return items.Count != n; } catch { return true; } }
 
         while (LoopCondition2())
-        {
-            try
-            {
-                n += 1;
-            }
-            catch
-            {
-            }
-        }
+            n += 1;
         bool LoopCondition3() { try { return items.Count > n; } catch { return false; } }
 
         do
-        {
-            try
-            {
-                n += 1;
-            }
-            catch
-            {
-            }
-        }
+            n += 1;
         while (LoopCondition3());
         bool LoopCondition4() { try { return items.Count != n; } catch { return false; } }
 
         do
-        {
-            try
-            {
-                n += 1;
-            }
-            catch
-            {
-            }
-        }
+            n += 1;
         while (LoopCondition4());
         while (n < 5)
-        {
-            try
-            {
-                n += 1;
-            }
-            catch
-            {
-            }
-        }
+            n += 1;
     }
 }");
     }
@@ -723,14 +669,7 @@ internal partial class TestClass
         catch
         {
         }
-        try
-        {
-            ComputeRet += 1;
-        }
-        catch
-        {
-        }
-
+        ComputeRet += 1;
         return ComputeRet;
     }
 }");
@@ -836,16 +775,7 @@ internal partial class TestClass
         bool LoopCondition() { try { return n > int.Parse(""2""); } catch (Exception ex) when (resumeNext) { ProjectData.SetProjectError(ex); return true; } }
 
         while (LoopCondition())
-        {
-            try
-            {
-                n -= 1;
-            }
-            catch (Exception ex) when (resumeNext)
-            {
-                ProjectData.SetProjectError(ex);
-            }
-        }
+            n -= 1;
         return n;
     }
 }");
@@ -1308,15 +1238,7 @@ internal partial struct S
         bool LoopCondition() { try { return x < int.Parse(""a""); } catch { return true; } }
 
         while (LoopCondition())
-        {
-            try
-            {
-                x += 1;
-            }
-            catch
-            {
-            }
-        }
+            x += 1;
     }
 }----- Exception 1 of 2 -----
 CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 270
