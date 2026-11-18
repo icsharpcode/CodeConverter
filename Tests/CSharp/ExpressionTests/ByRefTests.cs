@@ -2013,6 +2013,62 @@ public partial class C
     }
 
     [Fact]
+    public async Task AnonymousTypeMemberNamedLikeAByRefParameterIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property P As Integer
+    Public Property Inner As Box
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function Take(o As Object, b As Box) As Box
+        Return b
+    End Function
+
+    Sub M(arr As Box(), ByRef i As Integer)
+        With arr(i)
+            If Inc(Take(New With {.i = 1}, .Inner).P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class", @"
+public partial class Box
+{
+    public int P { get; set; }
+    public Box Inner { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static Box Take(object o, Box b)
+    {
+        return b;
+    }
+
+    public void M(Box[] arr, ref int i)
+    {
+        {
+            var withBlock = arr[i];
+            int localInc() { var tmp = Take(new { i = 1 }, withBlock.Inner); int argv = tmp.P; var ret = Inc(ref argv); tmp.P = argv; return ret; }
+
+            if (localInc() > 0)
+                withBlock.P = 0;
+        }
+    }
+}");
+    }
+
+    [Fact]
     public async Task TypeNamedLikeAByRefParameterIsNotPassedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class H

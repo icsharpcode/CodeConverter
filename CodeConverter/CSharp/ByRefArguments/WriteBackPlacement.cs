@@ -104,7 +104,7 @@ internal class WriteBackPlacement
         static bool IsNotAMemberName(IdentifierNameSyntax name) =>
             name.Parent switch {
                 MemberAccessExpressionSyntax member => member.Expression == name,
-                MemberBindingExpressionSyntax or NameColonSyntax => false,
+                MemberBindingExpressionSyntax or NameColonSyntax or NameEqualsSyntax => false,
                 _ => true
             };
     }
