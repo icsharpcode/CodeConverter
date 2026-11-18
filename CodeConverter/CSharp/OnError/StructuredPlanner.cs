@@ -61,7 +61,7 @@ internal static class StructuredPlanner
         var resumedToStatements = segments.SelectMany(s => StatementsIn(model, s)).ToArray();
         var handlerStatements = HandlerStatements(model, handler);
         if (!segments.Any(s => SecondaryErrorIsPossible(StatementsIn(model, s), semanticModel)) ||
-            !ReEntryGuard.IsPresent(handlerStatements, resumedToStatements, semanticModel) ||
+            !ReEntryGuard.IsPresent(handlerStatements, resumedToStatements, conditionsInResumedToCodeCount: true, semanticModel) ||
             !segments.All(s => CanOnlyBeEnteredFromTheTop(model, s))) {
             return null;
         }
@@ -117,7 +117,7 @@ internal static class StructuredPlanner
     {
         var tailStatements = StatementsIn(model, tail);
         var handlerStatements = HandlerStatements(model, handler);
-        return SecondaryErrorIsPossible(tailStatements, semanticModel) && ReEntryGuard.IsPresent(handlerStatements, tailStatements, semanticModel);
+        return SecondaryErrorIsPossible(tailStatements, semanticModel) && ReEntryGuard.IsPresent(handlerStatements, tailStatements, conditionsInResumedToCodeCount: false, semanticModel);
     }
 
     private static bool IsJumpedIntoFromOutside(OnErrorModel model, HandlerRegion handler) =>

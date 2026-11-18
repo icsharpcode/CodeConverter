@@ -421,4 +421,46 @@ H:
         HandlerTurnsOffErrorHandling(True)
         Assert.Equal("work", Logged())
     End Sub
+
+    Private Function TailTestsTheResultTheHandlerSet(succeed As Boolean) As Integer
+        On Error GoTo EH
+        Work(succeed) : TailTestsTheResultTheHandlerSet = 1 : Exit Function
+EH:
+        TailTestsTheResultTheHandlerSet = 2
+        Resume Fin
+Fin:
+        If TailTestsTheResultTheHandlerSet > 1 Then Exit Function
+        _log.Add("fin")
+    End Function
+
+    <Fact>
+    Sub TailThatTestsTheResultTheHandlerSetRunsAfterTheHandler()
+        Assert.Equal(2, TailTestsTheResultTheHandlerSet(False))
+        Assert.Equal("work", Logged())
+        _log.Clear()
+        Assert.Equal(1, TailTestsTheResultTheHandlerSet(True))
+        Assert.Equal("work", Logged())
+    End Sub
+
+    Private Sub CleanupTailThatClearsWhatItFrees(succeed As Boolean)
+        Dim conn As Object = Nothing
+        On Error GoTo EH
+        conn = New Object() : Work(succeed)
+        GoTo Cleanup
+EH:
+        _log.Add("handler")
+        Resume Cleanup
+Cleanup:
+        If conn IsNot Nothing Then Close()
+        conn = Nothing
+    End Sub
+
+    <Fact>
+    Sub CleanupTailThatClearsWhatItFreesRunsOnceAfterTheHandler()
+        CleanupTailThatClearsWhatItFrees(False)
+        Assert.Equal("work, handler, close", Logged())
+        _log.Clear()
+        CleanupTailThatClearsWhatItFrees(True)
+        Assert.Equal("work, close", Logged())
+    End Sub
 End Class

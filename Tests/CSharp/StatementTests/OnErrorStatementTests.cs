@@ -2827,4 +2827,122 @@ CONVERSION ERROR: Conversion for OnErrorGoToZeroStatement not implemented, pleas
 ----- Exception 3 of 3 -----
 CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Again' at character 280", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// A cleanup after the handler that tests what it frees: the condition in the tail (not the handler) reads `conn`, which the tail assigns. That isn't a re-entry guard, since a second pass would do the same again, so the tail stays plain.
+    /// </summary>
+    [Fact]
+    public async Task CleanupTailThatTestsAndClearsWhatItFreesIsPlainStructuredAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Work()
+    End Sub
+
+    Sub Close(c As Object)
+    End Sub
+
+    Sub CleanupTail()
+        Dim conn As Object = Nothing
+        On Error GoTo EH
+        conn = New Object() : Work()
+        GoTo Cleanup
+EH:
+        Console.WriteLine(Err.Description)
+        Resume Cleanup
+Cleanup:
+        If conn IsNot Nothing Then Close(conn)
+        conn = Nothing
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void Work()
+    {
+    }
+
+    public void Close(object c)
+    {
+    }
+
+    public void CleanupTail()
+    {
+        object conn = null;
+        ProjectData.ClearProjectError();
+        try
+        {
+            conn = new object();
+            Work();
+            goto Cleanup;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            Console.WriteLine(Information.Err().Description);
+            ProjectData.ClearProjectError();
+        }
+
+    Cleanup:
+        ;
+
+        if (conn is not null)
+            Close(conn);
+        conn = null;
+    }
+}");
+    }
+
+    /// <summary>
+    /// The handler sets the result and the tail tests it: the condition is only in the tail, and nothing in the tail re-assigns what it reads.
+    /// </summary>
+    [Fact]
+    public async Task TailThatTestsTheResultTheHandlerSetIsPlainStructuredAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Work()
+    End Sub
+
+    Function F() As Integer
+        On Error GoTo EH
+        Work() : F = 1 : Exit Function
+EH:
+        F = 2
+        Resume Fin
+Fin:
+        If F > 1 Then Exit Function
+        Console.WriteLine(""fin"")
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    public void Work()
+    {
+    }
+
+    public int F()
+    {
+        int FRet = default;
+        try
+        {
+            Work();
+            FRet = 1;
+            return FRet;
+        }
+        catch
+        {
+
+            FRet = 2;
+        }
+
+        if (FRet > 1)
+            return FRet;
+        Console.WriteLine(""fin"");
+        return FRet;
+    }
+}");
+    }
 }
