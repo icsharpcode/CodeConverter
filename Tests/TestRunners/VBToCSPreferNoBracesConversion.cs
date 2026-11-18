@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Common;
 using ICSharpCode.CodeConverter.CSharp;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Options;
 
 namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 
@@ -14,7 +12,6 @@ namespace ICSharpCode.CodeConverter.Tests.TestRunners;
 /// Converts as if the user's C# code style says "Prefer braces: No" (csharp_prefer_braces = false).
 /// In Visual Studio, Tools > Options code style preferences reach the converter through <see cref="Solution.Options"/>,
 /// which <see cref="Document.GetOptionsAsync"/> falls back to, and the simplifier honours them.
-/// Roslyn keeps its code style options internal, so this sets the option by reflection.
 /// </summary>
 public class VBToCSPreferNoBracesConversion : ILanguageConversion
 {
@@ -24,21 +21,8 @@ public class VBToCSPreferNoBracesConversion : ILanguageConversion
     {
         var document = await _baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
         var solution = document.Project.Solution;
-        return solution.WithOptions(WithPreferBracesNone(solution.Options)).GetDocument(document.Id);
-    }
-
-    private static OptionSet WithPreferBracesNone(OptionSet options)
-    {
-        var csharpWorkspacesAssembly = typeof(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions).Assembly;
-        var preferBracesOption = (IOption)csharpWorkspacesAssembly
-            .GetType("Microsoft.CodeAnalysis.CSharp.CodeStyle.CSharpCodeStyleOptions", throwOnError: true)
-            .GetField("PreferBraces", BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
-        var codeStyleOptionType = preferBracesOption.Type;
-        var notificationParameterType = codeStyleOptionType.GetConstructors()[0].GetParameters()[1].ParameterType;
-        var silentNotification = notificationParameterType.GetProperty("Silent", BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
-        var preferBracesNone = Enum.Parse(codeStyleOptionType.GetGenericArguments()[0], "None");
-        var preferBracesNoneValue = Activator.CreateInstance(codeStyleOptionType, preferBracesNone, silentNotification);
-        return options.WithChangedOption(new OptionKey(preferBracesOption), preferBracesNoneValue);
+        var options = solution.Options.WithPreferBraces("None") ?? throw new InvalidOperationException("Can't set the \"Prefer braces\" option on this Roslyn version");
+        return solution.WithOptions(options).GetDocument(document.Id);
     }
 
     string ILanguageConversion.TargetLanguage => _baseConversion.TargetLanguage;
