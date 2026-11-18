@@ -68,7 +68,15 @@ internal static class DocumentExtensions
     /// </summary>
     private static bool MustKeepBraces(CSSyntax.BlockSyntax block) =>
         IsEmbeddedStatement(block) && block.Statements.Count == 1
-        && (!block.Statements[0].CanBeEmbedded() || IsFollowedByElse(block) && CouldEndWithIfWithoutElse(block.Statements[0]));
+        && (!block.Statements[0].CanBeEmbedded() || IsFollowedByElse(block) && CouldEndWithIfWithoutElse(block.Statements[0])
+            || HasComment(block.OpenBraceToken) || HasComment(block.CloseBraceToken));
+
+    /// <summary>
+    /// The unwrap drops comments attached to the removed braces, and losing a user's comment is worse than keeping their braces.
+    /// </summary>
+    private static bool HasComment(SyntaxToken braceToken) =>
+        braceToken.LeadingTrivia.Concat(braceToken.TrailingTrivia)
+            .Any(t => t.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || t.IsKind(CS.SyntaxKind.MultiLineCommentTrivia));
 
     private static bool IsEmbeddedStatement(CSSyntax.BlockSyntax block) =>
         block.Parent is CSSyntax.IfStatementSyntax or CSSyntax.ElseClauseSyntax or CSSyntax.CommonForEachStatementSyntax

@@ -236,6 +236,62 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task CommentsOnRemovableBracesKeepBracesAsync()
+    {
+        await TestPreferNoBracesConversionAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean, b As Boolean)
+        If a Then
+            If b Then X() ' c1
+        Else ' c2
+            Y() ' c3
+        End If ' c4
+        If a Then
+            If b Then ' e0
+                X() ' e1
+            End If ' e2
+        Else
+            Y()
+        End If
+    End Sub
+    Private Sub X()
+    End Sub
+    Private Sub Y()
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a, bool b)
+    {
+        if (a)
+        {
+            if (b)
+                X(); // c1
+        }
+        else // c2
+        {
+            Y();
+        } // c3
+          // c4
+        if (a)
+        {
+            if (b) // e0
+            {
+                X(); // e1
+            } // e2
+        }
+        else
+            Y();
+    }
+    private void X()
+    {
+    }
+    private void Y()
+    {
+    }
+}");
+    }
+
+    [Fact]
     public async Task LoopLockAndUsingEndingWithIfKeepBracesBeforeElseAsync()
     {
         await TestPreferNoBracesConversionAsync(@"Class TestClass
