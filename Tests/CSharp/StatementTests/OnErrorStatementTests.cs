@@ -2945,4 +2945,60 @@ internal partial class TestClass
     }
 }");
     }
+
+    /// <summary>
+    /// The handler turns error handling off, then resumes to a label after itself. That code is outside the try in the structured form whichever way it is reached, so the handler's `On Error GoTo 0` doesn't need the dynamic shape.
+    /// </summary>
+    [Fact]
+    public async Task HandlerThatTurnsOffErrorHandlingAndResumesToALabelAfterItselfIsStructuredAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Public A As Integer
+
+    Sub Work()
+    End Sub
+
+    Sub M()
+        Dim r As Integer
+        On Error GoTo EH
+        Work()
+        r = 1
+        GoTo Done
+EH:
+        On Error GoTo 0
+        r = -1
+        Resume Done
+Done:
+        A = r
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public int A;
+
+    public void Work()
+    {
+    }
+
+    public void M()
+    {
+        int r = default;
+        try
+        {
+            Work();
+            r = 1;
+            goto Done;
+        }
+        catch
+        {
+            r = -1;
+        }
+
+    Done:
+        ;
+
+        A = r;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

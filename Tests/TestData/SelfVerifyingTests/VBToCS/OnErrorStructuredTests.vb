@@ -463,4 +463,26 @@ Cleanup:
         CleanupTailThatClearsWhatItFrees(True)
         Assert.Equal("work, close", Logged())
     End Sub
+
+    Private Function TurnsOffErrorHandlingThenResumesAfterItself(succeed As Boolean) As Integer
+        Dim r As Integer
+        On Error GoTo EH
+        Work(succeed) : r = 1 : GoTo Done
+EH:
+        On Error GoTo 0
+        r = -1
+        Resume Done
+Done:
+        _log.Add("done")
+        Return r
+    End Function
+
+    <Fact>
+    Sub HandlerThatTurnsOffErrorHandlingAndResumesToALabelAfterItselfRunsTheTail()
+        Assert.Equal(-1, TurnsOffErrorHandlingThenResumesAfterItself(False))
+        Assert.Equal("work, done", Logged())
+        _log.Clear()
+        Assert.Equal(1, TurnsOffErrorHandlingThenResumesAfterItself(True))
+        Assert.Equal("work, done", Logged())
+    End Sub
 End Class

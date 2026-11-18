@@ -24,12 +24,12 @@ internal sealed class OnErrorModel
         ResumeStatements = descendants.OfType<VBSyntax.ResumeStatementSyntax>().ToArray();
         _labels = descendants.OfType<VBSyntax.LabelStatementSyntax>().GroupBy(LabelName.Of).ToDictionary(g => g.Key, g => g.First());
         Jumps = descendants.Select(AsJumpOrNull).Where(j => j != null).ToArray();
-        ActiveHandlers = GetStaticActiveHandlers();
         Handlers = OnErrorStatements.OfType<VBSyntax.OnErrorGoToStatementSyntax>()
             .Where(s => s.IsKind(VBasicSyntaxKind.OnErrorGoToLabelStatement))
             .Select(s => LabelName.Of(s.Label)).Distinct()
             .Select(label => CreateHandlerRegion(label, semanticModel))
             .ToArray();
+        ActiveHandlers = GetStaticActiveHandlers(ignoreGoToZeroInHandlers: false);
         IsDynamic = !AreActiveHandlersStatic(ignoreGoToZeroInHandlers: false);
         HandlersOnlyTurnErrorHandlingOff = IsDynamic && AreActiveHandlersStatic(ignoreGoToZeroInHandlers: true);
     }
@@ -113,16 +113,19 @@ internal sealed class OnErrorModel
         _ => null
     };
 
-    private IReadOnlyList<ActiveHandler> GetStaticActiveHandlers()
+    /// <param name="ignoreGoToZeroInHandlers">
+    /// Leaves out the effect of <c>On Error GoTo 0</c> inside a handler, which the linear scan would otherwise carry on to the statements after the handler, although they are only reached by jumping.
+    /// </param>
+    private IReadOnlyList<ActiveHandler> GetStaticActiveHandlers(bool ignoreGoToZeroInHandlers)
     {
         var activeHandlers = new List<ActiveHandler>();
         var current = ActiveHandler.None;
-        foreach (var statement in Statements) {
+        foreach (var (statement, index) in Statements.Select((s, i) => (s, i))) {
             activeHandlers.Add(current);
             current = statement switch {
                 VBSyntax.OnErrorResumeNextStatementSyntax => ActiveHandler.ResumeNext,
                 VBSyntax.OnErrorGoToStatementSyntax s when s.IsKind(VBasicSyntaxKind.OnErrorGoToLabelStatement) => ActiveHandler.ForLabel(s.Label.LabelToken.Text),
-                VBSyntax.OnErrorGoToStatementSyntax s when s.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement) => ActiveHandler.None,
+                VBSyntax.OnErrorGoToStatementSyntax s when s.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement) && !(ignoreGoToZeroInHandlers && HandlerContaining(index) != null) => ActiveHandler.None,
                 _ => current
             };
         }
@@ -137,12 +140,13 @@ internal sealed class OnErrorModel
         bool IgnoredInHandler(VBSyntax.StatementSyntax s) => ignoreGoToZeroInHandlers && s.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement) && HandlerContaining(MethodLevelIndexOf(s)) != null;
         if (OnErrorStatements.Any(s => !_methodLevelIndexes.ContainsKey(s) && !IgnoredInHandler(s))) return false;
         if (OnErrorStatements.Any(s => HandlerContaining(MethodLevelIndexOf(s)) != null && !IgnoredInHandler(s))) return false;
+        var activeHandlers = ignoreGoToZeroInHandlers ? GetStaticActiveHandlers(ignoreGoToZeroInHandlers: true) : ActiveHandlers;
         return Jumps.All(j => {
             var sourceIndex = MethodLevelIndexOf(j.Statement);
             var targetIndex = IndexContainingLabel(j.TargetLabel);
             if (targetIndex < 0) return true;
-            var sourceHandler = HandlerContaining(sourceIndex) is { } handler ? ActiveHandler.ForLabel(handler.Label) : ActiveHandlers[sourceIndex];
-            return sourceHandler == ActiveHandlers[targetIndex];
+            var sourceHandler = HandlerContaining(sourceIndex) is { } handler ? ActiveHandler.ForLabel(handler.Label) : activeHandlers[sourceIndex];
+            return sourceHandler == activeHandlers[targetIndex];
         });
     }
 
