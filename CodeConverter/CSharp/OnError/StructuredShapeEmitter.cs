@@ -49,8 +49,14 @@ internal sealed class StructuredShapeEmitter
         var protectedAndHandler = _plan.IsSegmented ? await EmitSegmentedAsync() : await EmitPlainAsync();
         var statements = before.Concat(StatementReachability.EndIsReachable(before) ? _err.Clear() : default).Concat(_hoisting.Declarations).Concat(protectedAndHandler).ToList();
         var labelsRemoved = WithoutUnreferencedLabels(statements);
-        return _plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) ? MissingReturn.Add(_context, _model, labelsRemoved).ToList() : labelsRemoved;
+        return NeedsMissingReturn(labelsRemoved) ? MissingReturn.Add(_context, _model, labelsRemoved).ToList() : labelsRemoved;
     }
+
+    /// <summary>
+    /// VB's flow analysis can't see that the tail's label is reached by the handler, so it says the end of the method is unreachable and no return is added after it.
+    /// </summary>
+    private bool NeedsMissingReturn(List<StatementSyntax> statements) =>
+        _plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) || _plan.HasTail && StatementReachability.EndIsReachable(statements);
 
     private async Task<IEnumerable<StatementSyntax>> EmitPlainAsync()
     {

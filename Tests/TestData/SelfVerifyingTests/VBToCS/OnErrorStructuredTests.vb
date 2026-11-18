@@ -355,4 +355,23 @@ Done:
         Assert.Equal("work, lone", Logged())
         Assert.Equal(0, Err.Number)
     End Sub
+
+    Private Function TailEndsWithoutAReturn(succeed As Boolean) As Integer
+        On Error GoTo H
+        TailEndsWithoutAReturn = 1
+        Work(succeed)
+        Exit Function
+H:
+        TailEndsWithoutAReturn = 2
+        Resume Done
+Done:
+        TailEndsWithoutAReturn += 10
+    End Function
+
+    <Fact>
+    Sub TailAfterTheHandlerThatEndsTheFunction()
+        Assert.Equal(12, TailEndsWithoutAReturn(False))
+        Assert.Equal("work", Logged())
+        Assert.Equal(1, TailEndsWithoutAReturn(True))
+    End Sub
 End Class

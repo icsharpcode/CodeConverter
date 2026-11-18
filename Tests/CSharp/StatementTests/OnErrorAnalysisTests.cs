@@ -28,6 +28,22 @@ public class OnErrorAnalysisTests
     [InlineData("using (a) x();", true)]
     [InlineData("lock (a) return;", false)]
     [InlineData("{ x(); goto l; }", false)]
+    [InlineData("l: { x(); return; }", false)]
+    [InlineData("lock (a) x();", true)]
+    [InlineData("lock (a) { x(); throw new System.Exception(); }", false)]
+    [InlineData("using (a) { x(); throw new System.Exception(); }", false)]
+    [InlineData("try { x(); } catch { y(); }", true)]
+    [InlineData("try { throw new System.Exception(); } catch { return; } finally { z(); }", false)]
+    [InlineData("try { return; } catch (System.Exception) { return; }", false)]
+    [InlineData("switch (a) { case 1: return; default: return; }", false)]
+    [InlineData("switch (a) { case 1: return; default: x(); break; }", true)]
+    [InlineData("switch (a) { case 1: return; }", true)]
+    [InlineData("switch (a) { case 1: return; default: if (b) break; return; }", true)]
+    [InlineData("switch (a) { case 1: return; default: while (b) { break; } return; }", false)]
+    [InlineData("switch (a) { case 1: return; default: switch (b) { default: break; } return; }", false)]
+    [InlineData("switch (a) { case 1: return; default: foreach (var q in b) { break; } return; }", false)]
+    [InlineData("switch (a) { case 1: return; default: x(); y(); }", true)]
+    [InlineData("switch (a) { case int n when n > 1: return; }", true)]
     public void EndIsReachableIsDecidedSyntactically(string csharp, bool expected)
     {
         Assert.Equal(expected, StatementReachability.EndIsReachable(new[] { CSharpSyntaxFactory.ParseStatement(csharp) }));

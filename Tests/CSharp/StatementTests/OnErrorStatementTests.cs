@@ -2256,4 +2256,44 @@ internal partial class TestClass
     }
 }", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// The tail after the label can end reachably although VB's flow analysis says the label is unreachable (only the handler jumps to it), so a return is added.
+    /// </summary>
+    [Fact]
+    public async Task TailAfterTheHandlerEndingReachablyGetsAReturnAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Function F() As Integer
+        On Error GoTo H
+        F = 1
+        Exit Function
+H:
+        F = 2
+        Resume Done
+Done:
+        F += 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    public int F()
+    {
+        int FRet = default;
+        try
+        {
+            FRet = 1;
+            return FRet;
+        }
+        catch
+        {
+
+            FRet = 2;
+        }
+
+        FRet += 1;
+        return FRet;
+    }
+}");
+    }
 }
