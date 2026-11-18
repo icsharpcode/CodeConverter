@@ -8,6 +8,11 @@ namespace ICSharpCode.CodeConverter.Common;
 
 internal static class DocumentExtensions
 {
+    /// <summary>
+    /// Lets tests exercise <see cref="MustKeepBraces"/> alone, as on a Roslyn version where <see cref="GetCSOptions"/> can't override the "Prefer braces" preference
+    /// </summary>
+    internal static AsyncLocal<bool> DisableBracesOverrideForTesting { get; } = new();
+
     public static async Task<Document> SimplifyStatementsAsync<TUsingDirectiveSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
         where TUsingDirectiveSyntax : SyntaxNode
     {
@@ -52,8 +57,57 @@ internal static class DocumentExtensions
     {
         //"private int value = unchecked((int)0x80000010);" is simplified to "private int value = unchecked(0x80000010);"
         // which causes CS0266: "Cannot implicitly convert type 'uint' to 'int'"
-        return (n is CSSyntax.CastExpressionSyntax { Parent : CSSyntax.CheckedExpressionSyntax });
+        return (n is CSSyntax.CastExpressionSyntax { Parent : CSSyntax.CheckedExpressionSyntax })
+               || n is CSSyntax.BlockSyntax block && MustKeepBraces(block);
     }
+
+    /// <summary>
+    /// Roslyn bug: with the user's code style "Prefer braces: No" (csharp_prefer_braces = false or when_multiline),
+    /// the simplifier unwraps any single-statement block that is an embedded statement, without checking that:
+    /// <list type="bullet">
+    /// <item>the statement can be embedded: <c>if (a) int x = F();</c> is CS1023</item>
+    /// <item>a following else still binds to the same if: in <c>if (a) { if (b) x(); } else y();</c> it would bind to <c>if (b)</c> https://github.com/icsharpcode/CodeConverter/issues/823</item>
+    /// <item>no comment is attached to the braces it drops</item>
+    /// </list>
+    /// See SimplifyBlock in https://github.com/dotnet/roslyn/blob/main/src/Workspaces/CSharp/Portable/Simplification/Reducers/CSharpMiscellaneousReducer.cs
+    /// The code style reaches us through the document's options (e.g. Visual Studio's Tools > Options).
+    /// <see cref="GetCSOptions"/> overrides it, but Roslyn keeps the option internal, so where that fails, keep the braces it would wrongly remove.
+    /// </summary>
+    private static bool MustKeepBraces(CSSyntax.BlockSyntax block) =>
+        IsEmbeddedStatement(block) && block.Statements.Count == 1
+        && (!block.Statements[0].CanBeEmbedded() || IsFollowedByElse(block) && CouldEndWithIfWithoutElse(block.Statements[0])
+            || HasComment(block.OpenBraceToken) || HasComment(block.CloseBraceToken));
+
+    /// <summary>
+    /// The unwrap drops comments attached to the removed braces, and losing a user's comment is worse than keeping their braces.
+    /// </summary>
+    private static bool HasComment(SyntaxToken braceToken) =>
+        braceToken.LeadingTrivia.Concat(braceToken.TrailingTrivia)
+            .Any(t => t.IsKind(CS.SyntaxKind.SingleLineCommentTrivia) || t.IsKind(CS.SyntaxKind.MultiLineCommentTrivia));
+
+    private static bool IsEmbeddedStatement(CSSyntax.BlockSyntax block) =>
+        block.Parent is CSSyntax.IfStatementSyntax or CSSyntax.ElseClauseSyntax or CSSyntax.CommonForEachStatementSyntax
+            or CSSyntax.ForStatementSyntax or CSSyntax.WhileStatementSyntax or CSSyntax.DoStatementSyntax
+            or CSSyntax.UsingStatementSyntax or CSSyntax.LockStatementSyntax;
+
+    private static bool IsFollowedByElse(CSSyntax.BlockSyntax block) =>
+        block.Parent is CSSyntax.IfStatementSyntax { Else: not null } ifStatement && ifStatement.Statement == block;
+
+    /// <summary>
+    /// Whether an else placed right after this statement could bind to an if within it, assuming any block within it that can lose its braces does.
+    /// </summary>
+    private static bool CouldEndWithIfWithoutElse(CSSyntax.StatementSyntax statement) =>
+        statement switch {
+            CSSyntax.IfStatementSyntax { Else: null } => true,
+            CSSyntax.IfStatementSyntax { Else: { } elseClause } => CouldEndWithIfWithoutElse(elseClause.Statement),
+            CSSyntax.BlockSyntax { Statements.Count: 1 } block when IsEmbeddedStatement(block) && block.Statements[0].CanBeEmbedded() => CouldEndWithIfWithoutElse(block.Statements[0]),
+            CSSyntax.CommonForEachStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.ForStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.WhileStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.UsingStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            CSSyntax.LockStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
+            _ => false
+        };
 
     public static async Task<Document> WithExpandedRootAsync(this Document document, CancellationToken cancellationToken)
     {
@@ -115,11 +169,19 @@ internal static class DocumentExtensions
     {
         return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, warningText));
     }
-    private static DocumentOptionSet GetVBOptions(DocumentOptionSet options)
+    private static OptionSet GetVBOptions(DocumentOptionSet options)
     {
         return options;
     }
-    private static DocumentOptionSet GetCSOptions(DocumentOptionSet options) {
-        return options;
+
+    /// <summary>
+    /// The simplifier's unwrap of single-statement blocks under "Prefer braces: No" is unsafe (see <see cref="MustKeepBraces"/>),
+    /// and the converter decides where braces go, so always keep braces.
+    /// If the internal option can't be overridden on this Roslyn version, <see cref="MustKeepBraces"/> still protects the output.
+    /// </summary>
+    private static OptionSet GetCSOptions(DocumentOptionSet options)
+    {
+        if (DisableBracesOverrideForTesting.Value) return options;
+        return options.WithPreferBraces("Always") ?? options;
     }
 }
