@@ -1324,4 +1324,57 @@ CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please rep
 ----- Exception 2 of 2 -----
 CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 321", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// A guarded declaration in a loop is declared before the loop, where its name would clash with a local of the same name in an earlier block (CS0136), so that method keeps the fallback.
+    /// </summary>
+    [Fact]
+    public async Task HoistingAGuardedDeclarationOutOfALoopKeepsTheFallbackWhenAnotherLocalHasTheSameNameAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Function Foo() As Integer
+        Return 1
+    End Function
+
+    Sub Run(a As Boolean)
+        On Error Resume Next
+        If a Then
+            Dim b = Foo()
+        End If
+        For i = 1 To 2
+            Dim b = Foo()
+            Foo()
+        Next
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public int Foo()
+    {
+        return 1;
+    }
+
+    public void Run(bool a)
+    {
+        ;
+#error Cannot convert OnErrorResumeNextStatementSyntax - see comment for details
+        /* Cannot convert OnErrorResumeNextStatementSyntax, CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 121
+
+
+                Input:
+                        On Error Resume Next
+
+                 */
+        if (a)
+        {
+            int b = Foo();
+        }
+        for (int i = 1; i <= 2; i++)
+        {
+            int b = Foo();
+            Foo();
+        }
+    }
+}CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 121", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

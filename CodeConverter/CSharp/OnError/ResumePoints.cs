@@ -54,10 +54,22 @@ internal sealed class ResumePoints
             : declaration.Declarators.Where(d => ThrowAnalysis.CanThrow(d, _semanticModel))
                 .SelectMany(d => d.Names).Select(n => _semanticModel.GetDeclaredSymbol(n) as ILocalSymbol).Where(l => l != null);
 
-    /// <summary>Whether every local that would be split in these statements (and the statements inside them) can be (see <see cref="DeclarationSplitter.CanSplit"/>).</summary>
-    public bool CanGuardAllDeclarations(IEnumerable<VBSyntax.StatementSyntax> statements) =>
-        statements.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.LocalDeclarationStatementSyntax>()
-            .SelectMany(GuardedLocals).All(DeclarationSplitter.CanSplit);
+    /// <summary>
+    /// Whether every local that would be split in these statements (and the statements inside them) can be (see <see cref="DeclarationSplitter.CanSplit"/>),
+    /// and none that is declared before its loop gets the name of another local of the method: the declaration would then be in scope of the other one's block (CS0136).
+    /// </summary>
+    public bool CanGuardAllDeclarations(IEnumerable<VBSyntax.StatementSyntax> statements)
+    {
+        var declarations = statements.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).ToArray();
+        var guarded = declarations.OfType<VBSyntax.LocalDeclarationStatementSyntax>().SelectMany(d => GuardedLocals(d).Select(l => (Declaration: d, Local: l))).ToArray();
+        if (!guarded.All(g => DeclarationSplitter.CanSplit(g.Local))) return false;
+        var allLocals = declarations.OfType<VBSyntax.ModifiedIdentifierSyntax>().Select(n => _semanticModel.GetDeclaredSymbol(n)).OfType<ILocalSymbol>().ToArray();
+        return !guarded.Any(g => IsInLoop(g.Declaration) &&
+            allLocals.Any(l => !SymbolEqualityComparer.Default.Equals(l, g.Local) && string.Equals(l.Name, g.Local.Name, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static bool IsInLoop(VBSyntax.StatementSyntax statement) =>
+        statement.Ancestors().Any(a => a is VBSyntax.WhileBlockSyntax or VBSyntax.DoLoopBlockSyntax or VBSyntax.ForBlockSyntax or VBSyntax.ForEachBlockSyntax);
 
     public ResumePointKind KindOf(VBSyntax.StatementSyntax statement)
     {
