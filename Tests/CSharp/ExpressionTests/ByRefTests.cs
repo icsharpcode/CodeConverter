@@ -1869,6 +1869,69 @@ public partial class C
 }");
     }
     [Fact]
+    public async Task ByRefParameterOnlyInAWithHeaderIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function GetBox(ByRef b As Box) As Box
+        Return b
+    End Function
+
+    Sub M(ByRef arr As Box(), i As Integer, ByRef b As Box)
+        With arr(i)
+            If Inc(.X) > 0 Then .X = 0
+        End With
+        With GetBox(b)
+            If Inc(.X) > 0 Then .X = 0
+        End With
+    End Sub
+End Class", @"
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static Box GetBox(ref Box b)
+    {
+        return b;
+    }
+
+    public void M(ref Box[] arr, int i, ref Box b)
+    {
+        {
+            ref var withBlock = ref arr[i];
+            int localInc(ref Box withBlock) { int argv = withBlock.X; var ret = Inc(ref argv); withBlock.X = argv; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.X = 0;
+        }
+        {
+            var withBlock1 = GetBox(ref b);
+            int localInc1() { int argv1 = withBlock1.X; var ret = Inc(ref argv1); withBlock1.X = argv1; return ret; }
+
+            if (localInc1() > 0)
+                withBlock1.X = 0;
+        }
+    }
+}");
+    }
+    [Fact]
     public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
