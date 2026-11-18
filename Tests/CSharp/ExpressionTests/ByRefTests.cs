@@ -2032,7 +2032,7 @@ public partial class C
 
     public static bool M2(ref int h, H x)
     {
-        int localInc() { int argv1 = GetH(new H().Q).Q; var ret = Inc(ref argv1); GetH(new H().Q).Q = argv1; return ret; }
+        int localInc() { var tmp = GetH(new H().Q); int argv1 = tmp.Q; var ret = Inc(ref argv1); tmp.Q = argv1; return ret; }
 
         if (localInc() > 0)
             return true;
