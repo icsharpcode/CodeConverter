@@ -73,7 +73,7 @@ internal static class DocumentExtensions
     private static bool IsEmbeddedStatement(CSSyntax.BlockSyntax block) =>
         block.Parent is CSSyntax.IfStatementSyntax or CSSyntax.ElseClauseSyntax or CSSyntax.CommonForEachStatementSyntax
             or CSSyntax.ForStatementSyntax or CSSyntax.WhileStatementSyntax or CSSyntax.DoStatementSyntax
-            or CSSyntax.UsingStatementSyntax or CSSyntax.LockStatementSyntax or CSSyntax.FixedStatementSyntax;
+            or CSSyntax.UsingStatementSyntax or CSSyntax.LockStatementSyntax;
 
     private static bool CanBeEmbedded(CSSyntax.StatementSyntax statement) =>
         statement is not (CSSyntax.LocalDeclarationStatementSyntax or CSSyntax.LocalFunctionStatementSyntax or CSSyntax.LabeledStatementSyntax);
@@ -94,7 +94,6 @@ internal static class DocumentExtensions
             CSSyntax.WhileStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.UsingStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.LockStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
-            CSSyntax.FixedStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             _ => false
         };
 
