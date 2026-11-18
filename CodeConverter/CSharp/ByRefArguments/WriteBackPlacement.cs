@@ -33,7 +33,8 @@ internal class WriteBackPlacement
     public async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
     {
         // Each local function is its own scope, so only names visible at the call can clash, e.g. a parameter used in the argument
-        var retVariableName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, new HashSet<string>(), invocation, "ret");
+        var namesInLocalFunction = new HashSet<string>();
+        var retVariableName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "ret");
         var localFuncName = $"local{invocationSymbol.Name}";
 
         var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
@@ -45,28 +46,27 @@ internal class WriteBackPlacement
         );
         var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
 
+        var arguments = new List<ArgumentSyntax>();
+        var parameters = new List<ParameterSyntax>();
         // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
         var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
         var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
             .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
             .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
             .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
-        var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
+        AddArgumentsAndParameters(refParametersOfParent);
 
-        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
-        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
+        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters))));
+        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
 
-        (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
+        void AddArgumentsAndParameters(List<IParameterSymbol> parameterSymbols)
         {
-            var arguments = new List<ArgumentSyntax>();
-            var parameters = new List<ParameterSyntax>();
             foreach (var p in parameterSymbols) {
                 var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
                 arguments.Add(arg);
                 var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
                 parameters.Add(par.WithDefault(null));
             }
-            return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
         }
     }
 
@@ -168,12 +168,9 @@ internal class WriteBackPlacement
     }
 
     /// <summary>
-    /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
-    /// </summary>
-    /// <summary>
     /// A local function in a struct can't use <c>this</c> (CS1673), so there the write-back stays after the statement: compiling but late, a known gap.
     /// </summary>
-    private bool IsInStructAndUsesThis(VBSyntax.InvocationExpressionSyntax invocation) =>
+    private bool IsInStructAndUsesThis(VBasic.VisualBasicSyntaxNode invocation) =>
         _semanticModel.GetEnclosingSymbol(invocation.SpanStart) is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
         _semanticModel.GetOperation(invocation)?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() != false;
 
