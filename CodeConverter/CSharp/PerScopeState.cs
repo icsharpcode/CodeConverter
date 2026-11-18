@@ -68,6 +68,27 @@ internal class PerScopeState
         return additionalField;
     }
 
+    public bool HasHoistedNodes => _hoistedNodesPerScope.Peek().HoistedNodes.Any();
+
+    /// <summary>
+    /// For an expression that has no statement of its own to hoist into, e.g. a field initializer.
+    /// Declares the temporaries hoisted for it and writes back ByRef arguments before returning, as a statement would.
+    /// Leaves the current scope as it was, since each variable sharing an initializer evaluates it separately.
+    /// </summary>
+    public async Task<BlockSyntax> CreateReturnBlockAsync(VBasic.VisualBasicSyntaxNode vbNode, ExpressionSyntax expression, TypeSyntax resultType, SemanticModel semanticModel)
+    {
+        var currentScope = _hoistedNodesPerScope.Peek();
+        _hoistedNodesPerScope.Push(currentScope with { HoistedNodes = currentScope.HoistedNodes.ToList() });
+        try {
+            var generatedNames = new HashSet<string>();
+            var statements = WithWriteBacksBefore(expression, "ret", () => resultType, SyntaxFactory.ReturnStatement);
+            var withLocals = await CreateLocalsAsync(vbNode, statements, generatedNames, semanticModel);
+            return SyntaxFactory.Block(CreateStatements(vbNode, withLocals, generatedNames, semanticModel));
+        } finally {
+            PopScope();
+        }
+    }
+
     public IReadOnlyCollection<AdditionalDeclaration> GetDeclarations()
     {
         return _hoistedNodesPerScope.Peek().OfType<AdditionalDeclaration>().ToArray();
@@ -76,6 +97,28 @@ internal class PerScopeState
     public IReadOnlyCollection<HoistedDefaultInitializedLoopVariable> GetDefaultInitializedLoopVariables()
     {
         return _hoistedNodesPerScope.Peek().OfType<HoistedDefaultInitializedLoopVariable>().ToArray();
+    }
+
+    /// <summary>
+    /// VB copies a ByRef argument back to its property straight after the call, so before a statement that uses the result jumps away.
+    /// When there are write-backs, evaluate the expression into a local, write back, then use that local. Without any, the single statement is kept.
+    /// </summary>
+    public IReadOnlyCollection<StatementSyntax> WithWriteBacksBefore(ExpressionSyntax expression, string resultPrefix, Func<TypeSyntax> getResultType,
+        Func<ExpressionSyntax, StatementSyntax> createStatementUsingResult)
+    {
+        var writeBacks = TakeWriteBacks();
+        if (!writeBacks.Any()) return new[] { createStatementUsingResult(expression) };
+
+        var result = Hoist(new AdditionalDeclaration(resultPrefix, expression, getResultType()));
+        return writeBacks.Append(createStatementUsingResult(result.IdentifierName)).ToArray();
+    }
+
+    private IReadOnlyCollection<StatementSyntax> TakeWriteBacks()
+    {
+        var hoistedNodes = _hoistedNodesPerScope.Peek().HoistedNodes;
+        var writeBacks = hoistedNodes.OfType<AdditionalAssignment>().ToArray();
+        hoistedNodes.RemoveAll(n => n is AdditionalAssignment);
+        return writeBacks.Select(AdditionalAssignment.CreateAssignment).ToArray();
     }
 
     private StatementSyntax[] GetPostStatements()
@@ -89,6 +132,16 @@ internal class PerScopeState
     public IReadOnlyCollection<HoistedFunction> GetParameterlessFunctions()
     {
         return _hoistedNodesPerScope.Peek().OfType<HoistedFunction>().ToArray();
+    }
+
+    /// <summary>
+    /// For a scope whose functions are emitted as they're found, e.g. one per variable of a field declaration, so each is emitted once.
+    /// </summary>
+    public IReadOnlyCollection<HoistedFunction> TakeParameterlessFunctions()
+    {
+        var functions = GetParameterlessFunctions();
+        _hoistedNodesPerScope.Peek().HoistedNodes.RemoveAll(n => n is HoistedFunction);
+        return functions;
     }
 
     public IReadOnlyCollection<HoistedFieldFromVbStaticVariable> GetFields()

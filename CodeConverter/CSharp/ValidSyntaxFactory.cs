@@ -79,9 +79,9 @@ public static class ValidSyntaxFactory
         return CreateMethod(newMethodName, type, parameterList, body);
     }
 
-    public static MethodDeclarationSyntax CreateMethod(string newMethodName, TypeSyntax type, ParameterListSyntax parameterList, BlockSyntax body)
+    public static MethodDeclarationSyntax CreateMethod(string newMethodName, TypeSyntax type, ParameterListSyntax parameterList, BlockSyntax body, bool isStatic = true)
     {
-        var modifiers = SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword));
+        var modifiers = isStatic ? SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.StaticKeyword)) : SyntaxFactory.TokenList();
         var typeConstraints = SyntaxFactory.List<TypeParameterConstraintClauseSyntax>();
 
         var methodAttrs = SyntaxFactory.List<AttributeListSyntax>();

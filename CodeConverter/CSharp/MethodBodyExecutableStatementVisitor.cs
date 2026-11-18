@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.Operations;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ICSharpCode.CodeConverter.VB;
 using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
@@ -28,6 +29,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _generatedNames = new();
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private readonly PerScopeState _perScopeState;
+    private readonly WriteBackPlacement _writeBackPlacement;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
@@ -64,6 +66,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         _extraUsingDirectives = extraUsingDirectives;
         _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
         _perScopeState = typeContext.PerScopeState;
+        _writeBackPlacement = new WriteBackPlacement(semanticModel, _generatedNames, typeContext, commonConversions);
         var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
         CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
         _localsToInlineInLoop = localsToInlineInLoop;
@@ -288,9 +291,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SingleStatement(lhs);
         }
 
-        var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
         var postAssignment = GetPostAssignmentStatements(node);
-        return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+        StatementSyntax AssignTo(ExpressionSyntax value) => SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(kind, lhs, value));
+        if (kind == SyntaxKind.SimpleAssignmentExpression && _writeBackPlacement.IsSimpleTargetReadByWriteBack(node)) {
+            return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
+        }
+        return postAssignment.Insert(0, AssignTo(rhs));
     }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
@@ -492,7 +498,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
     {
-        return SingleStatement(SyntaxFactory.ThrowStatement(await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor)));
+        var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return WithWriteBacksBeforeJump(node.Expression, csExpression, "ex", SyntaxFactory.ThrowStatement);
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node)
@@ -502,7 +509,27 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpression);
-        return SingleStatement(SyntaxFactory.ReturnStatement(csExpression));
+        return WithWriteBacksBeforeJump(node.Expression, csExpression, "ret", SyntaxFactory.ReturnStatement);
+    }
+
+    /// <summary>
+    /// Write-backs are normally emitted after the converted statement, which after a jump would be unreachable (or, for yield, delayed until the consumer resumes).
+    /// </summary>
+    private SyntaxList<StatementSyntax> WithWriteBacksBeforeJump(VBSyntax.ExpressionSyntax vbExpression, ExpressionSyntax csExpression, string resultPrefix,
+        Func<ExpressionSyntax, StatementSyntax> createJump)
+    {
+        if (csExpression is null) return SingleStatement(createJump(null));
+        return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(csExpression, resultPrefix, () => GetResultTypeSyntax(vbExpression), createJump));
+    }
+
+    /// <summary>
+    /// <c>var</c> is only safe when the expression's own type is the one the jump needs: e.g. Nothing or a lambda has no natural type in C#.
+    /// </summary>
+    private TypeSyntax GetResultTypeSyntax(VBSyntax.ExpressionSyntax vbExpression)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(vbExpression);
+        var isNaturalType = typeInfo.Type is { } type && SymbolEqualityComparer.Default.Equals(type, typeInfo.ConvertedType);
+        return CommonConversions.GetTypeSyntax(typeInfo.ConvertedType, useImplicitType: isNaturalType);
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
@@ -513,7 +540,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitYieldStatement(VBSyntax.YieldStatementSyntax node)
     {
-        return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor)));
+        var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return WithWriteBacksBeforeJump(node.Expression, csExpression, "ret", e => SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, e));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node)

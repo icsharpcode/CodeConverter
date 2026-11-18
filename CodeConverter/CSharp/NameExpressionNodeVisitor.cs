@@ -1,5 +1,6 @@
 using System.Data;
 using System.Globalization;
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.CSharp.Replacements;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
@@ -23,6 +24,7 @@ internal class NameExpressionNodeVisitor
     private readonly Dictionary<VBSyntax.ConditionalAccessExpressionSyntax, ExpressionSyntax> _conditionalAccessReceivers;
     private readonly ArgumentConverter _argumentConverter;
     private readonly RangeVariableReplacements _rangeVariableReplacements;
+    private readonly WriteBackPlacement _writeBackPlacement;
 
     public CommonConversions CommonConversions { get; }
     public CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
@@ -45,6 +47,7 @@ internal class NameExpressionNodeVisitor
         _argumentConverter = argumentConverter;
         CommonConversions = commonConversions;
         TriviaConvertingExpressionVisitor = triviaConvertingExpressionVisitor;
+        _writeBackPlacement = new WriteBackPlacement(semanticModel, generatedNames, typeContext, commonConversions);
     }
 
     public async Task<CSharpSyntaxNode> ConvertMemberAccessExpressionAsync(VBasic.Syntax.MemberAccessExpressionSyntax node)
@@ -213,7 +216,7 @@ internal class NameExpressionNodeVisitor
     {
         var invocationSymbol = _semanticModel.GetSymbolInfo(node).ExtractBestMatch<ISymbol>();
         var methodInvocationSymbol = invocationSymbol as IMethodSymbol;
-        var withinLocalFunction = methodInvocationSymbol != null && RequiresLocalFunction(node, methodInvocationSymbol);
+        var withinLocalFunction = methodInvocationSymbol != null && _writeBackPlacement.RequiresLocalFunction(node, methodInvocationSymbol);
         if (withinLocalFunction) {
             _typeContext.PerScopeState.PushScope();
         }
@@ -229,7 +232,7 @@ internal class NameExpressionNodeVisitor
 
             var convertedInvocation = await ConvertOrReplaceInvocationAsync(node, invocationSymbol);
             if (withinLocalFunction) {
-                return await HoistAndCallLocalFunctionAsync(node, methodInvocationSymbol, (ExpressionSyntax)convertedInvocation);
+                return await _writeBackPlacement.HoistAndCallLocalFunctionAsync(node, methodInvocationSymbol, (ExpressionSyntax)convertedInvocation);
             }
             return convertedInvocation;
         } finally {
@@ -375,7 +378,7 @@ internal class NameExpressionNodeVisitor
                 var thisArgExpression = await maes.Expression.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
 
                 if (requiresHoist) {
-                    thisArgExpression = _argumentConverter.HoistByRefDeclaration(maes.Expression, thisArgExpression, refConversion, thisParam.Name, refKind);
+                    thisArgExpression = _argumentConverter.ByRefArgumentHoister.HoistByRefDeclaration(maes.Expression, thisArgExpression, refConversion, thisParam.Name, refKind);
                 }
 
                 if (requiresStaticInvocation) {
@@ -484,158 +487,6 @@ internal class NameExpressionNodeVisitor
 
 
     /// <summary>
-    /// The VB compiler actually just hoists the conditions within the same method, but that leads to the original logic looking very different.
-    /// This should be equivalent but keep closer to the look of the original source code.
-    /// See https://github.com/icsharpcode/CodeConverter/issues/310 and https://github.com/icsharpcode/CodeConverter/issues/324
-    /// </summary>
-    private async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
-    {
-        const string retVariableName = "ret";
-        var localFuncName = $"local{invocationSymbol.Name}";
-
-        var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
-
-        var statements = await _typeContext.PerScopeState.CreateLocalsAsync(invocation, new[] { callAndStoreResult }, _generatedNames, _semanticModel);
-
-        var block = SyntaxFactory.Block(
-            statements.Concat(SyntaxFactory.ReturnStatement(ValidSyntaxFactory.IdentifierName(retVariableName)).Yield())
-        );
-        var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
-
-        // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
-        var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
-        var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
-            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
-            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
-            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
-        var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
-
-        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
-        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
-
-        (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
-        {
-            var arguments = new List<ArgumentSyntax>();
-            var parameters = new List<ParameterSyntax>();
-            foreach (var p in parameterSymbols) {
-                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
-                arguments.Add(arg);
-                var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
-                parameters.Add(par.WithDefault(null));
-            }
-            return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
-        }
-    }
-
-    private bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
-    {
-        if (IsLoopCondition(invocation)) {
-            // A loop condition needs fresh argument temporaries and copy-back on every evaluation.
-            return invocationSymbol.ReducedFrom?.Parameters.FirstOrDefault() is { RefKind: not RefKind.None } &&
-                   invocation.Expression is VBSyntax.MemberAccessExpressionSyntax member &&
-                   _semanticModel.GetRefConversionForExpression(member.Expression) != RefConversion.Inline ||
-                   invocation.ArgumentList?.Arguments.Any(a =>
-                       CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out _, out _) != RefConversion.Inline) == true ||
-                   _semanticModel.GetOperation(invocation) is IInvocationOperation operation && operation.Arguments.Any(a =>
-                       a.ArgumentKind == ArgumentKind.DefaultValue && a.Parameter.RefKind != RefKind.None);
-        }
-
-        if (invocation.ArgumentList == null) return false;
-        var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
-        var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation);
-        if (definitelyExecutedAfterPrevious && nextStatementDefinitelyExecuted) return false;
-        var possibleInline = definitelyExecutedAfterPrevious ? RefConversion.PreAssigment : RefConversion.Inline;
-        return invocation.ArgumentList.Arguments.Any(a => RequiresLocalFunction(possibleInline, invocation, invocationSymbol, a));
-
-        bool RequiresLocalFunction(RefConversion possibleInline, VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol, VBSyntax.ArgumentSyntax a)
-        {
-            var refConversion = CommonConversions.GetRefConversionType(a, invocation.ArgumentList, invocationSymbol.Parameters, out string _, out _);
-            if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
-            if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
-            var argExpression = sas.Expression.SkipIntoParens();
-            if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
-            return !_semanticModel.GetConstantValue(argExpression).HasValue;
-        }
-    }
-
-    private static bool IsLoopCondition(SyntaxNode node)
-    {
-        var containingStatement = node.Ancestors().FirstOrDefault(n => n is VBSyntax.StatementSyntax or VBSyntax.LambdaExpressionSyntax);
-        return containingStatement is VBSyntax.WhileStatementSyntax or VBSyntax.DoStatementSyntax or VBSyntax.LoopStatementSyntax;
-    }
-
-    /// <summary>
-    /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
-    /// </summary>
-    private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
-    {
-        SyntaxNode parent = invocation;
-        while (true) {
-            parent = parent.Parent;
-            switch (parent) {
-                case VBSyntax.ParenthesizedExpressionSyntax _:
-                    continue;
-                case VBSyntax.BinaryExpressionSyntax binaryExpression:
-                    if (binaryExpression.Left == invocation) continue;
-                    else return false;
-                case VBSyntax.ArgumentSyntax argumentSyntax:
-                    // Being the leftmost invocation of an unqualified method call ensures no other code is executed. Could add other cases here, such as a method call on a local variable name, or "this.". A method call on a property is not acceptable.
-                    if (argumentSyntax.Parent.Parent is VBSyntax.InvocationExpressionSyntax parentInvocation && parentInvocation.ArgumentList.Arguments.First() == argumentSyntax && FirstArgDefinitelyEvaluated(parentInvocation)) continue;
-                    else return false;
-                case VBSyntax.ElseIfStatementSyntax _:
-                case VBSyntax.ExpressionSyntax _:
-                    return false;
-                case VBSyntax.StatementSyntax _:
-                    return true;
-            }
-        }
-    }
-
-    private bool FirstArgDefinitelyEvaluated(VBSyntax.InvocationExpressionSyntax parentInvocation) =>
-        parentInvocation.Expression.SkipIntoParens() switch {
-            VBSyntax.IdentifierNameSyntax _ => true,
-            VBSyntax.MemberAccessExpressionSyntax maes => maes.Expression is { } exp && !MayThrow(exp),
-            _ => true
-        };
-
-    /// <summary>
-    /// Safe overapproximation of whether an expression may throw.
-    /// </summary>
-    private bool MayThrow(VBSyntax.ExpressionSyntax expression)
-    {
-        expression = expression.SkipIntoParens();
-        if (expression is VBSyntax.InstanceExpressionSyntax) return false;
-        var symbol = _semanticModel.GetSymbolInfo(expression).Symbol;
-        return !symbol.IsKind(SymbolKind.Local) && !symbol.IsKind(SymbolKind.Field);
-    }
-
-    /// <summary>
-    /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
-    /// </summary>
-    private static bool NextStatementDefinitelyExecutedAfter(VBSyntax.InvocationExpressionSyntax invocation)
-    {
-        SyntaxNode parent = invocation;
-        while (true) {
-            parent = parent.Parent;
-            switch (parent) {
-                case VBSyntax.ParenthesizedExpressionSyntax _:
-                    continue;
-                case VBSyntax.BinaryExpressionSyntax binaryExpression:
-                    if (binaryExpression.Right == invocation) continue;
-                    else return false;
-                case VBSyntax.IfStatementSyntax _:
-                case VBSyntax.ElseIfStatementSyntax _:
-                case VBSyntax.SingleLineIfStatementSyntax _:
-                    return false;
-                case VBSyntax.ExpressionSyntax _:
-                case VBSyntax.StatementSyntax _:
-                    return true;
-            }
-        }
-    }
-
-
-    /// <summary>
     /// The pre-expansion phase <see cref="DocumentExtensions.WithExpandedRootAsync(Document, System.Threading.CancellationToken)"/> should handle this for compiling nodes.
     /// This is mainly targeted at dealing with missing semantic info.
     /// </summary>
@@ -728,12 +579,12 @@ internal class NameExpressionNodeVisitor
     {
         if (_semanticModel.SyntaxTree != node.SyntaxTree) return id;
         var operation = _semanticModel.GetOperation(node);
-        if (IsLoopCondition(node) && operation is IInvocationOperation implicitInvocation &&
+        if (WriteBackPlacement.IsLoopCondition(node) && operation is IInvocationOperation implicitInvocation &&
             implicitInvocation.TargetMethod.Parameters.Any(p => p.RefKind != RefKind.None)) {
             _typeContext.PerScopeState.PushScope();
             try {
                 var call = SyntaxFactory.InvocationExpression(id, _argumentConverter.CreateArgList(implicitInvocation.TargetMethod));
-                return await HoistAndCallLocalFunctionAsync((VBasic.VisualBasicSyntaxNode)node, implicitInvocation.TargetMethod, call);
+                return await _writeBackPlacement.HoistAndCallLocalFunctionAsync((VBasic.VisualBasicSyntaxNode)node, implicitInvocation.TargetMethod, call);
             } finally {
                 _typeContext.PerScopeState.PopExpressionScope();
             }
