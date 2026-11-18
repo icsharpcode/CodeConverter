@@ -416,7 +416,7 @@ public partial class ConversionTest8
         Public Property B As integer
     End class
    Public Sub New()
-        On Error Resume Next
+        On Error GoTo -1
    End Sub
 End Class";
 

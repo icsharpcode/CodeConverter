@@ -3,7 +3,7 @@ param()
 $ErrorActionPreference = 'Stop'
 
 Write-Host "Creating global.json to enforce .NET 8 for MSBuild"
-$globalJson = '{"sdk":{"version":"8.0.0","rollForward":"latestFeature"}}'
+$globalJson = '{"sdk":{"version":"8.0.100","rollForward":"latestFeature"}}'
 [System.IO.File]::WriteAllText('global.json', $globalJson, [System.Text.Encoding]::UTF8)
 
 Write-Host "Searching for project files under Tests/TestData..."

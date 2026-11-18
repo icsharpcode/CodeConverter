@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -8,12 +9,11 @@ internal static class Extensions
     /// Returns the single statement in a block if it has no nested statements.
     /// If it has nested statements, and the surrounding block was removed, it could be ambiguous,
     /// e.g. if (...) { if (...) return null; } else return "";
-    /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement.
-    /// A declaration or label can't be unpacked either (<see cref="CanBeEmbedded"/>).
+    /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement
     /// </summary>
     public static StatementSyntax UnpackNonNestedBlock(this BlockSyntax block)
     {
-        return block.Statements.Count == 1 && block.Statements[0].CanBeEmbedded() && !block.ContainsNestedStatements() ? block.Statements[0] : block;
+        return block.ContainsNestedStatements() ? block : block.UnpackPossiblyNestedBlock();
     }
 
     /// <summary>
@@ -61,10 +61,13 @@ internal static class Extensions
     }
 
     /// <summary>
-    /// C# forbids a declaration or labeled statement as the embedded statement of an if, else, loop, using or lock (CS1023).
+    /// C# forbids declarations and labels as the embedded statement of if/else/while/do/for/foreach/lock/using (CS1023),
+    /// see BindPossibleEmbeddedStatement in https://github.com/dotnet/roslyn/blob/main/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs
     /// </summary>
-    public static bool CanBeEmbedded(this StatementSyntax statement) =>
-        statement is not (LocalDeclarationStatementSyntax or LocalFunctionStatementSyntax or LabeledStatementSyntax);
+    public static bool CanBeEmbedded(this StatementSyntax statement)
+    {
+        return !statement.IsKind(SyntaxKind.LocalDeclarationStatement, SyntaxKind.LabeledStatement, SyntaxKind.LocalFunctionStatement);
+    }
 
     private static bool ContainsNestedStatements(this BlockSyntax block)
     {

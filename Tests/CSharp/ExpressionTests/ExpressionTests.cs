@@ -1379,8 +1379,8 @@ public partial class SomeClass
     public string SomeProperty;
     static SomeClass initInstance()
     {
-        var init = new SomeClass();
-        return (init.SomeProperty = init.SomeProperty + nameof(init.SomeProperty), init).init; // Second line gets moved
+        SomeClass @init = new SomeClass();
+        return (@init.SomeProperty = @init.SomeProperty + nameof(@init.SomeProperty), @init).@init; // Second line gets moved
     } // Third line gets moved
 
     public static SomeClass Instance = initInstance(); // First line gets moved
@@ -2382,6 +2382,187 @@ End Function",
             @"public bool GetString(bool yourBoolean)
 {
     return 1 != 1 || (yourBoolean ? true : false);
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorBecomesTupleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Function Foo() As ValueTuple(Of Double, Double)
+    Return New ValueTuple(Of Double, Double)(1, 2)
+End Function",
+            @"public (double, double) Foo()
+{
+    return (1d, 2d);
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorBecomesTupleLiteralWithElementsOfTheTypeArgumentsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub Foo(x As Integer, s As Short)
+    Dim widened = New ValueTuple(Of Long, Short)(x, s)
+    Dim literals = New ValueTuple(Of Double, Long, Byte)(1, 2, 3)
+    Dim shortArithmetic = New ValueTuple(Of Short, Integer)(s * s, s * s)
+    Dim stringAndChar = New ValueTuple(Of String, Char)(""a"", ""b""c)
+    Dim nothings = New ValueTuple(Of String, Integer)(Nothing, Nothing)
+End Sub",
+            @"public void Foo(int x, short s)
+{
+    var widened = ((long)x, s);
+    var literals = (1d, 2L, (byte)3);
+    var shortArithmetic = ((short)(s * s), s * s);
+    var stringAndChar = (""a"", 'b');
+    var nothings = ((string)null, default(int));
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorWithConstantElementsBecomesTupleLiteralOfTheirValuesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class C
+    Const Small As Short = 1
+
+    Sub Foo(x As Integer)
+        Dim widenedConstants = New ValueTuple(Of Integer, Long)(CShort(1), CByte(2))
+        Dim negativeAndConstantField = New ValueTuple(Of Long, Integer)(CSByte(-1), CShort(Small))
+        Dim constantField = New ValueTuple(Of Integer, Double)(Small, CShort(1))
+        Dim narrowedVariable = New ValueTuple(Of Integer, Integer)(CShort(x), CByte(3))
+    End Sub
+End Class",
+            @"
+internal partial class C
+{
+    private const short Small = 1;
+
+    public void Foo(int x)
+    {
+        var widenedConstants = (1, 2L);
+        var negativeAndConstantField = (-1L, (int)Small);
+        var constantField = ((int)Small, (double)(short)1);
+        var narrowedVariable = ((int)(short)x, 3);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorWithConvertedElementsBecomesTupleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Option Strict Off
+
+Enum Colour
+    Red
+End Enum
+
+Class C
+    Sub Foo(o As Object, c As Colour)
+        Dim narrowed = New ValueTuple(Of Integer, String)(o, o)
+        Dim enums = New ValueTuple(Of Colour, Integer)(c, c)
+        Dim enumFromInteger = New ValueTuple(Of Colour, Colour)(0, c)
+    End Sub
+End Class",
+            @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum Colour
+{
+    Red
+}
+
+internal partial class C
+{
+    public void Foo(object o, Colour c)
+    {
+        var narrowed = (Conversions.ToInteger(o), Conversions.ToString(o));
+        var enums = (c, (int)c);
+        var enumFromInteger = ((Colour)0, c);
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // Option statement comments are lost
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorWithoutArgumentsBecomesDefaultAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Function Foo() As (Integer, String)
+    Dim pair = New ValueTuple(Of Integer, String)()
+    Dim noParentheses = New ValueTuple(Of Integer, String)
+    Dim oneElement = New ValueTuple(Of Integer)()
+    Return New ValueTuple(Of Integer, String)
+End Function",
+            @"public (int, string) Foo()
+{
+    var pair = default((int, string));
+    var noParentheses = default((int, string));
+    var oneElement = default(ValueTuple<int>);
+    return default;
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorWithInlineRestBecomesFlatTupleLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub Foo(rest As ValueTuple(Of Integer))
+    Dim eight = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
+    Dim nine = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer, Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer, Long)(8, 9))
+    Dim restVariable = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, rest)
+    Dim restWidened = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Long))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)(8))
+    Dim restDefault = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer)())
+    Dim restInitialized = New ValueTuple(Of Integer, Integer, Integer, Integer, Integer, Integer, Integer, ValueTuple(Of Integer))(1, 2, 3, 4, 5, 6, 7, New ValueTuple(Of Integer) With {.Item1 = 8})
+End Sub",
+            @"public void Foo(ValueTuple<int> rest)
+{
+    var eight = (1, 2, 3, 4, 5, 6, 7, 8);
+    var nine = (1, 2, 3, 4, 5, 6, 7, 8, 9L);
+    var restVariable = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<int>>(1, 2, 3, 4, 5, 6, 7, rest);
+    var restWidened = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<long>>(1, 2, 3, 4, 5, 6, 7, new ValueTuple<int>(8));
+    var restDefault = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<int>>(1, 2, 3, 4, 5, 6, 7, default);
+    var restInitialized = new ValueTuple<int, int, int, int, int, int, int, ValueTuple<int>>(1, 2, 3, 4, 5, 6, 7, new ValueTuple<int>() { Item1 = 8 });
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorKeepsConstructorWhenTupleLiteralWouldChangeMeaningAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Sub Foo(s As String, x As Integer)
+    Dim boxed = New ValueTuple(Of Object, Object)(s, 1)
+    Dim nullable = New ValueTuple(Of Integer?, Integer)(x, 1)
+    Dim named = New ValueTuple(Of Integer, String)(item2:=s, item1:=x)
+    Dim initialized = New ValueTuple(Of Integer, Integer) With {.Item1 = x}
+    Dim oneElement = New ValueTuple(Of Integer)(x)
+    Dim lambda = New ValueTuple(Of Func(Of Integer), Integer)(Function() x, 2)
+End Sub",
+            @"public void Foo(string s, int x)
+{
+    var boxed = new ValueTuple<object, object>(s, 1);
+    var nullable = new ValueTuple<int?, int>(x, 1);
+    var named = new ValueTuple<int, string>(item2: s, item1: x);
+    var initialized = new ValueTuple<int, int>() { Item1 = x };
+    var oneElement = new ValueTuple<int>(x);
+    var lambda = new ValueTuple<Func<int>, int>(() => x, 2);
+}");
+    }
+
+    [Fact]
+    public async Task ValueTupleConstructorInExpressionTreeKeepsConstructorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Linq.Expressions
+
+Class C
+    Private ReadOnly _create As Expression(Of Func(Of Integer, (Integer, Integer))) = Function(x) New ValueTuple(Of Integer, Integer)(x, 2)
+End Class",
+            @"using System;
+using System.Linq.Expressions;
+
+internal partial class C
+{
+    private readonly Expression<Func<int, (int, int)>> _create = x => new ValueTuple<int, int>(x, 2);
 }");
     }
 

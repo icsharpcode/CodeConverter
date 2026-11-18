@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 using ISymbolExtensions = ICSharpCode.CodeConverter.Util.ISymbolExtensions;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -42,7 +43,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     internal PerScopeState AdditionalLocals => _typeContext.PerScopeState;
 
     public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
-        CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors)
+        CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors, ErrUsage errUsage)
     {
         _vbCompilation = compilation;
         _csSyntaxGenerator = csSyntaxGenerator;
@@ -54,7 +55,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var expressionEvaluator = new ExpressionEvaluator(semanticModel, _visualBasicEqualityComparison);
         var nullableExpressionsConverter = new VisualBasicNullableExpressionsConverter(_semanticModel);
         var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator, nullableExpressionsConverter);
-        CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
+        CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison, errUsage);
         var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext, nullableExpressionsConverter);
         _accessorDeclarationNodeConverter = new AccessorDeclarationNodeConverter(semanticModel, CommonConversions, TriviaConvertingDeclarationVisitor, _additionalDeclarations, expressionNodeVisitor.ConvertMethodBodyStatementsAsync);
         _triviaConvertingExpressionVisitor = CommonConversions.TriviaConvertingExpressionVisitor;
@@ -496,7 +497,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             CS.SyntaxFactory.List(attributes), CommonConversions.ConvertModifiers(node, node.Modifiers),
             returnType, CommonConversions.ConvertIdentifier(node.Identifier),
             typeParameters,
-            await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor),
+            await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor),
             constraints
         );
     }
@@ -548,20 +549,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 }
             }
 
+            foreach (var method in CreateExtraMethodMembers()) yield return method;
             if (isWithEvents) {
                 var fieldDecls = CreateWithEventsMembers(thisFieldModifiers, attributes, variablesDecl.Decl);
                 foreach (var f in fieldDecls) yield return f;
             } else {
-                foreach (var method in CreateExtraMethodMembers()) yield return method;
-
-                if (AdditionalLocals.GetDeclarations().Any()) {
-                    foreach (var additionalDecl in CreateAdditionalLocalMembers(thisFieldModifiers, attributes, variablesDecl.Decl)) {
-                        yield return additionalDecl;
-                    }
-                } else {
-                    yield return CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List(attributes), thisFieldModifiers, variablesDecl.Decl);
-                }
-
+                yield return CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List(attributes), thisFieldModifiers, variablesDecl.Decl);
             }
         }
     }
@@ -586,67 +579,11 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         return fieldDecls;
     }
 
-    private IEnumerable<MemberDeclarationSyntax> CreateAdditionalLocalMembers(SyntaxTokenList convertedModifiers, List<AttributeListSyntax> attributes, VariableDeclarationSyntax decl)
-    {
-        if (decl.Variables.Count > 1) {
-            // Currently no way to tell which _additionalLocals would apply to which initializer
-            throw new NotImplementedException(
-                "Fields with multiple declarations and initializers with ByRef parameters not currently supported");
-        }
-
-        var v = decl.Variables.First();
-        var invocations = v.Initializer.Value.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().ToArray();
-        if (invocations.Length > 1) {
-            throw new NotImplementedException(
-                "Field initializers with nested method calls not currently supported");
-        }
-
-        string newMethodName;
-        if (invocations.OnlyOrDefault() is { Expression: {} e} && e.ChildNodes().OfType<SimpleNameSyntax>().LastOrDefault() is {} sns) {
-            newMethodName = $"{sns?.Identifier.ValueText}_{v.Identifier.ValueText}";
-        } else {
-            newMethodName = "init" + v.Identifier.ValueText.UppercaseFirstLetter();
-        }
-
-        var declarationInfo = AdditionalLocals.GetDeclarations();
-
-        var localVars = declarationInfo
-            .Select(al => CommonConversions.CreateLocalVariableDeclarationAndAssignment(al.Prefix, al.Initializer))
-            .ToArray<StatementSyntax>();
-
-        // This should probably use a unique name like in MethodBodyVisitor - a collision is far less likely here
-        var newNames = declarationInfo.ToDictionary(l => l.Id, l => l.Prefix);
-        var newInitializer = PerScopeState.ReplaceNames(v.Initializer.Value, newNames);
-
-        var body = CS.SyntaxFactory.Block(localVars.Concat(CS.SyntaxFactory.ReturnStatement(newInitializer).Yield()));
-        // Method calls in initializers must be static in C# - Supporting this is #281
-        var methodDecl = ValidSyntaxFactory.CreateParameterlessMethod(newMethodName, decl.Type, body);
-        yield return methodDecl;
-
-        var newVar =
-            v.WithInitializer(CS.SyntaxFactory.EqualsValueClause(
-                CS.SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(newMethodName))));
-        var newVarDecl =
-            CS.SyntaxFactory.VariableDeclaration(decl.Type, CS.SyntaxFactory.SingletonSeparatedList(newVar));
-
-        yield return CS.SyntaxFactory.FieldDeclaration(CS.SyntaxFactory.List(attributes), convertedModifiers, newVarDecl);
-    }
-
     private IReadOnlyCollection<MemberDeclarationSyntax> CreateExtraMethodMembers()
     {
-        var methodsInfos = AdditionalLocals.GetParameterlessFunctions();
-
-        // In theory this should use a unique name like in MethodBodyVisitor
-        // Unfortunately we can't change the name for these since the file containing the constructor of a partial class tries to call the method with exactly this name.
-        // See GetInitialValueFunctionName
-        var newMethodNames = methodsInfos.ToDictionary(l => l.Id, l => l.Prefix);
-        for (int i = 0; i < _typeContext.Initializers.AdditionalInstanceInitializers.Count; i++) {
-            var (a, b, initializer, _) = _typeContext.Initializers.AdditionalInstanceInitializers[i];
-            _typeContext.Initializers.AdditionalInstanceInitializers[i] = new Assignment(a, b, PerScopeState.ReplaceNames(initializer, newMethodNames));
-        }
-
-        return methodsInfos
-            .Select(al => al.AsInstanceMethod(newMethodNames[al.Id]))
+        // Callers reference these by their final name, so it's the prefix rather than a placeholder
+        return AdditionalLocals.TakeParameterlessFunctions()
+            .Select(al => al.AsInstanceMethod(al.Prefix))
             .ToArray();
     }
 
@@ -795,7 +732,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)));
 
         var directlyConvertedCsIdentifier = CommonConversions.CsEscapedIdentifier(node.Identifier.Value as string);
-        var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList();
+        var parameterList = await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor);
         var additionalDeclarations = new List<MemberDeclarationSyntax>();
 
         var hasExplicitInterfaceImplementation = declaredSymbol.IsNonPublicInterfaceImplementation() || declaredSymbol.IsRenamedInterfaceMember(directlyConvertedCsIdentifier, declaredSymbol.ExplicitInterfaceImplementations);
@@ -854,7 +791,17 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         );
 
         bool canHaveMethodBody = declaredSymbol?.CanHaveMethodBody() != false;
-        return hasBody && canHaveMethodBody ? decl : decl.WithSemicolonToken(SemicolonToken);
+        return hasBody && canHaveMethodBody ? decl : WithoutAsyncModifier(decl).WithSemicolonToken(SemicolonToken);
+    }
+
+    /// <summary>
+    /// VB allows <c>MustOverride Async Function</c>, but C# reports CS1994 for <c>async</c> on a method without a body.
+    /// <c>async</c> is an implementation detail rather than part of the signature, so overriding methods can still be async.
+    /// </summary>
+    private static MethodDeclarationSyntax WithoutAsyncModifier(MethodDeclarationSyntax decl)
+    {
+        var asyncModifier = decl.Modifiers.FirstOrDefault(m => m.IsKind(CS.SyntaxKind.AsyncKeyword));
+        return asyncModifier == default ? decl : decl.WithModifiers(decl.Modifiers.Remove(asyncModifier));
     }
 
     public override async Task<CSharpSyntaxNode> VisitEventBlock(VBSyntax.EventBlockSyntax node)
@@ -892,7 +839,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
                 CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)),
                 delegateName,
                 null,
-                await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList(),
+                await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor),
                 CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>()
             );
 
@@ -927,7 +874,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributes = await node.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
         var attributeList = CS.SyntaxFactory.List(attributes);
         var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
-        var parameterList = await node.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor);
+        var parameterList = await node.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor);
         var methodBodyVisitor = await ConvertMethodBodyStatementsAsync(node, containingBlock.Statements);
         var body = CS.SyntaxFactory.Block(methodBodyVisitor);
         var modifiers = CommonConversions.ConvertModifiers(node, node.Modifiers, node.GetMemberContext());
@@ -949,24 +896,12 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var attributes = await block.AttributeLists.SelectManyAsync(CommonConversions.ConvertAttributeAsync);
         var modifiers = CommonConversions.ConvertModifiers(block, block.Modifiers, node.GetMemberContext());
 
-        var ctor = (node.Statements.FirstOrDefault() as VBSyntax.ExpressionStatementSyntax)?.Expression as VBSyntax.InvocationExpressionSyntax;
-        var ctorExpression = ctor?.Expression as VBSyntax.MemberAccessExpressionSyntax;
-        var ctorArgs = await (ctor?.ArgumentList).AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ArgumentList();
-
-        IEnumerable<VBSyntax.StatementSyntax> statements;
-        ConstructorInitializerSyntax ctorCall;
-        if (ctorExpression == null || !ctorExpression.Name.Identifier.IsKindOrHasMatchingText(VBasic.SyntaxKind.NewKeyword)) {
-            statements = node.Statements;
-            ctorCall = null;
-        } else if (ctorExpression.Expression is VBSyntax.MyBaseExpressionSyntax) {
+        IEnumerable<VBSyntax.StatementSyntax> statements = node.Statements;
+        ConstructorInitializerSyntax ctorCall = null;
+        if (GetConstructorInitializerCall(node.Statements) is var (initializerKind, vbArguments)) {
+            var ctorArgs = await vbArguments.AcceptAsync<ArgumentListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ArgumentList();
+            ctorCall = CS.SyntaxFactory.ConstructorInitializer(initializerKind, ctorArgs);
             statements = node.Statements.Skip(1);
-            ctorCall = CS.SyntaxFactory.ConstructorInitializer(CS.SyntaxKind.BaseConstructorInitializer, ctorArgs);
-        } else if (ctorExpression.Expression is VBSyntax.MeExpressionSyntax || ctorExpression.Expression is VBSyntax.MyClassExpressionSyntax) {
-            statements = node.Statements.Skip(1);
-            ctorCall = CS.SyntaxFactory.ConstructorInitializer(CS.SyntaxKind.ThisConstructorInitializer, ctorArgs);
-        } else {
-            statements = node.Statements;
-            ctorCall = null;
         }
 
         var convertedBodyStatements = await ConvertMethodBodyStatementsAsync(node, statements.ToArray());
@@ -974,10 +909,38 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
             CS.SyntaxFactory.List(attributes),
             modifiers, 
             CommonConversions.ConvertIdentifier(node.GetAncestor<VBSyntax.TypeBlockSyntax>().BlockStatement.Identifier).WithoutSourceMapping(), //TODO Use semantic model for this name
-            await block.ParameterList.AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.ParameterList(),
+            await block.ParameterList.AcceptParameterListAsync(_triviaConvertingExpressionVisitor),
             ctorCall,
             CS.SyntaxFactory.Block(convertedBodyStatements)
         );
+    }
+
+    /// <summary>
+    /// VB has no constructor initializer syntax: a call to another constructor (MyBase.New, Me.New or MyClass.New) can only be the first statement.
+    /// Parentheses are optional when calling a parameterless constructor, so "MyBase.New" may have no invocation around it.
+    /// The call may also be written with the Call keyword, e.g. "Call MyBase.New(x)".
+    /// </summary>
+    /// <returns>null when the first statement doesn't call another constructor</returns>
+    private static (CS.SyntaxKind InitializerKind, VBSyntax.ArgumentListSyntax Arguments)? GetConstructorInitializerCall(SyntaxList<VBSyntax.StatementSyntax> statements)
+    {
+        var calledExpression = statements.FirstOrDefault() switch {
+            VBSyntax.ExpressionStatementSyntax expressionStatement => expressionStatement.Expression,
+            VBSyntax.CallStatementSyntax callStatement => callStatement.Invocation,
+            _ => null
+        };
+        var invocation = calledExpression as VBSyntax.InvocationExpressionSyntax;
+        // "Me!New" is dictionary access (Me("New")) rather than a constructor call
+        if ((invocation?.Expression ?? calledExpression) is not VBSyntax.MemberAccessExpressionSyntax memberAccess
+            || !memberAccess.IsKind(VBasic.SyntaxKind.SimpleMemberAccessExpression)
+            || !memberAccess.Name.Identifier.IsKindOrHasMatchingText(VBasic.SyntaxKind.NewKeyword)) {
+            return null;
+        }
+
+        return memberAccess.Expression switch {
+            VBSyntax.MyBaseExpressionSyntax => (CS.SyntaxKind.BaseConstructorInitializer, invocation?.ArgumentList),
+            VBSyntax.MeExpressionSyntax or VBSyntax.MyClassExpressionSyntax => (CS.SyntaxKind.ThisConstructorInitializer, invocation?.ArgumentList),
+            _ => null
+        };
     }
 
     public override async Task<CSharpSyntaxNode> VisitDeclareStatement(VBSyntax.DeclareStatementSyntax node)
@@ -1010,8 +973,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         modifiers = modifiers.Add(CS.SyntaxFactory.Token(CS.SyntaxKind.ExternKeyword));
 
         var returnType = await (node.AsClause?.Type).AcceptAsync<TypeSyntax>(_triviaConvertingExpressionVisitor) ?? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword));
-        var parameterListSyntax = await (node.ParameterList).AcceptAsync<ParameterListSyntax>(_triviaConvertingExpressionVisitor) ??
-                                  CS.SyntaxFactory.ParameterList();
+        var parameterListSyntax = await (node.ParameterList).AcceptParameterListAsync(_triviaConvertingExpressionVisitor);
 
         return CS.SyntaxFactory.MethodDeclaration(attributeLists, modifiers, returnType, null, CommonConversions.ConvertIdentifier(node.Identifier), null,
             parameterListSyntax, CS.SyntaxFactory.List<TypeParameterConstraintClauseSyntax>(), null, null).WithSemicolonToken(SemicolonToken);

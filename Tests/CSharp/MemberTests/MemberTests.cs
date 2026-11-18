@@ -1646,6 +1646,41 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task ParameterlessMembersWithoutParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Class TestClass
+    Declare Sub ExternSub Lib ""lib""
+    Declare Function ExternFunc Lib ""lib"" As Integer
+    Sub New
+    End Sub
+    Sub Foo
+    End Sub
+    Function Bar As Integer
+        Return 1
+    End Function
+End Class", @"using System.Runtime.InteropServices;
+
+internal partial class TestClass
+{
+    [DllImport(""lib"")]
+    public static extern void ExternSub();
+    [DllImport(""lib"")]
+    public static extern int ExternFunc();
+    public TestClass()
+    {
+    }
+    public void Foo()
+    {
+    }
+    public int Bar()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
     public async Task TestMultipleCharDefaultValuesForStringParametersAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(
@@ -1661,6 +1696,88 @@ internal partial class TestClass
         prefix = prefix ?? '['.ToString();
         suffix = suffix ?? ']'.ToString();
         return prefix + suffix;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MustOverrideAsyncFunctionDropsAsyncModifierAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+MustInherit Class TestClass
+    Public MustOverride Async Function TestMethod() As Task
+End Class
+
+Class ChildClass
+    Inherits TestClass
+
+    Public Overrides Async Function TestMethod() As Task
+        Await Task.Delay(1)
+    End Function
+End Class", @"using System.Threading.Tasks;
+
+internal abstract partial class TestClass
+{
+    public abstract Task TestMethod();
+}
+
+internal partial class ChildClass : TestClass
+{
+
+    public override async Task TestMethod()
+    {
+        await Task.Delay(1);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task MustOverrideAsyncSubAndGenericFunctionDropsAsyncModifierAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+MustInherit Class TestClass
+    Protected MustOverride Async Sub Fire()
+    Public MustOverride Async Function GetAsync(x As Integer) As Task(Of Integer)
+End Class", @"using System.Threading.Tasks;
+
+internal abstract partial class TestClass
+{
+    protected abstract void Fire();
+    public abstract Task<int> GetAsync(int x);
+}");
+    }
+
+    [Fact]
+    public async Task PartialAsyncMethodAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(
+            @"Imports System.Threading.Tasks
+
+Partial Class TestClass
+    Private Partial Sub Defined()
+    End Sub
+End Class
+
+Partial Class TestClass
+    Private Async Sub Defined()
+        Await Task.Delay(1)
+    End Sub
+End Class", @"using System.Threading.Tasks;
+
+internal partial class TestClass
+{
+    partial void Defined();
+}
+
+internal partial class TestClass
+{
+    async partial void Defined()
+    {
+        await Task.Delay(1);
     }
 }");
     }

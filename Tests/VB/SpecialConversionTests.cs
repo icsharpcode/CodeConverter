@@ -470,7 +470,7 @@ Imports System.Runtime.CompilerServices
 
 Friend Module TestClass
     <Extension()>
-    Private Function TypeSwitch(Me obj As Object, matchFunc1 As Func(Of String, Object), matchFunc2 As Func(Of Integer, Object), defaultFunc As Func(Of Object, Object)) As Object
+    Private Function TypeSwitch(obj As Object, matchFunc1 As Func(Of String, Object), matchFunc2 As Func(Of Integer, Object), defaultFunc As Func(Of Object, Object)) As Object
         Return Nothing
     End Function
 

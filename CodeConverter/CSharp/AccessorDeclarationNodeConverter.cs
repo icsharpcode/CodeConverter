@@ -177,7 +177,7 @@ internal class AccessorDeclarationNodeConverter
 
         async Task<CSSyntax.MethodDeclarationSyntax> CreateMethodDeclarationSyntaxAsync(VBSyntax.ParameterListSyntax containingPropParameterList, string methodId, bool voidReturn)
         {
-            var parameterListSyntax = await containingPropParameterList.AcceptAsync<CSSyntax.ParameterListSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
+            var parameterListSyntax = await containingPropParameterList.AcceptParameterListAsync(CommonConversions.TriviaConvertingExpressionVisitor);
             var methodModifiers = CS.SyntaxFactory.TokenList(modifiers.Where(m => !m.IsCsVisibility(false, false)));
             CSSyntax.MethodDeclarationSyntax methodDeclarationSyntax = CS.SyntaxFactory.MethodDeclaration(attributes, methodModifiers,
                     voidReturn ? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)) : rawType,
@@ -274,7 +274,7 @@ internal class AccessorDeclarationNodeConverter
 
         async Task<CSSyntax.MethodDeclarationSyntax> CreateMethodDeclarationSyntax(VBSyntax.ParameterListSyntax containingPropParameterList, bool voidReturn)
         {
-            var parameterListSyntax = await containingPropParameterList.AcceptAsync<CSSyntax.ParameterListSyntax>(CommonConversions.TriviaConvertingExpressionVisitor, sourceMap);
+            var parameterListSyntax = await containingPropParameterList.AcceptParameterListAsync(CommonConversions.TriviaConvertingExpressionVisitor, sourceMap);
 
             CSSyntax.MethodDeclarationSyntax methodDeclarationSyntax = CS.SyntaxFactory.MethodDeclaration(attributes, modifiers,
                 voidReturn ? CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(CS.SyntaxKind.VoidKeyword)) : returnType,

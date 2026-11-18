@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 using Microsoft.CodeAnalysis.Classification;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
@@ -40,8 +41,9 @@ internal class CommonConversions
     public CommonConversions(Document document, SemanticModel semanticModel,
         TypeConversionAnalyzer typeConversionAnalyzer, SyntaxGenerator csSyntaxGenerator,
         Compilation compilation,
-        CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison)
+        CSharpCompilation csCompilation, ITypeContext typeContext, VisualBasicEqualityComparison visualBasicEqualityComparison, ErrUsage errUsage)
     {
+        ErrUsage = errUsage;
         TypeConversionAnalyzer = typeConversionAnalyzer;
         Document = document;
         SemanticModel = semanticModel;
@@ -55,12 +57,29 @@ internal class CommonConversions
     }
 
     public KnownNamedTypes KnownTypes { get; }
+    public ErrUsage ErrUsage { get; }
 
     public record VariablePair(CSSyntax.VariableDeclaratorSyntax CsVar, VBSyntax.ModifiedIdentifierSyntax VbVar);
     public record VariablesDeclaration(CSSyntax.VariableDeclarationSyntax Decl, ITypeSymbol Type, List<VariablePair> Variables);
 
     public async Task<(IReadOnlyCollection<VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(
         VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip = null, bool preferExplicitType = false)
+    {
+        if (!IsField(declarator)) return await SplitVariableDeclarationsInCurrentScopeAsync(declarator, symbolsToSkip, preferExplicitType);
+
+        // A field initializer has no statement to hoist into, so it gets its own scope, which ConvertEqualsValueClauseSyntaxAsync moves into a method
+        _typeContext.PerScopeState.PushScope();
+        try {
+            return await SplitVariableDeclarationsInCurrentScopeAsync(declarator, symbolsToSkip, preferExplicitType);
+        } finally {
+            _typeContext.PerScopeState.PopScope();
+        }
+    }
+
+    private static bool IsField(VariableDeclaratorSyntax declarator) => declarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
+
+    private async Task<(IReadOnlyCollection<VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsInCurrentScopeAsync(
+        VariableDeclaratorSyntax declarator, HashSet<ILocalSymbol> symbolsToSkip, bool preferExplicitType)
     {
         var vbInitValue = GetInitializerToConvert(declarator);
         var initializerOrMethodDecl = await vbInitValue.AcceptAsync<CSharpSyntaxNode>(TriviaConvertingExpressionVisitor);
@@ -129,7 +148,7 @@ internal class CommonConversions
     {
         var csTypeSyntax = GetTypeSyntax(declaredSymbolType);
 
-        bool isField = vbDeclarator.Parent.IsKind(SyntaxKind.FieldDeclaration);
+        bool isField = IsField(vbDeclarator);
         bool declaredConst = declaredSymbol is IFieldSymbol fieldSymbol && fieldSymbol.IsConst ||
                              declaredSymbol is ILocalSymbol localSymbol && localSymbol.IsConst;
 
@@ -144,15 +163,17 @@ internal class CommonConversions
             if (isField && !declaredSymbol.IsStatic && !SemanticModel.IsDefinitelyStatic(vbName, vbInitValue)) {
                 if (!_typeContext.Initializers.HasInstanceConstructorsOutsideThisPart) {
                     var lhs = SyntaxFactory.IdentifierName(ConvertIdentifier(vbName.Identifier, sourceTriviaMapKind: SourceTriviaMapKind.None));
-                    _typeContext.Initializers.AdditionalInstanceInitializers.Add(new Assignment(lhs, CSSyntaxKind.SimpleAssignmentExpression, adjustedInitializerExpr.WithoutSourceMapping()));
+                    var initializer = await WithHoistedNodesInMethodAsync(vbName, adjustedInitializerExpr, csTypeSyntax, isStatic: false);
+                    _typeContext.Initializers.AdditionalInstanceInitializers.Add(new Assignment(lhs, CSSyntaxKind.SimpleAssignmentExpression, initializer.WithoutSourceMapping()));
                     equalsValueClauseSyntax = null;
                 } else {
-                    var returnBlock = SyntaxFactory.Block(SyntaxFactory.ReturnStatement(adjustedInitializerExpr));
-                    _typeContext.PerScopeState.Hoist(new HoistedFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock, SyntaxFactory.ParameterList()));
+                    var returnBlock = await _typeContext.PerScopeState.CreateReturnBlockAsync(vbName, adjustedInitializerExpr, csTypeSyntax, SemanticModel);
+                    _typeContext.PerScopeState.HoistToParent(new HoistedFunction(GetInitialValueFunctionName(vbName), csTypeSyntax, returnBlock, SyntaxFactory.ParameterList(), isStatic: false));
                     equalsValueClauseSyntax = null;
                 }
             } else {
-                equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(convertedInitializer);
+                var initializer = isField ? await WithHoistedNodesInMethodAsync(vbName, convertedInitializer, csTypeSyntax, isStatic: true) : convertedInitializer;
+                equalsValueClauseSyntax = SyntaxFactory.EqualsValueClause(initializer);
             }
         }
         else if (isField || declaredSymbol != null && SemanticModel.IsDefinitelyAssignedBeforeRead(declaredSymbol, vbName))
@@ -166,6 +187,30 @@ internal class CommonConversions
         }
 
         return equalsValueClauseSyntax;
+    }
+
+    /// <summary>
+    /// Temporaries for ByRef arguments (and their write-backs) need statements, which a field initializer can't contain.
+    /// A method keeps them together with the initializer whether it stays on the field or moves to the constructor.
+    /// It must be static to be called from a field initializer, and an instance method to read instance members from the constructor.
+    /// </summary>
+    private async Task<ExpressionSyntax> WithHoistedNodesInMethodAsync(VBSyntax.ModifiedIdentifierSyntax vbName, ExpressionSyntax initializer, TypeSyntax type, bool isStatic)
+    {
+        if (!_typeContext.PerScopeState.HasHoistedNodes) return initializer;
+
+        var body = await _typeContext.PerScopeState.CreateReturnBlockAsync(vbName, initializer, type, SemanticModel);
+        var baseMethodName = GetInitializerMethodName(initializer, ConvertIdentifier(vbName.Identifier).ValueText);
+        var methodName = NameGenerator.CS.GetUniqueVariableNameInScope(SemanticModel, new HashSet<string>(), vbName, baseMethodName);
+        _typeContext.PerScopeState.HoistToParent(new HoistedFunction(methodName, type, body, SyntaxFactory.ParameterList(), isStatic));
+        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.IdentifierName(methodName));
+    }
+
+    private static string GetInitializerMethodName(ExpressionSyntax initializer, string fieldName)
+    {
+        // Names are qualified by the time they're converted, e.g. Me.Foo(...)
+        return initializer is CSSyntax.InvocationExpressionSyntax { Expression: CSSyntax.MemberAccessExpressionSyntax { Name: var invokedName } }
+            ? $"{invokedName.Identifier.ValueText}_{fieldName}"
+            : "init" + fieldName.UppercaseFirstLetter();
     }
 
     /// <remarks>
@@ -217,6 +262,16 @@ internal class CommonConversions
         var syntax = (TypeSyntax)CsSyntaxGenerator.TypeExpression(typeSymbol);
 
         return WithDeclarationNameCasing(syntax, typeSymbol);
+    }
+
+    /// <summary>
+    /// C# forbids tuple type syntax after <c>new</c> (CS8181), so a tuple type is named by its generic ValueTuple type there.
+    /// </summary>
+    public TypeSyntax GetValueTupleTypeSyntax(INamedTypeSymbol tupleType)
+    {
+        var typeArguments = tupleType.TupleUnderlyingType.TypeArguments.Select(t => GetTypeSyntax(t));
+        var valueTupleName = SyntaxFactory.GenericName(SyntaxFactory.Identifier(nameof(ValueTuple)), SyntaxFactory.TypeArgumentList(SyntaxFactory.SeparatedList(typeArguments)));
+        return SyntaxFactory.QualifiedName(GetFullyQualifiedNameSyntax(tupleType.ContainingNamespace), valueTupleName);
     }
 
     /// <summary>

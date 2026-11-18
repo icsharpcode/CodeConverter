@@ -6,8 +6,10 @@ using Microsoft.CodeAnalysis.Operations;
 using static Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions;
 using SyntaxFactory = Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Microsoft.CodeAnalysis.Text;
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using ICSharpCode.CodeConverter.VB;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 using ComparisonKind = ICSharpCode.CodeConverter.CSharp.VisualBasicEqualityComparison.ComparisonKind;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -28,13 +30,29 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private readonly HashSet<string> _generatedNames = new();
     private readonly HashSet<ILocalSymbol> _localsToInlineInLoop;
     private readonly PerScopeState _perScopeState;
+    private VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> _statementVisitor;
+    private readonly WriteBackPlacement _writeBackPlacement;
 
     public bool IsIterator { get; set; }
     public IdentifierNameSyntax ReturnVariable { get; set; }
     public bool HasReturnVariable => ReturnVariable != null;
-    public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; }
+    /// <summary>How nested statements are converted: every statement is visited through this, whatever its depth.</summary>
+    public VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>> CommentConvertingVisitor { get; private set; }
+
+    /// <summary>Set by the On Error conversion for the shape it emits. Until then, On Error and Resume statements can't be converted.</summary>
+    public IOnErrorStatementConverter OnErrorStatementConverter { get; set; }
 
     private CommonConversions CommonConversions { get; }
+
+    /// <summary>
+    /// Lets another class change the conversion of each statement at every nesting depth, without this visitor knowing why.
+    /// The decorator sits inside the comment conversion, so comments attach to whatever it returns for the statement.
+    /// </summary>
+    public void DecorateStatementVisitor(Func<VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>, VBasic.VisualBasicSyntaxVisitor<Task<SyntaxList<StatementSyntax>>>> decorate)
+    {
+        _statementVisitor = decorate(_statementVisitor);
+        CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(_statementVisitor);
+    }
 
     public static async Task<MethodBodyExecutableStatementVisitor> CreateAsync(VisualBasicSyntaxNode node, SemanticModel semanticModel,
         CommentConvertingVisitorWrapper triviaConvertingExpressionVisitor, CommonConversions commonConversions, VisualBasicEqualityComparison visualBasicEqualityComparison,
@@ -64,8 +82,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         _extraUsingDirectives = extraUsingDirectives;
         _handledEventsAnalysis = typeContext.HandledEventsAnalysis;
         _perScopeState = typeContext.PerScopeState;
-        var byRefParameterVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
-        CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(byRefParameterVisitor);
+        _writeBackPlacement = new WriteBackPlacement(semanticModel, _generatedNames, typeContext, commonConversions);
+        _statementVisitor = new PerScopeStateVisitorDecorator(this, _perScopeState, semanticModel, _generatedNames);
+        CommentConvertingVisitor = new CommentConvertingMethodBodyVisitor(_statementVisitor);
         _localsToInlineInLoop = localsToInlineInLoop;
     }
 
@@ -74,6 +93,15 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         throw new NotImplementedException($"Conversion for {VBasic.VisualBasicExtensions.Kind(node)} not implemented, please report this issue")
             .WithNodeInformation(node);
     }
+
+    public override Task<SyntaxList<StatementSyntax>> VisitOnErrorGoToStatement(VBSyntax.OnErrorGoToStatementSyntax node) =>
+        OnErrorStatementConverter is { } converter ? Task.FromResult(converter.ConvertOnError(node)) : DefaultVisit(node);
+
+    public override Task<SyntaxList<StatementSyntax>> VisitOnErrorResumeNextStatement(VBSyntax.OnErrorResumeNextStatementSyntax node) =>
+        OnErrorStatementConverter is { } converter ? Task.FromResult(converter.ConvertOnError(node)) : DefaultVisit(node);
+
+    public override Task<SyntaxList<StatementSyntax>> VisitResumeStatement(VBSyntax.ResumeStatementSyntax node) =>
+        OnErrorStatementConverter is { } converter ? Task.FromResult(converter.ConvertResume(node)) : DefaultVisit(node);
 
     public override async Task<SyntaxList<StatementSyntax>> VisitStopOrEndStatement(VBSyntax.StopOrEndStatementSyntax node)
     {
@@ -146,6 +174,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         }
 
         return SyntaxFactory.List(declarations);
+    }
+
+    /// <summary>
+    /// Declares a local that was converted in a loop body before the outermost loop instead, as a VB local keeps its value from one iteration to the next.
+    /// Call it after the declaration has been converted, as the scope of the declaration itself has then been left.
+    /// </summary>
+    /// <returns>False when the declaration isn't in a loop, so the caller declares it where it is.</returns>
+    public bool TryHoistOutOfLoop(string name, TypeSyntax type)
+    {
+        if (!_perScopeState.IsWithinLoopBody()) return false;
+        _perScopeState.Hoist(new HoistedDefaultInitializedLoopVariable(name, SyntaxFactory.DefaultExpression(type), type, _perScopeState.IsWithinNestedLoopBody()));
+        return true;
     }
 
     private IEnumerable<VariableDeclarationSyntax> HoistVariablesBeforeLoopWhenNeeded(IEnumerable<CommonConversions.VariablesDeclaration> variablesDeclarations)
@@ -288,9 +328,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SingleStatement(lhs);
         }
 
-        var assignment = SyntaxFactory.AssignmentExpression(kind, lhs, rhs);
         var postAssignment = GetPostAssignmentStatements(node);
-        return postAssignment.Insert(0, SyntaxFactory.ExpressionStatement(assignment));
+        StatementSyntax AssignTo(ExpressionSyntax value) => SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(kind, lhs, value));
+        if (kind == SyntaxKind.SimpleAssignmentExpression && _writeBackPlacement.IsSimpleTargetReadByWriteBack(node)) {
+            return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
+        }
+        return postAssignment.Insert(0, AssignTo(rhs));
     }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
@@ -492,7 +535,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitThrowStatement(VBSyntax.ThrowStatementSyntax node)
     {
-        return SingleStatement(SyntaxFactory.ThrowStatement(await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor)));
+        var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return WithWriteBacksBeforeJump(node.Expression, csExpression, "ex", SyntaxFactory.ThrowStatement);
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitReturnStatement(VBSyntax.ReturnStatementSyntax node)
@@ -502,7 +546,27 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csExpression = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Expression, csExpression);
-        return SingleStatement(SyntaxFactory.ReturnStatement(csExpression));
+        return WithWriteBacksBeforeJump(node.Expression, csExpression, "ret", SyntaxFactory.ReturnStatement);
+    }
+
+    /// <summary>
+    /// Write-backs are normally emitted after the converted statement, which after a jump would be unreachable (or, for yield, delayed until the consumer resumes).
+    /// </summary>
+    private SyntaxList<StatementSyntax> WithWriteBacksBeforeJump(VBSyntax.ExpressionSyntax vbExpression, ExpressionSyntax csExpression, string resultPrefix,
+        Func<ExpressionSyntax, StatementSyntax> createJump)
+    {
+        if (csExpression is null) return SingleStatement(createJump(null));
+        return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(csExpression, resultPrefix, () => GetResultTypeSyntax(vbExpression), createJump));
+    }
+
+    /// <summary>
+    /// <c>var</c> is only safe when the expression's own type is the one the jump needs: e.g. Nothing or a lambda has no natural type in C#.
+    /// </summary>
+    private TypeSyntax GetResultTypeSyntax(VBSyntax.ExpressionSyntax vbExpression)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(vbExpression);
+        var isNaturalType = typeInfo.Type is { } type && SymbolEqualityComparer.Default.Equals(type, typeInfo.ConvertedType);
+        return CommonConversions.GetTypeSyntax(typeInfo.ConvertedType, useImplicitType: isNaturalType);
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitContinueStatement(VBSyntax.ContinueStatementSyntax node)
@@ -513,7 +577,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitYieldStatement(VBSyntax.YieldStatementSyntax node)
     {
-        return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor)));
+        var csExpression = await node.Expression.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return WithWriteBacksBeforeJump(node.Expression, csExpression, "ret", e => SyntaxFactory.YieldStatement(SyntaxKind.YieldReturnStatement, e));
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitExitStatement(VBSyntax.ExitStatementSyntax node)
@@ -525,27 +590,35 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 return SingleStatement(SyntaxFactory.ReturnStatement());
             case VBasic.SyntaxKind.FunctionKeyword:
             case VBasic.SyntaxKind.PropertyKeyword when node.GetAncestor<VBSyntax.AccessorBlockSyntax>()?.IsKind(VBasic.SyntaxKind.GetAccessorBlock) == true:
-                VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
-                                                             ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
-                                                             ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
-                var enclosingMethodInfo = typeContainer switch {
-                    VBSyntax.LambdaExpressionSyntax e => _semanticModel.GetSymbolInfo(e).Symbol,
-                    VBSyntax.MethodBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.SubOrFunctionStatement),
-                    VBSyntax.AccessorBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.AccessorStatement),
-                    _ => null
-                } as IMethodSymbol;
-
-                if (IsIterator) return SingleStatement(SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement));
-
-                if (!enclosingMethodInfo.ReturnsVoidOrAsyncTask()) {
-                    ExpressionSyntax expr = HasReturnVariable ? ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
-                    return SingleStatement(SyntaxFactory.ReturnStatement(expr));
-                }
-
-                return SingleStatement(SyntaxFactory.ReturnStatement());
+                return SingleStatement(CreateMethodExitStatement(node));
             default:
                 return SyntaxFactory.List(_perScopeState.ConvertExit(vbBlockKeywordKind));
         }
+    }
+
+    /// <summary>
+    /// What leaving the method containing <paramref name="node"/> without a <c>Return</c> statement does: for a function, return its return variable or the default value.
+    /// </summary>
+    public StatementSyntax CreateMethodExitStatement(VBasic.VisualBasicSyntaxNode node)
+    {
+        VBasic.VisualBasicSyntaxNode typeContainer = node.GetAncestor<VBSyntax.LambdaExpressionSyntax>()
+                                                     ?? (VBasic.VisualBasicSyntaxNode)node.GetAncestor<VBSyntax.MethodBlockSyntax>()
+                                                     ?? node.GetAncestor<VBSyntax.AccessorBlockSyntax>();
+        var enclosingMethodInfo = typeContainer switch {
+            VBSyntax.LambdaExpressionSyntax e => _semanticModel.GetSymbolInfo(e).Symbol,
+            VBSyntax.MethodBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.SubOrFunctionStatement),
+            VBSyntax.AccessorBlockSyntax e => _semanticModel.GetDeclaredSymbol(e.AccessorStatement),
+            _ => null
+        } as IMethodSymbol;
+
+        if (IsIterator) return SyntaxFactory.YieldStatement(SyntaxKind.YieldBreakStatement);
+
+        if (!enclosingMethodInfo.ReturnsVoidOrAsyncTask()) {
+            ExpressionSyntax expr = HasReturnVariable ? ReturnVariable : SyntaxFactory.LiteralExpression(SyntaxKind.DefaultLiteralExpression);
+            return SyntaxFactory.ReturnStatement(expr);
+        }
+
+        return SyntaxFactory.ReturnStatement();
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitRaiseEventStatement(VBSyntax.RaiseEventStatementSyntax node)
@@ -571,8 +644,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitSingleLineIfStatement(VBSyntax.SingleLineIfStatementSyntax node)
     {
-        var condition = await node.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
+        var condition = await ConvertConditionAsync(node.Condition);
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
         ElseClauseSyntax elseClause = null;
 
@@ -585,8 +657,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     public override async Task<SyntaxList<StatementSyntax>> VisitMultiLineIfBlock(VBSyntax.MultiLineIfBlockSyntax node)
     {
-        var condition = await node.IfStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        condition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.IfStatement.Condition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
+        var condition = await ConvertConditionAsync(node.IfStatement.Condition);
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
 
         var elseClause = await ConvertElseClauseAsync(node.ElseBlock);
@@ -604,9 +675,17 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private async Task<(ExpressionSyntax ElseIfCondition, BlockSyntax ElseBlock)> ConvertElseIfAsync(VBSyntax.ElseIfBlockSyntax elseIf)
     {
         var elseBlock = SyntaxFactory.Block(await ConvertStatementsAsync(elseIf.Statements));
-        var elseIfCondition = await elseIf.ElseIfStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        elseIfCondition = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(elseIf.ElseIfStatement.Condition, elseIfCondition, forceTargetType: CommonConversions.KnownTypes.Boolean);
+        var elseIfCondition = await ConvertConditionAsync(elseIf.ElseIfStatement.Condition);
         return (elseIfCondition, elseBlock);
+    }
+
+    /// <summary>
+    /// VB converts a condition to Boolean (e.g. Nothing to False), whereas C# requires it to already be bool
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertConditionAsync(VBSyntax.ExpressionSyntax vbCondition)
+    {
+        var condition = await vbCondition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbCondition, condition, forceTargetType: CommonConversions.KnownTypes.Boolean);
     }
 
     private async Task<ElseClauseSyntax> ConvertElseClauseAsync(VBSyntax.ElseBlockSyntax elseBlock)
@@ -1098,9 +1177,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         }
     }
 
-    private string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
+    public string GetUniqueVariableNameInScope(VBasic.VisualBasicSyntaxNode node, string variableNameBase)
     {
         return NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, _generatedNames, node, variableNameBase);
+    }
+
+    public string GetUniqueLabelNameInScope(VBasic.VisualBasicSyntaxNode node, string labelNameBase)
+    {
+        return NameGenerator.CS.GetUniqueLabelNameInScope(_semanticModel, _generatedNames, node, labelNameBase);
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitTryBlock(VBSyntax.TryBlockSyntax node)
@@ -1137,7 +1221,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         async Task<CatchFilterClauseSyntax> ConvertCatchFilterClauseAsync(VBasic.Syntax.CatchFilterClauseSyntax node)
         {
             if (node == null) return null;
-            return SyntaxFactory.CatchFilterClause(await node.Filter.AcceptAsync<ExpressionSyntax>(_expressionVisitor));
+            return SyntaxFactory.CatchFilterClause(await ConvertConditionAsync(node.Filter));
         }
 
         async Task<FinallyClauseSyntax> ConvertFinallyBlockAsync(VBasic.Syntax.FinallyBlockSyntax node)
@@ -1182,7 +1266,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     public override async Task<SyntaxList<StatementSyntax>> VisitWhileBlock(VBSyntax.WhileBlockSyntax node)
     {
         return SingleStatement(SyntaxFactory.WhileStatement(
-            await node.WhileStatement.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor),
+            await ConvertConditionAsync(node.WhileStatement.Condition),
             SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements)).UnpackNonNestedBlock()
         ));
     }
@@ -1191,35 +1275,24 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         var statements = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements)).UnpackNonNestedBlock();
 
-        if (node.DoStatement.WhileOrUntilClause != null) {
-            var stmt = node.DoStatement.WhileOrUntilClause;
-            if (stmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.WhileKeyword))
-                return SingleStatement(SyntaxFactory.WhileStatement(
-                    await stmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor),
-                    statements
-                ));
-            return SingleStatement(SyntaxFactory.WhileStatement(
-                (await stmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor)).InvertCondition(),
-                statements
-            ));
+        if (node.DoStatement.WhileOrUntilClause is { } topClause) {
+            return SingleStatement(SyntaxFactory.WhileStatement(await ConvertLoopContinueConditionAsync(topClause), statements));
         }
 
-        var whileOrUntilStmt = node.LoopStatement.WhileOrUntilClause;
-        ExpressionSyntax conditionExpression;
-        bool isUntilStmt;
-        if (whileOrUntilStmt != null) {
-            conditionExpression = await whileOrUntilStmt.Condition.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-            isUntilStmt = whileOrUntilStmt.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword);
-        } else {
-            conditionExpression = SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
-            isUntilStmt = false;
-        }
+        var bottomCondition = node.LoopStatement.WhileOrUntilClause is { } bottomClause
+            ? await ConvertLoopContinueConditionAsync(bottomClause)
+            : SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
+        return SingleStatement(SyntaxFactory.DoStatement(statements, bottomCondition));
+    }
 
-        if (isUntilStmt) {
-            conditionExpression = conditionExpression.InvertCondition();
-        }
-
-        return SingleStatement(SyntaxFactory.DoStatement(statements, conditionExpression));
+    /// <summary>
+    /// C# only has While loops, so an Until loop continues while its condition is false.
+    /// VB converts the Until condition to Boolean (Nothing to False) before negating it, so an Until loop continues while it's Nothing.
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertLoopContinueConditionAsync(VBSyntax.WhileOrUntilClauseSyntax clause)
+    {
+        var condition = await ConvertConditionAsync(clause.Condition);
+        return clause.WhileOrUntilKeyword.IsKind(VBasic.SyntaxKind.UntilKeyword) ? condition.InvertCondition() : condition;
     }
 
     public override async Task<SyntaxList<StatementSyntax>> VisitCallStatement(VBSyntax.CallStatementSyntax node)
@@ -1238,4 +1311,4 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             ? statement
             : SyntaxFactory.ExpressionStatement((ExpressionSyntax)node));
     }
-}
+}

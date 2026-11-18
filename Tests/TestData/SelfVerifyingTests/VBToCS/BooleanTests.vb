@@ -583,5 +583,29 @@ Public Class BooleanTests
         Assert.True(a1 = a2, "Identical values stored in objects should be equal")
         Assert.False(a1 = b, "Different values stored in objects should not be equal")
     End Sub
+
+    <Theory>
+    <InlineData(True, True, True)>
+    <InlineData(True, True, False)>
+    <InlineData(True, False, True)>
+    <InlineData(False, True, False)>
+    <InlineData(False, False, True)>
+    <InlineData(False, True, True)>
+    Public Sub UntilTernaryConditions(f As Boolean, a As Boolean, b As Boolean)
+        Dim expected = If(f, a, b)
+        Dim count = 0
+        Do Until If(f, a, b)
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(If(expected, 0, 3), count)
+
+        count = 0
+        Do Until If(f, True, b)
+            count += 1
+            If count = 3 Then Exit Do
+        Loop
+        Assert.Equal(If(f OrElse b, 0, 3), count)
+    End Sub
 End Class
 
