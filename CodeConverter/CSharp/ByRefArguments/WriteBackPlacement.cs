@@ -50,7 +50,7 @@ internal class WriteBackPlacement
         var operation = _semanticModel.GetOperation(invocation);
         var arguments = new List<ArgumentSyntax>();
         var parameters = new List<ParameterSyntax>();
-        if (IsInStructAndUsesThis(enclosingSymbol, operation)) {
+        if (IsInStructAndUsesThis(enclosingSymbol, block)) {
             var selfName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "self");
             block = block.ReplaceNodes(block.DescendantNodes().OfType<ThisExpressionSyntax>(), (_, _) => ValidSyntaxFactory.IdentifierName(selfName));
             arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ThisExpression()).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
@@ -190,11 +190,12 @@ internal class WriteBackPlacement
     /// That's legal wherever VB can use <c>Me</c> in a structure: methods, property and event accessors, constructors (C# 11 structs are auto-default),
     /// iterators and async methods (which work on a copy in both languages). VB has no read-only members, where <c>ref this</c> would be CS1605,
     /// and doesn't allow <c>Me</c> in a lambda in a structure (BC36638), so the call is never inside one.
-    /// A <c>With</c> block's implicit receiver is also an instance reference, but not to <c>this</c>.
+    /// The converted body qualifies every instance member with <c>this</c> (the simplifier removes it later), so it uses <c>this</c> exactly when it contains one.
+    /// Deciding from the VB operation instead would have to resolve a <c>With</c> block's implicit receiver, which is <c>this</c> only for <c>With Me</c>.
     /// </summary>
-    private static bool IsInStructAndUsesThis(ISymbol enclosingSymbol, IOperation operation) =>
+    private static bool IsInStructAndUsesThis(ISymbol enclosingSymbol, BlockSyntax block) =>
         enclosingSymbol is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
-        operation?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any(i => i.ReferenceKind == InstanceReferenceKind.ContainingTypeInstance) != false;
+        block.DescendantNodes().OfType<ThisExpressionSyntax>().Any();
 
     private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
     {

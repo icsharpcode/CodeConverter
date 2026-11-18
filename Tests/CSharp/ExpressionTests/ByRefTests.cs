@@ -1714,6 +1714,42 @@ public partial struct S
 }");
     }
     [Fact]
+    public async Task StructureWithMePassesThisToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        With Me
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        if (localInc(ref this) > 0)
+            P = 0;
+    }
+}");
+    }
+    [Fact]
     public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure T

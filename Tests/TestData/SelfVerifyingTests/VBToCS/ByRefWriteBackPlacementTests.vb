@@ -692,6 +692,12 @@ Public Class ByRefWriteBackPlacementTests
     End Sub
 
     <Fact>
+    Public Sub StructureWithMeConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        s.IfConditionInWithMe()
+        Assert.Equal("get 0,set 1,then 1", s.LogText)
+    End Sub
+    <Fact>
     Public Sub StructureMePassedByRefIsCopiedAfterAnEarlierWriteBack()
         Dim s As New LoggedValue(New List(Of String))
         Assert.Equal(2, s.OperandThenMeByRef())
@@ -822,6 +828,13 @@ Public Class ByRefWriteBackPlacementTests
             Return -1
         End Function
 
+        Public Sub IfConditionInWithMe()
+            With Me
+                If Increment(.Value) > 0 Then
+                    _log.Add("then " & _value)
+                End If
+            End With
+        End Sub
         Public Function OperandThenMeByRef() As Integer
             Return Increment(Value) + ValueOf(Me)
         End Function
