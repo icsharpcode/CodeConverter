@@ -14,4 +14,11 @@ internal sealed record OnErrorConversionContext(VBasic.VisualBasicSyntaxNode Met
     /// <summary>The type of the member being converted: the symbol enclosing the end of the method block is the member itself.</summary>
     public INamedTypeSymbol ContainingType =>
         SemanticModel.GetEnclosingSymbol(MethodNode.Span.End - 1) is { } symbol ? symbol as INamedTypeSymbol ?? symbol.ContainingType : null;
+
+    /// <summary>
+    /// Whether the shapes that declare local functions (a handler function, or a loop condition or <c>Case</c> expression moved out of the statement) can be used.
+    /// A local function in a struct can't use <c>this</c> (CS1673), so an instance member of a struct can't have one.
+    /// </summary>
+    public bool CanDeclareLocalFunctions =>
+        SemanticModel.GetEnclosingSymbol(MethodNode.Span.End - 1) is not { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct };
 }

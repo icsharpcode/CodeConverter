@@ -129,6 +129,7 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
    * a handler local function would need to capture a `ref`/`out` parameter;
    * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;
    * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
+   * a shape that needs a local function (a handler function, or a loop condition or `Case` expression moved out of its statement) in an instance member of a `Structure`: a local function in a struct can't use `this` (CS1673). Static members and plain guards are fine;
    * (handler function) a handler that only `Resume`s (retry only, so no way out: not implemented); several handlers; a guard inside a guarded block (`For Each` with statements inside): the handler's own error would be caught again by the outer guard, but VB lets it propagate; a failing loop condition or `Case` expression when the handler can leave the method (a local function can't return from the method).
 
    A flattened `switch`-in-a-loop state machine would cover these, but the output is something nobody would keep.

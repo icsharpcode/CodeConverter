@@ -35,9 +35,9 @@ internal sealed class ResumeNextShapeEmitter
 
     /// <summary>
     /// Only when the model has nothing the guards can't express: handlers that are labels, <c>Resume</c> statements, loop conditions that a local function can't capture,
-    /// and guarded declarations of a type that can't be written.
+    /// guarded declarations of a type that can't be written, and a loop condition or <c>Case</c> expression that needs a local function where there can't be one.
     /// </summary>
-    public static bool CanEmit(OnErrorModel model, SemanticModel semanticModel)
+    public static bool CanEmit(OnErrorModel model, SemanticModel semanticModel, bool canDeclareLocalFunctions)
     {
         if (model.Handlers.Any() || model.ResumeStatements.Any() ||
             !model.OnErrorStatements.All(s => s is VBSyntax.OnErrorResumeNextStatementSyntax || s.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement))) {
@@ -46,7 +46,7 @@ internal sealed class ResumeNextShapeEmitter
         var points = CreateResumePoints(model, semanticModel);
         if (!points.CanGuardAllDeclarations(model.Statements)) return false;
         return !model.Statements.SelectMany(s => s.DescendantNodesAndSelf(n => n is not VBSyntax.LambdaExpressionSyntax)).OfType<VBSyntax.StatementSyntax>()
-            .Any(s => points.GuardsInALocalFunction(s) && points.HasConditionCapturingARefParameter(s));
+            .Any(s => points.GuardsInALocalFunction(s) && (!canDeclareLocalFunctions || points.HasConditionCapturingARefParameter(s)));
     }
 
     private static ResumePoints CreateResumePoints(OnErrorModel model, SemanticModel semanticModel) =>

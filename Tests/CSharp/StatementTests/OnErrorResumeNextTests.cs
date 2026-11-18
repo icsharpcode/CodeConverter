@@ -1214,4 +1214,114 @@ CS0825: The contextual keyword 'var' may only appear within a local variable dec
 ----- Exception 2 of 2 -----
 CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 209", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// A local function in a struct can't use <c>this</c> (CS1673), so a struct instance member that needs one keeps the fallback. A static member, or one with only plain guards, doesn't.
+    /// </summary>
+    [Fact]
+    public async Task StructInstanceMembersThatNeedALocalFunctionKeepTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Structure S
+    Public N As Integer
+    Function Foo() As Integer
+        Throw New Exception()
+    End Function
+    Sub Handler()
+        On Error GoTo H
+        N = Foo() : N += 1 : Exit Sub
+H:
+        N = 5 : Resume Next
+    End Sub
+    Sub Loop1()
+        On Error Resume Next
+        While N < Foo() : N += 1 : End While
+    End Sub
+    Sub Plain()
+        On Error Resume Next
+        N = Foo()
+    End Sub
+    Shared Sub St()
+        On Error Resume Next
+        Dim x = 0
+        While x < Integer.Parse(""a"") : x += 1 : End While
+    End Sub
+End Structure", @"using System;
+
+internal partial struct S
+{
+    public int N;
+    public int Foo()
+    {
+        throw new Exception();
+    }
+    public void Handler()
+    {
+        try
+        {
+            N = Foo();
+            N += 1;
+            return;
+        }
+        catch
+        {
+
+            N = 5;
+            ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+            /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 270
+
+
+            Input:
+             Resume Next
+
+             */
+        }
+    }
+    public void Loop1()
+    {
+        ;
+#error Cannot convert OnErrorResumeNextStatementSyntax - see comment for details
+        /* Cannot convert OnErrorResumeNextStatementSyntax, CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 321
+
+
+                Input:
+                        On Error Resume Next
+
+                 */
+        while (N < Foo())
+            N += 1;
+    }
+    public void Plain()
+    {
+        try
+        {
+            N = Foo();
+        }
+        catch
+        {
+        }
+    }
+    public static void St()
+    {
+        int x = 0;
+        bool LoopCondition() { try { return x < int.Parse(""a""); } catch { return true; } }
+
+        while (LoopCondition())
+        {
+            try
+            {
+                x += 1;
+            }
+            catch
+            {
+            }
+        }
+    }
+}----- Exception 1 of 2 -----
+CONVERSION ERROR: Conversion for ResumeNextStatement not implemented, please report this issue in 'Resume Next' at character 270
+
+----- Exception 2 of 2 -----
+CONVERSION ERROR: Conversion for OnErrorResumeNextStatement not implemented, please report this issue in 'On Error Resume Next' at character 321", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
