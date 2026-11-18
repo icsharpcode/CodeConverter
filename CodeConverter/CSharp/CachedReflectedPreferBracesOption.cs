@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.CodeAnalysis.Options;
 
@@ -15,14 +16,34 @@ internal static class CachedReflectedPreferBracesOption
 {
     private static readonly Lazy<IOption> PreferBracesOption = new(FindPreferBracesOption);
 
+    /// <summary>
+    /// The option value for each preference, or null where it can't be built or doesn't stick when set
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, object> VerifiedValueByPreference = new();
+
     /// <param name="preference">The name of a Roslyn PreferBracesPreference: None, WhenMultiline or Always</param>
-    /// <returns>The options with "Prefer braces" set to <paramref name="preference"/>, or null if it can't be set (checked by reading it back)</returns>
+    /// <returns>The options with "Prefer braces" set to <paramref name="preference"/>, or null if it can't be set (checked once by reading it back)</returns>
     public static OptionSet WithPreferBraces(this OptionSet options, string preference)
     {
+        if (PreferBracesOption.Value is not { } option) return null;
+        var value = VerifiedValueByPreference.GetOrAdd(preference, p => CreateVerifiedValue(option, options, p));
+        return value == null ? null : WithChangedOptionOrNull(options, option, value);
+    }
+
+    private static object CreateVerifiedValue(IOption option, OptionSet options, string preference)
+    {
         try {
-            if (PreferBracesOption.Value is not { } option) return null;
-            var newOptions = options.WithChangedOption(new OptionKey(option), CreateCodeStyleOption(option.Type, preference));
-            return newOptions.GetPreferBraces() == preference ? newOptions : null;
+            var value = CreateCodeStyleOption(option.Type, preference);
+            return WithChangedOptionOrNull(options, option, value)?.GetPreferBraces() == preference ? value : null;
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    private static OptionSet WithChangedOptionOrNull(OptionSet options, IOption option, object value)
+    {
+        try {
+            return options.WithChangedOption(new OptionKey(option), value);
         } catch (Exception) {
             return null;
         }
