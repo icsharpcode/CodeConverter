@@ -1,3 +1,4 @@
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -36,7 +37,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
 
     public ExpressionNodeVisitor(SemanticModel semanticModel,
         VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, CommonConversions commonConversions,
-        HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext, VisualBasicNullableExpressionsConverter visualBasicNullableTypesConverter)
+        HashSet<string> extraUsingDirectives, XmlImportContext xmlImportContext, VisualBasicNullableExpressionsConverter visualBasicNullableTypesConverter,
+        IFieldMutationOracle fieldMutations)
     {
         _semanticModel = semanticModel;
         CommonConversions = commonConversions;
@@ -48,7 +50,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         _typeContext = typeContext;
         _extraUsingDirectives = extraUsingDirectives;
         _valueTupleCreationConverter = new ValueTupleCreationConverter(semanticModel, commonConversions);
-        _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions);
+        _argumentConverter = new ArgumentConverter(visualBasicEqualityComparison, typeContext, semanticModel, commonConversions, fieldMutations);
         _xmlExpressionConverter = new XmlExpressionConverter(xmlImportContext, extraUsingDirectives, commonConversions, semanticModel, _withBlockLhs, _generatedNames, _conditionalAccessReceivers);
         _nameExpressionNodeVisitor = new NameExpressionNodeVisitor(semanticModel, _generatedNames, typeContext, extraUsingDirectives, _tempNameForAnonymousScope, _withBlockLhs, commonConversions, _argumentConverter, TriviaConvertingExpressionVisitor, _conditionalAccessReceivers, rangeVariableReplacements);
         _operatorConverter = VbOperatorConversion.Create(TriviaConvertingExpressionVisitor, semanticModel, visualBasicEqualityComparison, commonConversions.TypeConversionAnalyzer);

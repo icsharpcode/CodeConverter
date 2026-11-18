@@ -1,4 +1,6 @@
-﻿namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+﻿using Microsoft.CodeAnalysis.Operations;
+
+namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 
 /// <summary>
 /// C# can only pass a variable by reference, so a ByRef argument that isn't one gets a temporary, and VB's copy-back becomes a write-back statement.
@@ -7,6 +9,7 @@ internal class ByRefArgumentHoister
 {
     private readonly ITypeContext _typeContext;
     private readonly SemanticModel _semanticModel;
+    private readonly IFieldMutationOracle _fieldMutations;
     private CommonConversions CommonConversions { get; }
 
     /// <summary>
@@ -14,10 +17,11 @@ internal class ByRefArgumentHoister
     /// </summary>
     private readonly Stack<List<AdditionalAssignment>> _writeBacksPerCall = new();
 
-    public ByRefArgumentHoister(ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions)
+    public ByRefArgumentHoister(ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions, IFieldMutationOracle fieldMutations)
     {
         _typeContext = typeContext;
         _semanticModel = semanticModel;
+        _fieldMutations = fieldMutations;
         CommonConversions = commonConversions;
     }
 
@@ -46,10 +50,8 @@ internal class ByRefArgumentHoister
         bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node, expressionTypeInfo.ConvertedType, out var _);
         var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
 
-        if (refLValue is CSSyntax.ElementAccessExpressionSyntax eae) {
-            //Hoist out the container so we can assign back to the same one after (like VB does)
-            var tmpContainer = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
-            refLValue = eae.WithExpression(tmpContainer.IdentifierName);
+        if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
+            refLValue = ByRefTargetTemporaries.Hoist(_semanticModel, _typeContext, _fieldMutations, node, refLValue);
         }
 
         var withCast = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, refLValue, defaultToCast: refKind != RefKind.None);
@@ -58,11 +60,27 @@ internal class ByRefArgumentHoister
 
         if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
             var convertedLocalIdentifier = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node, local.IdentifierName, forceSourceType: expressionTypeInfo.ConvertedType, forceTargetType: expressionTypeInfo.Type);
-            var writeBack = new AdditionalAssignment(refLValue, convertedLocalIdentifier);
+            var writeBack = CreateWriteBack(node, refLValue, convertedLocalIdentifier);
             if (_writeBacksPerCall.Count > 0) _writeBacksPerCall.Peek().Add(writeBack);
             else _typeContext.PerScopeState.Hoist(writeBack);
         }
 
         return local.IdentifierName;
+    }
+
+    private AdditionalAssignment CreateWriteBack(VBSyntax.ExpressionSyntax vbTarget, CSSyntax.ExpressionSyntax csTarget, CSSyntax.ExpressionSyntax value)
+    {
+        if (_semanticModel.GetOperation(vbTarget) is IPropertyReferenceOperation { Arguments.Length: > 0 } pro && !VBasic.VisualBasicExtensions.IsDefault(pro.Property) &&
+            csTarget is CSSyntax.InvocationExpressionSyntax getterCall) {
+            return AdditionalAssignment.ViaSetter(CreateSetterCall(getterCall, pro.Property, value));
+        }
+        return new AdditionalAssignment(csTarget, value);
+    }
+
+    private static CSSyntax.InvocationExpressionSyntax CreateSetterCall(CSSyntax.InvocationExpressionSyntax getterCall, IPropertySymbol property, CSSyntax.ExpressionSyntax value)
+    {
+        var getterName = getterCall.Expression.DescendantTokens().Last(t => t.IsKind(CS.SyntaxKind.IdentifierToken));
+        var setter = getterCall.Expression.ReplaceToken(getterName, CS.SyntaxFactory.Identifier(property.SetMethod.Name).WithTriviaFrom(getterName));
+        return CS.SyntaxFactory.InvocationExpression(setter, CommonConversions.AddSetterValueArgument(getterCall.ArgumentList, property, value));
     }
 }

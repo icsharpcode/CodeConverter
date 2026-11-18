@@ -1863,7 +1863,7 @@ public partial class TestClass
     public void TestMethod()
     {
         {
-            ref var withBlock = ref _Data;
+            var withBlock = _Data;
             x = withBlock.x?.Name;
         }
     }

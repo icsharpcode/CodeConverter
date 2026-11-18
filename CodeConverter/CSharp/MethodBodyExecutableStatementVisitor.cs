@@ -1055,12 +1055,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             reusableExprWithoutSideEffects = expr.WithoutSourceMapping();
         } else {
             TypeSyntax forceType = null;
-            if (_semanticModel.GetOperation(vbExpr.SkipIntoParens()).IsAssignableExpression()) {
+            // VB's With uses a structure variable in place, but only copies a reference, so it keeps the original object even if the variable is reassigned
+            if (_semanticModel.GetTypeInfo(vbExpr).Type?.IsReferenceType != true && _semanticModel.GetOperation(vbExpr.SkipIntoParens()).IsAssignableExpression()) {
                 forceType = SyntaxFactory.RefType(ValidSyntaxFactory.VarType);
                 expr = SyntaxFactory.RefExpression(expr);
             }
 
             var (stmt, id) = CreateLocalVariableWithUniqueName(vbExpr, variableNameBase, expr, forceType);
+            if (forceType != null) id = RefLocalReferences.Mark(id, CommonConversions.GetTypeSyntax(_semanticModel.GetTypeInfo(vbExpr).Type));
             stmts = stmts.Add(stmt);
             reusableExprWithoutSideEffects = exprWithoutSideEffects = id;
         }

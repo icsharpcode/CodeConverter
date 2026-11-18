@@ -12,14 +12,15 @@ internal class ArgumentConverter
     private CommentConvertingVisitorWrapper TriviaConvertingExpressionVisitor { get; }
     public ByRefArgumentHoister ByRefArgumentHoister { get; }
 
-    public ArgumentConverter(VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions)
+    public ArgumentConverter(VisualBasicEqualityComparison visualBasicEqualityComparison, ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions,
+        IFieldMutationOracle fieldMutations)
     {
         CommonConversions = commonConversions;
         _visualBasicEqualityComparison = visualBasicEqualityComparison;
         _typeContext = typeContext;
         _semanticModel = semanticModel;
         TriviaConvertingExpressionVisitor = commonConversions.TriviaConvertingExpressionVisitor;
-        ByRefArgumentHoister = new ByRefArgumentHoister(typeContext, semanticModel, commonConversions);
+        ByRefArgumentHoister = new ByRefArgumentHoister(typeContext, semanticModel, commonConversions, fieldMutations);
     }
 
     public async Task<CSharpSyntaxNode> ConvertSimpleArgumentAsync(VBSyntax.SimpleArgumentSyntax node)

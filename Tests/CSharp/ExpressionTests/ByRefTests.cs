@@ -896,10 +896,9 @@ public partial class BinaryExpressionRefParameter
         LogAndReset(ref argarg);
         wide = argarg;
         object[] wideArray = new object[] { 3, 4, 4 };
-        var tmp = wideArray;
-        int argarg1 = Conversions.ToInteger(tmp[1]);
+        int argarg1 = Conversions.ToInteger(wideArray[1]);
         LogAndReset(ref argarg1);
-        tmp[1] = argarg1;
+        wideArray[1] = argarg1;
         short narrow = 3;
         int argarg2 = narrow;
         LogAndReset(ref argarg2);
@@ -1426,7 +1425,7 @@ public partial class C
     }
 
     [Fact]
-    public async Task StructureKeepsStatementPlacementWhereALocalFunctionWouldNeedThisAsync()
+    public async Task StructureBlockHeaderDeclaratorAndCompoundAssignmentPassThisToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
     Public Property P As Integer
@@ -1458,29 +1457,29 @@ public partial struct S
 
     public void M()
     {
-        int argv = P;
-        switch (Inc(ref argv))
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        switch (localInc(ref this))
         {
             case 1:
                 Console.WriteLine(1);
                 break;
         }
-        P = argv;
-        int argv1 = P;
-        int argv2 = P;
-        int a = Inc(ref argv1);
-        int b = Inc(ref argv2);
-        P = argv1;
-        P = argv2;
-        int argv3 = P;
-        P += Inc(ref argv3);
-        P = argv3;
+        int localInc1(ref S self) { int argv1 = self.P; var ret = Inc(ref argv1); self.P = argv1; return ret; }
+
+        int localInc2(ref S self) { int argv2 = self.P; var ret = Inc(ref argv2); self.P = argv2; return ret; }
+
+        int a = localInc1(ref this);
+        int b = localInc2(ref this);
+        int localInc3(ref S self) { int argv3 = self.P; var ret = Inc(ref argv3); self.P = argv3; return ret; }
+
+        P += localInc3(ref this);
     }
-}", incompatibleWithAutomatedCommentTesting: true); // The write-back after the block moves line comments out of order
+}");
     }
 
     [Fact]
-    public async Task StructureKeepsStatementPlacementForOperandsThatWouldNeedThisAsync()
+    public async Task StructureOperandsPassThisToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
     Public Property P As Integer
@@ -1508,18 +1507,16 @@ public partial struct S
 
     public void M()
     {
-        int argv = P;
-        var ret = Inc(ref argv) + 1;
-        P = argv;
-        P = ret;
-        int argv1 = P;
-        int x = 1 + Inc(ref argv1);
-        P = argv1;
-        int argv2 = P;
-        int argv3 = Inc(ref argv2);
-        var ret1 = Inc(ref argv3);
-        P = argv2;
-        P = ret1;
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        P = localInc(ref this) + 1;
+        int localInc1(ref S self) { int argv1 = self.P; var ret = Inc(ref argv1); self.P = argv1; return ret; }
+
+        int x = 1 + localInc1(ref this);
+        int localInc2(ref S self) { int argv2 = self.P; var ret = Inc(ref argv2); self.P = argv2; return ret; }
+
+        int argv = localInc2(ref this);
+        P = Inc(ref argv);
     }
 }");
     }
@@ -1556,5 +1553,1725 @@ public partial class C
         int localInc() { int argv = P; var ret = Inc(ref argv); P = argv; return ret; } ((dynamic)o).X = localInc();
     }
 }", incompatibleWithAutomatedCommentTesting: true); // The late-bound assignment is emitted on the local function's line
+    }
+    [Fact]
+    public async Task StructureConditionsPassThisToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Shared Counter As Integer
+    Public Property P As Integer
+    Private F As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Function InstanceInc(ByRef v As Integer) As Integer
+        v += F
+        Return v
+    End Function
+
+    Sub New(start As Integer)
+        F = start
+        If Inc(P) > F Then P = 0
+    End Sub
+
+    ReadOnly Property Incremented As Integer
+        Get
+            If Inc(P) > 0 Then Return P
+            Return 0
+        End Get
+    End Property
+
+    Sub M(b As Boolean, self As Integer)
+        If b AndAlso Inc(P) > self Then
+            P = 0
+        ElseIf InstanceInc(Me.P) > Inc(Inc(P)) Then
+            P = 1
+        End If
+        While Inc(P) < 10
+        End While
+        Do
+        Loop Until InstanceInc(P) > 20
+        If Inc(Counter) > 0 Then Counter = 0
+    End Sub
+End Structure", @"
+public partial struct S
+{
+    public static int Counter;
+    public int P { get; set; }
+    private int F;
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public int InstanceInc(ref int v)
+    {
+        v += F;
+        return v;
+    }
+
+    public S(int start)
+    {
+        F = start;
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        if (localInc(ref this) > F)
+            P = 0;
+    }
+
+    public int Incremented
+    {
+        get
+        {
+            int localInc(ref S self) { int argv1 = self.P; var ret = Inc(ref argv1); self.P = argv1; return ret; }
+
+            if (localInc(ref this) > 0)
+                return P;
+            return 0;
+        }
+    }
+
+    public void M(bool b, int self)
+    {
+        int localInc(ref S self1) { int argv2 = self1.P; var ret = Inc(ref argv2); self1.P = argv2; return ret; }
+        int localInstanceInc(ref S self1) { int argv3 = self1.P; var ret = self1.InstanceInc(ref argv3); self1.P = argv3; return ret; }
+
+        int localInc1(ref S self1) { int argv4 = self1.P; var ret = Inc(ref argv4); self1.P = argv4; return ret; }
+
+        int localInc2(ref S self1) { int argv5 = localInc1(ref self1); var ret = Inc(ref argv5); return ret; }
+
+        if (b && localInc(ref this) > self)
+        {
+            P = 0;
+        }
+        else if (localInstanceInc(ref this) > localInc2(ref this))
+        {
+            P = 1;
+        }
+        int localInc3(ref S self1) { int argv6 = self1.P; var ret = Inc(ref argv6); self1.P = argv6; return ret; }
+
+        while (localInc3(ref this) < 10)
+        {
+        }
+        int localInstanceInc1(ref S self1) { int argv7 = self1.P; var ret = self1.InstanceInc(ref argv7); self1.P = argv7; return ret; }
+
+        do
+        {
+        }
+        while (localInstanceInc1(ref this) <= 20);
+        if (Inc(ref Counter) > 0)
+            Counter = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureWithBlockOnALocalDoesNotPassThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Structure S
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        Dim b As New Box
+        With b
+            If Inc(.X) > 0 Then .X = 0
+        End With
+    End Sub
+End Structure", @"
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial struct S
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        var b = new Box();
+        int localInc() { int argv = b.X; var ret = Inc(ref argv); b.X = argv; return ret; }
+
+        if (localInc() > 0)
+            b.X = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureWithMePassesThisToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        With Me
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        if (localInc(ref this) > 0)
+            P = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task RefLocalDeclaredInsideTheLocalFunctionIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class C
+    Public Property Total As Integer
+    Public Inner As T
+
+    Shared Function Apply(ByRef v As Integer, f As System.Func(Of Integer)) As Integer
+        Return v + f()
+    End Function
+
+    Sub M()
+        If Apply(Total, Function()
+                            With Inner
+                                .P = 3
+                            End With
+                            Return 1
+                        End Function) > 0 Then Total = 0
+    End Sub
+End Class", @"using System;
+
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public int Total { get; set; }
+    public T Inner;
+
+    public static int Apply(ref int v, Func<int> f)
+    {
+        return v + f();
+    }
+
+    public void M()
+    {
+        int localApply()
+        {
+            int argv = Total;
+            var ret = Apply(ref argv, () =>
+            {
+                {
+                    ref var withBlock = ref Inner;
+                    withBlock.P = 3;
+                }
+                return 1;
+            });
+            Total = argv;
+            return ret;
+        }
+
+        if (localApply() > 0)
+            Total = 0;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The multi-line lambda is emitted inside the local function, before the If's line
+    }
+    [Fact]
+    public async Task WithByRefParameterIsPassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M(ByRef b As Box, ByRef p As T)
+        With b
+            If Inc(.X) > 0 Then .X = 0
+        End With
+        With p
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class", @"
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M(ref Box b, ref T p)
+    {
+        int localInc(ref Box b) { int argv = b.X; var ret = Inc(ref argv); b.X = argv; return ret; }
+
+        if (localInc(ref b) > 0)
+            b.X = 0;
+        int localInc1(ref T p) { int argv1 = p.P; var ret = Inc(ref argv1); p.P = argv1; return ret; }
+
+        if (localInc1(ref p) > 0)
+            p.P = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task ByRefParameterOnlyInAWithHeaderIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function GetBox(ByRef b As Box) As Box
+        Return b
+    End Function
+
+    Sub M(ByRef arr As Box(), i As Integer, ByRef b As Box)
+        With arr(i)
+            If Inc(.X) > 0 Then .X = 0
+        End With
+        With GetBox(b)
+            If Inc(.X) > 0 Then .X = 0
+        End With
+    End Sub
+End Class", @"
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static Box GetBox(ref Box b)
+    {
+        return b;
+    }
+
+    public void M(ref Box[] arr, int i, ref Box b)
+    {
+        {
+            var withBlock = arr[i];
+            int localInc() { int argv = withBlock.X; var ret = Inc(ref argv); withBlock.X = argv; return ret; }
+
+            if (localInc() > 0)
+                withBlock.X = 0;
+        }
+        {
+            var withBlock1 = GetBox(ref b);
+            int localInc1() { int argv1 = withBlock1.X; var ret = Inc(ref argv1); withBlock1.X = argv1; return ret; }
+
+            if (localInc1() > 0)
+                withBlock1.X = 0;
+        }
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureSharedMemberDoesNotPassThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Shared Property Total As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function M() As Boolean
+        If Inc(Total) > 0 Then Return Total = 1
+        Return False
+    End Function
+End Structure", @"
+public partial struct S
+{
+    public static int Total { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static bool M()
+    {
+        int localInc() { int argv = Total; var ret = Inc(ref argv); Total = argv; return ret; }
+
+        if (localInc() > 0)
+            return Total == 1;
+        return false;
+    }
+}");
+    }
+    [Fact]
+    public async Task KeywordNamedByRefParametersArePassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property P As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function M(ByRef [class] As Box, ByRef params As Box, ByRef [string] As Box) As Boolean
+        If Inc([class].P) + Inc(params.P) + Inc([string].P) > 0 Then Return True
+        Return False
+    End Function
+End Class", @"
+public partial class Box
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static bool M(ref Box @class, ref Box @params, ref Box @string)
+    {
+        int localInc(ref Box @class) { var tmp = @class; int argv = tmp.P; var ret = Inc(ref argv); tmp.P = argv; return ret; }
+
+        int localInc1(ref Box @params) { var tmp1 = @params; int argv1 = tmp1.P; var ret = Inc(ref argv1); tmp1.P = argv1; return ret; }
+
+        int localInc2(ref Box @string) { var tmp2 = @string; int argv2 = tmp2.P; var ret = Inc(ref argv2); tmp2.P = argv2; return ret; }
+
+        if (localInc(ref @class) + localInc1(ref @params) + localInc2(ref @string) > 0)
+            return true;
+        return false;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task AnonymousTypeMemberNamedLikeAByRefParameterIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property P As Integer
+    Public Property Inner As Box
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function Take(o As Object, b As Box) As Box
+        Return b
+    End Function
+
+    Sub M(arr As Box(), ByRef i As Integer)
+        With arr(i)
+            If Inc(Take(New With {.i = 1}, .Inner).P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class", @"
+public partial class Box
+{
+    public int P { get; set; }
+    public Box Inner { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static Box Take(object o, Box b)
+    {
+        return b;
+    }
+
+    public void M(Box[] arr, ref int i)
+    {
+        {
+            var withBlock = arr[i];
+            int localInc() { var tmp = Take(new { i = 1 }, withBlock.Inner); int argv = tmp.P; var ret = Inc(ref argv); tmp.P = argv; return ret; }
+
+            if (localInc() > 0)
+                withBlock.P = 0;
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ObjectInitializerMemberNamedLikeAByRefParameterIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property P As Integer
+    Public i As Integer
+    Public Property Inner As Box
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function Take(o As Object, b As Box) As Box
+        Return b
+    End Function
+
+    Sub M(arr As Box(), ByRef i As Integer)
+        With arr(i)
+            If Inc(Take(New Box With {.i = 1}, .Inner).P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class", @"
+public partial class Box
+{
+    public int P { get; set; }
+    public int i;
+    public Box Inner { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static Box Take(object o, Box b)
+    {
+        return b;
+    }
+
+    public void M(Box[] arr, ref int i)
+    {
+        {
+            var withBlock = arr[i];
+            int localInc() { var tmp = Take(new Box() { i = 1 }, withBlock.Inner); int argv = tmp.P; var ret = Inc(ref argv); tmp.P = argv; return ret; }
+
+            if (localInc() > 0)
+                withBlock.P = 0;
+        }
+    }
+}");
+    }
+
+    [Fact]
+    public async Task TypeNamedLikeAByRefParameterIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class H
+    Public Shared Property S As Integer
+    Public Property Q As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function GetH(q As Integer) As H
+        Return New H
+    End Function
+
+    Shared Function M(<System.Runtime.InteropServices.Out> ByRef h As H) As Boolean
+        If Inc(H.S) > 0 Then
+            h = New H
+            Return True
+        End If
+        h = Nothing
+        Return False
+    End Function
+
+    Shared Function M2(ByRef h As Integer, x As H) As Boolean
+        If Inc(GetH(New H().Q).Q) > 0 Then Return True
+        Return False
+    End Function
+End Class", @"
+public partial class H
+{
+    public static int S { get; set; }
+    public int Q { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static H GetH(int q)
+    {
+        return new H();
+    }
+
+    public static bool M(out H h)
+    {
+        int localInc() { int argv = H.S; var ret = Inc(ref argv); H.S = argv; return ret; }
+
+        if (localInc() > 0)
+        {
+            h = new H();
+            return true;
+        }
+        h = null;
+        return false;
+    }
+
+    public static bool M2(ref int h, H x)
+    {
+        int localInc() { var tmp = GetH(new H().Q); int argv1 = tmp.Q; var ret = Inc(ref argv1); tmp.Q = argv1; return ret; }
+
+        if (localInc() > 0)
+            return true;
+        return false;
+    }
+}");
+    }
+    [Fact]
+    public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class C
+    Public Inner As T
+
+    Sub M()
+        With Inner
+            If S.Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class
+
+Public Structure S
+    Public Inner As T
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        With Inner
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Structure", @"
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public T Inner;
+
+    public void M()
+    {
+        {
+            ref var withBlock = ref Inner;
+            int localInc(ref T withBlock) { int argv = withBlock.P; var ret = S.Inc(ref argv); withBlock.P = argv; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.P = 0;
+        }
+    }
+}
+
+public partial struct S
+{
+    public T Inner;
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        {
+            ref var withBlock = ref Inner;
+            int localInc(ref T withBlock) { int argv1 = withBlock.P; var ret = Inc(ref argv1); withBlock.P = argv1; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.P = 0;
+        }
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureMePassedByRefAfterAWriteBackTakesTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function ValueOf(ByRef s As S) As Integer
+        Return s.P
+    End Function
+
+    Function M() As Integer
+        Return Inc(P) + ValueOf(Me)
+    End Function
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static int ValueOf(ref S s)
+    {
+        return s.P;
+    }
+
+    public int M()
+    {
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        int localValueOf(ref S self) { var args = self; var ret = ValueOf(ref args); return ret; }
+
+        return localInc(ref this) + localValueOf(ref this);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ParameterizedPropertyIsWrittenBackThroughItsSetterIssue909Async()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class ClsDb
+    Private ReadOnly _recordValues(10, 30) As String
+
+    Public Sub Get_Equal(ByRef tableBuffer As Integer, ByRef keyIndex As Integer, ByRef keyValue As String, ByRef recordPosition As String, ByRef errorNumber As Integer)
+        keyValue = ""found""
+    End Sub
+
+    Public Property Qr(ByVal tableBuffer As Integer, ByVal fieldNumber As Integer) As String
+        Get
+            Return _recordValues(tableBuffer, fieldNumber)
+        End Get
+        Set(ByVal value As String)
+            _recordValues(tableBuffer, fieldNumber) = value
+        End Set
+    End Property
+End Class
+
+Module Euro_Str
+    Public Db As New ClsDb
+    Public QAdr As Integer
+    Public CourseBuffer As Integer
+End Module
+
+Public Class Caller
+    Sub Find(recordPositionQAdr As String, errorCode As Integer)
+        Db.Get_Equal(QAdr, 0, Db.Qr(CourseBuffer, 21), recordPositionQAdr, errorCode)
+    End Sub
+End Class", @"
+public partial class ClsDb
+{
+    private readonly string[,] _recordValues = new string[11, 31];
+
+    public void Get_Equal(ref int tableBuffer, ref int keyIndex, ref string keyValue, ref string recordPosition, ref int errorNumber)
+    {
+        keyValue = ""found"";
+    }
+
+    public string get_Qr(int tableBuffer, int fieldNumber)
+    {
+        return _recordValues[tableBuffer, fieldNumber];
+    }
+    public void set_Qr(int tableBuffer, int fieldNumber, string value)
+    {
+        _recordValues[tableBuffer, fieldNumber] = value;
+    }
+}
+
+internal static partial class Euro_Str
+{
+    public static ClsDb Db = new ClsDb();
+    public static int QAdr;
+    public static int CourseBuffer;
+}
+
+public partial class Caller
+{
+    public void Find(string recordPositionQAdr, int errorCode)
+    {
+        int argkeyIndex = 0;
+        string argkeyValue = Euro_Str.Db.get_Qr(Euro_Str.CourseBuffer, 21);
+        Euro_Str.Db.Get_Equal(ref Euro_Str.QAdr, ref argkeyIndex, ref argkeyValue, ref recordPositionQAdr, ref errorCode);
+        Euro_Str.Db.set_Qr(Euro_Str.CourseBuffer, 21, argkeyValue);
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefPropertyTargetEvaluatesReceiverAndIndexesOnceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Private _index As Integer
+
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Default Public Property Item(i As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Public Property Plain As String
+
+    Function NextIndex() As Integer
+        Return 1
+    End Function
+
+    Function GetC() As C
+        Return Me
+    End Function
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+
+    Shared Sub SetValueAndIndex(ByRef value As String, ByRef index As Integer)
+    End Sub
+
+    Sub UsesTwice(other As C)
+        Dim i = 1
+        SetValue(Qr((i), 2)) ' Locals, constants and fields are evaluated again
+        SetValue(other.Qr(_index, NextIndex()))
+        SetValue(GetC().Qr(1, 2))
+        SetValue(GetC().Plain)
+        SetValue(other(NextIndex()))
+        SetValueAndIndex(other.Qr(i, 2), i) ' i is written by the call
+    End Sub
+End Class", @"
+public partial class C
+{
+    private int _index;
+
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+
+    public string this[int i]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+
+    public string Plain { get; set; }
+
+    public int NextIndex()
+    {
+        return 1;
+    }
+
+    public C GetC()
+    {
+        return this;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+
+    public static void SetValueAndIndex(ref string value, ref int index)
+    {
+    }
+
+    public void UsesTwice(C other)
+    {
+        int i = 1;
+        string argvalue = get_Qr(i, 2);
+        SetValue(ref argvalue);
+        set_Qr(i, 2, argvalue); // Locals, constants and fields are evaluated again
+        var tmp = NextIndex();
+        string argvalue1 = other.get_Qr(_index, tmp);
+        SetValue(ref argvalue1);
+        other.set_Qr(_index, tmp, argvalue1);
+        var tmp1 = GetC();
+        string argvalue2 = tmp1.get_Qr(1, 2);
+        SetValue(ref argvalue2);
+        tmp1.set_Qr(1, 2, argvalue2);
+        var tmp2 = GetC();
+        string argvalue3 = tmp2.Plain;
+        SetValue(ref argvalue3);
+        tmp2.Plain = argvalue3;
+        var tmp3 = NextIndex();
+        string argvalue4 = other[tmp3];
+        SetValue(ref argvalue4);
+        other[tmp3] = argvalue4;
+        var tmp4 = i;
+        string argvalue5 = other.get_Qr(tmp4, 2);
+        SetValueAndIndex(ref argvalue5, ref i);
+        other.set_Qr(tmp4, 2, argvalue5); // i is written by the call
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefPropertyTargetCopiesOnlyFieldsThatCanChangeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Db
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Class Fields
+    Private ReadOnly _readOnlyIndex As Integer = 1
+    Private _neverWritten As Integer
+    Private _assignedInConstructor As Integer
+    Private _writtenElsewhere As Integer
+    Public PublicIndex As Integer
+    Private _db As New Db
+
+    Public Sub New()
+        _assignedInConstructor = 2
+    End Sub
+
+    Sub Reset()
+        _writtenElsewhere = 0
+    End Sub
+
+    Sub UsesFields()
+        SetValue(_db.Qr(_readOnlyIndex, _neverWritten))
+        SetValue(_db.Qr(_assignedInConstructor, _writtenElsewhere))
+        SetValue(_db.Qr(PublicIndex, 1))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"
+public partial class Db
+{
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+}
+
+public partial class Fields
+{
+    private readonly int _readOnlyIndex = 1;
+    private int _neverWritten;
+    private int _assignedInConstructor;
+    private int _writtenElsewhere;
+    public int PublicIndex;
+    private Db _db = new Db();
+
+    public Fields()
+    {
+        _assignedInConstructor = 2;
+    }
+
+    public void Reset()
+    {
+        _writtenElsewhere = 0;
+    }
+
+    public void UsesFields()
+    {
+        string argvalue = _db.get_Qr(_readOnlyIndex, _neverWritten);
+        SetValue(ref argvalue);
+        _db.set_Qr(_readOnlyIndex, _neverWritten, argvalue);
+        var tmp = _writtenElsewhere;
+        string argvalue1 = _db.get_Qr(_assignedInConstructor, tmp);
+        SetValue(ref argvalue1);
+        _db.set_Qr(_assignedInConstructor, tmp, argvalue1);
+        var tmp1 = PublicIndex;
+        string argvalue2 = _db.get_Qr(tmp1, 1);
+        SetValue(ref argvalue2);
+        _db.set_Qr(tmp1, 1, argvalue2);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefPropertyTargetCopiesFieldsWrittenAfterConstructionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Public Class Db
+    Public Property Qr(a As Object) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Structure Point
+    Public X As Integer
+End Structure
+
+Public Class C
+    Private _forVar As Integer
+    Private _forEachVar As Integer
+    Private _reDimmed As Integer()
+    Private _erased As Integer()
+    Private _midText As String
+    Private _lateBoundArg As Integer
+    Private _writtenInConstructorLambda As Integer
+    Private _writtenOnOtherInstance As Integer
+    Private Shared _sharedWrittenInInstanceConstructor As Integer
+    Private _byInitializer As Integer
+    Private _initialized As Integer = Inc(_byInitializer)
+    Private Shared _sharedByInitializer As Integer
+    Private Shared _sharedInitialized As Integer = Inc(_sharedByInitializer)
+    Private Shared _sharedInSharedConstructor As Integer
+    Friend _friendNeverWritten As Integer
+    Private _point As Point
+    Private ReadOnly _db As New Db
+
+    Shared Sub New()
+        _sharedInSharedConstructor = 1
+    End Sub
+
+    Public Sub New(other As C)
+        Dim a As Action = Sub() _writtenInConstructorLambda = 1
+        other._writtenOnOtherInstance = 1
+        _sharedWrittenInInstanceConstructor = 1
+    End Sub
+
+    Sub Writes(o As Object)
+        For _forVar = 1 To 2
+        Next
+        For Each _forEachVar In {1}
+        Next
+        ReDim _reDimmed(3)
+        Erase _erased
+        Mid(_midText, 1) = ""x""
+        o.Foo(_lateBoundArg)
+    End Sub
+
+    Sub UsesFields()
+        SetValue(_db.Qr(_forVar))
+        SetValue(_db.Qr(_forEachVar))
+        SetValue(_db.Qr(_reDimmed))
+        SetValue(_db.Qr(_erased))
+        SetValue(_db.Qr(_midText))
+        SetValue(_db.Qr(_lateBoundArg))
+        SetValue(_db.Qr(_writtenInConstructorLambda))
+        SetValue(_db.Qr(_writtenOnOtherInstance))
+        SetValue(_db.Qr(_sharedWrittenInInstanceConstructor))
+        SetValue(_db.Qr(_byInitializer)) ' Reused from here on
+        SetValue(_db.Qr(_sharedByInitializer))
+        SetValue(_db.Qr(_sharedInSharedConstructor))
+        SetValue(_db.Qr(_friendNeverWritten))
+        SetValue(_db.Qr(_point)) ' A structure can change without being assigned
+    End Sub
+
+    Shared Function Inc(ByRef x As Integer) As Integer
+        x += 1
+        Return x
+    End Function
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class Db
+{
+    public string get_Qr(object a)
+    {
+        return """";
+    }
+    public void set_Qr(object a, string value)
+    {
+    }
+}
+
+public partial struct Point
+{
+    public int X;
+}
+
+public partial class C
+{
+    private int _forVar;
+    private int _forEachVar;
+    private int[] _reDimmed;
+    private int[] _erased;
+    private string _midText;
+    private int _lateBoundArg;
+    private int _writtenInConstructorLambda;
+    private int _writtenOnOtherInstance;
+    private static int _sharedWrittenInInstanceConstructor;
+    private int _byInitializer;
+    private int _initialized;
+    private static int _sharedByInitializer;
+    private static int _sharedInitialized = Inc(ref _sharedByInitializer);
+    private static int _sharedInSharedConstructor;
+    internal int _friendNeverWritten;
+    private Point _point;
+    private readonly Db _db = new Db();
+
+    static C()
+    {
+        _sharedInSharedConstructor = 1;
+    }
+
+    public C(C other)
+    {
+        _initialized = Inc(ref _byInitializer);
+        Action a = () => _writtenInConstructorLambda = 1;
+        other._writtenOnOtherInstance = 1;
+        _sharedWrittenInInstanceConstructor = 1;
+    }
+
+    public void Writes(object o)
+    {
+        for (_forVar = 1; _forVar <= 2; _forVar++)
+        {
+        }
+        foreach (var current_forEachVar in new[] { 1 })
+            _forEachVar = current_forEachVar;
+        _reDimmed = new int[4];
+        _erased = null;
+        StringType.MidStmtStr(ref _midText, 1, ""x"".Length, ""x"");
+        ((dynamic)o).Foo(_lateBoundArg);
+    }
+
+    public void UsesFields()
+    {
+        var tmp = _forVar;
+        string argvalue = _db.get_Qr(tmp);
+        SetValue(ref argvalue);
+        _db.set_Qr(tmp, argvalue);
+        var tmp1 = _forEachVar;
+        string argvalue1 = _db.get_Qr(tmp1);
+        SetValue(ref argvalue1);
+        _db.set_Qr(tmp1, argvalue1);
+        var tmp2 = _reDimmed;
+        string argvalue2 = _db.get_Qr(tmp2);
+        SetValue(ref argvalue2);
+        _db.set_Qr(tmp2, argvalue2);
+        var tmp3 = _erased;
+        string argvalue3 = _db.get_Qr(tmp3);
+        SetValue(ref argvalue3);
+        _db.set_Qr(tmp3, argvalue3);
+        var tmp4 = _midText;
+        string argvalue4 = _db.get_Qr(tmp4);
+        SetValue(ref argvalue4);
+        _db.set_Qr(tmp4, argvalue4);
+        var tmp5 = _lateBoundArg;
+        string argvalue5 = _db.get_Qr(tmp5);
+        SetValue(ref argvalue5);
+        _db.set_Qr(tmp5, argvalue5);
+        var tmp6 = _writtenInConstructorLambda;
+        string argvalue6 = _db.get_Qr(tmp6);
+        SetValue(ref argvalue6);
+        _db.set_Qr(tmp6, argvalue6);
+        var tmp7 = _writtenOnOtherInstance;
+        string argvalue7 = _db.get_Qr(tmp7);
+        SetValue(ref argvalue7);
+        _db.set_Qr(tmp7, argvalue7);
+        var tmp8 = _sharedWrittenInInstanceConstructor;
+        string argvalue8 = _db.get_Qr(tmp8);
+        SetValue(ref argvalue8);
+        _db.set_Qr(tmp8, argvalue8);
+        string argvalue9 = _db.get_Qr(_byInitializer);
+        SetValue(ref argvalue9);
+        _db.set_Qr(_byInitializer, argvalue9); // Reused from here on
+        string argvalue10 = _db.get_Qr(_sharedByInitializer);
+        SetValue(ref argvalue10);
+        _db.set_Qr(_sharedByInitializer, argvalue10);
+        string argvalue11 = _db.get_Qr(_sharedInSharedConstructor);
+        SetValue(ref argvalue11);
+        _db.set_Qr(_sharedInSharedConstructor, argvalue11);
+        string argvalue12 = _db.get_Qr(_friendNeverWritten);
+        SetValue(ref argvalue12);
+        _db.set_Qr(_friendNeverWritten, argvalue12);
+        var tmp9 = _point;
+        string argvalue13 = _db.get_Qr(tmp9);
+        SetValue(ref argvalue13);
+        _db.set_Qr(tmp9, argvalue13); // A structure can change without being assigned
+    }
+
+    public static int Inc(ref int x)
+    {
+        x += 1;
+        return x;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefPropertyTargetCopiesFriendFieldsVisibleToFriendAssembliesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"<Assembly: System.Runtime.CompilerServices.InternalsVisibleTo(""Other"")>
+
+Public Class Db
+    Public Property Qr(a As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Class C
+    Friend _friendNeverWritten As Integer
+    Private _privateNeverWritten As Integer
+    Private Shared _sharedWrittenByAnotherTypesConstructor As Integer
+    Private ReadOnly _db As New Db
+
+    Private Class Other
+        Sub New()
+            C._sharedWrittenByAnotherTypesConstructor = 1
+        End Sub
+    End Class
+
+    Sub UsesFields()
+        SetValue(_db.Qr(_friendNeverWritten))
+        SetValue(_db.Qr(_privateNeverWritten))
+        SetValue(_db.Qr(_sharedWrittenByAnotherTypesConstructor))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo(""Other"")]
+
+public partial class Db
+{
+    public string get_Qr(int a)
+    {
+        return """";
+    }
+    public void set_Qr(int a, string value)
+    {
+    }
+}
+
+public partial class C
+{
+    internal int _friendNeverWritten;
+    private int _privateNeverWritten;
+    private static int _sharedWrittenByAnotherTypesConstructor;
+    private readonly Db _db = new Db();
+
+    private partial class Other
+    {
+        public Other()
+        {
+            _sharedWrittenByAnotherTypesConstructor = 1;
+        }
+    }
+
+    public void UsesFields()
+    {
+        var tmp = _friendNeverWritten;
+        string argvalue = _db.get_Qr(tmp);
+        SetValue(ref argvalue);
+        _db.set_Qr(tmp, argvalue);
+        string argvalue1 = _db.get_Qr(_privateNeverWritten);
+        SetValue(ref argvalue1);
+        _db.set_Qr(_privateNeverWritten, argvalue1);
+        var tmp1 = _sharedWrittenByAnotherTypesConstructor;
+        string argvalue2 = _db.get_Qr(tmp1);
+        SetValue(ref argvalue2);
+        _db.set_Qr(tmp1, argvalue2);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefPropertyTargetReusesIntrinsicOperatorsOnReusableOperandsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Option Strict Off
+
+Public Structure Money
+    Public Shared Operator +(a As Money, b As Money) As Integer
+        Return 0
+    End Operator
+End Structure
+
+Public Class C
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Sub UsesOperators(i As Integer, o As Object, m As Money)
+        SetValue(Qr(i + 1, -i))
+        SetValue(Qr(o + 1, 2))
+        SetValue(Qr(m + m, 2))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial struct Money
+{
+    public static int operator +(Money a, Money b)
+    {
+        return 0;
+    }
+}
+
+public partial class C
+{
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+
+    public void UsesOperators(int i, object o, Money m)
+    {
+        string argvalue = get_Qr(i + 1, -i);
+        SetValue(ref argvalue);
+        set_Qr(i + 1, -i, argvalue);
+        var tmp = Conversions.ToInteger(Operators.AddObject(o, 1));
+        string argvalue1 = get_Qr(tmp, 2);
+        SetValue(ref argvalue1);
+        set_Qr(tmp, 2, argvalue1);
+        var tmp1 = m + m;
+        string argvalue2 = get_Qr(tmp1, 2);
+        SetValue(ref argvalue2);
+        set_Qr(tmp1, 2, argvalue2);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The comment on Option Strict Off is lost before the added using directive
+    }
+
+    [Fact]
+    public async Task ModuleParameterizedPropertyIsWrittenBackThroughItsSetterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module M
+    Private ReadOnly _values As New System.Collections.Generic.Dictionary(Of Integer, String)
+
+    Property Qr(i As Integer) As String
+        Get
+            Return _values(i)
+        End Get
+        Set(value As String)
+            _values(i) = value
+        End Set
+    End Property
+
+    Sub UsesQr()
+        SetValue(Qr(1))
+    End Sub
+
+    Sub SetValue(ByRef value As String)
+    End Sub
+End Module", @"using System.Collections.Generic;
+
+internal static partial class M
+{
+    private readonly static Dictionary<int, string> _values = new Dictionary<int, string>();
+
+    public static string get_Qr(int i)
+    {
+        return _values[i];
+    }
+    public static void set_Qr(int i, string value)
+    {
+        _values[i] = value;
+    }
+
+    public static void UsesQr()
+    {
+        string argvalue = get_Qr(1);
+        SetValue(ref argvalue);
+        set_Qr(1, argvalue);
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefDefaultPropertyOnMeIsWrittenBackWithoutCopyingMeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Default Public Property Item(i As Integer, j As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Sub M(i As Integer, values As Object())
+        SetValue(Me(i, 5))
+        SetValue(Me.Item(i, 6))
+        SetNumber(values(i))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+
+    Shared Sub SetNumber(ByRef value As Integer)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public string this[int i, int j]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+
+    public void M(int i, object[] values)
+    {
+        string argvalue = this[i, 5];
+        SetValue(ref argvalue);
+        this[i, 5] = argvalue;
+        string argvalue1 = this[i, 6];
+        SetValue(ref argvalue1);
+        this[i, 6] = argvalue1;
+        int argvalue2 = Conversions.ToInteger(values[i]);
+        SetNumber(ref argvalue2);
+        values[i] = argvalue2;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+
+    public static void SetNumber(ref int value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefDefaultPropertyOnMyBaseIsWrittenBackThroughBaseAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class B
+    Default Public Property Item(i As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+End Class
+
+Public Class C
+    Inherits B
+
+    Sub M(i As Integer)
+        SetValue(MyBase.Item(i))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+End Class", @"
+public partial class B
+{
+    public string this[int i]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+}
+
+public partial class C : B
+{
+
+    public void M(int i)
+    {
+        string argvalue = base[i];
+        SetValue(ref argvalue);
+        base[i] = argvalue;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ParameterizedPropertyInAStructureOrWithBlockIsWrittenBackInTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Private _n As Integer
+
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Default Public Property Item(a As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Public Function NextIndex() As Integer
+        _n += 1
+        Return _n
+    End Function
+
+    Public Sub M(i As Integer)
+        If SetValue(Qr(NextIndex(), 2)) Then
+        End If
+        If SetValue(Me(i)) Then
+        End If
+    End Sub
+
+    Public Shared Sub WithByRef(ByRef s As S)
+        With s
+            If SetValue(.Qr(.NextIndex(), 2)) Then
+            End If
+        End With
+    End Sub
+
+    Private Shared Function SetValue(ByRef v As String) As Boolean
+        v = ""changed""
+        Return True
+    End Function
+End Structure
+
+Public Class Holder
+    Public F As S
+
+    Public Sub WithField()
+        With F
+            If SetValue(.Qr(.NextIndex(), 2)) Then
+            End If
+        End With
+    End Sub
+
+    Private Shared Function SetValue(ByRef v As String) As Boolean
+        Return True
+    End Function
+End Class", @"
+public partial struct S
+{
+    private int _n;
+
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+
+    public string this[int a]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+
+    public int NextIndex()
+    {
+        _n += 1;
+        return _n;
+    }
+
+    public void M(int i)
+    {
+        bool localSetValue(ref S self) { var tmp = self.NextIndex(); string argv = self.get_Qr(tmp, 2); var ret = SetValue(ref argv); self.set_Qr(tmp, 2, argv); return ret; }
+
+        if (localSetValue(ref this))
+        {
+        }
+        bool localSetValue1(ref S self) { string argv1 = self[i]; var ret = SetValue(ref argv1); self[i] = argv1; return ret; }
+
+        if (localSetValue1(ref this))
+        {
+        }
+    }
+
+    public static void WithByRef(ref S s)
+    {
+        bool localSetValue(ref S s) { var tmp1 = s.NextIndex(); string argv2 = s.get_Qr(tmp1, 2); var ret = SetValue(ref argv2); s.set_Qr(tmp1, 2, argv2); return ret; }
+
+        if (localSetValue(ref s))
+        {
+        }
+    }
+
+    private static bool SetValue(ref string v)
+    {
+        v = ""changed"";
+        return true;
+    }
+}
+
+public partial class Holder
+{
+    public S F;
+
+    public void WithField()
+    {
+        {
+            ref var withBlock = ref F;
+            bool localSetValue(ref S withBlock) { var tmp2 = withBlock.NextIndex(); string argv3 = withBlock.get_Qr(tmp2, 2); var ret = SetValue(ref argv3); withBlock.set_Qr(tmp2, 2, argv3); return ret; }
+
+            if (localSetValue(ref withBlock))
+            {
+            }
+        }
+    }
+
+    private static bool SetValue(ref string v)
+    {
+        return true;
+    }
+}");
     }
 }

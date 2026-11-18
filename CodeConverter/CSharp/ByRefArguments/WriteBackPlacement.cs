@@ -33,7 +33,8 @@ internal class WriteBackPlacement
     public async Task<InvocationExpressionSyntax> HoistAndCallLocalFunctionAsync(VBasic.VisualBasicSyntaxNode invocation, IMethodSymbol invocationSymbol, ExpressionSyntax csExpression)
     {
         // Each local function is its own scope, so only names visible at the call can clash, e.g. a parameter used in the argument
-        var retVariableName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, new HashSet<string>(), invocation, "ret");
+        var namesInLocalFunction = new HashSet<string>();
+        var retVariableName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "ret");
         var localFuncName = $"local{invocationSymbol.Name}";
 
         var callAndStoreResult = CommonConversions.CreateLocalVariableDeclarationAndAssignment(retVariableName, csExpression);
@@ -45,30 +46,80 @@ internal class WriteBackPlacement
         );
         var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
 
-        // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
         var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
-        var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
-            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
-            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
-            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
-        var (args, @params) = CreateArgumentsAndParametersLists(refParametersOfParent);
+        var arguments = new List<ArgumentSyntax>();
+        var parameters = new List<ParameterSyntax>();
+        if (IsInStructAndUsesThis(enclosingSymbol, block)) {
+            var selfName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "self");
+            block = block.ReplaceNodes(block.DescendantNodes().OfType<ThisExpressionSyntax>(), (_, _) => ValidSyntaxFactory.IdentifierName(selfName));
+            arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ThisExpression()).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
+            parameters.Add(RefParameter(selfName, CommonConversions.GetTypeSyntax(enclosingSymbol.ContainingType)));
+        }
 
-        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(@params)));
-        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(args));
+        AddArgumentsAndParameters(RefParametersUsedIn(invocation, block, enclosingSymbol));
 
-        (SeparatedSyntaxList<ArgumentSyntax>, SeparatedSyntaxList<ParameterSyntax>) CreateArgumentsAndParametersLists(List<IParameterSymbol> parameterSymbols)
+        foreach (var (reference, type) in RefLocalReferences.FindIn(block)) {
+            arguments.Add(SyntaxFactory.Argument(reference).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
+            parameters.Add(RefParameter(reference.Identifier.ValueText, type));
+        }
+
+        var localFunc = _typeContext.PerScopeState.Hoist(new HoistedFunction(localFuncName, returnType, block, SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(parameters))));
+        return SyntaxFactory.InvocationExpression(localFunc.TempIdentifier, SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+
+        static ParameterSyntax RefParameter(string name, TypeSyntax type) =>
+            SyntaxFactory.Parameter(SyntaxFactory.Identifier(name))
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.RefKeyword)))
+                .WithType(type);
+
+        void AddArgumentsAndParameters(List<IParameterSymbol> parameterSymbols)
         {
-            var arguments = new List<ArgumentSyntax>();
-            var parameters = new List<ParameterSyntax>();
             foreach (var p in parameterSymbols) {
-                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
+                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, ValidSyntaxFactory.IdentifierName(p.Name));
                 arguments.Add(arg);
                 var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
-                parameters.Add(par.WithDefault(null));
+                parameters.Add(par.WithIdentifier(CommonConversions.CsEscapedIdentifier(p.Name)).WithDefault(null));
             }
-            return (SyntaxFactory.SeparatedList(arguments), SyntaxFactory.SeparatedList(parameters));
         }
     }
+
+    /// <summary>
+    /// A local function can't use the enclosing method's ByRef parameters (CS1628), so it takes each one its converted body uses as a <c>ref</c> parameter.
+    /// The candidates are the parameters the VB call references, so a type or namespace with the same name as a parameter (<c>H.S</c> beside <c>h As H</c>) isn't one.
+    /// A <c>With</c> block's implicit receiver counts as its <c>With</c> expression, because the converter may reuse that expression directly
+    /// (<c>With b : Inc(.X)</c> becomes <c>Inc(ref b.X)</c>).
+    /// A candidate is then dropped if the converted body doesn't mention it, i.e. the <c>With</c> header was evaluated into <c>withBlock</c> (<c>With arr(i)</c>).
+    /// The converter writes a parameter reference with the declared casing, escaped like any identifier (<c>@params</c>, whose token text keeps the <c>@</c>), so the names compare ordinally after the same escaping.
+    /// </summary>
+    private List<IParameterSymbol> RefParametersUsedIn(VBasic.VisualBasicSyntaxNode invocation, BlockSyntax block, ISymbol enclosingSymbol)
+    {
+        if (_semanticModel.GetOperation(invocation) is not { } operation) return new List<IParameterSymbol>();
+        var candidates = DescendantsResolvingWithReceivers(operation)
+            .OfType<IParameterReferenceOperation>().Select(p => p.Parameter)
+            .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
+            .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
+        if (candidates.Count == 0) return candidates;
+        var namesUsed = new HashSet<string>(block.DescendantNodes().OfType<IdentifierNameSyntax>().Where(IsNotAMemberName).Select(n => n.Identifier.ValueText), StringComparer.Ordinal);
+        return candidates.Where(p => namesUsed.Contains(CommonConversions.CsEscapedIdentifier(p.Name).ValueText)).ToList();
+
+        static bool IsNotAMemberName(IdentifierNameSyntax name) =>
+            name.Parent switch {
+                MemberAccessExpressionSyntax member => member.Expression == name,
+                MemberBindingExpressionSyntax or NameColonSyntax or NameEqualsSyntax => false,
+                AssignmentExpressionSyntax { Parent: InitializerExpressionSyntax initializer } assignment when initializer.IsKind(CS.SyntaxKind.ObjectInitializerExpression) => assignment.Left != name,
+                _ => true
+            };
+    }
+
+    /// <summary>
+    /// The operations within <paramref name="operation"/>, where a <c>With</c> block's implicit receiver is replaced by the operations of the <c>With</c> expression.
+    /// </summary>
+    private IEnumerable<IOperation> DescendantsResolvingWithReceivers(IOperation operation) =>
+        operation.DescendantsAndSelf().SelectMany(o =>
+            o is IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ImplicitReceiver } &&
+            o.Syntax is VBSyntax.ExpressionSyntax { Parent: VBSyntax.WithStatementSyntax } withExpression &&
+            _semanticModel.GetOperation(withExpression) is { } withOperation
+                ? DescendantsResolvingWithReceivers(withOperation)
+                : new[] { o });
 
     public bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
     {
@@ -84,7 +135,6 @@ internal class WriteBackPlacement
         }
 
         if (invocation.ArgumentList == null) return false;
-        if (IsInStructAndUsesThis(invocation)) return false;
         var definitelyExecutedAfterPrevious = DefinitelyExecutedAfterPreviousStatement(invocation);
         var assignmentChangesWhatIsWrittenBack = AssignmentChangesWhatIsWrittenBack(invocation, invocationSymbol);
         var nextStatementDefinitelyExecuted = NextStatementDefinitelyExecutedAfter(invocation) && !assignmentChangesWhatIsWrittenBack;
@@ -99,7 +149,8 @@ internal class WriteBackPlacement
             if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
             if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
             var argExpression = sas.Expression.SkipIntoParens();
-            if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
+            // A copy of a class's Me is the same reference whenever it's taken, but a structure's Me is copied by value, so it must be taken at the call
+            if (argExpression is VBSyntax.InstanceExpressionSyntax) return _semanticModel.GetTypeInfo(argExpression).Type?.IsValueType == true;
             return !_semanticModel.GetConstantValue(argExpression).HasValue;
         }
     }
@@ -168,14 +219,16 @@ internal class WriteBackPlacement
     }
 
     /// <summary>
-    /// Conservative version of _semanticModel.AnalyzeControlFlow(invocation).ExitPoints to account for exceptions
+    /// A local function in a struct can't use <c>this</c> (CS1673), but it can take it as a <c>ref</c> parameter: <c>local(ref this)</c>.
+    /// That's legal wherever VB can use <c>Me</c> in a structure: methods, property and event accessors, constructors (C# 11 structs are auto-default),
+    /// iterators and async methods (which work on a copy in both languages). VB has no read-only members, where <c>ref this</c> would be CS1605,
+    /// and doesn't allow <c>Me</c> in a lambda in a structure (BC36638), so the call is never inside one.
+    /// The converted body qualifies every instance member with <c>this</c> (the simplifier removes it later), so it uses <c>this</c> exactly when it contains one.
+    /// Deciding from the VB operation instead would have to resolve a <c>With</c> block's implicit receiver, which is <c>this</c> only for <c>With Me</c>.
     /// </summary>
-    /// <summary>
-    /// A local function in a struct can't use <c>this</c> (CS1673), so there the write-back stays after the statement: compiling but late, a known gap.
-    /// </summary>
-    private bool IsInStructAndUsesThis(VBSyntax.InvocationExpressionSyntax invocation) =>
-        _semanticModel.GetEnclosingSymbol(invocation.SpanStart) is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
-        _semanticModel.GetOperation(invocation)?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() != false;
+    private static bool IsInStructAndUsesThis(ISymbol enclosingSymbol, BlockSyntax block) =>
+        enclosingSymbol is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
+        block.DescendantNodes().OfType<ThisExpressionSyntax>().Any();
 
     private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
     {

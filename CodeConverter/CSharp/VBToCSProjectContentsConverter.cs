@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
@@ -22,6 +23,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
     private readonly IProgress<ConversionProgress> _progress;
     private readonly CancellationToken _cancellationToken;
     private ILookup<ITypeSymbol, ITypeSymbol> _typeToInheritors;
+    private IFieldMutationOracle _fieldMutations;
     private ErrUsage _errUsage;
 
     public VBToCSProjectContentsConverter(ConversionOptions conversionOptions,
@@ -49,6 +51,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
         _csharpViewOfVbSymbols = (CSharpCompilation)await _csharpReferenceProject.GetCompilationAsync(_cancellationToken);
         _designerToResxRelativePath = project.ReadVbEmbeddedResources().ToDictionary(r => r.LastGenOutput, r => r.RelativePath);
         SourceProject = await WithProjectLevelWinformsAdjustmentsAsync(project);
+        _fieldMutations = new FieldWriteAnalysis(await SourceProject.GetCompilationAsync(_cancellationToken));
         _errUsage = new ErrUsage(SourceProject);
 
         var compilation = await project.GetCompilationAsync(_cancellationToken);
@@ -79,7 +82,7 @@ internal class VBToCSProjectContentsConverter : IProjectContentsConverter
 
     public async Task<SyntaxNode> SingleFirstPassAsync(Document document)
     {
-        return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _typeToInheritors, _errUsage, _cancellationToken);
+        return await VisualBasicConverter.ConvertCompilationTreeAsync(document, _csharpViewOfVbSymbols, _csharpReferenceProject, OptionalOperations, _typeToInheritors, _fieldMutations, _errUsage, _cancellationToken);
     }
 
     public async Task<(Project project, List<WipFileConversion<DocumentId>> firstPassDocIds)> GetConvertedProjectAsync(WipFileConversion<SyntaxNode>[] firstPassResults)

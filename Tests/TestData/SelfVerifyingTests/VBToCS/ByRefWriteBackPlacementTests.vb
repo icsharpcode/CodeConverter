@@ -582,6 +582,362 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal("xxx", h.Plain)
     End Sub
 
+    <Fact>
+    Public Sub StructureIfConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        s.IfCondition()
+        Assert.Equal("get 0,set 1,then 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureElseIfConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        s.ElseIfCondition()
+        Assert.Equal("mark if,get 0,set 1,elseif 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureShortCircuitedOperandOnlyWritesBackWhenCalled()
+        Dim s As New LoggedValue(New List(Of String))
+        s.ShortCircuitedOperand(False)
+        s.ShortCircuitedOperand(True)
+        Assert.Equal("mark left,mark left,get 0,set 1,then 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureWhileConditionWritesBackEachTime()
+        Dim s As New LoggedValue(New List(Of String))
+        s.WhileCondition()
+        Assert.Equal("get 0,set 1,body 1,get 1,set 2,body 2,get 2,set 3", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureDoLoopUntilConditionWritesBackEachTime()
+        Dim s As New LoggedValue(New List(Of String))
+        s.DoLoopUntilCondition()
+        Assert.Equal("body 0,get 0,set 1,body 1,get 1,set 2", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureOperandWritesBackBeforeTheNextOperand()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(2, s.OperandFollowedByPeek())
+        Assert.Equal("get 0,set 1,peek 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureDeclaratorWritesBackBeforeTheNext()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(2, s.DeclaratorFollowedByPeek())
+        Assert.Equal("get 0,set 1,peek 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureNestedCallsWriteBackInnerFirst()
+        Dim s As New LoggedValue(New List(Of String))
+        s.NestedCalls()
+        Assert.Equal("get 0,get 0,set 1,set 0,then 0", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureInstanceMethodSeesItsOwnState()
+        Dim s As New LoggedValue(New List(Of String))
+        s.InstanceMethodInCondition()
+        Assert.Equal("get 0,instance 0,set 1,then 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureConstructorConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String), True)
+        Assert.Equal("get 0,set 1,then 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructurePropertyGetterConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(1, s.IncrementedIfPositive)
+        Assert.Equal("get 0,set 1,get 1", s.LogText)
+    End Sub
+
+    <Fact>
+    Public Sub StructureSharedMemberConditionWritesBackBeforeTheBody()
+        LoggedValue.SharedValue = 0
+        Assert.True(LoggedValue.SharedCondition())
+        Assert.Equal(1, LoggedValue.SharedValue)
+    End Sub
+
+    <Fact>
+    Public Sub WithStructureFieldConditionWritesBackBeforeTheBody()
+        Dim h As New CounterHolder
+        Assert.Equal(1, h.IncrementInWith())
+        Assert.Equal(1, h.Inner.P)
+    End Sub
+
+    <Fact>
+    Public Sub WithInsideALambdaArgumentStaysInTheLambda()
+        Dim h As New CounterHolder
+        Assert.Equal(13, h.WithInLambdaArgument())
+    End Sub
+    <Fact>
+    Public Sub WithByRefParameterConditionWritesBackBeforeTheBody()
+        Dim h As New CounterHolder
+        Dim c As New Counter
+        Assert.Equal(11, CounterHolder.IncrementInWithByRefParameters(h, c))
+        Assert.Equal(1, c.P)
+    End Sub
+    <Fact>
+    Public Sub WithOverAReassignedClassVariableKeepsTheOriginalObject()
+        Dim h As New CounterHolder
+        Dim original = h
+        With h
+            h = New CounterHolder
+            .Total = 1
+        End With
+        Assert.Equal("1,0", original.Total & "," & h.Total)
+    End Sub
+    <Fact>
+    Public Sub ByRefParametersWithKeywordNamesArePassedToTheLocalFunction()
+        Dim a As New Counter, b As New Counter, c As New Counter
+        Assert.True(IncrementKeywordNamedParameters(a, b, c))
+        Assert.Equal("1,1,1", a.P & "," & b.P & "," & c.P)
+    End Sub
+    Private Shared Function IncrementKeywordNamedParameters(ByRef [class] As Counter, ByRef params As Counter, ByRef [string] As Counter) As Boolean
+        If Increment([class].P) + Increment(params.P) + Increment([string].P) = 3 Then
+            Return [class].P + params.P + [string].P = 3
+        End If
+        Return False
+    End Function
+    <Fact>
+    Public Sub OutParameterNamedLikeItsTypeIsNotPassedToTheLocalFunction()
+        Tally.Count = 0
+        Dim created As Tally = Nothing
+        Assert.True(TryCreateTally(created))
+        Assert.Equal("1,True", Tally.Count & "," & (created IsNot Nothing))
+    End Sub
+    Private Shared Function TryCreateTally(<Out> ByRef tally As Tally) As Boolean
+        If Increment(Tally.Count) > 0 Then
+            tally = New Tally
+            Return True
+        End If
+        tally = Nothing
+        Return False
+    End Function
+    Private Class Tally
+        Public Shared Property Count As Integer
+    End Class
+    Private Class CounterHolder
+        Public Inner As Counter
+        Public Property Total As Integer
+
+        Public Shared Function IncrementInWithByRefParameters(ByRef holder As CounterHolder, ByRef counter As Counter) As Integer
+            Dim result = 0
+            With holder
+                If Increment(.Total) > 0 Then result = .Total * 10
+            End With
+            With counter
+                If Increment(.P) > 0 Then result += .P
+            End With
+            Return result
+        End Function
+        Public Function WithInLambdaArgument() As Integer
+            If AddResult(Total, Function()
+                                    With Inner
+                                        .P = 3
+                                    End With
+                                    Return 1
+                                End Function) > 0 Then Return Total * 10 + Inner.P
+            Return -1
+        End Function
+
+        Private Shared Function AddResult(ByRef target As Integer, f As Func(Of Integer)) As Integer
+            target += f()
+            Return target
+        End Function
+
+        Public Function IncrementInWith() As Integer
+            With Inner
+                If Increment(.P) > 0 Then Return .P
+            End With
+            Return -1
+        End Function
+    End Class
+
+    <Fact>
+    Public Sub StructureWithStructureFieldConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(1, s.IncrementInnerInWith())
+        Assert.Equal(1, s.Inner.P)
+    End Sub
+
+    <Fact>
+    Public Sub StructureWithMeConditionWritesBackBeforeTheBody()
+        Dim s As New LoggedValue(New List(Of String))
+        s.IfConditionInWithMe()
+        Assert.Equal("get 0,set 1,then 1", s.LogText)
+    End Sub
+    <Fact>
+    Public Sub StructureMePassedByRefIsCopiedAfterAnEarlierWriteBack()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(2, s.OperandThenMeByRef())
+    End Sub
+
+    <Fact>
+    Public Sub StructureMePassedByRefAfterAndAlsoIsCopiedAfterAnEarlierWriteBack()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.True(s.MeByRefAfterAndAlso())
+    End Sub
+
+    Private Structure LoggedValue
+        Public Shared SharedValue As Integer
+        Private ReadOnly _log As List(Of String)
+        Private _value As Integer
+        Public Inner As Counter
+
+        Public Sub New(log As List(Of String))
+            _log = log
+        End Sub
+
+        Public Sub New(log As List(Of String), incrementInCondition As Boolean)
+            _log = log
+            If incrementInCondition AndAlso Increment(Value) > 0 Then
+                _log.Add("then " & _value)
+            End If
+        End Sub
+
+        Public ReadOnly Property LogText As String
+            Get
+                Return String.Join(",", _log)
+            End Get
+        End Property
+
+        Public Property Value As Integer
+            Get
+                _log.Add("get " & _value)
+                Return _value
+            End Get
+            Set(v As Integer)
+                _log.Add("set " & v)
+                _value = v
+            End Set
+        End Property
+
+        Public ReadOnly Property IncrementedIfPositive As Integer
+            Get
+                If Increment(Value) > 0 Then
+                    Return Value
+                End If
+                Return -1
+            End Get
+        End Property
+
+        Private Function Mark(name As String, result As Boolean) As Boolean
+            _log.Add("mark " & name)
+            Return result
+        End Function
+
+        Private Function Peek() As Integer
+            _log.Add("peek " & _value)
+            Return _value
+        End Function
+
+        Private Function IncrementLogged(ByRef v As Integer) As Integer
+            _log.Add("instance " & _value)
+            v += 1
+            Return v
+        End Function
+
+        Public Sub IfCondition()
+            If Increment(Value) > 0 Then
+                _log.Add("then " & _value)
+            End If
+        End Sub
+
+        Public Sub ElseIfCondition()
+            If Mark("if", False) Then
+                _log.Add("if")
+            ElseIf Increment(Me.Value) > 0 Then
+                _log.Add("elseif " & _value)
+            End If
+        End Sub
+
+        Public Sub ShortCircuitedOperand(callIt As Boolean)
+            If Mark("left", callIt) AndAlso Increment(Value) > 0 Then
+                _log.Add("then " & _value)
+            End If
+        End Sub
+
+        Public Sub WhileCondition()
+            While Increment(Value) < 3
+                _log.Add("body " & _value)
+            End While
+        End Sub
+
+        Public Sub DoLoopUntilCondition()
+            Do
+                _log.Add("body " & _value)
+            Loop Until Increment(Value) >= 2
+        End Sub
+
+        Public Function OperandFollowedByPeek() As Integer
+            Return Increment(Value) + Peek()
+        End Function
+
+        Public Function DeclaratorFollowedByPeek() As Integer
+            Dim a = Increment(Value), b = Peek()
+            Return a + b
+        End Function
+
+        Public Sub NestedCalls()
+            If AddTo(Value, Increment(Value)) > 0 Then
+                _log.Add("then " & _value)
+            End If
+        End Sub
+
+        Public Sub InstanceMethodInCondition()
+            If IncrementLogged(Value) > 0 Then
+                _log.Add("then " & _value)
+            End If
+        End Sub
+
+        Public Function IncrementInnerInWith() As Integer
+            With Inner
+                If Increment(.P) > 0 Then Return .P
+            End With
+            Return -1
+        End Function
+
+        Public Sub IfConditionInWithMe()
+            With Me
+                If Increment(.Value) > 0 Then
+                    _log.Add("then " & _value)
+                End If
+            End With
+        End Sub
+        Public Function OperandThenMeByRef() As Integer
+            Return Increment(Value) + ValueOf(Me)
+        End Function
+
+        Public Function MeByRefAfterAndAlso() As Boolean
+            Return Increment(Value) > 0 AndAlso ValueOf(Me) = 1
+        End Function
+
+        Private Shared Function ValueOf(ByRef s As LoggedValue) As Integer
+            Return s._value
+        End Function
+
+        Public Shared Function SharedCondition() As Boolean
+            If Increment(SharedValue) > 0 Then
+                Return SharedValue = 1
+            End If
+            Return False
+        End Function
+    End Structure
+
+    Private Shared Function AddTo(ByRef target As Integer, amount As Integer) As Integer
+        target = 0
+        Return amount
+    End Function
+
     Private Shared Function Increment(ByRef value As Integer) As Integer
         value += 1
         Return value

@@ -649,6 +649,22 @@ internal class CommonConversions
         return (null, null);
     }
 
+    /// <summary>
+    /// A parameterized property's setter takes the value after the index parameters.
+    /// When an index argument is named, or an optional one is left out, the value must be named too, since a positional argument can't follow them.
+    /// </summary>
+    public static CSSyntax.ArgumentListSyntax AddSetterValueArgument(CSSyntax.ArgumentListSyntax indexArgs, IPropertySymbol property, ExpressionSyntax value)
+    {
+        var valueArg = SyntaxFactory.Argument(value);
+        var mustNameValue = indexArgs.Arguments.Count != property.GetParameters().Length ||
+                            indexArgs.Arguments.Any(t => t.NameColon != null);
+        if (mustNameValue) {
+            valueArg = valueArg.WithNameColon(SyntaxFactory.NameColon("value"));
+        }
+
+        return indexArgs.WithArguments(indexArgs.Arguments.Add(valueArg));
+    }
+
     private async Task<ExpressionSyntax> GetParameterizedSetterArgAsync(IOperation operation)
     {
         var vbNode = (VBSyntax.ExpressionSyntax) operation.Parent.Syntax.ChildNodes().ElementAt(1);
