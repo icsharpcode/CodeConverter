@@ -1425,7 +1425,7 @@ public partial class C
     }
 
     [Fact]
-    public async Task StructureKeepsStatementPlacementWhereALocalFunctionWouldNeedThisAsync()
+    public async Task StructureBlockHeaderDeclaratorAndCompoundAssignmentPassThisToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
     Public Property P As Integer
@@ -1457,29 +1457,29 @@ public partial struct S
 
     public void M()
     {
-        int argv = P;
-        switch (Inc(ref argv))
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        switch (localInc(ref this))
         {
             case 1:
                 Console.WriteLine(1);
                 break;
         }
-        P = argv;
-        int argv1 = P;
-        int argv2 = P;
-        int a = Inc(ref argv1);
-        int b = Inc(ref argv2);
-        P = argv1;
-        P = argv2;
-        int argv3 = P;
-        P += Inc(ref argv3);
-        P = argv3;
+        int localInc1(ref S self) { int argv1 = self.P; var ret = Inc(ref argv1); self.P = argv1; return ret; }
+
+        int localInc2(ref S self) { int argv2 = self.P; var ret = Inc(ref argv2); self.P = argv2; return ret; }
+
+        int a = localInc1(ref this);
+        int b = localInc2(ref this);
+        int localInc3(ref S self) { int argv3 = self.P; var ret = Inc(ref argv3); self.P = argv3; return ret; }
+
+        P += localInc3(ref this);
     }
-}", incompatibleWithAutomatedCommentTesting: true); // The write-back after the block moves line comments out of order
+}");
     }
 
     [Fact]
-    public async Task StructureKeepsStatementPlacementForOperandsThatWouldNeedThisAsync()
+    public async Task StructureOperandsPassThisToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
     Public Property P As Integer
@@ -1507,18 +1507,16 @@ public partial struct S
 
     public void M()
     {
-        int argv = P;
-        var ret = Inc(ref argv) + 1;
-        P = argv;
-        P = ret;
-        int argv1 = P;
-        int x = 1 + Inc(ref argv1);
-        P = argv1;
-        int argv2 = P;
-        int argv3 = Inc(ref argv2);
-        var ret1 = Inc(ref argv3);
-        P = argv2;
-        P = ret1;
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        P = localInc(ref this) + 1;
+        int localInc1(ref S self) { int argv1 = self.P; var ret = Inc(ref argv1); self.P = argv1; return ret; }
+
+        int x = 1 + localInc1(ref this);
+        int localInc2(ref S self) { int argv2 = self.P; var ret = Inc(ref argv2); self.P = argv2; return ret; }
+
+        int argv = localInc2(ref this);
+        P = Inc(ref argv);
     }
 }");
     }
@@ -1555,6 +1553,437 @@ public partial class C
         int localInc() { int argv = P; var ret = Inc(ref argv); P = argv; return ret; } ((dynamic)o).X = localInc();
     }
 }", incompatibleWithAutomatedCommentTesting: true); // The late-bound assignment is emitted on the local function's line
+    }
+    [Fact]
+    public async Task StructureConditionsPassThisToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Shared Counter As Integer
+    Public Property P As Integer
+    Private F As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Function InstanceInc(ByRef v As Integer) As Integer
+        v += F
+        Return v
+    End Function
+
+    Sub New(start As Integer)
+        F = start
+        If Inc(P) > F Then P = 0
+    End Sub
+
+    ReadOnly Property Incremented As Integer
+        Get
+            If Inc(P) > 0 Then Return P
+            Return 0
+        End Get
+    End Property
+
+    Sub M(b As Boolean, self As Integer)
+        If b AndAlso Inc(P) > self Then
+            P = 0
+        ElseIf InstanceInc(Me.P) > Inc(Inc(P)) Then
+            P = 1
+        End If
+        While Inc(P) < 10
+        End While
+        Do
+        Loop Until InstanceInc(P) > 20
+        If Inc(Counter) > 0 Then Counter = 0
+    End Sub
+End Structure", @"
+public partial struct S
+{
+    public static int Counter;
+    public int P { get; set; }
+    private int F;
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public int InstanceInc(ref int v)
+    {
+        v += F;
+        return v;
+    }
+
+    public S(int start)
+    {
+        F = start;
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        if (localInc(ref this) > F)
+            P = 0;
+    }
+
+    public int Incremented
+    {
+        get
+        {
+            int localInc(ref S self) { int argv1 = self.P; var ret = Inc(ref argv1); self.P = argv1; return ret; }
+
+            if (localInc(ref this) > 0)
+                return P;
+            return 0;
+        }
+    }
+
+    public void M(bool b, int self)
+    {
+        int localInc(ref S self1) { int argv2 = self1.P; var ret = Inc(ref argv2); self1.P = argv2; return ret; }
+        int localInstanceInc(ref S self1) { int argv3 = self1.P; var ret = self1.InstanceInc(ref argv3); self1.P = argv3; return ret; }
+
+        int localInc1(ref S self1) { int argv4 = self1.P; var ret = Inc(ref argv4); self1.P = argv4; return ret; }
+
+        int localInc2(ref S self1) { int argv5 = localInc1(ref self1); var ret = Inc(ref argv5); return ret; }
+
+        if (b && localInc(ref this) > self)
+        {
+            P = 0;
+        }
+        else if (localInstanceInc(ref this) > localInc2(ref this))
+        {
+            P = 1;
+        }
+        int localInc3(ref S self1) { int argv6 = self1.P; var ret = Inc(ref argv6); self1.P = argv6; return ret; }
+
+        while (localInc3(ref this) < 10)
+        {
+        }
+        int localInstanceInc1(ref S self1) { int argv7 = self1.P; var ret = self1.InstanceInc(ref argv7); self1.P = argv7; return ret; }
+
+        do
+        {
+        }
+        while (localInstanceInc1(ref this) <= 20);
+        if (Inc(ref Counter) > 0)
+            Counter = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureWithBlockOnALocalDoesNotPassThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Structure S
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        Dim b As New Box
+        With b
+            If Inc(.X) > 0 Then .X = 0
+        End With
+    End Sub
+End Structure", @"
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial struct S
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        var b = new Box();
+        int localInc() { int argv = b.X; var ret = Inc(ref argv); b.X = argv; return ret; }
+
+        if (localInc() > 0)
+            b.X = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureWithMePassesThisToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        With Me
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        if (localInc(ref this) > 0)
+            P = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task RefLocalDeclaredInsideTheLocalFunctionIsNotPassedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class C
+    Public Property Total As Integer
+    Public Inner As T
+
+    Shared Function Apply(ByRef v As Integer, f As System.Func(Of Integer)) As Integer
+        Return v + f()
+    End Function
+
+    Sub M()
+        If Apply(Total, Function()
+                            With Inner
+                                .P = 3
+                            End With
+                            Return 1
+                        End Function) > 0 Then Total = 0
+    End Sub
+End Class", @"using System;
+
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public int Total { get; set; }
+    public T Inner;
+
+    public static int Apply(ref int v, Func<int> f)
+    {
+        return v + f();
+    }
+
+    public void M()
+    {
+        int localApply()
+        {
+            int argv = Total;
+            var ret = Apply(ref argv, () =>
+            {
+                {
+                    ref var withBlock = ref Inner;
+                    withBlock.P = 3;
+                }
+                return 1;
+            });
+            Total = argv;
+            return ret;
+        }
+
+        if (localApply() > 0)
+            Total = 0;
+    }
+}", incompatibleWithAutomatedCommentTesting: true); // The multi-line lambda is emitted inside the local function, before the If's line
+    }
+    [Fact]
+    public async Task WithByRefParameterIsPassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M(ByRef b As Box, ByRef p As T)
+        With b
+            If Inc(.X) > 0 Then .X = 0
+        End With
+        With p
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class", @"
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M(ref Box b, ref T p)
+    {
+        int localInc(ref Box b) { int argv = b.X; var ret = Inc(ref argv); b.X = argv; return ret; }
+
+        if (localInc(ref b) > 0)
+            b.X = 0;
+        int localInc1(ref T p) { int argv1 = p.P; var ret = Inc(ref argv1); p.P = argv1; return ret; }
+
+        if (localInc1(ref p) > 0)
+            p.P = 0;
+    }
+}");
+    }
+    [Fact]
+    public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class C
+    Public Inner As T
+
+    Sub M()
+        With Inner
+            If S.Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class
+
+Public Structure S
+    Public Inner As T
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        With Inner
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Structure", @"
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public T Inner;
+
+    public void M()
+    {
+        {
+            ref var withBlock = ref Inner;
+            int localInc(ref T withBlock) { int argv = withBlock.P; var ret = S.Inc(ref argv); withBlock.P = argv; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.P = 0;
+        }
+    }
+}
+
+public partial struct S
+{
+    public T Inner;
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        {
+            ref var withBlock = ref Inner;
+            int localInc(ref T withBlock) { int argv1 = withBlock.P; var ret = Inc(ref argv1); withBlock.P = argv1; return ret; }
+
+            if (localInc(ref withBlock) > 0)
+                withBlock.P = 0;
+        }
+    }
+}");
+    }
+    [Fact]
+    public async Task StructureMePassedByRefAfterAWriteBackTakesTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function ValueOf(ByRef s As S) As Integer
+        Return s.P
+    End Function
+
+    Function M() As Integer
+        Return Inc(P) + ValueOf(Me)
+    End Function
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static int ValueOf(ref S s)
+    {
+        return s.P;
+    }
+
+    public int M()
+    {
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        int localValueOf(ref S self) { var args = self; var ret = ValueOf(ref args); return ret; }
+
+        return localInc(ref this) + localValueOf(ref this);
+    }
+}");
     }
 
     [Fact]

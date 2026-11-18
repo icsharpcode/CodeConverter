@@ -27,6 +27,10 @@ Sources: [passing arguments by value and by reference](https://learn.microsoft.c
 
 Within each of these, one call's write-backs are hoisted after its whole argument list, last argument first, so a nested call's come before them: `ByRefArgumentHoister.WithWriteBacksInVbOrderAsync`.
 
+In a `Structure`, a local function can't use `this` (CS1673). When the call uses an instance member, the local function takes `ref S self` and is called with `ref this`, and its body uses `self` for `this` (the converted body always qualifies instance members, which are only simplified later). `ref this` is legal wherever VB can use `Me` in a structure; VB has no read-only members (where it's CS1605) and no `Me` in a structure's lambdas (BC36638): `WriteBackPlacement.HoistAndCallLocalFunctionAsync`.
+
+A local function can't use a ref local either (CS8175), such as the `ref var withBlock` of a `With` over a structure field. References to a ref local are marked with its type, and the local function takes each one it uses from outside its body as a `ref` parameter of the same name: `RefLocalReferences`. The enclosing method's ByRef parameters are passed the same way (CS1628), including one reused directly as a `With` receiver (`With b : Inc(.X)` becomes `Inc(ref b.X)`): `WriteBackPlacement.DescendantsResolvingWithReceivers`.
+
 The classes in this folder hold the ByRef-specific decisions. The placement mechanics stay with the code they extend: the hoisted node types and `PerScopeState` (the hoisting for every feature), `MethodBodyExecutableStatementVisitor` (jumps) and `CommonConversions` (field initializers, whose method wraps any hoisted statement, not only ByRef ones).
 
 ### What the write-back writes to
@@ -58,7 +62,6 @@ Known gaps:
 * An array element whose array isn't a variable, passed to a ByRef parameter of a wider type (`BumpLong(GetArr()(Next1()))` with an `Integer` array and a `ByRef Long` parameter), isn't written back: `IsRefArrayAcces` only treats it as an array element when the array is passed inline. VB writes it back.
 * The receiver of an extension method that takes it ByRef has an empty `NoneOperation` in Roslyn's VB operation tree, so it gets none of the above: a parameterized property there stays `this.Qr(2)` (CS1061), and a receiver like `GetC().Plain` is evaluated twice. A fix would rebuild the target from symbols and syntax.
 * A late-bound parameterized property (`SetValue(o.Qr(1))` with `o As Object`) converts to `((dynamic)o).Qr(1)`, which throws `RuntimeBinderException`, and isn't written back. VB reads and writes it through `NewLateBinding.LateGet`/`LateSet` (or `LateIndexGet`/`LateIndexSet`).
-* In a `Structure`, a local function can't use `this` (CS1673). So when the call uses an instance member, every case that would use the local function instead writes back after the statement. That covers operands, conditions, block headers, `Dim` declarators, and compound or receiver-target assignments. The code compiles, but the write-back is late. Loop conditions still use a local function there and give CS1673, because writing back once would be wrong in a different way.
 * Arguments of `New` (object creation) in a block header still write back after the block.
 * A non-constant `For ... Step` is re-evaluated each iteration (not ByRef-specific).
 * An assignment is only seen to change what's written back when the same symbol appears in both, e.g. `h.P = F(h.P)`. So:
@@ -69,4 +72,6 @@ Known gaps:
 * A lambda parameter inside a ByRef argument (`Function(x) Inc(x.P)`) hoists the local function outside the lambda, where `x` isn't in scope (CS0103).
 * An auto-property initializer (`Public Property X As Integer = Inc(P)`) leaves a `ph…` placeholder (CS0103): it doesn't go through the field initializer path.
 * Partial-class instance initializers run in part order rather than declaration order.
+* A member of a structure returned by a property (`Inc(InnerProp.P)`) writes back with `InnerProp.P = argv`, which C# rejects because `InnerProp` returns a copy (CS1612).
+* `Select Case Inc(P)` with `Case Inc(P)` gives `case var @case when ...` (CS0825).
 * A `ReadOnly` auto-property is assignable in its type's constructor and initializers, so VB writes it back there, but `GetRefConversionForExpression` treats every read-only property as not writable. A fix also needs the C# write-back target to be assignable from the field initializer method.
