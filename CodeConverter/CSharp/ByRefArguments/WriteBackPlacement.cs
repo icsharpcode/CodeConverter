@@ -46,20 +46,21 @@ internal class WriteBackPlacement
         );
         var returnType = CommonConversions.GetTypeSyntax(invocationSymbol.ReturnType);
 
+        var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
+        var operation = _semanticModel.GetOperation(invocation);
         var arguments = new List<ArgumentSyntax>();
         var parameters = new List<ParameterSyntax>();
-        if (IsInStructAndUsesThis(invocation)) {
+        if (IsInStructAndUsesThis(enclosingSymbol, operation)) {
             var selfName = NameGenerator.CS.GetUniqueVariableNameInScope(_semanticModel, namesInLocalFunction, invocation, "self");
             block = block.ReplaceNodes(block.DescendantNodes().OfType<ThisExpressionSyntax>(), (_, _) => ValidSyntaxFactory.IdentifierName(selfName));
             arguments.Add(SyntaxFactory.Argument(SyntaxFactory.ThisExpression()).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)));
             parameters.Add(SyntaxFactory.Parameter(SyntaxFactory.Identifier(selfName))
                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.RefKeyword)))
-                .WithType(CommonConversions.GetTypeSyntax(_semanticModel.GetEnclosingSymbol(invocation.SpanStart).ContainingType)));
+                .WithType(CommonConversions.GetTypeSyntax(enclosingSymbol.ContainingType)));
         }
 
         // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
-        var enclosingSymbol = _semanticModel.GetEnclosingSymbol(invocation.SpanStart);
-        var refParametersOfParent = (_semanticModel.GetOperation(invocation)?.DescendantsAndSelf()
+        var refParametersOfParent = (operation?.DescendantsAndSelf()
             .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
             .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
             .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
@@ -181,9 +182,9 @@ internal class WriteBackPlacement
     /// iterators and async methods (which work on a copy in both languages). VB has no read-only members, where <c>ref this</c> would be CS1605,
     /// and doesn't allow <c>Me</c> in a lambda in a structure (BC36638), so the call is never inside one.
     /// </summary>
-    private bool IsInStructAndUsesThis(VBasic.VisualBasicSyntaxNode invocation) =>
-        _semanticModel.GetEnclosingSymbol(invocation.SpanStart) is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
-        _semanticModel.GetOperation(invocation)?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() != false;
+    private static bool IsInStructAndUsesThis(ISymbol enclosingSymbol, IOperation operation) =>
+        enclosingSymbol is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
+        operation?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() != false;
 
     private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
     {
