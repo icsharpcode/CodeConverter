@@ -485,4 +485,38 @@ Done:
         Assert.Equal(1, TurnsOffErrorHandlingThenResumesAfterItself(True))
         Assert.Equal("work, done", Logged())
     End Sub
+
+    Private Function RetriesThenTurnsOffErrorHandling(failures As Integer) As Integer
+        Dim tries As Integer
+        On Error GoTo EH
+        _log.Add("open")
+Retry:
+        tries += 1
+        Work(tries > failures)
+        _log.Add("worked")
+        Exit Function
+EH:
+        If tries < 3 Then Resume Retry
+        On Error GoTo 0
+        _log.Add("gave up")
+        Err.Raise(5)
+    End Function
+
+    <Fact>
+    Sub HandlerThatTurnsOffErrorHandlingOnlyAfterItsLastResumeRetriesThenLetsTheErrorPropagate()
+        Assert.Equal(0, RetriesThenTurnsOffErrorHandling(0))
+        Assert.Equal("open, work, worked", Logged())
+        _log.Clear()
+        Assert.Equal(0, RetriesThenTurnsOffErrorHandling(2))
+        Assert.Equal("open, work, work, work, worked", Logged())
+        _log.Clear()
+        Dim propagated = False
+        Try
+            RetriesThenTurnsOffErrorHandling(5)
+        Catch ex As Exception
+            propagated = True
+        End Try
+        Assert.True(propagated)
+        Assert.Equal("open, work, work, work, gave up", Logged())
+    End Sub
 End Class

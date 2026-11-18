@@ -91,9 +91,22 @@ internal static class StructuredPlanner
     /// <summary>
     /// <c>On Error GoTo 0</c> in the handler leaves what it resumes to unprotected, but the same code is protected when reached without an error, so neither form is exact.
     /// Without a re-entry guard the plain form is the usual approximation (README.md "Secondary errors").
+    /// It only matters when the handler can still jump to a label after it (see <see cref="CanJumpToALabelAfter"/>): if every <c>Resume</c> comes before it, the handler only runs off the end or leaves the method with error handling off, as in the structured form.
     /// </summary>
-    private static bool HandlerTurnsOffErrorHandling(OnErrorModel model, HandlerRegion handler) =>
-        HandlerStatements(model, handler).Any(s => s.DescendantNodesAndSelf().Any(n => n.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement)));
+    private static bool HandlerTurnsOffErrorHandling(OnErrorModel model, HandlerRegion handler)
+    {
+        var statements = HandlerStatements(model, handler).ToArray();
+        return statements.SelectMany(s => s.DescendantNodesAndSelf()).Where(n => n.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement))
+            .Any(goToZero => CanJumpToALabelAfter(statements, goToZero));
+    }
+
+    /// <summary>
+    /// A syntactic check: the handler's statements run in source order unless a loop repeats them or a <c>GoTo</c> goes back, so a jump counts if it is written after the <c>On Error GoTo 0</c>, or the <c>On Error GoTo 0</c> is in a loop.
+    /// Whether the jump is on the same path as the <c>On Error GoTo 0</c> isn't checked, so an alternative branch counts too.
+    /// </summary>
+    private static bool CanJumpToALabelAfter(IReadOnlyCollection<VBSyntax.StatementSyntax> handlerStatements, SyntaxNode goToZero) =>
+        goToZero.Ancestors().TakeWhile(a => !handlerStatements.Contains(a)).Any(a => a is VBSyntax.WhileBlockSyntax or VBSyntax.DoLoopBlockSyntax or VBSyntax.ForOrForEachBlockSyntax) ||
+        handlerStatements.SelectMany(s => s.DescendantNodesAndSelf()).Any(n => n.SpanStart > goToZero.SpanStart && (n is VBSyntax.GoToStatementSyntax || n.IsKind(VBasicSyntaxKind.ResumeLabelStatement)));
 
     private static IEnumerable<VBSyntax.StatementSyntax> HandlerStatements(OnErrorModel model, HandlerRegion handler) =>
         model.Statements.Skip(handler.LabelIndex + 1).Take(handler.EndIndex - handler.LabelIndex - 1);

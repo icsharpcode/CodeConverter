@@ -3049,4 +3049,78 @@ internal partial class TestClass
     }
 }");
     }
+
+    /// <summary>
+    /// The handler resumes to a label in the covered code before it turns error handling off, so nothing is resumed to unprotected and the segmented form is exact.
+    /// </summary>
+    [Fact]
+    public async Task HandlerThatTurnsOffErrorHandlingOnlyAfterItsLastResumeIsSegmentedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Open()
+    End Sub
+
+    Sub Work()
+    End Sub
+
+    Sub M1()
+        Dim tries As Integer
+        On Error GoTo EH
+        Open()
+Retry:
+        tries += 1
+        Work()
+        Exit Sub
+EH:
+        If tries < 3 Then Resume Retry
+        On Error GoTo 0
+        Err.Raise(5)
+    End Sub
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void Open()
+    {
+    }
+
+    public void Work()
+    {
+    }
+
+    public void M1()
+    {
+        var tries = default(int);
+        try
+        {
+            Open();
+        }
+        catch
+        {
+            goto EH;
+        }
+
+    Retry:
+        ;
+        try
+        {
+
+            tries += 1;
+            Work();
+            return;
+        }
+        catch
+        {
+            goto EH;
+        }
+
+    EH:
+        ;
+
+        if (tries < 3)
+            goto Retry;
+        Information.Err().Raise(5);
+    }
+}");
+    }
 }
