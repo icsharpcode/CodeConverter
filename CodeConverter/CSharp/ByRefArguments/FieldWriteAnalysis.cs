@@ -33,7 +33,10 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
     public bool MayChangeDuringCall(IFieldSymbol field, IOperation call)
     {
         field = field.OriginalDefinition;
-        if (field.IsConst || field.IsReadOnly) return false;
+        if (field.IsConst) return false;
+        // Assigning a whole structure (`s = New S(9)`) overwrites every instance field, ReadOnly or not
+        if (!field.IsStatic && field.ContainingType.IsValueType) return true;
+        if (field.IsReadOnly) return false;
         // An auto-property's backing field (or a WithEvents variable's) is written through the property, which this doesn't follow
         if (field.AssociatedSymbol is IPropertySymbol) return true;
         if (CanBeWrittenOutsideCompilation(field) || CanBeMutatedThroughMembers(field)) return true;

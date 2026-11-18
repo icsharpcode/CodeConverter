@@ -231,6 +231,41 @@ Public Class ByRefParameterizedPropertyTests
                                                                 End Function
     End Class
 
+    Private Shared _replacedIndexer As IndexHolder
+
+    <Fact>
+    Public Sub StructureFieldIndexOverwrittenByAssigningTheStructureUsesItsOriginalValue()
+        Dim db As New Db(_log)
+        _replacedIndexer = New IndexHolder(1)
+        _replacedIndexer.SetValueReplacingMe(db)
+        Assert.Equal("get 1,21;set 1,21=changed;get 2,22;set 2,22=changed", LogText())
+    End Sub
+
+    Private Shared Sub ReplaceIndexHolderAndSetValue(ByRef value As String)
+        _replacedIndexer = New IndexHolder(9)
+        value = "changed"
+    End Sub
+
+    Private Structure IndexHolder
+        Private ReadOnly _readOnlyIndex As Integer
+        Private _constructorIndex As Integer
+
+        Public Sub New(index As Integer)
+            _readOnlyIndex = index
+            _constructorIndex = index + 1
+        End Sub
+
+        Public Sub SetValueReplacingMe(db As Db)
+            ReplaceIndexHolderAndSetValue(db.Qr(_readOnlyIndex, 21))
+            _replacedIndexer = New IndexHolder(1)
+            _replacedIndexer.SetConstructorIndexReplacingMe(db)
+        End Sub
+
+        Public Sub SetConstructorIndexReplacingMe(db As Db)
+            ReplaceIndexHolderAndSetValue(db.Qr(_constructorIndex, 22))
+        End Sub
+    End Structure
+
     <Fact>
     Public Sub SharedParameterizedPropertyIsWrittenBackThroughItsSetter()
         Db.SharedLog = _log
