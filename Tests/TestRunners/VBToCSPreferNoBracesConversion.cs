@@ -17,6 +17,11 @@ public class VBToCSPreferNoBracesConversion : ILanguageConversion
 {
     private readonly VBToCSConversion _baseConversion = new();
 
+    /// <summary>
+    /// Whether to convert as on a Roslyn version where the converter can't override the preference, leaving only its guard against wrongly removed braces
+    /// </summary>
+    protected virtual bool DisableBracesOverride => false;
+
     async Task<Document> ILanguageConversion.CreateProjectDocumentFromTreeAsync(SyntaxTree tree, IEnumerable<MetadataReference> references)
     {
         var document = await _baseConversion.CreateProjectDocumentFromTreeAsync(tree, references);
@@ -36,7 +41,11 @@ public class VBToCSPreferNoBracesConversion : ILanguageConversion
         IProgress<ConversionProgress> progress, CancellationToken cancellationToken) =>
         _baseConversion.CreateProjectContentsConverterAsync(project, progress, cancellationToken);
 
-    Task<Document> ILanguageConversion.SingleSecondPassAsync(Document doc) => _baseConversion.SingleSecondPassAsync(doc);
+    async Task<Document> ILanguageConversion.SingleSecondPassAsync(Document doc)
+    {
+        DocumentExtensions.DisableBracesOverrideForTesting.Value = DisableBracesOverride;
+        return await _baseConversion.SingleSecondPassAsync(doc);
+    }
     SyntaxTree ILanguageConversion.CreateTree(string text) => _baseConversion.CreateTree(text);
     List<SyntaxNode> ILanguageConversion.FindSingleImportantChild(SyntaxNode annotatedNode) => _baseConversion.FindSingleImportantChild(annotatedNode);
     bool ILanguageConversion.CanBeContainedByMethod(SyntaxNode node) => _baseConversion.CanBeContainedByMethod(node);
@@ -47,4 +56,10 @@ public class VBToCSPreferNoBracesConversion : ILanguageConversion
     IReadOnlyCollection<(string, string)> ILanguageConversion.GetProjectTypeGuidMappings() => _baseConversion.GetProjectTypeGuidMappings();
     IEnumerable<(string, string)> ILanguageConversion.GetProjectFileReplacementRegexes() => _baseConversion.GetProjectFileReplacementRegexes();
     string ILanguageConversion.PostTransformProjectFile(string xml) => _baseConversion.PostTransformProjectFile(xml);
+}
+
+/// <inheritdoc cref="VBToCSPreferNoBracesConversion.DisableBracesOverride"/>
+public class VBToCSPreferNoBracesGuardOnlyConversion : VBToCSPreferNoBracesConversion
+{
+    protected override bool DisableBracesOverride => true;
 }

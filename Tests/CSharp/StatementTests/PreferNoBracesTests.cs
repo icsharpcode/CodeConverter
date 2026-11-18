@@ -1,11 +1,12 @@
 using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.CSharp;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
 namespace ICSharpCode.CodeConverter.Tests.CSharp.StatementTests;
 
 /// <summary>
-/// The simplifier honours the user's "Prefer braces" code style, but must never let an else bind to a different if.
+/// The user's "Prefer braces: No" code style must never let the simplifier produce invalid code, lose comments, or let an else bind to a different if.
 /// </summary>
 public class PreferNoBracesTests : ConverterTestBase
 {
@@ -357,6 +358,13 @@ internal partial class TestClass
 }");
     }
 
-    private Task TestPreferNoBracesConversionAsync(string visualBasicCode, string expectedCsharpCode) =>
-        AssertConvertedCodeResultEqualsAsync<VBToCSPreferNoBracesConversion>(visualBasicCode, expectedCsharpCode);
+    /// <summary>
+    /// The converter overrides the preference to always keep braces, so the output matches the default conversion.
+    /// Where it can't (Roslyn keeps the option internal), only the guard protects the output, so check that path's output too.
+    /// </summary>
+    private async Task TestPreferNoBracesConversionAsync(string visualBasicCode, string expectedCsharpCodeWithGuardOnly)
+    {
+        Assert.Equal(await ConvertAsync<VBToCSConversion>(visualBasicCode), await ConvertAsync<VBToCSPreferNoBracesConversion>(visualBasicCode));
+        await AssertConvertedCodeResultEqualsAsync<VBToCSPreferNoBracesGuardOnlyConversion>(visualBasicCode, expectedCsharpCodeWithGuardOnly);
+    }
 }

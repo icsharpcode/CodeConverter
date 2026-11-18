@@ -8,6 +8,11 @@ namespace ICSharpCode.CodeConverter.Common;
 
 internal static class DocumentExtensions
 {
+    /// <summary>
+    /// Lets tests exercise <see cref="MustKeepBraces"/> alone, as on a Roslyn version where <see cref="GetCSOptions"/> can't override the "Prefer braces" preference
+    /// </summary>
+    internal static AsyncLocal<bool> DisableBracesOverrideForTesting { get; } = new();
+
     public static async Task<Document> SimplifyStatementsAsync<TUsingDirectiveSyntax>(this Document convertedDocument, string unresolvedTypeDiagnosticId, CancellationToken cancellationToken)
         where TUsingDirectiveSyntax : SyntaxNode
     {
@@ -62,9 +67,11 @@ internal static class DocumentExtensions
     /// <list type="bullet">
     /// <item>the statement can be embedded: <c>if (a) int x = F();</c> is CS1023</item>
     /// <item>a following else still binds to the same if: in <c>if (a) { if (b) x(); } else y();</c> it would bind to <c>if (b)</c> https://github.com/icsharpcode/CodeConverter/issues/823</item>
+    /// <item>no comment is attached to the braces it drops</item>
     /// </list>
-    /// The code style reaches us through the document's options (e.g. Visual Studio's Tools > Options), and Roslyn keeps the option internal.
-    /// Rather than override it, keep only the braces it would wrongly remove.
+    /// See SimplifyBlock in https://github.com/dotnet/roslyn/blob/main/src/Workspaces/CSharp/Portable/Simplification/Reducers/CSharpMiscellaneousReducer.cs
+    /// The code style reaches us through the document's options (e.g. Visual Studio's Tools > Options).
+    /// <see cref="GetCSOptions"/> overrides it, but Roslyn keeps the option internal, so where that fails, keep the braces it would wrongly remove.
     /// </summary>
     private static bool MustKeepBraces(CSSyntax.BlockSyntax block) =>
         IsEmbeddedStatement(block) && block.Statements.Count == 1
@@ -162,11 +169,19 @@ internal static class DocumentExtensions
     {
         return node.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationConstants.ConversionErrorAnnotationKind, warningText));
     }
-    private static DocumentOptionSet GetVBOptions(DocumentOptionSet options)
+    private static OptionSet GetVBOptions(DocumentOptionSet options)
     {
         return options;
     }
-    private static DocumentOptionSet GetCSOptions(DocumentOptionSet options) {
-        return options;
+
+    /// <summary>
+    /// The simplifier's unwrap of single-statement blocks under "Prefer braces: No" is unsafe (see <see cref="MustKeepBraces"/>),
+    /// and the converter decides where braces go, so always keep braces.
+    /// If the internal option can't be overridden on this Roslyn version, <see cref="MustKeepBraces"/> still protects the output.
+    /// </summary>
+    private static OptionSet GetCSOptions(DocumentOptionSet options)
+    {
+        if (DisableBracesOverrideForTesting.Value) return options;
+        return options.WithPreferBraces("Always") ?? options;
     }
 }
