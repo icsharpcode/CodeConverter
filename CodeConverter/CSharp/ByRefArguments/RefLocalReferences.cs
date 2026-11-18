@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
@@ -11,8 +11,15 @@ internal static class RefLocalReferences
 {
     private const string AnnotationKind = "CodeConverter.RefLocalReference";
 
-    public static IdentifierNameSyntax Mark(IdentifierNameSyntax reference, TypeSyntax refLocalType) =>
-        reference.WithAdditionalAnnotations(new SyntaxAnnotation(AnnotationKind, refLocalType.ToString()));
+    /// <summary>An annotation's data can only be a string, but the annotation itself is kept on every copy of the node, so it can key the type.</summary>
+    private static readonly ConditionalWeakTable<SyntaxAnnotation, TypeSyntax> RefLocalTypes = new();
+
+    public static IdentifierNameSyntax Mark(IdentifierNameSyntax reference, TypeSyntax refLocalType)
+    {
+        var annotation = new SyntaxAnnotation(AnnotationKind);
+        RefLocalTypes.Add(annotation, refLocalType);
+        return reference.WithAdditionalAnnotations(annotation);
+    }
 
     /// <returns>One marked reference per ref local that <paramref name="node"/> uses from outside it, and the local's type.
     /// A ref local declared inside, e.g. by a <c>With</c> block in a lambda argument, is in scope already.
@@ -24,6 +31,6 @@ internal static class RefLocalReferences
             .Where(n => !declaredInside.Contains(n.Identifier.ValueText))
             .GroupBy(n => n.Identifier.ValueText)
             .Select(g => g.First())
-            .Select(n => (n, SyntaxFactory.ParseTypeName(n.GetAnnotations(AnnotationKind).First().Data)));
+            .Select(n => (n, RefLocalTypes.TryGetValue(n.GetAnnotations(AnnotationKind).First(), out var type) ? type : null));
     }
 }
