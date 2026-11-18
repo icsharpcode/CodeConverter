@@ -18,6 +18,9 @@ internal static class OnErrorMethodBodyConverter
         switch (shape.Kind) {
             case OnErrorShapeKind.None:
                 return null;
+            case OnErrorShapeKind.ClearErrOnly:
+                context.Visitor.OnErrorStatementConverter = new ClearErrStatementConverter(await CreateErrStatementsAsync(context));
+                return await context.ConvertAsync(statements);
             case OnErrorShapeKind.Structured when StructuredShapeEmitter.CanEmit(context, model, shape.Structured):
                 return await new StructuredShapeEmitter(context, model, shape.Structured, await CreateErrStatementsAsync(context)).EmitAsync();
             case OnErrorShapeKind.ResumeNext or OnErrorShapeKind.Dynamic when ResumeNextShapeEmitter.CanEmit(model, context.SemanticModel, context.CanDeclareLocalFunctions):

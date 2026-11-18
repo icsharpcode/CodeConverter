@@ -2095,4 +2095,49 @@ internal partial class TestClass
     }
 }");
     }
+
+    /// <summary>
+    /// With no handler ever active, <c>On Error GoTo 0</c> does nothing but clear <c>Err</c> (checked by running VB), so it needs no shape.
+    /// </summary>
+    [Fact]
+    public async Task OnErrorGoToZeroWithoutAHandlerOnlyClearsErrAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub WithoutErr(flag As Boolean)
+        On Error GoTo 0
+        System.Console.WriteLine(""a"")
+        If flag Then On Error GoTo 0
+    End Sub
+End Class
+Class UsesErr
+    Sub WithErr()
+        System.Console.WriteLine(""a"")
+        On Error GoTo 0
+        System.Console.WriteLine(Err.Number)
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void WithoutErr(bool flag)
+    {
+        Console.WriteLine(""a"");
+        if (flag)
+        {
+        }
+    }
+}
+
+internal partial class UsesErr
+{
+    public void WithErr()
+    {
+        Console.WriteLine(""a"");
+        ProjectData.ClearProjectError();
+        Console.WriteLine(Information.Err().Number);
+    }
+}");
+    }
 }

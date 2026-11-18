@@ -11,6 +11,8 @@ internal enum OnErrorShapeKind
     ResumeNext,
     HandlerFunction,
     Dynamic,
+    /// <summary>Only <c>On Error GoTo 0</c>: no handler is ever active, so it only clears <c>Err</c> and the statements are converted as usual.</summary>
+    ClearErrOnly,
     Fallback
 }
 

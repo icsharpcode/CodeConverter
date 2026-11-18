@@ -335,4 +335,24 @@ Done:
         GoesToALabelAfterTheHandler(True)
         Assert.Equal("work, done", Logged())
     End Sub
+
+    Private Sub LeavesErrSet()
+        On Error Resume Next
+        Work(False)
+    End Sub
+
+    Private Sub LoneOnErrorGoToZero()
+        If _log.Count > 100 Then Return
+        On Error GoTo 0
+        _log.Add("lone")
+    End Sub
+
+    <Fact>
+    Sub OnErrorGoToZeroWithoutAHandlerOnlyClearsErr()
+        LeavesErrSet()
+        Assert.Equal(5, Err.Number)
+        LoneOnErrorGoToZero()
+        Assert.Equal("work, lone", Logged())
+        Assert.Equal(0, Err.Number)
+    End Sub
 End Class

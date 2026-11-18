@@ -11,6 +11,7 @@ internal static class OnErrorShapeSelector
     {
         if (!model.HasOnErrorOrResume) return OnErrorShape.Of(OnErrorShapeKind.None);
         if (model.OnErrorStatements.Any(s => s.IsKind(VBasicSyntaxKind.OnErrorGoToMinusOneStatement))) return OnErrorShape.Of(OnErrorShapeKind.Fallback);
+        if (model.OnErrorStatements.All(s => s.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement)) && !model.ResumeStatements.Any()) return OnErrorShape.Of(OnErrorShapeKind.ClearErrOnly);
         if (model.IsDynamic) return OnErrorShape.Of(OnErrorShapeKind.Dynamic);
         if (model.Handlers.Any(h => !h.IsMethodLevel) || model.ResumeStatements.Any(r => model.HandlerContaining(model.MethodLevelIndexOf(r)) == null)) {
             return OnErrorShape.Of(OnErrorShapeKind.Fallback);

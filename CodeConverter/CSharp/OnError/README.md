@@ -124,12 +124,15 @@ Chosen per method, simplest first. `…` is where the `Err` calls go when `Err` 
 
 4. **Dynamic.** The active handler isn't statically known. Same guards, filtered: `catch (Exception) when (resumeNext)`, with `resumeNext` assigned where the `On Error` statements were. Only implemented when the only handlers are resume-next and none; with handler labels (an `int` flag) the fallback stays.
 
+   A method whose only `On Error` statements are `On Error GoTo 0` (no `Resume`) never has a handler active, so there is no shape: each converts to `ProjectData.ClearProjectError()` when `Err` is maintained (VB clears `Err` there, checked by running it), otherwise to nothing, and the statements are converted as usual.
+
 5. **Fallback.** Anything else keeps today's behaviour, statement-by-statement conversion plus `#error`:
    * the handler jumps to a label inside a nested block;
    * `On Error GoTo -1`;
    * a handler local function would need to capture a `ref`/`out` parameter;
    * a local that has to be split into a declaration and an assignment (a guarded `Dim`, or one the handler or later code uses) has a type that can't be written: an anonymous type, or a lambda's anonymous delegate type. `var q = default;` doesn't compile, and declaring it later would put it out of scope;
    * `On Error Resume Next` and `On Error GoTo <label>` in the same method;
+   * `On Error GoTo 0` inside a handler (dynamic with a handler label): it also deactivates the handler for what the handler then resumes to;
    * a guarded `Dim` in a loop (declared before the loop) that has the same name as another local of the method, e.g. in an earlier `If` block: the hoisted declaration would be in scope of the other one's block (CS0136). The hoisting that exists without `On Error` (`HoistVariablesBeforeLoopWhenNeeded`) has the same limitation and is out of scope;
    * a shape that needs a local function (a handler function, or a loop condition or `Case` expression moved out of its statement) in an instance member of a `Structure`: a local function in a struct can't use `this` (CS1673). Static members and plain guards are fine;
    * (handler function) a handler that only `Resume`s (retry only, so no way out: not implemented); several handlers; a guard inside a guarded block (`For Each` with statements inside): the handler's own error would be caught again by the outer guard, but VB lets it propagate; a failing loop condition or `Case` expression when the handler can leave the method (a local function can't return from the method).
