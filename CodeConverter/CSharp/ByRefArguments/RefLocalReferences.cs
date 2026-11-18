@@ -31,6 +31,11 @@ internal static class RefLocalReferences
             .Where(n => !declaredInside.Contains(n.Identifier.ValueText))
             .GroupBy(n => n.Identifier.ValueText)
             .Select(g => g.First())
-            .Select(n => (n, RefLocalTypes.TryGetValue(n.GetAnnotations(AnnotationKind).First(), out var type) ? type : null));
+            .Select(n => (n, GetRefLocalType(n)));
     }
+
+    private static TypeSyntax GetRefLocalType(IdentifierNameSyntax reference) =>
+        RefLocalTypes.TryGetValue(reference.GetAnnotations(AnnotationKind).First(), out var type)
+            ? type
+            : throw new InvalidOperationException($"Ref local reference {reference} was annotated without {nameof(Mark)}");
 }
