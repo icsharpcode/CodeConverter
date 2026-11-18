@@ -1,3 +1,4 @@
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis.Classification;
@@ -42,7 +43,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     internal PerScopeState AdditionalLocals => _typeContext.PerScopeState;
 
     public DeclarationNodeVisitor(Document document, Compilation compilation, SemanticModel semanticModel,
-        CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors)
+        CSharpCompilation csCompilation, SyntaxGenerator csSyntaxGenerator, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors,
+        IFieldMutationOracle fieldMutations)
     {
         _vbCompilation = compilation;
         _csSyntaxGenerator = csSyntaxGenerator;
@@ -55,7 +57,7 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
         var nullableExpressionsConverter = new VisualBasicNullableExpressionsConverter(_semanticModel);
         var typeConversionAnalyzer = new TypeConversionAnalyzer(semanticModel, csCompilation, _extraUsingDirectives, _csSyntaxGenerator, expressionEvaluator, nullableExpressionsConverter);
         CommonConversions = new CommonConversions(document, semanticModel, typeConversionAnalyzer, csSyntaxGenerator, compilation, csCompilation, _typeContext, _visualBasicEqualityComparison);
-        var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext, nullableExpressionsConverter);
+        var expressionNodeVisitor = new ExpressionNodeVisitor(semanticModel, _visualBasicEqualityComparison, _typeContext, CommonConversions, _extraUsingDirectives, _xmlImportContext, nullableExpressionsConverter, fieldMutations);
         _accessorDeclarationNodeConverter = new AccessorDeclarationNodeConverter(semanticModel, CommonConversions, TriviaConvertingDeclarationVisitor, _additionalDeclarations, expressionNodeVisitor.ConvertMethodBodyStatementsAsync);
         _triviaConvertingExpressionVisitor = CommonConversions.TriviaConvertingExpressionVisitor;
         _convertMethodBodyStatementsAsync = expressionNodeVisitor.ConvertMethodBodyStatementsAsync;

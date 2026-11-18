@@ -17,11 +17,11 @@ internal class ByRefArgumentHoister
     /// </summary>
     private readonly Stack<List<AdditionalAssignment>> _writeBacksPerCall = new();
 
-    public ByRefArgumentHoister(ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions)
+    public ByRefArgumentHoister(ITypeContext typeContext, SemanticModel semanticModel, CommonConversions commonConversions, IFieldMutationOracle fieldMutations)
     {
         _typeContext = typeContext;
         _semanticModel = semanticModel;
-        _fieldMutations = FieldWriteAnalysis.For(semanticModel.Compilation);
+        _fieldMutations = fieldMutations;
         CommonConversions = commonConversions;
     }
 

@@ -12,25 +12,22 @@ namespace ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 /// <remarks>
 /// Construction is excluded because it has finished before a caller can read the field: a constructor's writes to its own instance's fields,
 /// a shared constructor's writes to shared fields, and field initializers (which run as part of those). A lambda in a constructor can run later, so it isn't excluded.
-/// Computed once per compilation, on first use.
+/// Computed once per project, on first use. Each document is converted with a compilation of its own (after expanding its root),
+/// so fields are matched by documentation ID rather than by symbol.
 /// </remarks>
 internal class FieldWriteAnalysis : IFieldMutationOracle
 {
-    private static readonly ConditionalWeakTable<Compilation, FieldWriteAnalysis> PerCompilation = new();
-
     private readonly Compilation _compilation;
-    private readonly Lazy<HashSet<IFieldSymbol>> _fieldsWrittenAfterConstruction;
+    private readonly Lazy<HashSet<string>> _fieldsWrittenAfterConstruction;
     private readonly Lazy<bool> _hasFriendAssemblies;
 
-    private FieldWriteAnalysis(Compilation compilation)
+    public FieldWriteAnalysis(Compilation compilation)
     {
         _compilation = compilation;
-        _fieldsWrittenAfterConstruction = new Lazy<HashSet<IFieldSymbol>>(FindFieldsWrittenAfterConstruction);
+        _fieldsWrittenAfterConstruction = new Lazy<HashSet<string>>(FindFieldsWrittenAfterConstruction);
         _hasFriendAssemblies = new Lazy<bool>(() => compilation.Assembly.GetAttributes()
             .Any(a => a.AttributeClass?.Name == nameof(InternalsVisibleToAttribute)));
     }
-
-    public static FieldWriteAnalysis For(Compilation compilation) => PerCompilation.GetValue(compilation, c => new FieldWriteAnalysis(c));
 
     /// <remarks>Ignores <paramref name="call"/>: a call graph could narrow the answer to the fields the call can transitively write.</remarks>
     public bool MayChangeDuringCall(IFieldSymbol field, IOperation call)
@@ -40,12 +37,12 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
         // An auto-property's backing field (or a WithEvents variable's) is written through the property, which this doesn't follow
         if (field.AssociatedSymbol is IPropertySymbol) return true;
         if (CanBeWrittenOutsideCompilation(field) || CanBeMutatedThroughMembers(field)) return true;
-        return _fieldsWrittenAfterConstruction.Value.Contains(field);
+        return _fieldsWrittenAfterConstruction.Value.Contains(field.GetDocumentationCommentId());
     }
 
     private bool CanBeWrittenOutsideCompilation(IFieldSymbol field)
     {
-        if (!SymbolEqualityComparer.Default.Equals(field.ContainingAssembly, _compilation.Assembly)) return true;
+        if (field.ContainingAssembly?.Name != _compilation.AssemblyName) return true;
         for (ISymbol symbol = field; symbol is not null and not INamespaceSymbol; symbol = symbol.ContainingSymbol) {
             switch (symbol.DeclaredAccessibility) {
                 case Accessibility.Private:
@@ -63,9 +60,9 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
     private static bool CanBeMutatedThroughMembers(IFieldSymbol field) =>
         field.Type.IsValueType && field.Type.SpecialType == SpecialType.None && field.Type.TypeKind != TypeKind.Enum;
 
-    private HashSet<IFieldSymbol> FindFieldsWrittenAfterConstruction()
+    private HashSet<string> FindFieldsWrittenAfterConstruction()
     {
-        var written = new HashSet<IFieldSymbol>(SymbolEqualityComparer.Default);
+        var written = new HashSet<string>(StringComparer.Ordinal);
         foreach (var tree in _compilation.SyntaxTrees) {
             var semanticModel = _compilation.GetSemanticModel(tree, true);
             foreach (var name in tree.GetRoot().DescendantNodes().OfType<VBSyntax.IdentifierNameSyntax>()) {
@@ -73,7 +70,7 @@ internal class FieldWriteAnalysis : IFieldMutationOracle
                 var reference = name.Parent is VBSyntax.MemberAccessExpressionSyntax maes && maes.Name == name ? (SyntaxNode)maes : name;
                 if (semanticModel.GetOperation(reference) is { } operation && VariableWrites.IsWrite(operation) &&
                     !IsDuringConstruction(semanticModel, reference, field)) {
-                    written.Add(field.OriginalDefinition);
+                    written.Add(field.OriginalDefinition.GetDocumentationCommentId());
                 }
             }
         }

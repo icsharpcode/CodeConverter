@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+﻿using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -7,7 +8,8 @@ internal static class VisualBasicConverter
 {
     public static async Task<SyntaxNode> ConvertCompilationTreeAsync(Document document,
         CSharpCompilation csharpViewOfVbSymbols, Project csharpReferenceProject,
-        OptionalOperations optionalOperations, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors, CancellationToken cancellationToken)
+        OptionalOperations optionalOperations, ILookup<ITypeSymbol, ITypeSymbol> typeToInheritors, IFieldMutationOracle fieldMutations,
+        CancellationToken cancellationToken)
     {
         document = await document.WithExpandedRootAsync(cancellationToken);
         var root = await document.GetSyntaxRootAsync(cancellationToken) as VBSyntax.CompilationUnitSyntax ??
@@ -20,7 +22,7 @@ internal static class VisualBasicConverter
         var csSyntaxGenerator = SyntaxGenerator.GetGenerator(csharpReferenceProject);
         var semanticModel = compilation.GetSemanticModel(tree, true);
         var visualBasicSyntaxVisitor = new
-            DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator, typeToInheritors);
+            DeclarationNodeVisitor(document, compilation, semanticModel, csharpViewOfVbSymbols, csSyntaxGenerator, typeToInheritors, fieldMutations);
         var converted = await root.AcceptAsync<CSSyntax.CompilationUnitSyntax>(visualBasicSyntaxVisitor.TriviaConvertingDeclarationVisitor);
 
         return optionalOperations.MapSourceTriviaToTargetHandled(root, converted, document);
