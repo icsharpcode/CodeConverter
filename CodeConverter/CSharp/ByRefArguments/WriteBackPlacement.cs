@@ -181,10 +181,11 @@ internal class WriteBackPlacement
     /// That's legal wherever VB can use <c>Me</c> in a structure: methods, property and event accessors, constructors (C# 11 structs are auto-default),
     /// iterators and async methods (which work on a copy in both languages). VB has no read-only members, where <c>ref this</c> would be CS1605,
     /// and doesn't allow <c>Me</c> in a lambda in a structure (BC36638), so the call is never inside one.
+    /// A <c>With</c> block's implicit receiver is also an instance reference, but not to <c>this</c>.
     /// </summary>
     private static bool IsInStructAndUsesThis(ISymbol enclosingSymbol, IOperation operation) =>
         enclosingSymbol is { IsStatic: false, ContainingType.TypeKind: TypeKind.Struct } &&
-        operation?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any() != false;
+        operation?.DescendantsAndSelf().OfType<IInstanceReferenceOperation>().Any(i => i.ReferenceKind == InstanceReferenceKind.ContainingTypeInstance) != false;
 
     private bool DefinitelyExecutedAfterPreviousStatement(VBSyntax.InvocationExpressionSyntax invocation)
     {

@@ -1670,4 +1670,47 @@ public partial struct S
     }
 }");
     }
+    [Fact]
+    public async Task StructureWithBlockOnALocalDoesNotPassThisAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Structure S
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M()
+        Dim b As New Box
+        With b
+            If Inc(.X) > 0 Then .X = 0
+        End With
+    End Sub
+End Structure", @"
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial struct S
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M()
+    {
+        var b = new Box();
+        int localInc() { int argv = b.X; var ret = Inc(ref argv); b.X = argv; return ret; }
+
+        if (localInc() > 0)
+            b.X = 0;
+    }
+}");
+    }
 }
