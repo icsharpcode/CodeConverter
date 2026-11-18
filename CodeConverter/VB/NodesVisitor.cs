@@ -52,6 +52,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     private readonly HashSet<string> _extraImports = new();
     private readonly CSharpHelperMethodDefinition _cSharpHelperMethodDefinition;
     private readonly CommonConversions _commonConversions;
+    private readonly NativeIntegerOperators _nativeIntegerOperators;
     private readonly HashSet<string> _addedNames = new();
 
     private int _placeholder = 1;
@@ -74,6 +75,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         _outputWillBeOverflowChecked = outputWillBeOverflowChecked;
         TriviaConvertingVisitor = new CommentConvertingVisitorWrapper<VisualBasicSyntaxNode>(this);
         _commonConversions = new CommonConversions(semanticModel, vbSyntaxGenerator, TriviaConvertingVisitor, _outputWillBeOverflowChecked);
+        _nativeIntegerOperators = new NativeIntegerOperators(semanticModel, _commonConversions);
         _cSharpHelperMethodDefinition = new CSharpHelperMethodDefinition();
     }
 
@@ -1082,7 +1084,9 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                 ExpressionSyntaxExtensions.CreateArgList((ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor))
             );
         }
-        return SyntaxFactory.UnaryExpression(kind, SyntaxFactory.Token(kind.GetExpressionOperatorTokenKind()), (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor));
+        var operand = (ExpressionSyntax)node.Operand.Accept(TriviaConvertingVisitor);
+        return _nativeIntegerOperators.ConvertUnaryOrNull(node, operand)
+               ?? SyntaxFactory.UnaryExpression(kind, SyntaxFactory.Token(kind.GetExpressionOperatorTokenKind()), operand);
     }
     private static string GetQualifiedName(params string[] names) {
         return names.Aggregate((seed, current) => seed + '.' + current);
@@ -1195,8 +1199,11 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
                node.Parent.IsParentKind(CS.SyntaxKind.SetAccessorDeclaration);
     }
 
-    private static AssignmentStatementSyntax MakeAssignmentStatement(CSSyntax.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
+    private AssignmentStatementSyntax MakeAssignmentStatement(CSSyntax.AssignmentExpressionSyntax node, ExpressionSyntax left, ExpressionSyntax right)
     {
+        if (_nativeIntegerOperators.ConvertCompoundAssignmentValueOrNull(node, left, right) is { } nativeIntegerValue) {
+            return SyntaxFactory.SimpleAssignmentStatement(left, nativeIntegerValue);
+        }
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);
         if (node.IsKind(CS.SyntaxKind.AndAssignmentExpression, CS.SyntaxKind.OrAssignmentExpression, CS.SyntaxKind.ExclusiveOrAssignmentExpression, CS.SyntaxKind.ModuloAssignmentExpression)) {
             return SyntaxFactory.SimpleAssignmentStatement(
@@ -1402,6 +1409,10 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
         if (isNotEquals && isReferenceComparison) {
             return SyntaxFactory.IsNotExpression(vbLeft, vbRight);
+        }
+
+        if (_nativeIntegerOperators.ConvertBinaryOrNull(node, vbLeft, vbRight) is { } nativeIntegerOperation) {
+            return nativeIntegerOperation;
         }
 
         var kind = CS.CSharpExtensions.Kind(node).ConvertToken(TokenContext.Local);

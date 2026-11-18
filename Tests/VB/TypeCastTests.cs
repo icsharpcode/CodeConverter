@@ -383,4 +383,39 @@ Friend Class Test
     Private _unsigned As UIntPtr = UIntPtr.Zero
 End Class");
     }
+
+    [Fact]
+    public async Task NativeIntegerOperatorsAsync() {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"public class Test {
+    public long TestMethod(nint start, nint end, nuint size, int offset, long total) {
+        nint distance = end - start;
+        nint next = start + offset;
+        bool before = start < end;
+        bool same = start == end;
+        nint half = distance / 2;
+        nuint doubled = size * 2;
+        nint negated = -distance;
+        distance += end;
+        distance -= 1;
+        total += start;
+        return total + distance;
+    }
+}",
+            @"Public Class Test
+    Public Function TestMethod(start As IntPtr, [end] As IntPtr, size As UIntPtr, offset As Integer, total As Long) As Long
+        Dim distance = CType(CLng([end]) - CLng(start), IntPtr)
+        Dim [next] = start + offset
+        Dim before = CLng(start) < CLng([end])
+        Dim same = start = [end]
+        Dim half = CType(CLng(distance) \ 2, IntPtr)
+        Dim doubled = CType(CULng(size) * CULng(2), UIntPtr)
+        Dim negated = CType(-CLng(distance), IntPtr)
+        distance = CType(CLng(distance) + CLng([end]), IntPtr)
+        distance -= 1
+        total = total + CLng(start)
+        Return total + CLng(distance)
+    End Function
+End Class");
+    }
 }
