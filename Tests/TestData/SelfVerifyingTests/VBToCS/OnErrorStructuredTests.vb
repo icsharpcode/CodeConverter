@@ -394,4 +394,31 @@ EH:
         Assert.Equal(3, RetriesFromALabelInTheCoveredCode())
         Assert.Equal("try 1, work, eh, try 2, work, eh, try 3", Logged())
     End Sub
+
+    Private Sub HandlerTurnsOffErrorHandling(succeed As Boolean)
+        On Error GoTo H
+        Work(succeed)
+        Exit Sub
+H:
+        _log.Add("handler " & Err.Number)
+        On Error GoTo 0
+        _log.Add("after " & Err.Number)
+        Work(False)
+        _log.Add("not reached")
+    End Sub
+
+    <Fact>
+    Sub OnErrorGoToZeroInTheHandlerLetsLaterErrorsPropagate()
+        Dim propagated = False
+        Try
+            HandlerTurnsOffErrorHandling(False)
+        Catch ex As InvalidOperationException
+            propagated = True
+        End Try
+        Assert.True(propagated)
+        Assert.Equal("work, handler 5, after 0, work", Logged())
+        _log.Clear()
+        HandlerTurnsOffErrorHandling(True)
+        Assert.Equal("work", Logged())
+    End Sub
 End Class

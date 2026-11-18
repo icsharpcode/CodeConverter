@@ -38,6 +38,7 @@ internal static class StructuredPlanner
         if (hasTail && (IsJumpedIntoNestedBlockFromOutside(model, tail) || TailIsReEnteredByTheHandler(model, handler, tail, semanticModel))) return null;
 
         var segmented = TrySegment(model, handler, covered, coverageEnd, semanticModel);
+        if (segmented != null && HandlerTurnsOffErrorHandling(model, handler)) return null;
         if (segmented == null && OnlyTheCodeAfterAResumeLabelCanFail(model, handler, covered, coverageEnd, semanticModel)) return null;
         return new StructuredPlan(onErrorIndex, handler, segmented ?? new[] { covered }, handlerReachedWithoutError, model.Statements.Count, hasTail);
     }
@@ -58,7 +59,7 @@ internal static class StructuredPlanner
             .Select((labelIndex, n) => new StatementRange(labelIndex, labelIndex + 1, n + 1 < resumeLabelIndexes.Length ? resumeLabelIndexes[n + 1] : coverageEnd))
             .ToArray();
         var resumedToStatements = segments.SelectMany(s => StatementsIn(model, s)).ToArray();
-        var handlerStatements = model.Statements.Skip(handler.LabelIndex + 1).Take(handler.EndIndex - handler.LabelIndex - 1);
+        var handlerStatements = HandlerStatements(model, handler);
         if (!segments.Any(s => SecondaryErrorIsPossible(StatementsIn(model, s), semanticModel)) ||
             !ReEntryGuard.IsPresent(handlerStatements, resumedToStatements, semanticModel) ||
             !segments.All(s => CanOnlyBeEnteredFromTheTop(model, s))) {
@@ -86,6 +87,16 @@ internal static class StructuredPlanner
         !OnErrorModel.IsOnErrorStatement(statements.FirstOrDefault(s => s is not VBSyntax.LabelStatementSyntax)) &&
         statements.Any(s => ThrowAnalysis.CanThrow(s, semanticModel));
 
+    /// <summary>
+    /// <c>On Error GoTo 0</c> in the handler leaves what it resumes to unprotected, but the same code is protected when reached without an error, so neither form is exact.
+    /// Without a re-entry guard the plain form is the usual approximation (README.md "Secondary errors").
+    /// </summary>
+    private static bool HandlerTurnsOffErrorHandling(OnErrorModel model, HandlerRegion handler) =>
+        HandlerStatements(model, handler).Any(s => s.DescendantNodesAndSelf().Any(n => n.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement)));
+
+    private static IEnumerable<VBSyntax.StatementSyntax> HandlerStatements(OnErrorModel model, HandlerRegion handler) =>
+        model.Statements.Skip(handler.LabelIndex + 1).Take(handler.EndIndex - handler.LabelIndex - 1);
+
     private static IReadOnlyCollection<VBSyntax.StatementSyntax> StatementsIn(OnErrorModel model, StatementRange segment) =>
         model.Statements.Skip(segment.Start).Take(segment.End - segment.Start).ToArray();
 
@@ -104,7 +115,7 @@ internal static class StructuredPlanner
     private static bool TailIsReEnteredByTheHandler(OnErrorModel model, HandlerRegion handler, StatementRange tail, SemanticModel semanticModel)
     {
         var tailStatements = StatementsIn(model, tail);
-        var handlerStatements = model.Statements.Skip(handler.LabelIndex + 1).Take(handler.EndIndex - handler.LabelIndex - 1);
+        var handlerStatements = HandlerStatements(model, handler);
         return SecondaryErrorIsPossible(tailStatements, semanticModel) && ReEntryGuard.IsPresent(handlerStatements, tailStatements, semanticModel);
     }
 

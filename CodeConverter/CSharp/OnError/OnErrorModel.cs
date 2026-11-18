@@ -30,7 +30,8 @@ internal sealed class OnErrorModel
             .Select(s => LabelName.Of(s.Label)).Distinct()
             .Select(label => CreateHandlerRegion(label, semanticModel))
             .ToArray();
-        IsDynamic = !AreActiveHandlersStatic();
+        IsDynamic = !AreActiveHandlersStatic(ignoreGoToZeroInHandlers: false);
+        HandlersOnlyTurnErrorHandlingOff = IsDynamic && AreActiveHandlersStatic(ignoreGoToZeroInHandlers: true);
     }
 
     public static OnErrorModel Create(IReadOnlyCollection<VBSyntax.StatementSyntax> statements, SemanticModel semanticModel) =>
@@ -58,6 +59,11 @@ internal sealed class OnErrorModel
 
     /// <summary>The active handler can't be known per statement, so it needs recording at runtime.</summary>
     public bool IsDynamic { get; }
+
+    /// <summary>
+    /// <see cref="IsDynamic"/> only because a handler runs <c>On Error GoTo 0</c>. That turns off what the handler resumes to, which the structured shape doesn't protect anyway.
+    /// </summary>
+    public bool HandlersOnlyTurnErrorHandlingOff { get; }
 
     public bool HasOnErrorOrResume => OnErrorStatements.Any() || ResumeStatements.Any();
 
@@ -126,10 +132,11 @@ internal sealed class OnErrorModel
     /// <summary>
     /// A handler's statements run with that handler still active, whatever their position. On Error inside one changes what's active wherever it resumes to.
     /// </summary>
-    private bool AreActiveHandlersStatic()
+    private bool AreActiveHandlersStatic(bool ignoreGoToZeroInHandlers)
     {
-        if (OnErrorStatements.Any(s => !_methodLevelIndexes.ContainsKey(s))) return false;
-        if (OnErrorStatements.Any(s => HandlerContaining(_methodLevelIndexes[s]) != null)) return false;
+        bool IgnoredInHandler(VBSyntax.StatementSyntax s) => ignoreGoToZeroInHandlers && s.IsKind(VBasicSyntaxKind.OnErrorGoToZeroStatement) && HandlerContaining(MethodLevelIndexOf(s)) != null;
+        if (OnErrorStatements.Any(s => !_methodLevelIndexes.ContainsKey(s) && !IgnoredInHandler(s))) return false;
+        if (OnErrorStatements.Any(s => HandlerContaining(MethodLevelIndexOf(s)) != null && !IgnoredInHandler(s))) return false;
         return Jumps.All(j => {
             var sourceIndex = MethodLevelIndexOf(j.Statement);
             var targetIndex = IndexContainingLabel(j.TargetLabel);

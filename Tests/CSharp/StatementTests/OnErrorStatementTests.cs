@@ -2500,4 +2500,187 @@ internal partial class TestClass
     }
 }");
     }
+
+    /// <summary>
+    /// In the try/catch shape the catch already lets later errors propagate, so On Error GoTo 0 in the handler only has to clear Err (VB sets Err.Number to 0 there, checked by running it), or nothing when Err isn't used.
+    /// </summary>
+    [Fact]
+    public async Task OnErrorGoToZeroInAStructuredHandlerOnlyClearsErrAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Sub Log(s As String)
+    End Sub
+
+    Sub M()
+        On Error GoTo H
+        Boom()
+        Exit Sub
+H:
+        Log(Err.Description)
+        On Error GoTo 0
+        Boom()
+    End Sub
+End Class
+
+Class WithoutErr
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Sub M()
+        On Error GoTo H
+        Boom()
+        Exit Sub
+H:
+        On Error GoTo 0
+        Boom()
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public void Log(string s)
+    {
+    }
+
+    public void M()
+    {
+        ProjectData.ClearProjectError();
+        try
+        {
+            Boom();
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            Log(Information.Err().Description);
+            ProjectData.ClearProjectError();
+            Boom();
+            ProjectData.ClearProjectError();
+        }
+    }
+}
+
+internal partial class WithoutErr
+{
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public void M()
+    {
+        try
+        {
+            Boom();
+            return;
+        }
+        catch
+        {
+            Boom();
+        }
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
+
+    /// <summary>
+    /// The handler is written for re-entry, which needs the segmented form, but it turns error handling off for the code it resumes to: that code is protected when reached without an error and not when resumed to, so no form is exact.
+    /// </summary>
+    [Fact]
+    public async Task OnErrorGoToZeroInAHandlerWrittenForReEntryKeepsTheFallbackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private attempts As Integer
+
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Sub M()
+        On Error GoTo H
+        Boom()
+Cleanup:
+        Boom()
+        Exit Sub
+H:
+        attempts += 1
+        If attempts > 3 Then Exit Sub
+        On Error GoTo 0
+        Resume Cleanup
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int attempts;
+
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public void M()
+    {
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo H' at character 149
+
+
+                Input:
+                        On Error GoTo H
+
+                 */
+        Boom();
+    Cleanup:
+        ;
+
+        Boom();
+        return;
+    H:
+        ;
+
+        attempts += 1;
+        if (attempts > 3)
+            return;
+        ;
+#error Cannot convert OnErrorGoToStatementSyntax - see comment for details
+        /* Cannot convert OnErrorGoToStatementSyntax, CONVERSION ERROR: Conversion for OnErrorGoToZeroStatement not implemented, please report this issue in 'On Error GoTo 0' at character 312
+
+
+        Input:
+                On Error GoTo 0
+
+         */
+        ;
+#error Cannot convert ResumeStatementSyntax - see comment for details
+        /* Cannot convert ResumeStatementSyntax, CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 337
+
+
+                Input:
+                        Resume Cleanup
+
+                 */
+    }
+}----- Exception 1 of 3 -----
+CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, please report this issue in 'On Error GoTo H' at character 149
+
+----- Exception 2 of 3 -----
+CONVERSION ERROR: Conversion for OnErrorGoToZeroStatement not implemented, please report this issue in 'On Error GoTo 0' at character 312
+
+----- Exception 3 of 3 -----
+CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Cleanup' at character 337", incompatibleWithAutomatedCommentTesting: true);
+    }
 }
