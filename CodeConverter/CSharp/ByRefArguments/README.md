@@ -45,4 +45,7 @@ Known gaps:
 * A lambda parameter inside a ByRef argument (`Function(x) Inc(x.P)`) hoists the local function outside the lambda, where `x` isn't in scope (CS0103).
 * An auto-property initializer (`Public Property X As Integer = Inc(P)`) leaves a `ph…` placeholder (CS0103): it doesn't go through the field initializer path.
 * Partial-class instance initializers run in part order rather than declaration order.
+* A parameterized property argument (`Inc(Item(0))`) writes back with `get_Item(0) = argv` (CS0131). The parameterized-property work (#909) handles these targets.
+* A member of a structure returned by a property (`Inc(InnerProp.P)`) writes back with `InnerProp.P = argv`, which C# rejects because `InnerProp` returns a copy (CS1612).
+* `Select Case Inc(P)` with `Case Inc(P)` gives `case var @case when ...` (CS0825).
 * A `ReadOnly` auto-property is assignable in its type's constructor and initializers, so VB writes it back there, but `GetRefConversionForExpression` treats every read-only property as not writable. A fix also needs the C# write-back target to be assignable from the field initializer method.
