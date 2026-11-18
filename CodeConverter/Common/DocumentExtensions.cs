@@ -68,15 +68,12 @@ internal static class DocumentExtensions
     /// </summary>
     private static bool MustKeepBraces(CSSyntax.BlockSyntax block) =>
         IsEmbeddedStatement(block) && block.Statements.Count == 1
-        && (!CanBeEmbedded(block.Statements[0]) || IsFollowedByElse(block) && CouldEndWithIfWithoutElse(block.Statements[0]));
+        && (!block.Statements[0].CanBeEmbedded() || IsFollowedByElse(block) && CouldEndWithIfWithoutElse(block.Statements[0]));
 
     private static bool IsEmbeddedStatement(CSSyntax.BlockSyntax block) =>
         block.Parent is CSSyntax.IfStatementSyntax or CSSyntax.ElseClauseSyntax or CSSyntax.CommonForEachStatementSyntax
             or CSSyntax.ForStatementSyntax or CSSyntax.WhileStatementSyntax or CSSyntax.DoStatementSyntax
             or CSSyntax.UsingStatementSyntax or CSSyntax.LockStatementSyntax;
-
-    private static bool CanBeEmbedded(CSSyntax.StatementSyntax statement) =>
-        statement is not (CSSyntax.LocalDeclarationStatementSyntax or CSSyntax.LocalFunctionStatementSyntax or CSSyntax.LabeledStatementSyntax);
 
     private static bool IsFollowedByElse(CSSyntax.BlockSyntax block) =>
         block.Parent is CSSyntax.IfStatementSyntax { Else: not null } ifStatement && ifStatement.Statement == block;
@@ -88,7 +85,7 @@ internal static class DocumentExtensions
         statement switch {
             CSSyntax.IfStatementSyntax { Else: null } => true,
             CSSyntax.IfStatementSyntax { Else: { } elseClause } => CouldEndWithIfWithoutElse(elseClause.Statement),
-            CSSyntax.BlockSyntax { Statements.Count: 1 } block when IsEmbeddedStatement(block) && CanBeEmbedded(block.Statements[0]) => CouldEndWithIfWithoutElse(block.Statements[0]),
+            CSSyntax.BlockSyntax { Statements.Count: 1 } block when IsEmbeddedStatement(block) && block.Statements[0].CanBeEmbedded() => CouldEndWithIfWithoutElse(block.Statements[0]),
             CSSyntax.CommonForEachStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.ForStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),
             CSSyntax.WhileStatementSyntax s => CouldEndWithIfWithoutElse(s.Statement),

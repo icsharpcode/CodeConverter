@@ -59,6 +59,12 @@ internal static class Extensions
         return statementSyntaxs.Count == 1 ? statementSyntaxs[0] : block;
     }
 
+    /// <summary>
+    /// C# forbids a declaration or labeled statement as the embedded statement of an if, else, loop, using or lock (CS1023).
+    /// </summary>
+    public static bool CanBeEmbedded(this StatementSyntax statement) =>
+        statement is not (LocalDeclarationStatementSyntax or LocalFunctionStatementSyntax or LabeledStatementSyntax);
+
     private static bool ContainsNestedStatements(this BlockSyntax block)
     {
         return block.Statements.Any(HasDescendantCSharpStatement);
