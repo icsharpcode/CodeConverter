@@ -1220,4 +1220,224 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task WhileWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        While a
+            Dim z = F()
+        End While
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        while (a)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DoWhileWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        Do While a
+            Dim z = F()
+        Loop
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        while (a)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DoUntilWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        Do Until a
+            Dim z = F()
+        Loop
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        while (!a)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DoLoopWhileWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        Do
+            Dim z = F()
+        Loop While a
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        do
+        {
+            int z = F();
+        }
+        while (a);
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ForWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        For i = 1 To 2
+            Dim z = F()
+        Next
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ForEachWithLoneLocalDeclarationKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(xs As Integer())
+        For Each x In xs
+            Dim z = F()
+        Next
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int[] xs)
+    {
+        foreach (var x in xs)
+        {
+            int z = F();
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task WhileWithLoneLabelKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean)
+        While a
+lbl:
+        End While
+    End Sub
+
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(bool a)
+    {
+        while (a)
+        {
+        lbl:
+            ;
+
+        }
+    }
+
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
 }
