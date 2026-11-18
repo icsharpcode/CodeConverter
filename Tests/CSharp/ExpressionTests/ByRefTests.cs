@@ -1967,6 +1967,52 @@ public partial struct S
 }");
     }
     [Fact]
+    public async Task KeywordNamedByRefParametersArePassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Box
+    Public Property P As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function M(ByRef [class] As Box, ByRef params As Box, ByRef [string] As Box) As Boolean
+        If Inc([class].P) + Inc(params.P) + Inc([string].P) > 0 Then Return True
+        Return False
+    End Function
+End Class", @"
+public partial class Box
+{
+    public int P { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static bool M(ref Box @class, ref Box @params, ref Box @string)
+    {
+        int localInc(ref Box @class) { var tmp = @class; int argv = tmp.P; var ret = Inc(ref argv); tmp.P = argv; return ret; }
+
+        int localInc1(ref Box @params) { var tmp1 = @params; int argv1 = tmp1.P; var ret = Inc(ref argv1); tmp1.P = argv1; return ret; }
+
+        int localInc2(ref Box @string) { var tmp2 = @string; int argv2 = tmp2.P; var ret = Inc(ref argv2); tmp2.P = argv2; return ret; }
+
+        if (localInc(ref @class) + localInc1(ref @params) + localInc2(ref @string) > 0)
+            return true;
+        return false;
+    }
+}");
+    }
+
+    [Fact]
     public async Task TypeNamedLikeAByRefParameterIsNotPassedAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Class H

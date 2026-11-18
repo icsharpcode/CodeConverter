@@ -696,6 +696,18 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal("1,0", original.Total & "," & h.Total)
     End Sub
     <Fact>
+    Public Sub ByRefParametersWithKeywordNamesArePassedToTheLocalFunction()
+        Dim a As New Counter, b As New Counter, c As New Counter
+        Assert.True(IncrementKeywordNamedParameters(a, b, c))
+        Assert.Equal("1,1,1", a.P & "," & b.P & "," & c.P)
+    End Sub
+    Private Shared Function IncrementKeywordNamedParameters(ByRef [class] As Counter, ByRef params As Counter, ByRef [string] As Counter) As Boolean
+        If Increment([class].P) + Increment(params.P) + Increment([string].P) = 3 Then
+            Return [class].P + params.P + [string].P = 3
+        End If
+        Return False
+    End Function
+    <Fact>
     Public Sub OutParameterNamedLikeItsTypeIsNotPassedToTheLocalFunction()
         Tally.Count = 0
         Dim created As Tally = Nothing

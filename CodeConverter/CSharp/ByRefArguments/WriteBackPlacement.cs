@@ -74,10 +74,10 @@ internal class WriteBackPlacement
         void AddArgumentsAndParameters(List<IParameterSymbol> parameterSymbols)
         {
             foreach (var p in parameterSymbols) {
-                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, SyntaxFactory.IdentifierName(p.Name));
+                var arg = (ArgumentSyntax)CommonConversions.CsSyntaxGenerator.Argument(p.RefKind, ValidSyntaxFactory.IdentifierName(p.Name));
                 arguments.Add(arg);
                 var par = (ParameterSyntax)CommonConversions.CsSyntaxGenerator.ParameterDeclaration(p);
-                parameters.Add(par.WithDefault(null));
+                parameters.Add(par.WithIdentifier(CommonConversions.CsEscapedIdentifier(p.Name)).WithDefault(null));
             }
         }
     }
@@ -88,7 +88,7 @@ internal class WriteBackPlacement
     /// A <c>With</c> block's implicit receiver counts as its <c>With</c> expression, because the converter may reuse that expression directly
     /// (<c>With b : Inc(.X)</c> becomes <c>Inc(ref b.X)</c>).
     /// A candidate is then dropped if the converted body doesn't mention it, i.e. the <c>With</c> header was evaluated into <c>withBlock</c> (<c>With arr(i)</c>).
-    /// The converter writes a parameter reference with the declared casing, so the names compare ordinally.
+    /// The converter writes a parameter reference with the declared casing, escaped like any identifier (<c>@params</c>, whose token text keeps the <c>@</c>), so the names compare ordinally after the same escaping.
     /// </summary>
     private List<IParameterSymbol> RefParametersUsedIn(VBasic.VisualBasicSyntaxNode invocation, BlockSyntax block, ISymbol enclosingSymbol)
     {
@@ -99,7 +99,7 @@ internal class WriteBackPlacement
             .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
         if (candidates.Count == 0) return candidates;
         var namesUsed = new HashSet<string>(block.DescendantNodes().OfType<IdentifierNameSyntax>().Where(IsNotAMemberName).Select(n => n.Identifier.ValueText), StringComparer.Ordinal);
-        return candidates.Where(p => namesUsed.Contains(p.Name)).ToList();
+        return candidates.Where(p => namesUsed.Contains(CommonConversions.CsEscapedIdentifier(p.Name).ValueText)).ToList();
 
         static bool IsNotAMemberName(IdentifierNameSyntax name) =>
             name.Parent switch {
