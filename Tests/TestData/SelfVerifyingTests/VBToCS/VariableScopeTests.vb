@@ -75,5 +75,44 @@ Public Class VariableScopeTests
         Next
     End Sub
 
+    Private _loneDeclarationLog As New List(Of String)
+
+    Private Function LogLoneDeclaration(name As String) As Integer
+        _loneDeclarationLog.Add(name)
+        Return 1
+    End Function
+
+    <Fact>
+    Sub TestLoneDeclarationAsBlockBodyStillRuns()
+        Dim i = 0
+        While i < 1
+            Dim z = LogLoneDeclaration("While") + Increment(i)
+        End While
+        Do
+            Dim z = LogLoneDeclaration("DoLoopWhile")
+        Loop While False
+        For j = 1 To 2
+            Dim z = LogLoneDeclaration("For")
+        Next
+        For Each x In {1}
+            Dim z = LogLoneDeclaration("ForEach")
+        Next
+        SyncLock _loneDeclarationLog
+            Dim z = LogLoneDeclaration("SyncLock")
+        End SyncLock
+        Using d As IDisposable = New IO.MemoryStream()
+            Using d
+                Dim z = LogLoneDeclaration("Using")
+            End Using
+        End Using
+        If True Then Dim z = LogLoneDeclaration("If") Else Dim y = LogLoneDeclaration("NotElse")
+        If False Then Dim z = LogLoneDeclaration("NotIf") Else Dim y = LogLoneDeclaration("Else")
+        Assert.Equal({"While", "DoLoopWhile", "For", "For", "ForEach", "SyncLock", "Using", "If", "Else"}, _loneDeclarationLog)
+    End Sub
+
+    Private Shared Function Increment(ByRef i As Integer) As Integer
+        i += 1
+        Return i
+    End Function
 
 End Class
