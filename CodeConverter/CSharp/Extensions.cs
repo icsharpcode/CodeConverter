@@ -8,11 +8,12 @@ internal static class Extensions
     /// Returns the single statement in a block if it has no nested statements.
     /// If it has nested statements, and the surrounding block was removed, it could be ambiguous,
     /// e.g. if (...) { if (...) return null; } else return "";
-    /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement
+    /// Unbundling the middle if statement would bind the else to it, rather than the outer if statement.
+    /// A declaration or label can't be unpacked either (<see cref="CanBeEmbedded"/>).
     /// </summary>
     public static StatementSyntax UnpackNonNestedBlock(this BlockSyntax block)
     {
-        return block.Statements.Count == 1 && !block.ContainsNestedStatements() ? block.Statements[0] : block;
+        return block.Statements.Count == 1 && block.Statements[0].CanBeEmbedded() && !block.ContainsNestedStatements() ? block.Statements[0] : block;
     }
 
     /// <summary>
@@ -56,7 +57,7 @@ internal static class Extensions
     public static StatementSyntax UnpackPossiblyNestedBlock(this BlockSyntax block)
     {
         SyntaxList<StatementSyntax> statementSyntaxs = block.Statements;
-        return statementSyntaxs.Count == 1 ? statementSyntaxs[0] : block;
+        return statementSyntaxs.Count == 1 && statementSyntaxs[0].CanBeEmbedded() ? statementSyntaxs[0] : block;
     }
 
     /// <summary>

@@ -910,6 +910,99 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task BodyWithLoneDeclarationOrLabelKeepsBracesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(a As Boolean, xs As Integer())
+        If a Then Dim v = F()
+        If a Then
+            Dim w = F()
+        Else
+            Dim x = F()
+        End If
+        While a
+            Dim y = F()
+        End While
+        Do
+            Dim z = F()
+        Loop While a
+        For i = 1 To 2
+            Dim i2 = F()
+        Next
+        For Each x In xs
+            Dim x2 = F()
+        Next
+        SyncLock xs
+            Dim l = F()
+        End SyncLock
+        Using New System.IO.MemoryStream()
+            Dim u = F()
+        End Using
+        While a
+label1:
+        End While
+    End Sub
+    Private Function F() As Integer
+        Return 1
+    End Function
+End Class", @"using System.IO;
+
+internal partial class TestClass
+{
+    private void TestMethod(bool a, int[] xs)
+    {
+        if (a)
+        {
+            int v = F();
+        }
+        if (a)
+        {
+            int w = F();
+        }
+        else
+        {
+            int x = F();
+        }
+        while (a)
+        {
+            int y = F();
+        }
+        do
+        {
+            int z = F();
+        }
+        while (a);
+        for (int i = 1; i <= 2; i++)
+        {
+            int i2 = F();
+        }
+        foreach (var x in xs)
+        {
+            int x2 = F();
+        }
+        lock (xs)
+        {
+            int l = F();
+        }
+        using (new MemoryStream())
+        {
+            int u = F();
+        }
+        while (a)
+        {
+        label1:
+            ;
+
+        }
+    }
+    private int F()
+    {
+        return 1;
+    }
+}");
+    }
+
+    [Fact]
     public async Task NestedBlockStatementsKeepSameNestingAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
