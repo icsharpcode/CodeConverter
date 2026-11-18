@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Operations;
+using ICSharpCode.CodeConverter.CSharp.OnError;
 
 namespace ICSharpCode.CodeConverter.CSharp;
 
@@ -200,47 +201,8 @@ internal class LambdaConverter
     {
 
         var innerMethodBodyVisitor = await MethodBodyExecutableStatementVisitor.CreateAsync(node, _semanticModel, CommonConversions.TriviaConvertingExpressionVisitor, CommonConversions, CommonConversions.VisualBasicEqualityComparison, _withBlockLhs, _extraUsingDirectives, _typeContext, isIterator, csReturnVariable);
-        return await GetWithConvertedGotosOrNull(statements) ?? await ConvertStatements(statements);
-
-        async Task<List<StatementSyntax>> ConvertStatements(IEnumerable<VBSyntax.StatementSyntax> readOnlyCollection)
-        {
-            return (await readOnlyCollection.SelectManyAsync(async s => (IEnumerable<StatementSyntax>)await s.Accept(innerMethodBodyVisitor.CommentConvertingVisitor))).ToList();
-        }
-
-        async Task<IReadOnlyCollection<StatementSyntax>> GetWithConvertedGotosOrNull(IReadOnlyCollection<Microsoft.CodeAnalysis.VisualBasic.Syntax.StatementSyntax> statements)
-        {
-            var onlyIdentifierLabel = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.LabelStatement));
-            var onlyOnErrorGotoStatement = statements.OnlyOrDefault(s => s.IsKind(VBasic.SyntaxKind.OnErrorGoToLabelStatement));
-
-            // See https://learn.microsoft.com/en-us/dotnet/visual-basic/language-reference/statements/on-error-statement
-            if (onlyIdentifierLabel != null && onlyOnErrorGotoStatement != null) {
-                var statementsList = statements.ToList();
-                var onlyIdentifierLabelIndex = statementsList.IndexOf(onlyIdentifierLabel);
-                var onlyOnErrorGotoStatementIndex = statementsList.IndexOf(onlyOnErrorGotoStatement);
-
-                // Even this very simple case can generate compile errors if the error handling uses statements declared in the scope of the try block
-                // For now, the user will have to fix these manually, in future it'd be possible to hoist any used declarations out of the try block
-                if (onlyOnErrorGotoStatementIndex < onlyIdentifierLabelIndex) {
-                    var beforeStatements = await ConvertStatements(statements.Take(onlyOnErrorGotoStatementIndex));
-                    var tryBlockStatements = await ConvertStatements(statements.Take(onlyIdentifierLabelIndex).Skip(onlyOnErrorGotoStatementIndex + 1));
-                    var tryBlock = SyntaxFactory.Block(tryBlockStatements);
-                    var afterStatements = await ConvertStatements(statements.Skip(onlyIdentifierLabelIndex + 1));
-                    
-                    var catchClauseSyntax = SyntaxFactory.CatchClause();
-
-                    // Default to putting the statements after the catch block in case logic falls through, but if the last statement is a return, put them inside the catch block for neatness.
-                    if (tryBlockStatements.LastOrDefault().IsKind(SyntaxKind.ReturnStatement)) {
-                        catchClauseSyntax = catchClauseSyntax.WithBlock(SyntaxFactory.Block(afterStatements));
-                        afterStatements = new List<StatementSyntax>();
-                    }
-
-                    var tryStatement = SyntaxFactory.TryStatement(SyntaxFactory.SingletonList(catchClauseSyntax)).WithBlock(tryBlock);
-                    return beforeStatements.Append(tryStatement).Concat(afterStatements).ToList();
-                }
-            }
-
-            return null;
-        }
+        var onErrorContext = new OnErrorConversionContext(node, _semanticModel, CommonConversions, innerMethodBodyVisitor, _extraUsingDirectives);
+        return await OnErrorMethodBodyConverter.ConvertOrNullAsync(onErrorContext, statements) ?? await onErrorContext.ConvertAsync(statements);
     }
 
     /// <summary>
