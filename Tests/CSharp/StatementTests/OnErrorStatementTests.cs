@@ -2439,4 +2439,65 @@ CONVERSION ERROR: Conversion for OnErrorGoToLabelStatement not implemented, plea
 ----- Exception 2 of 2 -----
 CONVERSION ERROR: Conversion for ResumeLabelStatement not implemented, please report this issue in 'Resume Retry' at character 287", incompatibleWithAutomatedCommentTesting: true);
     }
+
+    /// <summary>
+    /// Nothing is between the `On Error` and the first label the handler resumes to, so there is nothing to protect there.
+    /// </summary>
+    [Fact]
+    public async Task ASegmentWithNothingToProtectGetsNoTryAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private attempts As Integer
+
+    Sub Boom()
+        Throw New System.Exception()
+    End Sub
+
+    Function Retries() As Integer
+        On Error GoTo EH
+Retry:
+        attempts += 1
+        If attempts < 3 Then Boom()
+        Retries = attempts
+        Exit Function
+EH:
+        Resume Retry
+    End Function
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private int attempts;
+
+    public void Boom()
+    {
+        throw new Exception();
+    }
+
+    public int Retries()
+    {
+        int RetriesRet = default;
+    Retry:
+        ;
+        try
+        {
+
+            attempts += 1;
+            if (attempts < 3)
+                Boom();
+            RetriesRet = attempts;
+            return RetriesRet;
+        }
+        catch
+        {
+            goto EH;
+        }
+
+    EH:
+        ;
+
+        goto Retry;
+    }
+}");
+    }
 }

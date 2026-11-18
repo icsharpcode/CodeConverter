@@ -84,7 +84,8 @@ internal sealed class StructuredShapeEmitter
         var statements = new List<StatementSyntax>();
         foreach (var segment in _plan.Segments) {
             if (segment.LabelIndex >= 0) statements.AddRange(await ConvertRangeAsync(segment.LabelIndex, segment.LabelIndex + 1));
-            statements.Add(Try(await _hoisting.ConvertAsync(StatementsIn(segment)), GoTo(HandlerLabel)));
+            var protectedStatements = await _hoisting.ConvertAsync(StatementsIn(segment));
+            if (protectedStatements.Any()) statements.Add(Try(protectedStatements, GoTo(HandlerLabel)));
         }
         statements.AddRange(await _hoisting.ConvertAsync(StatementsIn(UnprotectedRange(_plan))));
         statements.Add(Label(HandlerLabel));
