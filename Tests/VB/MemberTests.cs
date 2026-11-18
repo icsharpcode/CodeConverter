@@ -466,6 +466,44 @@ End Class");
     }
 
     [Fact]
+    public async Task TestIndexerWithIndexerNameAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System.Runtime.CompilerServices;
+
+public class BaseText
+{
+    [IndexerName(""Chars"")]
+    public char this[string key] { get { return key[0]; } }
+}
+
+public class DerivedText : BaseText
+{
+    [IndexerName(""Chars"")]
+    public char this[int index] { get { return this[""a""]; } }
+}", @"Imports System.Runtime.CompilerServices
+
+Public Class BaseText
+    <IndexerName(""Chars"")>
+    Default Public ReadOnly Property Chars(key As String) As Char
+        Get
+            Return key(0)
+        End Get
+    End Property
+End Class
+
+Public Class DerivedText
+    Inherits BaseText
+    <IndexerName(""Chars"")>
+    Default Public Overloads ReadOnly Property Chars(index As Integer) As Char
+        Get
+            Return Me(""a"")
+        End Get
+    End Property
+End Class");
+    }
+
+    [Fact]
     public async Task TestMethodNotOverloadingInheritedMethodHasNoOverloadsAsync()
     {
         await TestConversionCSharpToVisualBasicAsync(

@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### C# -> VB
 
+* Name a converted indexer by its [IndexerName] instead of always Item
 * Don't emit Me on the first parameter of an extension method - [#1118](https://github.com/icsharpcode/CodeConverter/issues/1118)
 * Truncate towards zero when converting a fractional number to an integer, instead of inheriting VB's rounding - [#1021](https://github.com/icsharpcode/CodeConverter/issues/1021)
 * Add Overloads to methods, properties and indexers when an inherited member has the same name

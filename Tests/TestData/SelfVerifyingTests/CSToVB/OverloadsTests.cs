@@ -40,6 +40,20 @@ public class OverloadsTestDerived : OverloadsTestBase
     public static string CreateDefault() => Create();
 }
 
+public class OverloadsTestNamedIndexerBase
+{
+    [System.Runtime.CompilerServices.IndexerName("Value")]
+    public string this[string key] => "base " + key;
+}
+
+public class OverloadsTestNamedIndexerDerived : OverloadsTestNamedIndexerBase
+{
+    [System.Runtime.CompilerServices.IndexerName("Value")]
+    public string this[int index] => "derived " + index;
+
+    public string LookupText() => this["key"];
+}
+
 public interface IOverloadsTestBase
 {
     string Run(int i);
@@ -72,6 +86,17 @@ public class OverloadsTests
 
     [Fact]
     public void BaseIndexerStaysCallable() => Assert.Equal("base key", new OverloadsTestDerived().LookupText());
+
+    [Fact]
+    public void BaseNamedIndexerStaysCallable()
+    {
+        var derived = new OverloadsTestNamedIndexerDerived();
+        Assert.Equal("base key", derived.LookupText());
+        Assert.Equal("derived 1", derived[1]);
+    }
+
+    [Fact]
+    public void NamedIndexerKeepsItsName() => Assert.NotNull(typeof(OverloadsTestNamedIndexerBase).GetProperty("Value"));
 
     [Fact]
     public void BaseStaticMethodStaysCallable() => Assert.Equal("base create", OverloadsTestDerived.CreateDefault());
