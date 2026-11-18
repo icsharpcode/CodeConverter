@@ -2798,4 +2798,147 @@ public partial class C : B
     }
 }");
     }
+
+    [Fact]
+    public async Task ParameterizedPropertyInAStructureOrWithBlockIsWrittenBackInTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Private _n As Integer
+
+    Public Property Qr(a As Integer, b As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Default Public Property Item(a As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Public Function NextIndex() As Integer
+        _n += 1
+        Return _n
+    End Function
+
+    Public Sub M(i As Integer)
+        If SetValue(Qr(NextIndex(), 2)) Then
+        End If
+        If SetValue(Me(i)) Then
+        End If
+    End Sub
+
+    Public Shared Sub WithByRef(ByRef s As S)
+        With s
+            If SetValue(.Qr(.NextIndex(), 2)) Then
+            End If
+        End With
+    End Sub
+
+    Private Shared Function SetValue(ByRef v As String) As Boolean
+        v = ""changed""
+        Return True
+    End Function
+End Structure
+
+Public Class Holder
+    Public F As S
+
+    Public Sub WithField()
+        With F
+            If SetValue(.Qr(.NextIndex(), 2)) Then
+            End If
+        End With
+    End Sub
+
+    Private Shared Function SetValue(ByRef v As String) As Boolean
+        Return True
+    End Function
+End Class", @"
+public partial struct S
+{
+    private int _n;
+
+    public string get_Qr(int a, int b)
+    {
+        return """";
+    }
+    public void set_Qr(int a, int b, string value)
+    {
+    }
+
+    public string this[int a]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+
+    public int NextIndex()
+    {
+        _n += 1;
+        return _n;
+    }
+
+    public void M(int i)
+    {
+        bool localSetValue(ref S self) { var tmp = self.NextIndex(); string argv = self.get_Qr(tmp, 2); var ret = SetValue(ref argv); self.set_Qr(tmp, 2, argv); return ret; }
+
+        if (localSetValue(ref this))
+        {
+        }
+        bool localSetValue1(ref S self) { string argv1 = self[i]; var ret = SetValue(ref argv1); self[i] = argv1; return ret; }
+
+        if (localSetValue1(ref this))
+        {
+        }
+    }
+
+    public static void WithByRef(ref S s)
+    {
+        bool localSetValue(ref S s) { var tmp1 = s.NextIndex(); string argv2 = s.get_Qr(tmp1, 2); var ret = SetValue(ref argv2); s.set_Qr(tmp1, 2, argv2); return ret; }
+
+        if (localSetValue(ref s))
+        {
+        }
+    }
+
+    private static bool SetValue(ref string v)
+    {
+        v = ""changed"";
+        return true;
+    }
+}
+
+public partial class Holder
+{
+    public S F;
+
+    public void WithField()
+    {
+        {
+            ref var withBlock = ref F;
+            bool localSetValue(ref S withBlock) { var tmp2 = withBlock.NextIndex(); string argv3 = withBlock.get_Qr(tmp2, 2); var ret = SetValue(ref argv3); withBlock.set_Qr(tmp2, 2, argv3); return ret; }
+
+            if (localSetValue(ref withBlock))
+            {
+            }
+        }
+    }
+
+    private static bool SetValue(ref string v)
+    {
+        return true;
+    }
+}");
+    }
 }
