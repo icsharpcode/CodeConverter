@@ -47,7 +47,7 @@ internal sealed class StructuredShapeEmitter
     {
         var before = DefaultInitializers.Add(await ConvertRangeAsync(0, _plan.OnErrorIndex)).ToList();
         var protectedAndHandler = _plan.IsSegmented ? await EmitSegmentedAsync() : await EmitPlainAsync();
-        var statements = before.Concat(_err.Clear()).Concat(_hoisting.Declarations).Concat(protectedAndHandler).ToList();
+        var statements = before.Concat(StatementReachability.EndIsReachable(before) ? _err.Clear() : default).Concat(_hoisting.Declarations).Concat(protectedAndHandler).ToList();
         var labelsRemoved = WithoutUnreferencedLabels(statements);
         return _plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) ? MissingReturn.Add(_context, _model, labelsRemoved).ToList() : labelsRemoved;
     }
@@ -95,7 +95,7 @@ internal sealed class StructuredShapeEmitter
         var handler = await ConvertRangeAsync(HandlerLabelIndex + 1, _plan.Handler.EndIndex);
         if (!_err.IsMaintained) return handler;
         var withClearedErr = ClearErrOnReturnRewriter.Rewrite(handler, _err, _context.Visitor.ReturnVariable).ToList();
-        if (_plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd)) withClearedErr.AddRange(_err.Clear());
+        if (_plan.Handler.Exits.Any(e => e.Kind == HandlerExitKind.FallsOffEnd) && StatementReachability.EndIsReachable(withClearedErr)) withClearedErr.AddRange(_err.Clear());
         return withClearedErr;
     }
 

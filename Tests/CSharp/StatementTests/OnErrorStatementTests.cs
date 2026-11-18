@@ -2140,4 +2140,120 @@ internal partial class UsesErr
     }
 }");
     }
+
+    /// <summary>
+    /// Err isn't cleared after a statement whose end can't be reached, e.g. a using whose body always returns.
+    /// </summary>
+    [Fact]
+    public async Task ErrIsNotClearedAfterCodeThatAlwaysLeavesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System
+Class TestClass
+    Function Foo() As Integer
+        Return 1
+    End Function
+
+    Sub HandlerFallsOffTheEnd()
+        On Error GoTo H
+        Foo()
+        Exit Sub
+H:
+        Console.WriteLine(Err.Number)
+        Using New System.IO.StringReader(""x"")
+            Return
+        End Using
+    End Sub
+
+    Sub CodeBeforeOnErrorAlwaysLeaves()
+        Using New System.IO.StringReader(""x"")
+            Return
+        End Using
+        On Error GoTo H
+        Foo()
+        Exit Sub
+H:
+        Console.WriteLine(Err.Number)
+    End Sub
+
+    Sub HandlerFunctionAfterALeavingUsing()
+        On Error GoTo H
+        Foo()
+        Exit Sub
+H:
+        Console.WriteLine(Err.Number)
+        Using New System.IO.StringReader(""x"")
+            Return
+        End Using
+        Resume Next
+    End Sub
+End Class", @"using System;
+using System.IO;
+using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public int Foo()
+    {
+        return 1;
+    }
+
+    public void HandlerFallsOffTheEnd()
+    {
+        ProjectData.ClearProjectError();
+        try
+        {
+            Foo();
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            Console.WriteLine(Information.Err().Number);
+            using (new StringReader(""x""))
+            {
+                ProjectData.ClearProjectError();
+                return;
+            }
+        }
+    }
+
+    public void CodeBeforeOnErrorAlwaysLeaves()
+    {
+        using (new StringReader(""x""))
+            return;
+        try
+        {
+            Foo();
+            return;
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+
+            Console.WriteLine(Information.Err().Number);
+            ProjectData.ClearProjectError();
+        }
+    }
+
+    public void HandlerFunctionAfterALeavingUsing()
+    {
+        ProjectData.ClearProjectError();
+
+        bool HExits() { Console.WriteLine(Information.Err().Number); using (new StringReader(""x"")) { ProjectData.ClearProjectError(); return true; } }
+        try
+        {
+            Foo();
+        }
+        catch (Exception ex)
+        {
+            ProjectData.SetProjectError(ex);
+            if (HExits())
+                return;
+        }
+        return;
+    }
+}", incompatibleWithAutomatedCommentTesting: true);
+    }
 }

@@ -27,6 +27,8 @@ internal static class StatementReachability
         ReturnStatementSyntax or ThrowStatementSyntax or GotoStatementSyntax => false,
         BlockSyntax block => EndIsReachable(block.Statements),
         LabeledStatementSyntax labeled => EndIsReachable(labeled.Statement),
+        UsingStatementSyntax usingStatement => EndIsReachable(usingStatement.Statement),
+        LockStatementSyntax lockStatement => EndIsReachable(lockStatement.Statement),
         IfStatementSyntax { Else: { } @else } ifStatement => EndIsReachable(ifStatement.Statement) || EndIsReachable(@else.Statement),
         SwitchStatementSyntax switchStatement => EndOfSwitchIsReachable(switchStatement),
         TryStatementSyntax tryStatement => EndIsReachable(tryStatement.Block) || tryStatement.Catches.Any(c => EndIsReachable(c.Block)),
