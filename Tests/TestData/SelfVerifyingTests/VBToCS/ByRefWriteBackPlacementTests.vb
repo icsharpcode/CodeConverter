@@ -678,10 +678,27 @@ Public Class ByRefWriteBackPlacementTests
         Dim h As New CounterHolder
         Assert.Equal(13, h.WithInLambdaArgument())
     End Sub
+    <Fact>
+    Public Sub WithByRefParameterConditionWritesBackBeforeTheBody()
+        Dim h As New CounterHolder
+        Dim c As New Counter
+        Assert.Equal(11, CounterHolder.IncrementInWithByRefParameters(h, c))
+        Assert.Equal(1, c.P)
+    End Sub
     Private Class CounterHolder
         Public Inner As Counter
         Public Property Total As Integer
 
+        Public Shared Function IncrementInWithByRefParameters(ByRef holder As CounterHolder, ByRef counter As Counter) As Integer
+            Dim result = 0
+            With holder
+                If Increment(.Total) > 0 Then result = .Total * 10
+            End With
+            With counter
+                If Increment(.P) > 0 Then result += .P
+            End With
+            Return result
+        End Function
         Public Function WithInLambdaArgument() As Integer
             If AddResult(Total, Function()
                                     With Inner

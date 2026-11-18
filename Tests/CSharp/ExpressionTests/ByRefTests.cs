@@ -1812,6 +1812,63 @@ public partial class C
 }", incompatibleWithAutomatedCommentTesting: true); // The multi-line lambda is emitted inside the local function, before the If's line
     }
     [Fact]
+    public async Task WithByRefParameterIsPassedToTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure T
+    Public Property P As Integer
+End Structure
+
+Public Class Box
+    Public Property X As Integer
+End Class
+
+Public Class C
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Sub M(ByRef b As Box, ByRef p As T)
+        With b
+            If Inc(.X) > 0 Then .X = 0
+        End With
+        With p
+            If Inc(.P) > 0 Then .P = 0
+        End With
+    End Sub
+End Class", @"
+public partial struct T
+{
+    public int P { get; set; }
+}
+
+public partial class Box
+{
+    public int X { get; set; }
+}
+
+public partial class C
+{
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public void M(ref Box b, ref T p)
+    {
+        int localInc(ref Box b) { int argv = b.X; var ret = Inc(ref argv); b.X = argv; return ret; }
+
+        if (localInc(ref b) > 0)
+            b.X = 0;
+        int localInc1(ref T p) { int argv1 = p.P; var ret = Inc(ref argv1); p.P = argv1; return ret; }
+
+        if (localInc1(ref p) > 0)
+            p.P = 0;
+    }
+}");
+    }
+    [Fact]
     public async Task WithBlockRefLocalIsPassedToTheLocalFunctionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Public Structure T

@@ -57,8 +57,8 @@ internal class WriteBackPlacement
             parameters.Add(RefParameter(selfName, CommonConversions.GetTypeSyntax(enclosingSymbol.ContainingType)));
         }
 
-        // Parent ByRef parameters cannot be captured, including references in receivers and nested argument expressions.
-        var refParametersOfParent = (operation?.DescendantsAndSelf()
+        // Parent ByRef parameters cannot be captured, including references in receivers, With receivers and nested argument expressions.
+        var refParametersOfParent = (operation is null ? null : DescendantsResolvingWithReceivers(operation)
             .OfType<IParameterReferenceOperation>().Select(p => p.Parameter) ?? Enumerable.Empty<IParameterSymbol>())
             .Where(p => p.RefKind != RefKind.None && SymbolEqualityComparer.Default.Equals(p.ContainingSymbol, enclosingSymbol))
             .Distinct<IParameterSymbol>(SymbolEqualityComparer.Default).ToList();
@@ -87,6 +87,19 @@ internal class WriteBackPlacement
             }
         }
     }
+
+    /// <summary>
+    /// The operations within <paramref name="operation"/>, where a <c>With</c> block's implicit receiver is replaced by the operations of the <c>With</c> expression.
+    /// The converter reuses a <c>With</c> expression such as a ByRef parameter directly as the receiver (<c>With b : Inc(.X)</c> becomes <c>Inc(ref b.X)</c>),
+    /// so the local function uses whatever that expression uses.
+    /// </summary>
+    private IEnumerable<IOperation> DescendantsResolvingWithReceivers(IOperation operation) =>
+        operation.DescendantsAndSelf().SelectMany(o =>
+            o is IInstanceReferenceOperation { ReferenceKind: InstanceReferenceKind.ImplicitReceiver } &&
+            o.Syntax is VBSyntax.ExpressionSyntax { Parent: VBSyntax.WithStatementSyntax } withExpression &&
+            _semanticModel.GetOperation(withExpression) is { } withOperation
+                ? DescendantsResolvingWithReceivers(withOperation)
+                : new[] { o });
 
     public bool RequiresLocalFunction(VBSyntax.InvocationExpressionSyntax invocation, IMethodSymbol invocationSymbol)
     {

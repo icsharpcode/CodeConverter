@@ -29,7 +29,7 @@ Within each of these, one call's write-backs are hoisted after its whole argumen
 
 In a `Structure`, a local function can't use `this` (CS1673). When the call uses an instance member, the local function takes `ref S self` and is called with `ref this`, and its body uses `self` for `this` (the converted body always qualifies instance members, which are only simplified later). `ref this` is legal wherever VB can use `Me` in a structure; VB has no read-only members (where it's CS1605) and no `Me` in a structure's lambdas (BC36638): `WriteBackPlacement.HoistAndCallLocalFunctionAsync`.
 
-A local function can't use a ref local either (CS8175), such as the `ref var withBlock` of a `With` over a structure field. References to a ref local are marked with its type, and the local function takes each one it uses as a `ref` parameter of the same name: `RefLocalReferences`.
+A local function can't use a ref local either (CS8175), such as the `ref var withBlock` of a `With` over a structure field. References to a ref local are marked with its type, and the local function takes each one it uses from outside its body as a `ref` parameter of the same name: `RefLocalReferences`. The enclosing method's ByRef parameters are passed the same way (CS1628), including one reused directly as a `With` receiver (`With b : Inc(.X)` becomes `Inc(ref b.X)`): `WriteBackPlacement.DescendantsResolvingWithReceivers`.
 
 The classes in this folder hold the ByRef-specific decisions. The placement mechanics stay with the code they extend: the hoisted node types and `PerScopeState` (the hoisting for every feature), `MethodBodyExecutableStatementVisitor` (jumps) and `CommonConversions` (field initializers, whose method wraps any hoisted statement, not only ByRef ones).
 
