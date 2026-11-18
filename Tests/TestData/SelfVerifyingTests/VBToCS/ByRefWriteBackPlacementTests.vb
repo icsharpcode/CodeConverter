@@ -691,6 +691,18 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal(1, s.Inner.P)
     End Sub
 
+    <Fact>
+    Public Sub StructureMePassedByRefIsCopiedAfterAnEarlierWriteBack()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.Equal(2, s.OperandThenMeByRef())
+    End Sub
+
+    <Fact>
+    Public Sub StructureMePassedByRefAfterAndAlsoIsCopiedAfterAnEarlierWriteBack()
+        Dim s As New LoggedValue(New List(Of String))
+        Assert.True(s.MeByRefAfterAndAlso())
+    End Sub
+
     Private Structure LoggedValue
         Public Shared SharedValue As Integer
         Private ReadOnly _log As List(Of String)
@@ -808,6 +820,18 @@ Public Class ByRefWriteBackPlacementTests
                 If Increment(.P) > 0 Then Return .P
             End With
             Return -1
+        End Function
+
+        Public Function OperandThenMeByRef() As Integer
+            Return Increment(Value) + ValueOf(Me)
+        End Function
+
+        Public Function MeByRefAfterAndAlso() As Boolean
+            Return Increment(Value) > 0 AndAlso ValueOf(Me) = 1
+        End Function
+
+        Private Shared Function ValueOf(ByRef s As LoggedValue) As Integer
+            Return s._value
         End Function
 
         Public Shared Function SharedCondition() As Boolean

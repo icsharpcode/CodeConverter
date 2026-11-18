@@ -116,7 +116,8 @@ internal class WriteBackPlacement
             if (RefConversion.Inline == refConversion || possibleInline == refConversion) return false;
             if (!(a is VBSyntax.SimpleArgumentSyntax sas)) return false;
             var argExpression = sas.Expression.SkipIntoParens();
-            if (argExpression is VBSyntax.InstanceExpressionSyntax) return false;
+            // A copy of a class's Me is the same reference whenever it's taken, but a structure's Me is copied by value, so it must be taken at the call
+            if (argExpression is VBSyntax.InstanceExpressionSyntax) return _semanticModel.GetTypeInfo(argExpression).Type?.IsValueType == true;
             return !_semanticModel.GetConstantValue(argExpression).HasValue;
         }
     }

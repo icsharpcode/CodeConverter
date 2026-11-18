@@ -1787,4 +1787,48 @@ public partial struct S
     }
 }");
     }
+    [Fact]
+    public async Task StructureMePassedByRefAfterAWriteBackTakesTheLocalFunctionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Structure S
+    Public Property P As Integer
+
+    Shared Function Inc(ByRef v As Integer) As Integer
+        v += 1
+        Return v
+    End Function
+
+    Shared Function ValueOf(ByRef s As S) As Integer
+        Return s.P
+    End Function
+
+    Function M() As Integer
+        Return Inc(P) + ValueOf(Me)
+    End Function
+End Structure", @"
+public partial struct S
+{
+    public int P { get; set; }
+
+    public static int Inc(ref int v)
+    {
+        v += 1;
+        return v;
+    }
+
+    public static int ValueOf(ref S s)
+    {
+        return s.P;
+    }
+
+    public int M()
+    {
+        int localInc(ref S self) { int argv = self.P; var ret = Inc(ref argv); self.P = argv; return ret; }
+
+        int localValueOf(ref S self) { var args = self; var ret = ValueOf(ref args); return ret; }
+
+        return localInc(ref this) + localValueOf(ref this);
+    }
+}");
+    }
 }
