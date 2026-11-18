@@ -49,7 +49,7 @@ Source: Roslyn's [`UseTwiceRewriter.vb`](https://github.com/dotnet/roslyn/blob/m
 | `other.Qr(_writtenElsewhere, 2)`, `other.Qr(PublicIndex, 2)` | `var tmp = _writtenElsewhere;` … `other.set_Qr(tmp, 2, arg)` |
 | `other.Qr(NextIndex(), 2)` | `var tmp = NextIndex();` … `other.get_Qr(tmp, 2)` … `other.set_Qr(tmp, 2, arg)` |
 | `GetC().Qr(1, 2)`, `GetC().Plain` | `var tmp = GetC();` … `tmp.set_Qr(1, 2, arg)`, `tmp.Plain = arg` |
-| `other(NextIndex())` (default property or indexer) | `var tmp = other; var tmp1 = NextIndex();` … `tmp[tmp1] = arg` (the container is always copied, as before) |
+| `other(NextIndex())`, `Me(i, 5)` (default property, indexer or array) | `var tmp = NextIndex();` … `other[tmp] = arg`, `this[i, 5] = arg`: the container follows the receiver rules |
 | `Two(other.Qr(i, 2), i)` | `var tmp = i;` … `other.set_Qr(tmp, 2, arg)` |
 | `cells(NextIndex()).Text`, `GetHolder().Cell.Text` (`Cell` is a structure) | `var tmp = NextIndex();` … `cells[tmp].Text = arg`, `var tmp = GetHolder();` … `tmp.Cell.Text = arg`: a structure variable is written in place (`ByRefTargetTemporaries.HoistInstance`) |
 

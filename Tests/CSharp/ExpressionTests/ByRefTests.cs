@@ -896,10 +896,9 @@ public partial class BinaryExpressionRefParameter
         LogAndReset(ref argarg);
         wide = argarg;
         object[] wideArray = new object[] { 3, 4, 4 };
-        var tmp = wideArray;
-        int argarg1 = Conversions.ToInteger(tmp[1]);
+        int argarg1 = Conversions.ToInteger(wideArray[1]);
         LogAndReset(ref argarg1);
-        tmp[1] = argarg1;
+        wideArray[1] = argarg1;
         short narrow = 3;
         int argarg2 = narrow;
         LogAndReset(ref argarg2);
@@ -1736,15 +1735,14 @@ public partial class C
         string argvalue3 = tmp2.Plain;
         SetValue(ref argvalue3);
         tmp2.Plain = argvalue3;
-        var tmp3 = other;
-        var tmp4 = NextIndex();
-        string argvalue4 = tmp3[tmp4];
+        var tmp3 = NextIndex();
+        string argvalue4 = other[tmp3];
         SetValue(ref argvalue4);
-        tmp3[tmp4] = argvalue4;
-        var tmp5 = i;
-        string argvalue5 = other.get_Qr(tmp5, 2);
+        other[tmp3] = argvalue4;
+        var tmp4 = i;
+        string argvalue5 = other.get_Qr(tmp4, 2);
         SetValueAndIndex(ref argvalue5, ref i);
-        other.set_Qr(tmp5, 2, argvalue5); // i is written by the call
+        other.set_Qr(tmp4, 2, argvalue5); // i is written by the call
     }
 }");
     }
@@ -2253,6 +2251,67 @@ internal static partial class M
     }
 
     public static void SetValue(ref string value)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ByRefDefaultPropertyOnMeIsWrittenBackWithoutCopyingMeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class C
+    Default Public Property Item(i As Integer, j As Integer) As String
+        Get
+            Return """"
+        End Get
+        Set(value As String)
+        End Set
+    End Property
+
+    Sub M(i As Integer, values As Object())
+        SetValue(Me(i, 5))
+        SetValue(Me.Item(i, 6))
+        SetNumber(values(i))
+    End Sub
+
+    Shared Sub SetValue(ByRef value As String)
+    End Sub
+
+    Shared Sub SetNumber(ByRef value As Integer)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+public partial class C
+{
+    public string this[int i, int j]
+    {
+        get
+        {
+            return """";
+        }
+        set
+        {
+        }
+    }
+
+    public void M(int i, object[] values)
+    {
+        string argvalue = this[i, 5];
+        SetValue(ref argvalue);
+        this[i, 5] = argvalue;
+        string argvalue1 = this[i, 6];
+        SetValue(ref argvalue1);
+        this[i, 6] = argvalue1;
+        int argvalue2 = Conversions.ToInteger(values[i]);
+        SetNumber(ref argvalue2);
+        values[i] = argvalue2;
+    }
+
+    public static void SetValue(ref string value)
+    {
+    }
+
+    public static void SetNumber(ref int value)
     {
     }
 }");

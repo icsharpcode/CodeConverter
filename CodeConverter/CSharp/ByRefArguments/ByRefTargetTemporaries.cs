@@ -44,15 +44,18 @@ internal class ByRefTargetTemporaries
                 getterCall.WithExpression(HoistReceiver(getterCall.Expression, pro))
                     .WithArgumentList(getterCall.ArgumentList.WithArguments(HoistArguments(getterCall.ArgumentList.Arguments, pro))),
             (IPropertyReferenceOperation pro, CSSyntax.ElementAccessExpressionSyntax indexer) =>
-                indexer.WithArgumentList(indexer.ArgumentList.WithArguments(HoistArguments(indexer.ArgumentList.Arguments, pro))),
+                indexer.WithExpression(HoistInstance(pro.Instance, indexer.Expression))
+                    .WithArgumentList(indexer.ArgumentList.WithArguments(HoistArguments(indexer.ArgumentList.Arguments, pro))),
             (IArrayElementReferenceOperation element, CSSyntax.ElementAccessExpressionSyntax elementAccess) =>
-                elementAccess.WithArgumentList(elementAccess.ArgumentList.WithArguments(HoistIndices(elementAccess.ArgumentList.Arguments, element.Indices))),
+                elementAccess.WithExpression(HoistInstance(element.ArrayReference, elementAccess.Expression))
+                    .WithArgumentList(elementAccess.ArgumentList.WithArguments(HoistIndices(elementAccess.ArgumentList.Arguments, element.Indices))),
             (IPropertyReferenceOperation pro, CSSyntax.MemberAccessExpressionSyntax) => HoistReceiver(csTarget, pro),
+            // E.g. late bound: without an operation to tell what's reusable, copy the container as VB does
+            (_, CSSyntax.ElementAccessExpressionSyntax elementAccess) => elementAccess.WithExpression(HoistValue(elementAccess.Expression)),
             _ => csTarget
         };
     }
 
-    /// <remarks>The container of an element access is already hoisted by the caller.</remarks>
     private CSSyntax.ExpressionSyntax HoistReceiver(CSSyntax.ExpressionSyntax memberExpression, IPropertyReferenceOperation pro)
     {
         if (memberExpression is not CSSyntax.MemberAccessExpressionSyntax maes || pro.Property.IsStatic) {

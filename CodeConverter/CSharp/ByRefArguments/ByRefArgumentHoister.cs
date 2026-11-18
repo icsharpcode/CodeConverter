@@ -50,12 +50,6 @@ internal class ByRefArgumentHoister
         bool useVar = expressionTypeInfo.Type?.Equals(expressionTypeInfo.ConvertedType, SymbolEqualityComparer.IncludeNullability) == true && !CommonConversions.ShouldPreferExplicitType(node, expressionTypeInfo.ConvertedType, out var _);
         var typeSyntax = CommonConversions.GetTypeSyntax(expressionTypeInfo.ConvertedType, useVar);
 
-        if (refLValue is CSSyntax.ElementAccessExpressionSyntax eae) {
-            //Hoist out the container so we can assign back to the same one after (like VB does)
-            var tmpContainer = _typeContext.PerScopeState.Hoist(new AdditionalDeclaration("tmp", eae.Expression, ValidSyntaxFactory.VarType));
-            refLValue = eae.WithExpression(tmpContainer.IdentifierName);
-        }
-
         if (refType == SemanticModelExtensions.RefConversion.PreAndPostAssignment) {
             refLValue = ByRefTargetTemporaries.Hoist(_semanticModel, _typeContext, _fieldMutations, node, refLValue);
         }
