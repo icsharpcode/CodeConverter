@@ -1915,10 +1915,10 @@ public partial class C
     public void M(ref Box[] arr, int i, ref Box b)
     {
         {
-            ref var withBlock = ref arr[i];
-            int localInc(ref Box withBlock) { int argv = withBlock.X; var ret = Inc(ref argv); withBlock.X = argv; return ret; }
+            var withBlock = arr[i];
+            int localInc() { int argv = withBlock.X; var ret = Inc(ref argv); withBlock.X = argv; return ret; }
 
-            if (localInc(ref withBlock) > 0)
+            if (localInc() > 0)
                 withBlock.X = 0;
         }
         {

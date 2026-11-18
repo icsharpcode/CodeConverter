@@ -685,6 +685,16 @@ Public Class ByRefWriteBackPlacementTests
         Assert.Equal(11, CounterHolder.IncrementInWithByRefParameters(h, c))
         Assert.Equal(1, c.P)
     End Sub
+    <Fact>
+    Public Sub WithOverAReassignedClassVariableKeepsTheOriginalObject()
+        Dim h As New CounterHolder
+        Dim original = h
+        With h
+            h = New CounterHolder
+            .Total = 1
+        End With
+        Assert.Equal("1,0", original.Total & "," & h.Total)
+    End Sub
     Private Class CounterHolder
         Public Inner As Counter
         Public Property Total As Integer
