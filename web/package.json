@@ -14,7 +14,7 @@
     "dependencies": {
         "@monaco-editor/react": "^4.7.0",
         "axios": "^1.21.1",
-        "bootstrap": "^5.3.8",
+        "bootstrap": "^5.3.9",
         "monaco-editor": "^0.57.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
