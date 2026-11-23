@@ -1442,8 +1442,16 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         Func<SyntaxKind, VisualBasicSyntaxNode> toNumber = kind => {
             if (sourceType?.SpecialType == SpecialType.System_Char)
                 return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(Microsoft), nameof(Microsoft.VisualBasic), nameof(Microsoft.VisualBasic.Strings.AscW))), ExpressionSyntaxExtensions.CreateArgList(expr));
-            return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), expr);
+            var operand = destType.IsIntegralType() ? TruncateFractionalSource(expr, sourceType) : expr;
+            return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), operand);
         };
+
+        // The C# compiler has already truncated the operand, and a method call can't appear in a constant expression
+        var constantValue = _semanticModel.GetConstantValue(node);
+        if (destType.IsIntegralType() && sourceType.IsFractionalNumericType() && constantValue.HasValue) {
+            return _commonConversions.Literal(constantValue.Value);
+        }
+
         switch (destType.SpecialType) {
             case SpecialType.System_Object:
                 return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CObjKeyword), expr);
@@ -1482,6 +1490,18 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             default:
                 return SyntaxFactory.CTypeExpression(expr, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
         }
+    }
+
+    /// <remarks>
+    /// C# truncates towards zero when converting a fractional number to an integer, whereas VB rounds. The cast is kept
+    /// around the call because it fixes the type of the expression (e.g. when it is boxed); the VB simplifier removes it
+    /// wherever the target type converts implicitly.
+    /// </remarks>
+    private static ExpressionSyntax TruncateFractionalSource(ExpressionSyntax expr, ITypeSymbol sourceType)
+    {
+        return sourceType.IsFractionalNumericType()
+            ? SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(Math), nameof(Math.Truncate))), ExpressionSyntaxExtensions.CreateArgList(expr))
+            : expr;
     }
 
     public override VisualBasicSyntaxNode VisitObjectCreationExpression(CSSyntax.ObjectCreationExpressionSyntax node)

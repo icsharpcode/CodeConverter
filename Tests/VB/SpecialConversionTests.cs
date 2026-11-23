@@ -33,7 +33,7 @@ internal partial class TestClass
 }", @"Imports System
 
 Friend Partial Class TestClass
-    Private GENERIC_READ As Integer = Math.Pow(46341, 2)
+    Private GENERIC_READ As Integer = Math.Truncate(Math.Pow(46341, 2))
 End Class
 WARNING: Expression at character 85 contained the checked keyword before conversion");
     }
