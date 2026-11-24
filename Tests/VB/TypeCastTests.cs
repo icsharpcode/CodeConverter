@@ -211,4 +211,58 @@ Public Class Test2
     End Sub
 End Class");
     }
+
+    [Fact]
+    public async Task CastFractionalToInteger_TruncatesTowardsZeroAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
+
+public partial class A
+{
+    public static void Main()
+    {
+        double foo = 0.6d;
+        int bar = (int)foo;
+        int baz = (int)Math.Ceiling(foo);
+        Console.WriteLine(bar);
+        Console.WriteLine(baz);
+    }
+}",
+            @"Imports System
+
+Public Partial Class A
+    Public Shared Sub Main()
+        Dim foo = 0.6R
+        Dim bar As Integer = Math.Truncate(foo)
+        Dim baz As Integer = Math.Truncate(Math.Ceiling(foo))
+        Console.WriteLine(bar)
+        Console.WriteLine(baz)
+    End Sub
+End Class");
+    }
+
+    [Fact]
+    public async Task CastFractionalToInteger_TruncatedConstantAndBoxedValueAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"public class A
+{
+    const int TruncatedConstant = (int)0.6;
+    void Test(double d, decimal m)
+    {
+        object boxed = (int)d;
+        long fromDecimal = (long)m;
+        object boxedConstant = (long)2.5;
+    }
+}",
+            @"Public Class A
+    Const TruncatedConstant As Integer = 0
+    Private Sub Test(d As Double, m As Decimal)
+        Dim boxed As Object = CInt(Math.Truncate(d))
+        Dim fromDecimal As Long = Math.Truncate(m)
+        Dim boxedConstant As Object = CLng(2)
+    End Sub
+End Class");
+    }
 }

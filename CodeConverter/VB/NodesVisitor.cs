@@ -1439,11 +1439,15 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         var sourceType = _semanticModel.GetTypeInfo(node.Expression).Type;
         var destType = _semanticModel.GetTypeInfo(node.Type).Type;
         var expr = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+        if (destType.IsIntegralType() && sourceType.IsFractionalNumericType()) {
+            expr = TruncateFractionalSource(node, expr);
+        }
         Func<SyntaxKind, VisualBasicSyntaxNode> toNumber = kind => {
             if (sourceType?.SpecialType == SpecialType.System_Char)
                 return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(Microsoft), nameof(Microsoft.VisualBasic), nameof(Microsoft.VisualBasic.Strings.AscW))), ExpressionSyntaxExtensions.CreateArgList(expr));
             return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), expr);
         };
+
         switch (destType.SpecialType) {
             case SpecialType.System_Object:
                 return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(SyntaxKind.CObjKeyword), expr);
@@ -1482,6 +1486,21 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             default:
                 return SyntaxFactory.CTypeExpression(expr, (TypeSyntax)node.Type.Accept(TriviaConvertingVisitor));
         }
+    }
+
+    /// <remarks>
+    /// C# truncates towards zero when converting a fractional number to an integer, whereas VB rounds. The caller keeps the
+    /// cast around the result because it fixes the type of the expression (e.g. when it is boxed); the VB simplifier
+    /// removes it wherever the target type converts implicitly.
+    /// A cast the C# compiler folds to a constant becomes that (already truncated) constant, since a method call can't
+    /// appear in a VB constant expression.
+    /// </remarks>
+    private ExpressionSyntax TruncateFractionalSource(CSSyntax.CastExpressionSyntax node, ExpressionSyntax expr)
+    {
+        var constantValue = _semanticModel.GetConstantValue(node);
+        return constantValue.HasValue
+            ? _commonConversions.Literal(constantValue.Value)
+            : SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(Math), nameof(Math.Truncate))), ExpressionSyntaxExtensions.CreateArgList(expr));
     }
 
     public override VisualBasicSyntaxNode VisitObjectCreationExpression(CSSyntax.ObjectCreationExpressionSyntax node)
