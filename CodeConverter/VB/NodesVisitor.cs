@@ -1439,18 +1439,14 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
         var sourceType = _semanticModel.GetTypeInfo(node.Expression).Type;
         var destType = _semanticModel.GetTypeInfo(node.Type).Type;
         var expr = (ExpressionSyntax)node.Expression.Accept(TriviaConvertingVisitor);
+        if (destType.IsIntegralType() && sourceType.IsFractionalNumericType()) {
+            expr = TruncateFractionalSource(node, expr);
+        }
         Func<SyntaxKind, VisualBasicSyntaxNode> toNumber = kind => {
             if (sourceType?.SpecialType == SpecialType.System_Char)
                 return SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(Microsoft), nameof(Microsoft.VisualBasic), nameof(Microsoft.VisualBasic.Strings.AscW))), ExpressionSyntaxExtensions.CreateArgList(expr));
-            var operand = destType.IsIntegralType() ? TruncateFractionalSource(expr, sourceType) : expr;
-            return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), operand);
+            return SyntaxFactory.PredefinedCastExpression(SyntaxFactory.Token(kind), expr);
         };
-
-        // The C# compiler has already truncated the operand, and a method call can't appear in a constant expression
-        var constantValue = _semanticModel.GetConstantValue(node);
-        if (destType.IsIntegralType() && sourceType.IsFractionalNumericType() && constantValue.HasValue) {
-            return _commonConversions.Literal(constantValue.Value);
-        }
 
         switch (destType.SpecialType) {
             case SpecialType.System_Object:
@@ -1493,15 +1489,18 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     }
 
     /// <remarks>
-    /// C# truncates towards zero when converting a fractional number to an integer, whereas VB rounds. The cast is kept
-    /// around the call because it fixes the type of the expression (e.g. when it is boxed); the VB simplifier removes it
-    /// wherever the target type converts implicitly.
+    /// C# truncates towards zero when converting a fractional number to an integer, whereas VB rounds. The caller keeps the
+    /// cast around the result because it fixes the type of the expression (e.g. when it is boxed); the VB simplifier
+    /// removes it wherever the target type converts implicitly.
+    /// A cast the C# compiler folds to a constant becomes that (already truncated) constant, since a method call can't
+    /// appear in a VB constant expression.
     /// </remarks>
-    private static ExpressionSyntax TruncateFractionalSource(ExpressionSyntax expr, ITypeSymbol sourceType)
+    private ExpressionSyntax TruncateFractionalSource(CSSyntax.CastExpressionSyntax node, ExpressionSyntax expr)
     {
-        return sourceType.IsFractionalNumericType()
-            ? SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(Math), nameof(Math.Truncate))), ExpressionSyntaxExtensions.CreateArgList(expr))
-            : expr;
+        var constantValue = _semanticModel.GetConstantValue(node);
+        return constantValue.HasValue
+            ? _commonConversions.Literal(constantValue.Value)
+            : SyntaxFactory.InvocationExpression(SyntaxFactory.ParseName(GetQualifiedName(nameof(System), nameof(Math), nameof(Math.Truncate))), ExpressionSyntaxExtensions.CreateArgList(expr));
     }
 
     public override VisualBasicSyntaxNode VisitObjectCreationExpression(CSSyntax.ObjectCreationExpressionSyntax node)

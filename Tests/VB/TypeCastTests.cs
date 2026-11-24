@@ -253,6 +253,7 @@ End Class");
     {
         object boxed = (int)d;
         long fromDecimal = (long)m;
+        object boxedConstant = (long)2.5;
     }
 }",
             @"Public Class A
@@ -260,6 +261,7 @@ End Class");
     Private Sub Test(d As Double, m As Decimal)
         Dim boxed As Object = CInt(Math.Truncate(d))
         Dim fromDecimal As Long = Math.Truncate(m)
+        Dim boxedConstant As Object = CLng(2)
     End Sub
 End Class");
     }
