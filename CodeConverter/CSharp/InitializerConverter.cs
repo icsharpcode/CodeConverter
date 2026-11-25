@@ -73,10 +73,9 @@ internal class InitializerConverter
     /// would leave C# inferring the wrong array type. In that case the element type must be explicit.
     /// </summary>
     private bool HasUserDefinedConversionItem(VBasic.Syntax.CollectionInitializerSyntax node) =>
-        node.Initializers.SelectMany(n => n.DescendantNodesAndSelf())
-            .OfType<VBasic.Syntax.ExpressionSyntax>()
-            .Where(n => n is not VBasic.Syntax.CollectionInitializerSyntax)
-            .Any(n => _semanticModel.GetOperation(n)?.Parent is IConversionOperation { OperatorMethod: not null });
+        node.Initializers.Any(i => i is VBasic.Syntax.CollectionInitializerSyntax nested
+            ? HasUserDefinedConversionItem(nested)
+            : _semanticModel.GetOperation(i)?.Parent is IConversionOperation { OperatorMethod: not null });
 
     public async Task<CSharpSyntaxNode> ConvertObjectMemberInitializerAsync(VBasic.Syntax.ObjectMemberInitializerSyntax node)
     {

@@ -1453,6 +1453,79 @@ public partial class TestClass
     }
 
     [Fact]
+    public async Task Issue1211_ConversionInsideItemDoesNotForceExplicitArrayTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Key
+    Public Shared Widening Operator CType(s As String) As Key
+        Return New Key()
+    End Operator
+End Class
+
+Public Class TestClass
+    Public Function G(k As Key) As String
+        Return """"
+    End Function
+
+    Public Sub Test()
+        Dim a As String() = {G(""a""), ""b""}
+    End Sub
+End Class", @"
+public partial class Key
+{
+    public static implicit operator Key(string s)
+    {
+        return new Key();
+    }
+}
+
+public partial class TestClass
+{
+    public string G(Key k)
+    {
+        return """";
+    }
+
+    public void Test()
+    {
+        string[] a = new[] { G(""a""), ""b"" };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task Issue1211_MixedAndMultidimensionalItemsGetExplicitArrayTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Key
+    Public Shared Widening Operator CType(s As String) As Key
+        Return New Key()
+    End Operator
+End Class
+
+Public Class TestClass
+    Public Sub Test()
+        Dim mixed As Key() = {New Key(), ""a""}
+        Dim grid As Key(,) = {{""a""}, {""b""}}
+    End Sub
+End Class", @"
+public partial class Key
+{
+    public static implicit operator Key(string s)
+    {
+        return new Key();
+    }
+}
+
+public partial class TestClass
+{
+    public void Test()
+    {
+        Key[] mixed = new Key[] { new Key(), ""a"" };
+        Key[,] grid = new Key[,] { { ""a"" }, { ""b"" } };
+    }
+}");
+    }
+
+    [Fact]
     public async Task DelegateExpressionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
