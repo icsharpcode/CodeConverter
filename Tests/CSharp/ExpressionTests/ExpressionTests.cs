@@ -1415,6 +1415,44 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task Issue1211_CollectionInitializerWithUserDefinedWideningToElementTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Key
+    Public Shared Widening Operator CType(s As String) As Key
+        Return New Key()
+    End Operator
+End Class
+
+Public Class TestClass
+    Public Sub MyMethod(keys As Key())
+    End Sub
+
+    Public Sub Test()
+        MyMethod({""foo"", ""bar"", ""baz""})
+    End Sub
+End Class", @"
+public partial class Key
+{
+    public static implicit operator Key(string s)
+    {
+        return new Key();
+    }
+}
+
+public partial class TestClass
+{
+    public void MyMethod(Key[] keys)
+    {
+    }
+
+    public void Test()
+    {
+        MyMethod(new Key[] { ""foo"", ""bar"", ""baz"" });
+    }
+}");
+    }
+
+    [Fact]
     public async Task DelegateExpressionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass

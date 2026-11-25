@@ -55,7 +55,7 @@ internal class InitializerConverter
         }
 
         bool hasExpressionToInferTypeFrom = node.Initializers.SelectMany(n => n.DescendantNodesAndSelf()).Any(n => n is not VBasic.Syntax.CollectionInitializerSyntax);
-        if (hasExpressionToInferTypeFrom) {
+        if (hasExpressionToInferTypeFrom && !HasUserDefinedConversionItem(node)) {
             var commas = Enumerable.Repeat(CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken), dimensions - 1);
             return CS.SyntaxFactory.ImplicitArrayCreationExpression(CS.SyntaxFactory.TokenList(commas), initializer);
         }
@@ -66,6 +66,17 @@ internal class InitializerConverter
         arrayType = arrayType.WithRankSpecifiers(arrayRankSpecifierSyntax);
         return CS.SyntaxFactory.ArrayCreationExpression(arrayType, initializer);
     }
+
+    /// <summary>
+    /// C# `new[] { ... }` infers the element type from the items alone, ignoring the target type.
+    /// VB converts each item to the target element type, so a user-defined conversion (e.g. String to a Key class)
+    /// would leave C# inferring the wrong array type. In that case the element type must be explicit.
+    /// </summary>
+    private bool HasUserDefinedConversionItem(VBasic.Syntax.CollectionInitializerSyntax node) =>
+        node.Initializers.SelectMany(n => n.DescendantNodesAndSelf())
+            .OfType<VBasic.Syntax.ExpressionSyntax>()
+            .Where(n => n is not VBasic.Syntax.CollectionInitializerSyntax)
+            .Any(n => _semanticModel.GetOperation(n)?.Parent is IConversionOperation { OperatorMethod: not null });
 
     public async Task<CSharpSyntaxNode> ConvertObjectMemberInitializerAsync(VBasic.Syntax.ObjectMemberInitializerSyntax node)
     {
