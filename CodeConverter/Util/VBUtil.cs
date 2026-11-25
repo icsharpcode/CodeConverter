@@ -23,6 +23,7 @@ internal static class VBUtil
             SyntaxKind.SubtractExpression => SyntaxKind.MinusToken,
             SyntaxKind.MultiplyExpression => SyntaxKind.AsteriskToken,
             SyntaxKind.DivideExpression => SyntaxKind.SlashToken,
+            SyntaxKind.IntegerDivideExpression => SyntaxKind.BackslashToken,
             SyntaxKind.ModuloExpression => SyntaxKind.ModKeyword,
             SyntaxKind.LeftShiftExpression => SyntaxKind.LessThanLessThanToken,
             SyntaxKind.RightShiftExpression => SyntaxKind.GreaterThanGreaterThanToken,
