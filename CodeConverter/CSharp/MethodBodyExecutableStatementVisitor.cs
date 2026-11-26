@@ -295,8 +295,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         // Split out compound operator if type conversion needed on result
         if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
                 
-            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
             var nonCompoundResultType = GetNonCompoundResultType(nonCompound, lhsTypeInfo, rhsTypeInfo);
+            var nonCompoundLhs = IsShift(nonCompound) && lhsTypeInfo.Type.IsEnumType()
+                ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: nonCompoundResultType)
+                : lhs;
+            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs);
             var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: nonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
             if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
                 kind = SyntaxKind.SimpleAssignmentExpression;
@@ -343,9 +346,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// <summary>
     /// The right operand is converted to the operator's type, except a shift count which is always Integer: a shift's result has the type of its left operand.
     /// C# casts a compound shift's result back to the left operand's type too, whatever the count's type.
+    /// VB shifts an enum (with Option Strict Off) as its underlying type, C# can't shift an enum at all.
     /// </summary>
     private static ITypeSymbol GetNonCompoundResultType(SyntaxKind nonCompound, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo) =>
-        nonCompound is SyntaxKind.LeftShiftExpression or SyntaxKind.RightShiftExpression ? lhsTypeInfo.Type : rhsTypeInfo.ConvertedType;
+        IsShift(nonCompound) ? SmallIntegerOperatorPromotion.GetUnderlyingNumericType(lhsTypeInfo.Type) : rhsTypeInfo.ConvertedType;
+
+    private static bool IsShift(SyntaxKind kind) => kind is SyntaxKind.LeftShiftExpression or SyntaxKind.RightShiftExpression;
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
     {

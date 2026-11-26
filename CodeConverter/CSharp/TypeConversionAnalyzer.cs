@@ -54,11 +54,18 @@ internal class TypeConversionAnalyzer
     public ExpressionSyntax MaskShiftCountIfNeeded(ITypeSymbol shiftedType, VBSyntax.ExpressionSyntax vbCount, ExpressionSyntax csCount)
     {
         if (SmallIntegerOperatorPromotion.GetShiftCountMaskOrNull(shiftedType) is not { } mask) return csCount;
-        if (_semanticModel.GetConstantValue(vbCount) is { HasValue: true, Value: int count }) {
-            return count is >= 0 && count <= mask ? csCount : LiteralConversions.GetLiteralExpression(count & mask);
+        if (GetIntegralConstantOrNull(vbCount) is { } count) {
+            return count is >= 0 && count <= mask ? csCount : LiteralConversions.GetLiteralExpression((int)(count & mask));
+        }
+        if (vbCount.SkipIntoParens() is VBSyntax.BinaryExpressionSyntax { RawKind: (int)VBasic.SyntaxKind.AndExpression } and &&
+            (GetIntegralConstantOrNull(and.Left) ?? GetIntegralConstantOrNull(and.Right)) is >= 0 and var andMask && andMask <= mask) {
+            return csCount;
         }
         return SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseAndExpression, csCount.AddParens(), LiteralConversions.GetLiteralExpression(mask)).AddParens();
     }
+
+    private long? GetIntegralConstantOrNull(VBSyntax.ExpressionSyntax vbNode) =>
+        _semanticModel.GetConstantValue(vbNode) is { HasValue: true, Value: sbyte or byte or short or ushort or int or uint or long } constant ? Convert.ToInt64(constant.Value) : null;
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {

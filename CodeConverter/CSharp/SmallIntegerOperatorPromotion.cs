@@ -88,8 +88,9 @@ internal class SmallIntegerOperatorPromotion
     /// Larger types match, so need no mask.
     /// </summary>
     /// <remarks>https://learn.microsoft.com/dotnet/visual-basic/language-reference/operators/left-shift-operator</remarks>
+    /// <param name="shiftedType">The type of the shift, or of its left operand: an enum is shifted as its underlying type (with Option Strict Off)</param>
     public static int? GetShiftCountMaskOrNull(ITypeSymbol shiftedType) =>
-        GetUnderlyingType(shiftedType)?.SpecialType switch {
+        GetUnderlyingNumericType(shiftedType)?.SpecialType switch {
             SpecialType.System_Byte or SpecialType.System_SByte => 7,
             SpecialType.System_Int16 or SpecialType.System_UInt16 => 15,
             _ => null
@@ -205,6 +206,9 @@ internal class SmallIntegerOperatorPromotion
         _semanticModel.GetSymbolInfo(node).Symbol is IMethodSymbol { MethodKind: MethodKind.UserDefinedOperator };
 
     private static ITypeSymbol GetUnderlyingType(ITypeSymbol type) => type?.GetNullableUnderlyingType() ?? type;
+
+    public static ITypeSymbol GetUnderlyingNumericType(ITypeSymbol type) =>
+        GetUnderlyingType(type) is INamedTypeSymbol { EnumUnderlyingType: { } enumUnderlyingType } ? enumUnderlyingType : GetUnderlyingType(type);
 
     private static bool IsSmallIntegerType(ITypeSymbol type) =>
         type?.SpecialType is SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_Int16 or SpecialType.System_UInt16;

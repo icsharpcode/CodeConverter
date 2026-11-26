@@ -493,4 +493,65 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ShiftCountMaskIsFoldedOrOmittedWhereRedundantAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Const Nine As Byte = 9
+    Private Sub TestMethod(b1 As Byte, n As Integer)
+        Dim a = b1 << 9L
+        Dim b = b1 << Nine
+        Dim c = b1 << (n And 3)
+        Dim d = b1 << (3 And n)
+        Dim e = b1 << (n And 8)
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private const byte Nine = 9;
+    private void TestMethod(byte b1, int n)
+    {
+        byte a = (byte)(b1 << 1);
+        byte b = (byte)(b1 << 1);
+        byte c = (byte)(b1 << (n & 3));
+        byte d = (byte)(b1 << (3 & n));
+        byte e = (byte)(b1 << (n & 8 & 7));
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ShiftOfByteEnumIsMaskedAndShiftsTheUnderlyingValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E As Byte
+    A = 1
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(en As E, n As Integer, s As Short, b1 As Byte)
+        Dim q = en << n
+        en <<= 9
+        en >>= n
+        s += s << 1
+        b1 += b1 + b1
+    End Sub
+End Class", @"
+internal enum E : byte
+{
+    A = 1
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(E en, int n, short s, byte b1)
+    {
+        byte q = (byte)((byte)en << (n & 7));
+        en = (E)((byte)en << 1);
+        en = (E)((byte)en >> (n & 7));
+        s += (short)(s << 1);
+        b1 += (byte)(b1 + b1);
+    }
+}");
+    }
 }

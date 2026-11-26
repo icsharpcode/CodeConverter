@@ -105,7 +105,7 @@ internal class BinaryExpressionConverter
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
         rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
         if (node.IsKind(VBasic.SyntaxKind.LeftShiftExpression, VBasic.SyntaxKind.RightShiftExpression)) {
-            rhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(lhsTypeInfo.ConvertedType, node.Right, rhs);
+            rhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(_semanticModel.GetTypeInfo(node).Type, node.Right, rhs);
         }
 
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();

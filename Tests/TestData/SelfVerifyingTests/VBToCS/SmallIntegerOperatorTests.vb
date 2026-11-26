@@ -1,6 +1,10 @@
 ﻿Imports System
 Imports Xunit
 
+Public Enum ByteFlags As Byte
+    Top = 128
+End Enum
+
 Public Class SmallIntegerOperatorTests
     Const C1 As UShort = 65534, C2 As UShort = 40000
     Const CB As Byte = 200
@@ -151,5 +155,22 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(4, i)
         Dim j As Integer = +b1
         Assert.Equal(200, j)
+    End Sub
+
+    <Fact>
+    Public Sub ShiftCountsAreMaskedForConstantsAndEnums()
+        Dim b1 As Byte = 200, n As Integer = 9
+        Const Nine As Byte = 9
+        Assert.Equal(CByte(144), b1 << 9L)
+        Assert.Equal(CByte(144), b1 << Nine)
+        Assert.Equal(CByte(144), b1 << (n And 1))
+        Dim flags As ByteFlags = ByteFlags.Top
+        flags >>= n
+        Assert.Equal(CType(64, ByteFlags), flags)
+        Dim s As Short = 300, b2 As Byte = 100
+        s += s << 1
+        Assert.Equal(900S, s)
+        b2 += b2 + CByte(50)
+        Assert.Equal(CByte(250), b2)
     End Sub
 End Class
