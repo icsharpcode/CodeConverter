@@ -11,3 +11,4 @@
 *.woff2 binary
 
 CHANGELOG.md text merge=union
+web/package.json -text
