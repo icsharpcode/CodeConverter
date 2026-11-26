@@ -322,10 +322,11 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// <returns>Null where the left side can be evaluated twice, e.g. a local, a field of Me, or an array element with local or constant indices</returns>
     private async Task<(ExpressionSyntax Lhs, SyntaxList<StatementSyntax> Declarations)?> HoistLeftSideOperandsOrNullAsync(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft)
     {
+        // VB doesn't evaluate the instance expression of a Shared member, and C# refers to the type instead
         var (receiver, arguments) = _semanticModel.GetOperation(vbLeft) switch {
             IArrayElementReferenceOperation element => (element.ArrayReference, element.Indices),
-            IPropertyReferenceOperation property => (property.Instance, property.Arguments.Select(a => a.Value).ToImmutableArray()),
-            IFieldReferenceOperation field => (field.Instance, ImmutableArray<IOperation>.Empty),
+            IPropertyReferenceOperation property => (property.Property.IsStatic ? null : property.Instance, property.Arguments.Select(a => a.Value).ToImmutableArray()),
+            IFieldReferenceOperation field => (field.Field.IsStatic ? null : field.Instance, ImmutableArray<IOperation>.Empty),
             _ => (null, ImmutableArray<IOperation>.Empty)
         };
         if (IsEvaluatedTheSameTwice(receiver) && arguments.All(IsEvaluatedTheSameTwice)) return null;
@@ -341,7 +342,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var declarations = SyntaxFactory.List<StatementSyntax>();
         var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
-        if (csReceiver != null && !IsEvaluatedTheSameTwice(receiver)) {
+        if (csReceiver != null && receiver != null && !IsEvaluatedTheSameTwice(receiver)) {
             // As for With, a type parameter may be a structure too
             var isStructureVariable = receiver.Type?.IsReferenceType != true && receiver.IsAssignableExpression();
             // A ref local can't be kept across an await or yield, so evaluating twice is the lesser evil there
