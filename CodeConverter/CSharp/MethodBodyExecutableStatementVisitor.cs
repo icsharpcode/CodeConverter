@@ -317,7 +317,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// <summary>
     /// VB evaluates the receiver and arguments of a compound assignment's left side once, then the right side.
     /// Split into lhs = lhs op rhs, C# would evaluate them twice, so any that may have side effects (or be changed by the right side) are evaluated into locals first, in VB's order.
-    /// A receiver of a structure type that's a variable (e.g. an array element) is a ref local, so the assignment changes the original.
+    /// A receiver that may be a structure (including a type parameter) and is a variable (e.g. an array element) is a ref local, so the assignment changes the original.
     /// </summary>
     /// <returns>Null where the left side can be evaluated twice, e.g. a local, a field of Me, or an array element with local or constant indices</returns>
     private async Task<(ExpressionSyntax Lhs, SyntaxList<StatementSyntax> Declarations)?> HoistLeftSideOperandsOrNullAsync(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft)
@@ -342,7 +342,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var declarations = SyntaxFactory.List<StatementSyntax>();
         var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
         if (csReceiver != null && !IsEvaluatedTheSameTwice(receiver)) {
-            var isStructureVariable = receiver.Type?.IsValueType == true && receiver.IsAssignableExpression();
+            // As for With, a type parameter may be a structure too
+            var isStructureVariable = receiver.Type?.IsReferenceType != true && receiver.IsAssignableExpression();
             // A ref local can't be kept across an await or yield, so evaluating twice is the lesser evil there
             if (isStructureVariable && IsInAsyncOrIteratorMethod(vbLeft)) return null;
             var value = isStructureVariable ? SyntaxFactory.RefExpression(csReceiver) : csReceiver;
