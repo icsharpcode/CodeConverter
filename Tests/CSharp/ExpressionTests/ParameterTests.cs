@@ -328,4 +328,61 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ObjectConstantKeepsVbsTypeAndDecimalDefaultVbsValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E
+    A = 1
+    B = 2
+End Enum
+
+Class AAttribute
+    Inherits System.Attribute
+    Sub New(o As Object)
+    End Sub
+End Class
+
+<A(CByte(True))>
+Class B
+End Class
+
+<A(CType(2.5, E))>
+Class C
+    Sub M(Optional x As Object = CByte(True), Optional y As Object = CType(2.5, E))
+    End Sub
+    Sub D(Optional m As Decimal = 0.1F)
+    End Sub
+End Class", @"using System;
+using System.Runtime.InteropServices;
+
+internal enum E
+{
+    A = 1,
+    B = 2
+}
+
+internal partial class AAttribute : Attribute
+{
+    public AAttribute(object o)
+    {
+    }
+}
+
+[A((byte)255)]
+internal partial class B
+{
+}
+
+[A((E)2)]
+internal partial class C
+{
+    public void M([Optional, DefaultParameterValue((byte)255)] object x, [Optional, DefaultParameterValue(2)] object y)
+    {
+    }
+    public void D(decimal m = 0.100000001490116m)
+    {
+    }
+}");
+    }
 }

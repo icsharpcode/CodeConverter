@@ -84,8 +84,8 @@ internal class TypeConversionAnalyzer
         };
 
     /// <inheritdoc cref="DeclaredConstantConverter"/>
-    public ExpressionSyntax ConvertDeclaredConstant(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, ITypeSymbol targetType, bool requiresExactType = false) =>
-        new DeclaredConstantConverter(_semanticModel, _csCompilation, GetTypeSyntax).Convert(vbValue, csValue, targetType, requiresExactType);
+    public ExpressionSyntax ConvertDeclaredConstant(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, ITypeSymbol targetType, bool requiresExactType = false, IParameterSymbol parameter = null) =>
+        new DeclaredConstantConverter(_semanticModel, _csCompilation, GetTypeSyntax).Convert(vbValue, csValue, targetType, requiresExactType, parameter);
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {

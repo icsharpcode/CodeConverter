@@ -33,15 +33,19 @@ internal class DeclaredConstantConverter
     }
 
     /// <param name="requiresExactType">The constant must already have the target type, e.g. for [DefaultParameterValue], whose argument is an Object</param>
-    public ExpressionSyntax Convert(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, ITypeSymbol targetType, bool requiresExactType = false)
+    /// <param name="parameter">For a default, the parameter, whose default value is the one VB converted the constant to (with its type, for an Object parameter)</param>
+    public ExpressionSyntax Convert(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, ITypeSymbol targetType, bool requiresExactType = false, IParameterSymbol parameter = null)
     {
         if (targetType == null || vbValue.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) return csValue;
         if (_semanticModel.GetConstantValue(vbValue) is not { HasValue: true, Value: { } value }) return csValue;
         var target = targetType.GetNullableUnderlyingType() ?? targetType;
         var sourceType = _semanticModel.GetTypeInfo(vbValue).Type;
         if (sourceType == null) return csValue;
-        // An Object takes the constant's own value
-        if (target.SpecialType == SpecialType.System_Object) return IsConstantInCSharp(vbValue, csValue) ? csValue : LiteralConversions.GetLiteralExpression(value);
+        if (target.SpecialType == SpecialType.System_Object) return ConvertToObject(vbValue, csValue, value, sourceType, parameter);
+        // C# converts a Single or Double to Decimal at runtime precision, VB at compile time to its own value, e.g. 0.1F gives 0.100000001490116
+        if (target.SpecialType == SpecialType.System_Decimal && sourceType.IsFractionalNumericType() && parameter is { ExplicitDefaultValue: decimal decimalValue }) {
+            return LiteralConversions.GetLiteralExpression(decimalValue);
+        }
         if (!IsConstantInCSharp(vbValue, csValue)) return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
         if (SymbolEqualityComparer.Default.Equals(sourceType, target)) return csValue;
         if (sourceType.IsFractionalNumericType() && SmallIntegerOperatorPromotion.GetUnderlyingNumericType(target).IsIntegralType()) {
@@ -63,6 +67,24 @@ internal class DeclaredConstantConverter
         if (conversion.Exists) return ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), csValue);
         return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
     }
+
+    /// <summary>
+    /// An Object takes the constant with its own VB type, e.g. CByte(True) is the Byte 255 and CType(2.5, E) the E 2 (rounded), which a cast in C# may not give.
+    /// So only a literal or a named constant is kept as written. A default value is stored as VB stores it, e.g. an enum as its underlying value.
+    /// </summary>
+    private ExpressionSyntax ConvertToObject(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, object value, ITypeSymbol sourceType, IParameterSymbol parameter)
+    {
+        if (vbValue.SkipIntoParens() is VBSyntax.LiteralExpressionSyntax or VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax && IsConstantInCSharp(vbValue, csValue)) {
+            return csValue;
+        }
+        if (parameter is { ExplicitDefaultValue: { } defaultValue } && GetSpecialTypeOrNull(defaultValue.GetType()) is { } defaultValueType) {
+            return GetConvertedLiteralOrNull(defaultValue, defaultValueType, requiresExactType: true) ?? csValue;
+        }
+        return GetConvertedLiteralOrNull(value, sourceType, requiresExactType: true) ?? csValue;
+    }
+
+    private ITypeSymbol GetSpecialTypeOrNull(Type type) =>
+        Enum.TryParse<SpecialType>("System_" + type.Name, out var specialType) && type.Namespace == "System" ? _semanticModel.Compilation.GetSpecialType(specialType) : null;
 
     /// <summary>
     /// Calls (e.g. to Conversions or Math.Round) are never C# constants, except nameof.

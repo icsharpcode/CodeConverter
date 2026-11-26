@@ -7,6 +7,16 @@ Public Class DecimalConstantDefaultValueTests
         Return f1 & "," & f2 & "," & o.GetType().Name & o.ToString()
     End Function
 
+    Public Shared Function G(Optional m As Decimal = 0.1F) As Decimal
+        Return m
+    End Function
+
+    <Fact>
+    Public Sub DecimalDefaultWithoutAttributesIsVbsConvertedValue()
+        Assert.Equal("0.100000001490116", G().ToString(System.Globalization.CultureInfo.InvariantCulture))
+        Assert.Equal("0.100000001490116", Convert.ToString(GetType(DecimalConstantDefaultValueTests).GetMethod("G").GetParameters()(0).DefaultValue, System.Globalization.CultureInfo.InvariantCulture))
+    End Sub
+
     <Fact>
     Public Sub DecimalDefaultsInMetadataAreVbsConvertedValue()
         Dim parameters = GetType(DecimalConstantDefaultValueTests).GetMethod("F").GetParameters()

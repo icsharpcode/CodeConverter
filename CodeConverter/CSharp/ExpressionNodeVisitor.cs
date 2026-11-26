@@ -601,7 +601,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     /// <param name="requiresExactType">For [DefaultParameterValue], whose argument is an Object, so C# won't convert it to the parameter's type</param>
     private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue, ISymbol parameter, bool requiresExactType = false) =>
         CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(vbValue, await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
-            (parameter as IParameterSymbol)?.Type, requiresExactType);
+            (parameter as IParameterSymbol)?.Type, requiresExactType, parameter as IParameterSymbol);
 
     public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)
     {
