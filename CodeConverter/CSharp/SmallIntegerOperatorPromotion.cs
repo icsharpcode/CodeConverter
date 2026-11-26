@@ -13,7 +13,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 /// <item>An operand of a wrapping operator (+, -, *, And, Or, Xor, Not, the left of &lt;&lt;) of the same type needs no cast: that operator's own result keeps the congruence and gets cast instead.</item>
 /// <item>A value already in range needs no cast where converting the int gives the same as converting the VB type: as an operand of another intrinsic operator (C# promotes it anyway),
 /// or converted to another numeric type, String or Boolean. That includes explicit conversions such as CInt, whose target type is what counts.</item>
-/// <item>Any value needs no cast where it's converted to an integral type no wider than the VB type, since that conversion truncates it anyway, e.g. CByte(Not us).</item>
+/// <item>Any value needs no cast where it's converted to an integral type (or enum of one) no wider than the VB type, or from a nullable to its value, since that conversion truncates it anyway, e.g. CByte(Not us).</item>
 /// <item>Anything else needs the cast: e.g. the VB type itself (a lambda return, an array element), Object (boxing), an enum, or a user-defined conversion.</item>
 /// </list>
 /// Where no cast is needed, <see cref="GetCSharpTypeOrNull"/> tells the conversion to the target that the source is an int.
@@ -111,8 +111,7 @@ internal class SmallIntegerOperatorPromotion
     /// <remarks>For an explicit conversion (e.g. CInt), the operand's own converted type is just its type</remarks>
     public ITypeSymbol GetCSharpTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol targetType)
     {
-        if (GetPromotedTypeOrNull(vbNode) is not { } vbType || NeedsCastToVbType(vbNode) ||
-            GetUnderlyingType(targetType)?.SpecialType == GetUnderlyingType(vbType).SpecialType) {
+        if (GetPromotedTypeOrNull(vbNode) is not { } vbType || NeedsCastToVbType(vbNode) || !IsConversionToAnotherType(targetType, vbType)) {
             return null;
         }
         return GetInt32Like(vbType);
@@ -132,16 +131,24 @@ internal class SmallIntegerOperatorPromotion
 
     private bool AcceptsPromotedValue(VBSyntax.ExpressionSyntax outermost, ITypeSymbol vbType, bool isInRange)
     {
-        var targetType = GetUnderlyingType(GetTargetType(outermost));
+        var convertedType = GetTargetType(outermost);
+        var targetType = GetUnderlyingType(convertedType);
         var underlyingVbType = GetUnderlyingType(vbType);
-        if (IsIntegralNoWiderThan(targetType, underlyingVbType) && targetType.SpecialType != underlyingVbType.SpecialType) return true;
+        var isConversionToAnotherType = IsConversionToAnotherType(convertedType, vbType);
+        if (isConversionToAnotherType && IsIntegralNoWiderThan(GetUnderlyingNumericType(targetType), underlyingVbType)) return true;
         if (!isInRange) return false;
         if (targetType?.SpecialType is SpecialType.System_String or SpecialType.System_Boolean) return true;
         // Without a format string, an in-range int formats like the VB type (whereas e.g. :X formats a negative int with 32 bits)
         if (outermost.Parent is VBSyntax.InterpolationSyntax { FormatClause: null }) return true;
         if (IsIntrinsicOperator(outermost.Parent)) return targetType.IsNumericType();
-        return targetType.IsNumericType() && targetType.SpecialType != underlyingVbType.SpecialType;
+        return targetType.IsNumericType() && isConversionToAnotherType;
     }
+
+    /// <summary>
+    /// Whether converting to <paramref name="targetType"/> produces a value of another C# type (so the int can be converted instead), rather than just wrapping it in Nullable
+    /// </summary>
+    private static bool IsConversionToAnotherType(ITypeSymbol targetType, ITypeSymbol vbType) =>
+        !SymbolEqualityComparer.Default.Equals(GetUnderlyingType(targetType), GetUnderlyingType(vbType)) || vbType.IsNullable() && !targetType.IsNullable();
 
     private ITypeSymbol GetTargetType(VBSyntax.ExpressionSyntax outermost) => outermost.Parent switch {
         VBSyntax.CastExpressionSyntax or VBSyntax.PredefinedCastExpressionSyntax => _semanticModel.GetTypeInfo(outermost.Parent).Type,

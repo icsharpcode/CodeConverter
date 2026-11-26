@@ -217,4 +217,13 @@ Public Class SmallIntegerOperatorTests
         Dim boxed As Func(Of Object) = Function() b1 Or b1
         Assert.Equal(GetType(Byte), boxed().GetType())
     End Sub
+
+    <Fact>
+    Public Sub ConversionsToEnumOrFromNullable()
+        Dim b1 As Byte = 200, nb As Byte? = 100, noValue As Byte? = Nothing
+        Assert.Equal(CType(55, ByteFlags), CType(Not b1, ByteFlags))
+        Assert.Equal(CByte(200), CByte(nb + nb))
+        Assert.Throws(Of InvalidOperationException)(Function() CByte(noValue + nb))
+        Assert.Equal(CType(55, DayOfWeek), CType(Not b1, DayOfWeek))
+    End Sub
 End Class

@@ -673,4 +673,39 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ConversionToNonNullableOrEnumOfNoWiderTypeCastsOnceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum EB As Byte
+    A
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte, nb As Byte?)
+        Dim a = CByte(nb + nb)
+        Dim b = CType(b1 And b2, EB)
+        Dim c = CType(Not b1, EB)
+        Dim d = CType(Not b1, DayOfWeek)
+        Dim e As Byte? = b1 And b2
+    End Sub
+End Class", @"using System;
+
+internal enum EB : byte
+{
+    A
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2, byte? nb)
+    {
+        byte a = (byte)(nb + nb);
+        EB b = (EB)(b1 & b2);
+        EB c = (EB)~b1;
+        DayOfWeek d = (DayOfWeek)(byte)~b1;
+        byte? e = (byte)(b1 & b2);
+    }
+}");
+    }
 }
