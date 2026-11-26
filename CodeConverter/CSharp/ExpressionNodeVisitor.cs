@@ -513,7 +513,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
                 };
                 if (!node.Default.Value.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    optionalAttributes.Add(GetDecimalConstantAttributeOrNull(vbSymbol, node.Default.Value)
+                    optionalAttributes.Add(GetDecimalConstantAttributeOrNull(vbSymbol)
                         ?? CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
                 }
                 attributes.Insert(0,
@@ -579,22 +579,22 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             || p.Type.SpecialType == SpecialType.System_DateTime && p.ExplicitDefaultValue != null));
 
     /// <summary>
-    /// An attribute argument can't be a decimal, so as C# does for a decimal default, the value is given in parts to DecimalConstant
+    /// An attribute argument can't be a decimal, so as C# does for a decimal default, the value is given in parts to DecimalConstant.
+    /// That includes an Object parameter's Decimal default, as VB does. The value is the one VB converted the constant to, e.g. 0.1F gives 0.100000001490116 and True gives -1.
     /// </summary>
-    private AttributeSyntax GetDecimalConstantAttributeOrNull(ISymbol parameter, VBSyntax.ExpressionSyntax vbValue)
+    private AttributeSyntax GetDecimalConstantAttributeOrNull(ISymbol parameter) =>
+        parameter is IParameterSymbol { HasExplicitDefaultValue: true, ExplicitDefaultValue: decimal value }
+            ? CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DecimalConstant"),
+                CommonConversions.CreateAttributeArgumentList(GetDecimalConstantArguments(value).Select(CS.SyntaxFactory.AttributeArgument).ToArray()))
+            : null;
+
+    private static IEnumerable<ExpressionSyntax> GetDecimalConstantArguments(decimal value)
     {
-        var type = (parameter as IParameterSymbol)?.Type;
-        if ((type?.GetNullableUnderlyingType() ?? type)?.SpecialType != SpecialType.System_Decimal ||
-            _semanticModel.GetConstantValue(vbValue) is not { HasValue: true, Value: { } value }) {
-            return null;
-        }
-        var bits = decimal.GetBits(Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture));
+        var bits = decimal.GetBits(value);
         var scale = (byte)((bits[3] >> 16) & 0xFF);
         var sign = (byte)(bits[3] < 0 ? 1 : 0);
-        var arguments = new ExpressionSyntax[] { CommonConversions.Literal(scale), CommonConversions.Literal(sign),
+        return new ExpressionSyntax[] { CommonConversions.Literal(scale), CommonConversions.Literal(sign),
             CommonConversions.Literal((uint)bits[2]), CommonConversions.Literal((uint)bits[1]), CommonConversions.Literal((uint)bits[0]) };
-        return CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DecimalConstant"),
-            CommonConversions.CreateAttributeArgumentList(arguments.Select(CS.SyntaxFactory.AttributeArgument).ToArray()));
     }
 
     /// <inheritdoc cref="DeclaredConstantConverter"/>
