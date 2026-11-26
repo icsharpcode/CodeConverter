@@ -577,11 +577,19 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.
     /// Keyed on the VB statement, since e.g. &amp;= and += both become C#'s +=, and /= and \= both become /=.
     /// </summary>
+    /// <summary>
+    /// VB lifts an arithmetic operator on a Nullable number for a constant Nothing of any type, e.g. DirectCast(Nothing, Object), giving Nothing, which the late-bound operator
+    /// converted back can't. Elsewhere the late-bound operator is kept, as it matches VB: e.g. a structure's operator takes Nothing as its default value,
+    /// and a Date or a concatenation throws as VB does.
+    /// </summary>
+    private bool IsLiftedOverObjectNothing(VBSyntax.AssignmentStatementSyntax node, ITypeSymbol lhsType) =>
+        _semanticModel.GetConstantValue(node.Right) is { HasValue: true, Value: null }
+        && lhsType.GetNullableUnderlyingType() is { } valueType && (valueType.IsNumericType() || valueType.IsEnumType() || valueType.SpecialType == SpecialType.System_Boolean)
+        && !node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement);
+
     private KnownMethod? GetLateBoundOperatorOrNull(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
     {
-        // A constant Nothing is just Nothing to VB, whatever its type, e.g. DirectCast(Nothing, Object), so it's converted to the operator's type rather than bound late
-        var isRhsObject = rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
-                          && !(_semanticModel.GetConstantValue(node.Right) is { HasValue: true, Value: null } && rhsTypeInfo.ConvertedType?.SpecialType != SpecialType.System_Object);
+        var isRhsObject = rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object && !IsLiftedOverObjectNothing(node, lhsTypeInfo.Type);
         if (lhsTypeInfo.Type?.SpecialType != SpecialType.System_Object && !isRhsObject) return null;
         string methodName = node.Kind() switch {
             VBasic.SyntaxKind.AddAssignmentStatement => "AddObject",
