@@ -126,12 +126,16 @@ internal class SmallIntegerOperatorPromotion
         if (IsIntegralNoWiderThan(targetType, underlyingVbType) && targetType.SpecialType != underlyingVbType.SpecialType) return true;
         if (!isInRange) return false;
         if (targetType?.SpecialType is SpecialType.System_String or SpecialType.System_Boolean) return true;
+        // Without a format string, an in-range int formats like the VB type (whereas e.g. :X formats a negative int with 32 bits)
+        if (outermost.Parent is VBSyntax.InterpolationSyntax { FormatClause: null }) return true;
         if (IsIntrinsicOperator(outermost.Parent)) return targetType.IsNumericType();
         return targetType.IsNumericType() && targetType.SpecialType != underlyingVbType.SpecialType;
     }
 
     private ITypeSymbol GetTargetType(VBSyntax.ExpressionSyntax outermost) => outermost.Parent switch {
         VBSyntax.CastExpressionSyntax or VBSyntax.PredefinedCastExpressionSyntax => _semanticModel.GetTypeInfo(outermost.Parent).Type,
+        // The value of a nullable first operand is converted to the type of If, rather than to its own converted type
+        VBSyntax.BinaryConditionalExpressionSyntax coalesce when coalesce.FirstExpression == outermost => _semanticModel.GetTypeInfo(coalesce).Type,
         _ => _semanticModel.GetTypeInfo(outermost).ConvertedType
     };
 

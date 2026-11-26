@@ -173,4 +173,14 @@ Public Class SmallIntegerOperatorTests
         b2 += b2 + CByte(50)
         Assert.Equal(CByte(250), b2)
     End Sub
+
+    <Fact>
+    Public Sub CoalesceAndInterpolationOfResults()
+        Dim nb1 As Byte? = 200, nb2 As Byte? = 50, noValue As Byte? = Nothing, sb As SByte = -1, b1 As Byte = 200
+        Assert.Equal(0, If(nb1 And nb2, 7))
+        Assert.Equal(7, If(noValue And nb2, 7))
+        Assert.Equal(55, If(Not nb1, 7))
+        Assert.Equal("FF", $"{sb And sb:X}")
+        Assert.Equal("  200", $"{b1 Or b1,5}")
+    End Sub
 End Class

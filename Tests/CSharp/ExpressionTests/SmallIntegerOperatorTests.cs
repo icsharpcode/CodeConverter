@@ -554,4 +554,31 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task InRangeResultInCoalesceOrUnformattedInterpolationIsNotCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte, nb1 As Byte?, nb2 As Byte?, sb As SByte)
+        Dim a = If(nb1 And nb2, 0)
+        Dim b = If(Not nb1, 0)
+        Dim c = $""{b1 And b2}""
+        Dim d = $""{b1 And b2,5}""
+        Dim e = $""{sb And sb:X}""
+        Dim f = $""{Not b1}""
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2, byte? nb1, byte? nb2, sbyte sb)
+    {
+        int a = nb1 & nb2 ?? 0;
+        int b = (byte?)~nb1 ?? 0;
+        string c = $""{b1 & b2}"";
+        string d = $""{b1 & b2,5}"";
+        string e = $""{(sbyte)(sb & sb):X}"";
+        string f = $""{(byte)~b1}"";
+    }
+}");
+    }
 }
