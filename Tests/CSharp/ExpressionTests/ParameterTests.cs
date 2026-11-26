@@ -157,4 +157,59 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ConstantDefaultIsCastOrFoldedOnlyWhereCSharpNeedsItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum Col
+    Red
+    Green
+End Enum
+
+Class C
+    Const L As Long = 5
+    Const D As Double = 1.5
+    Sub M(Optional a1 As Integer = L, Optional c As Integer = Col.Green, Optional b As Single = D, Optional n As Col = 1,
+          Optional h As Integer? = 2.5, Optional ls As Long? = D, Optional z As Short = True << 3, Optional c2 As Col = 1.5, Optional i As Integer = True)
+    End Sub
+    Sub O(Optional a As Object = 1.5, Optional ByRef b As Short = 3, Optional ByRef s As String = ""a"")
+    End Sub
+End Class", @"using System.Runtime.InteropServices;
+
+internal enum Col
+{
+    Red,
+    Green
+}
+
+internal partial class C
+{
+    private const long L = 5L;
+    private const double D = 1.5d;
+    public void M(int a1 = (int)L, int c = (int)Col.Green, float b = (float)D, Col n = (Col)1, int? h = 2, long? ls = 2L, short z = -8, Col c2 = (Col)2, int i = -1)
+    {
+    }
+    public void O([Optional, DefaultParameterValue(1.5d)] object a, [Optional, DefaultParameterValue((short)3)] ref short b, [Optional, DefaultParameterValue(""a"")] ref string s)
+    {
+    }
+}");
+    }
+
+    [Fact]
+    public async Task DefaultsAfterADateDefaultAreAttributesTooAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(Optional d As Date = #1/2/2000#, Optional i As Integer = 3, Optional s As String = Nothing)
+    End Sub
+End Class", @"using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+internal partial class C
+{
+    public void M([Optional, DateTimeConstant(630823680000000000L/* #1/2/2000# */)] DateTime d, [Optional, DefaultParameterValue(3)] int i, [Optional] string s)
+    {
+    }
+}");
+    }
 }

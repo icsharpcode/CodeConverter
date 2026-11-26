@@ -110,7 +110,10 @@ internal class ArgumentConverter
         if (!(arg is VBasic.Syntax.SimpleArgumentSyntax))
             throw new NotSupportedException();
         var a = (VBasic.Syntax.SimpleArgumentSyntax)arg;
-        var attr = CS.SyntaxFactory.AttributeArgument(await a.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        var csValue = await a.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        // The constructor parameter's or the property's type
+        var targetType = _semanticModel.GetTypeInfo(a.Expression).ConvertedType;
+        var attr = CS.SyntaxFactory.AttributeArgument(CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(a.Expression, csValue, targetType));
         if (a.IsNamed) {
             attr = attr.WithNameEquals(CS.SyntaxFactory.NameEquals(await a.NameColonEquals.Name.AcceptAsync<CSSyntax.IdentifierNameSyntax>(TriviaConvertingExpressionVisitor)));
         }

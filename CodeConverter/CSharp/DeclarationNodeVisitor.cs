@@ -468,7 +468,8 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     {
         var attributes = await CommonConversions.ConvertAttributesAsync(node.AttributeLists);
         var initializer = await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor);
-        initializer = initializer?.WithValue(CommonConversions.TypeConversionAnalyzer.RoundFractionalConstantIfNeeded(node.Initializer.Value, initializer.Value));
+        var underlyingType = (_semanticModel.GetDeclaredSymbol(node)?.ContainingType as INamedTypeSymbol)?.EnumUnderlyingType;
+        initializer = initializer?.WithValue(CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(node.Initializer.Value, initializer.Value, underlyingType));
         return CS.SyntaxFactory.EnumMemberDeclaration(attributes, CommonConversions.ConvertIdentifier(node.Identifier), initializer);
     }
 

@@ -1,0 +1,93 @@
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using Microsoft.CodeAnalysis.CSharp;
+using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
+using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
+
+namespace ICSharpCode.CodeConverter.CSharp;
+
+/// <summary>
+/// Converts a constant to the type it's declared as where C# requires a constant of that type: a parameter default, an enum member's value or an attribute argument.
+/// VB converts the constant at compile time, so its converted value is always available, but a literal hides the names and calculations it came from. So:
+/// <list type="number">
+/// <item>Keep the value as written where C# converts the constant implicitly (e.g. an Integer constant in range of a Byte).</item>
+/// <item>Otherwise cast it, which still gives a C# constant (e.g. <c>(int)L</c> for a Long constant, <c>(Col)1</c>).</item>
+/// <item>Otherwise use VB's converted value as a literal: C# won't round a fractional value to an integral type, can't convert a Boolean to a number,
+/// and a conversion that became a call (e.g. <c>Conversions.ToShort(true) &lt;&lt; 3</c>) isn't a C# constant.</item>
+/// </list>
+/// A nullable type's default is a constant of its underlying type.
+/// </summary>
+/// <remarks>
+/// C# constant conversions: https://learn.microsoft.com/dotnet/csharp/language-reference/language-specification/conversions#10212-implicit-constant-expression-conversions
+/// </remarks>
+internal class DeclaredConstantConverter
+{
+    private readonly SemanticModel _semanticModel;
+    private readonly CSharpCompilation _csCompilation;
+    private readonly Func<ITypeSymbol, TypeSyntax> _getTypeSyntax;
+
+    public DeclaredConstantConverter(SemanticModel semanticModel, CSharpCompilation csCompilation, Func<ITypeSymbol, TypeSyntax> getTypeSyntax)
+    {
+        _semanticModel = semanticModel;
+        _csCompilation = csCompilation;
+        _getTypeSyntax = getTypeSyntax;
+    }
+
+    /// <param name="requiresExactType">The constant must already have the target type, e.g. for [DefaultParameterValue], whose argument is an Object</param>
+    public ExpressionSyntax Convert(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, ITypeSymbol targetType, bool requiresExactType = false)
+    {
+        if (targetType == null || vbValue.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) return csValue;
+        if (_semanticModel.GetConstantValue(vbValue) is not { HasValue: true, Value: { } value }) return csValue;
+        var target = targetType.GetNullableUnderlyingType() ?? targetType;
+        var sourceType = _semanticModel.GetTypeInfo(vbValue).Type;
+        if (sourceType == null || target.SpecialType == SpecialType.System_Object) return csValue;
+        if (!IsConstantInCSharp(csValue)) return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
+        if (SymbolEqualityComparer.Default.Equals(sourceType, target)) return csValue;
+        if (sourceType.IsFractionalNumericType() && SmallIntegerOperatorPromotion.GetUnderlyingNumericType(target).IsIntegralType()) {
+            return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
+        }
+
+        // An enum converts to and from a number only explicitly (and may not be in the C# compilation yet)
+        if (sourceType.IsEnumType() || target.IsEnumType()) return ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), csValue);
+        if (sourceType.SpecialType == SpecialType.None || target.SpecialType == SpecialType.None) return csValue;
+        var conversion = _csCompilation.ClassifyConversion(GetCSharpSpecialType(sourceType), GetCSharpSpecialType(target));
+        if (!requiresExactType && (conversion.IsImplicit || IsImplicitConstantConversion(value, target))) return csValue;
+        if (conversion.Exists) return ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), csValue);
+        return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
+    }
+
+    /// <summary>
+    /// Calls (e.g. to Conversions or Math.Round) are never C# constants, except nameof
+    /// </summary>
+    private static bool IsConstantInCSharp(ExpressionSyntax csValue) =>
+        !csValue.DescendantNodesAndSelf().OfType<CSSyntax.InvocationExpressionSyntax>()
+            .Any(i => i.Expression is not CSSyntax.IdentifierNameSyntax { Identifier.ValueText: "nameof" });
+
+    private ITypeSymbol GetCSharpSpecialType(ITypeSymbol vbType) => _csCompilation.GetSpecialType(vbType.SpecialType);
+
+    private static bool IsImplicitConstantConversion(object value, ITypeSymbol target) =>
+        value switch {
+            int i => target.SpecialType switch {
+                SpecialType.System_SByte => i is >= sbyte.MinValue and <= sbyte.MaxValue,
+                SpecialType.System_Byte => i is >= byte.MinValue and <= byte.MaxValue,
+                SpecialType.System_Int16 => i is >= short.MinValue and <= short.MaxValue,
+                SpecialType.System_UInt16 => i is >= ushort.MinValue and <= ushort.MaxValue,
+                SpecialType.System_UInt32 or SpecialType.System_UInt64 => i >= 0,
+                _ => false
+            },
+            long l => target.SpecialType == SpecialType.System_UInt64 && l >= 0,
+            _ => false
+        };
+
+    /// <summary>
+    /// VB's own conversion of the constant, e.g. rounding 2.5 to even
+    /// </summary>
+    /// <remarks>C# has no literal of a type smaller than int, so for an exact type that needs a cast too</remarks>
+    private ExpressionSyntax GetConvertedLiteralOrNull(object value, ITypeSymbol target, bool requiresExactType)
+    {
+        var numericTarget = SmallIntegerOperatorPromotion.GetUnderlyingNumericType(target);
+        if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(numericTarget.GetFullMetadataName(), out var conversion)) return null;
+        var literal = LiteralConversions.GetLiteralExpression(conversion.Invoke(null, new[] { value }), convertedType: numericTarget);
+        var hasNoLiteralOfItsType = numericTarget.SpecialType is SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_Int16 or SpecialType.System_UInt16;
+        return target.IsEnumType() || requiresExactType && hasNoLiteralOfItsType ? ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), literal) : literal;
+    }
+}

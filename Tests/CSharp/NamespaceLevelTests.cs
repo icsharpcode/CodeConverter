@@ -1141,4 +1141,77 @@ internal enum L : long
     B = A << 3
 }");
     }
+
+    [Fact]
+    public async Task EnumMemberValueIsCastOrFoldedOnlyWhereCSharpNeedsItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Constants
+    Public Const L As Long = 7
+End Module
+
+<Flags>
+Enum Fl
+    A = 1
+    X = A Or 2.5
+    K = L
+    T = True
+End Enum
+
+Enum F As Byte
+    A = 1
+    E = A + 1
+End Enum", @"using System;
+
+internal static partial class Constants
+{
+    public const long L = 7L;
+}
+
+[Flags]
+internal enum Fl
+{
+    A = 1,
+    X = (int)((long)A | 2L),
+    K = (int)Constants.L,
+    T = -1
+}
+
+internal enum F : byte
+{
+    A = 1,
+    E = (int)A + 1
+}");
+    }
+
+    [Fact]
+    public async Task AttributeArgumentIsConvertedToItsParameterOrMemberTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class AAttribute
+    Inherits Attribute
+    Sub New(i As Integer)
+    End Sub
+    Property P As Integer
+    Public F As Short
+    Public O As Object
+End Class
+
+<A(2.5, P:=3.5, F:=7, O:=1.5)>
+Class C
+End Class", @"using System;
+
+internal partial class AAttribute : Attribute
+{
+    public AAttribute(int i)
+    {
+    }
+    public int P { get; set; }
+    public short F;
+    public object O;
+}
+
+[A(2, P = 4, F = 7, O = 1.5d)]
+internal partial class C
+{
+}");
+    }
 }

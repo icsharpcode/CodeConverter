@@ -504,8 +504,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     attributes.Insert(0,
                         CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
                 }
-            } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword)) || HasRefParametersAfterThisOne()) {
-                var defaultExpression = await ConvertDefaultValueAsync(node.Default.Value);
+            } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword)) || HasRefParametersAfterThisOne() || vbSymbol is IParameterSymbol p && NeedsDefaultAsAttributes(p)) {
+                var defaultExpression = await ConvertDefaultValueAsync(node.Default.Value, vbSymbol, requiresExactType: true);
                 var arg = CommonConversions.CreateAttributeArgumentList(CS.SyntaxFactory.AttributeArgument(defaultExpression));
                 _extraUsingDirectives.Add("System.Runtime.InteropServices");
                 _extraUsingDirectives.Add("System.Runtime.CompilerServices");
@@ -525,7 +525,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     // Set null here; FixCharDefaultsForStringParams (DeclarationNodeVisitor) adds the null-coalesce assignment.
                     @default = CS.SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.NullExpression);
                 } else {
-                    @default = CS.SyntaxFactory.EqualsValueClause(await ConvertDefaultValueAsync(node.Default.Value));
+                    @default = CS.SyntaxFactory.EqualsValueClause(await ConvertDefaultValueAsync(node.Default.Value, vbSymbol));
                 }
             }
         }
@@ -567,9 +567,21 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         return syntaxParamType;
     }
 
-    /// <inheritdoc cref="TypeConversionAnalyzer.RoundFractionalConstantIfNeeded"/>
-    private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue) =>
-        CommonConversions.TypeConversionAnalyzer.RoundFractionalConstantIfNeeded(vbValue, await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+    /// <summary>
+    /// C# only allows null as the default value of an Object parameter, and none for a ref parameter or (as a literal) a DateTime one: those are given as attributes.
+    /// C# treats a parameter with them as required, which can't follow one written as <c>= value</c> (CS1737), so the method's other defaults follow suit.
+    /// </summary>
+    private static bool NeedsDefaultAsAttributes(IParameterSymbol parameter) =>
+        parameter.ContainingSymbol.GetParameters().Any(p => p.HasExplicitDefaultValue && (
+            p.RefKind != RefKind.None
+            || p.Type.SpecialType == SpecialType.System_Object && p.ExplicitDefaultValue != null
+            || p.Type.SpecialType == SpecialType.System_DateTime && p.ExplicitDefaultValue != null));
+
+    /// <inheritdoc cref="DeclaredConstantConverter"/>
+    /// <param name="requiresExactType">For [DefaultParameterValue], whose argument is an Object, so C# won't convert it to the parameter's type</param>
+    private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue, ISymbol parameter, bool requiresExactType = false) =>
+        CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(vbValue, await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
+            (parameter as IParameterSymbol)?.Type, requiresExactType);
 
     public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)
     {
