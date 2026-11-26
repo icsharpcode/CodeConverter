@@ -135,8 +135,21 @@ internal class ArgumentConverter
         }
         var literal = CommonConversions.Literal(value);
         var underlyingType = paramType.GetNullableUnderlyingType() ?? paramType;
-        return underlyingType.IsEnumType() ? ValidSyntaxFactory.CastExpression(CommonConversions.GetTypeSyntax(underlyingType), literal.AddParens()) : literal;
+        if (underlyingType.IsEnumType()) return ValidSyntaxFactory.CastExpression(CommonConversions.GetTypeSyntax(underlyingType), literal.AddParens());
+        // An Object takes the value with its own type, which C# has no literal of for e.g. a Byte
+        if (paramType.SpecialType == SpecialType.System_Object && GetSmallIntegerKeywordOrNone(value) is var keyword and not CS.SyntaxKind.None) {
+            return ValidSyntaxFactory.CastExpression(CS.SyntaxFactory.PredefinedType(CS.SyntaxFactory.Token(keyword)), literal.AddParens());
+        }
+        return literal;
     }
+
+    private static CS.SyntaxKind GetSmallIntegerKeywordOrNone(object value) => value switch {
+        byte => CS.SyntaxKind.ByteKeyword,
+        sbyte => CS.SyntaxKind.SByteKeyword,
+        short => CS.SyntaxKind.ShortKeyword,
+        ushort => CS.SyntaxKind.UShortKeyword,
+        _ => CS.SyntaxKind.None
+    };
 
     private ISymbol GetInvocationSymbol(SyntaxNode invocation)
     {

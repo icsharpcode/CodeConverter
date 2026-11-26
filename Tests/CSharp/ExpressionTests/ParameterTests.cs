@@ -275,6 +275,41 @@ internal partial class C
     }
 
     [Fact]
+    public async Task OmittedOptionalByRefObjectArgumentKeepsVbsTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E As Byte
+    A = 1
+End Enum
+Class C
+    Sub M(Optional ByRef o As Object = CByte(True), Optional ByRef e As Object = CType(2.5, E), Optional ByRef s As Object = CShort(-1), Optional ByRef i As Object = 3)
+    End Sub
+    Sub Caller()
+        M()
+    End Sub
+End Class", @"using System.Runtime.InteropServices;
+
+internal enum E : byte
+{
+    A = 1
+}
+
+internal partial class C
+{
+    public void M([Optional, DefaultParameterValue((byte)255)] ref object o, [Optional, DefaultParameterValue((byte)2)] ref object e, [Optional, DefaultParameterValue((short)(-1))] ref object s, [Optional, DefaultParameterValue(3)] ref object i)
+    {
+    }
+    public void Caller()
+    {
+        object argo = (byte)255;
+        object arge = (byte)2;
+        object args = (short)-1;
+        object argi = 3;
+        M(o: ref argo, e: ref arge, s: ref args, i: ref argi);
+    }
+}");
+    }
+
+    [Fact]
     public async Task OmittedOptionalByRefEnumArgumentIsCastAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class C
