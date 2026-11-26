@@ -15,11 +15,11 @@
         "@monaco-editor/react": "^4.7.0",
         "axios": "^1.21.1",
         "bootstrap": "^5.3.9",
-        "monaco-editor": "^0.57.0",
+        "monaco-editor": "^0.58.0",
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
         "react-router-bootstrap": "^0.26.3",
-        "react-router-dom": "^7.18.5",
+        "react-router-dom": "^7.18.6",
         "reactstrap": "^9.2.3"
     },
     "devDependencies": {
@@ -30,6 +30,6 @@
         "jsdom": "^27.4.0",
         "typescript": "~5.9.3",
         "vite": "^6.4.6",
-        "vitest": "^5.1.0"
+        "vitest": "^5.1.1"
     }
 }
