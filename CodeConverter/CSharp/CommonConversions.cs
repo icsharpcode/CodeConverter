@@ -603,13 +603,9 @@ internal class CommonConversions
             && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
             return bExp.Left;
 
-        if (convertedExpression is CSSyntax.ConditionalExpressionSyntax ce) {
-            convertedExpression = SyntaxFactory.ParenthesizedExpression(convertedExpression);
-        }
-
-        return SyntaxFactory.BinaryExpression(
-            CSSyntaxKind.SubtractExpression,
-            convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+        // The simplifier removes these parentheses where they're redundant
+        return SyntaxFactory.BinaryExpression(CSSyntaxKind.AddExpression,
+            convertedExpression.AddParens(), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
     }
 
     public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributesAsync(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
