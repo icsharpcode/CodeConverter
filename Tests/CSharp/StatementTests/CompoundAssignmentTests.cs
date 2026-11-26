@@ -393,4 +393,38 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task EnumOperandIsConvertedForOperatorsCSharpLacksOnEnumsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E As Short
+    A = 1
+End Enum
+Class C
+    Sub M(x As E, n As E?, i As Integer)
+        x += 1
+        x -= i
+        x *= 3
+        x \= 2
+        x += E.A
+        n *= 3
+    End Sub
+End Class", @"
+internal enum E : short
+{
+    A = 1
+}
+
+internal partial class C
+{
+    public void M(E x, E? n, int i)
+    {
+        x = x + 1;
+        x = (E)((int)x - i);
+        x = (E)((int)x * 3);
+        x = (E)((int)x / 2);
+        x = (E)((short)x + (short)E.A);
+        n = (E?)((int?)n * 3);
+    }
+}");
+    }
 }

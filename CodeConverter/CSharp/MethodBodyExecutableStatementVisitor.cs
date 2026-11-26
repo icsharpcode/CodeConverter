@@ -526,12 +526,23 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     /// <summary>
     /// VB converts the left operand to the operator's type, as for x = x op y, e.g. a Single to Long for \, which C#'s / would otherwise divide fractionally.
-    /// An enum is left as it is for arithmetic, which C# has on enums.
+    /// An enum is left as it is for + or - of an integer its underlying type holds, which C# has on enums, but not for other operators (e.g. *), which C# doesn't (CS0019).
     /// </summary>
     private ExpressionSyntax GetOperatorLeftOperand(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, ITypeSymbol operandType) =>
-        operandType != null && !SymbolEqualityComparer.Default.Equals(operandType, lhsType) && !(lhsType.GetNullableUnderlyingType() ?? lhsType).IsEnumType()
+        operandType != null && !SymbolEqualityComparer.Default.Equals(operandType, lhsType) && !IsEnumPlusOrMinusInteger(node, lhsType)
             ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: operandType)
             : lhs;
+
+    private bool IsEnumPlusOrMinusInteger(VBSyntax.AssignmentStatementSyntax node, ITypeSymbol lhsType)
+    {
+        if ((lhsType.GetNullableUnderlyingType() ?? lhsType) is not INamedTypeSymbol { EnumUnderlyingType: { } underlyingType }
+            || !node.IsKind(VBasic.SyntaxKind.AddAssignmentStatement, VBasic.SyntaxKind.SubtractAssignmentStatement)
+            || _semanticModel.GetTypeInfo(node.Right).Type is not { } rhsType) return false;
+        var rhsValueType = rhsType.GetNullableUnderlyingType() ?? rhsType;
+        if (!rhsValueType.IsIntegralType() || rhsValueType.IsEnumType()) return false;
+        // C# converts a constant that fits implicitly, as it does an integer type that widens
+        return _semanticModel.GetConstantValue(node.Right).HasValue || _semanticModel.Compilation.ClassifyCommonConversion(rhsValueType, underlyingType).IsImplicit;
+    }
 
     /// <summary>
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.
