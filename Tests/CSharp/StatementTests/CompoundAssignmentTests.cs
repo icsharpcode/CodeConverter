@@ -254,4 +254,28 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ExponentiationIsConvertedBackToTheLeftSideTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Private _i As Integer
+    Sub M(b As Byte, d As Double)
+        _i ^= 2
+        b ^= 2
+        d ^= 2
+    End Sub
+End Class", @"using System;
+
+internal partial class C
+{
+    private int _i;
+    public void M(byte b, double d)
+    {
+        _i = (int)Math.Round(Math.Pow(_i, 2d));
+        b = (byte)Math.Round(Math.Pow(b, 2d));
+        d = Math.Pow(d, 2d);
+    }
+}");
+    }
 }

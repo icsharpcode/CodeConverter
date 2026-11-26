@@ -484,8 +484,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 kind = SyntaxKind.SimpleAssignmentExpression;
                 typeConvertedRhs = typeConvertedNonCompoundRhs;
             }
-        } else if (setMethodName != null && node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation which might need casting back to lhsType
+        } else if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation (a Double) which might need converting back to lhsType
             var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: _semanticModel.Compilation.GetTypeByMetadataName("System.Double"), forceTargetType: lhsTypeInfo.Type);
             kind = SyntaxKind.SimpleAssignmentExpression;
             typeConvertedRhs = typeConvertedNonCompoundRhs;
