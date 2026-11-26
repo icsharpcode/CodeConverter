@@ -708,4 +708,28 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task NotOnFractionalOperandComplementsItAsLongAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(d As Double, nd As Double?, m As Decimal, f As Single)
+        Dim a = Not d
+        Dim b = Not nd
+        Dim c = Not m
+        Dim e = Not f
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(double d, double? nd, decimal m, float f)
+    {
+        long a = ~(long)Math.Round(d);
+        var b = ~(nd.HasValue ? (long?)Math.Round(nd.Value) : null);
+        long c = ~(long)Math.Round(m);
+        long e = ~(long)Math.Round(f);
+    }
+}");
+    }
 }

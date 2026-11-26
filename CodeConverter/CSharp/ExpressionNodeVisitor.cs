@@ -405,6 +405,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             if (underlyingType.IsNumericType() || underlyingType.IsEnumType()) {
                 kind = CS.SyntaxKind.BitwiseNotExpression;
                 csTokenKind = CS.SyntaxKind.TildeToken;
+                // VB converts e.g. a Double operand to Long first
+                expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr);
             } else if (await NegateAndSimplifyOrNullAsync(node, expr, t) is { } simpleNegation) {
                 return simpleNegation;
             }

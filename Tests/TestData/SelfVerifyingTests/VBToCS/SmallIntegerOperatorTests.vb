@@ -226,4 +226,15 @@ Public Class SmallIntegerOperatorTests
         Assert.Throws(Of InvalidOperationException)(Function() CByte(noValue + nb))
         Assert.Equal(CType(55, DayOfWeek), CType(Not b1, DayOfWeek))
     End Sub
+
+    <Fact>
+    Public Sub NotOfFractionalRoundsToLong()
+        Dim d As Double = 2.5, d2 As Double = 3.5, nd As Double? = 2.5, noValue As Double? = Nothing, m As Decimal = 2.5D, f As Single = 3.5F
+        Assert.Equal(-3L, Not d)
+        Assert.Equal(-5L, Not d2)
+        Assert.Equal(-3L, Not nd)
+        Assert.False((Not noValue).HasValue)
+        Assert.Equal(-3L, Not m)
+        Assert.Equal(-5L, Not f)
+    End Sub
 End Class
