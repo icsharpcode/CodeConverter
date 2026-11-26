@@ -39,12 +39,22 @@ internal class SmallIntegerOperatorPromotion
 
     private readonly SemanticModel _semanticModel;
 
+    /// <summary>
+    /// Each answer depends on the operands' answers, so without these a chain of operators would be re-analyzed exponentially.
+    /// Operators are converted innermost first (see <see cref="BinaryExpressionConverter"/>), so the operands' answers are already here and the recursion stays shallow.
+    /// </summary>
+    private readonly Dictionary<VBSyntax.ExpressionSyntax, bool> _needsCastToVbType = new();
+    private readonly Dictionary<VBSyntax.ExpressionSyntax, bool> _isResultInRange = new();
+
     public SmallIntegerOperatorPromotion(SemanticModel semanticModel) => _semanticModel = semanticModel;
 
     /// <summary>
     /// Whether the C# conversion of <paramref name="vbNode"/> is a promoted int that must be cast back to its VB type
     /// </summary>
-    public bool NeedsCastToVbType(VBSyntax.ExpressionSyntax vbNode)
+    public bool NeedsCastToVbType(VBSyntax.ExpressionSyntax vbNode) =>
+        Memoized(_needsCastToVbType, vbNode.SkipIntoParens(), _ => AnalyzeNeedsCastToVbType(vbNode));
+
+    private bool AnalyzeNeedsCastToVbType(VBSyntax.ExpressionSyntax vbNode)
     {
         if (GetPromotedTypeOrNull(vbNode) is not { } vbType) return false;
         var outermost = vbNode.OutermostParenthesizedOrSelf();
@@ -102,7 +112,9 @@ internal class SmallIntegerOperatorPromotion
     /// <summary>
     /// Whether the C# value of the promoted operator always equals the VB value, rather than just being congruent to it
     /// </summary>
-    private bool IsResultInRange(VBSyntax.ExpressionSyntax node)
+    private bool IsResultInRange(VBSyntax.ExpressionSyntax node) => Memoized(_isResultInRange, node, AnalyzeIsResultInRange);
+
+    private bool AnalyzeIsResultInRange(VBSyntax.ExpressionSyntax node)
     {
         var isSigned = GetUnderlyingType(_semanticModel.GetTypeInfo(node).Type).SpecialType is SpecialType.System_SByte or SpecialType.System_Int16;
         return node switch {
@@ -124,6 +136,14 @@ internal class SmallIntegerOperatorPromotion
             },
             _ => false
         };
+    }
+
+    private static bool Memoized(Dictionary<VBSyntax.ExpressionSyntax, bool> cache, VBSyntax.ExpressionSyntax node, Func<VBSyntax.ExpressionSyntax, bool> analyze)
+    {
+        if (!cache.TryGetValue(node, out var result)) {
+            cache[node] = result = analyze(node);
+        }
+        return result;
     }
 
     private bool IsCSharpValueInRange(VBSyntax.ExpressionSyntax operand) =>

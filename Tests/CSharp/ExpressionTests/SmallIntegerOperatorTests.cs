@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
@@ -383,5 +385,28 @@ internal partial class TestClass
         var b = x + (byte)(b1 & b2);
     }
 }");
+    }
+
+    [Fact]
+    public async Task LongChainOfInRangeOperatorsConvertsInLinearTimeAsync()
+    {
+        const int operatorCount = 25;
+        string Chain(string op) => "b" + string.Concat(Enumerable.Repeat($" {op} b", operatorCount));
+        var stopwatch = Stopwatch.StartNew();
+        await TestConversionVisualBasicToCSharpAsync($@"Class TestClass
+    Private Sub TestMethod(b As Byte)
+        Dim x As Integer = {Chain("Mod")}
+        Dim y As Integer = {Chain("\\")}
+    End Sub
+End Class", $@"
+internal partial class TestClass
+{{
+    private void TestMethod(byte b)
+    {{
+        int x = {Chain("%")};
+        int y = {Chain("/")};
+    }}
+}}");
+        Assert.True(stopwatch.Elapsed.TotalSeconds < 15, $"Took {stopwatch.Elapsed}");
     }
 }
