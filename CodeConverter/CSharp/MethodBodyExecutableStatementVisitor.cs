@@ -401,23 +401,23 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     }
 
     /// <summary>
-    /// An object is referred to by its value; a structure's storage (or a type parameter's, which may be one) is broken down further, so it's changed in place rather than in a copy
+    /// An object is referred to by its value; a structure's storage (or a type parameter's, which may be one) is broken down further, so it's changed in place rather than in a copy.
+    /// A structure that isn't in storage (e.g. a property's or function's value) is a copy in VB too, so it's referred to by its value as well.
+    /// Only storage reached through a ref-returning property (from C#) can't be referred to again but by reference.
     /// </summary>
     private bool TryCollectReceiverOperands(IOperation instance, ExpressionSyntax csInstance, List<LeftSideOperand> operands)
     {
         switch (instance) {
             case null or ILocalReferenceOperation or IParameterReferenceOperation or IInstanceReferenceOperation:
                 return true;
-            case { Type.IsReferenceType: true }:
-                operands.Add(new LeftSideOperand(instance, csInstance, "receiver"));
-                return true;
-            case IArrayElementReferenceOperation or IFieldReferenceOperation:
+            case { Type.IsReferenceType: false } and (IArrayElementReferenceOperation or IFieldReferenceOperation):
                 return TryCollectOperands(instance, csInstance, operands);
-            case var storage when storage.IsAssignableExpression():
-                operands.Add(new LeftSideOperand(storage, csInstance, "receiver", IsStorage: true));
+            case IPropertyReferenceOperation { Property.ReturnsByRef: true, Type.IsReferenceType: false }:
+                operands.Add(new LeftSideOperand(instance, csInstance, "receiver", IsStorage: true));
                 return true;
             default:
-                return false;
+                operands.Add(new LeftSideOperand(instance, csInstance, "receiver"));
+                return true;
         }
     }
 
