@@ -133,10 +133,16 @@ internal class VisualBasicNullableExpressionsConverter
     }
 
     /// <summary>
-    /// A Nullable operand, or Nothing converted to one (it has no type of its own)
+    /// A Nullable operand, or Nothing converted to one
     /// </summary>
     private bool MayBeNothing(VBSyntax.ExpressionSyntax vbOperand) =>
-        _semanticModel.GetTypeInfo(vbOperand) is var typeInfo && (typeInfo.Type ?? typeInfo.ConvertedType).IsNullable();
+        _semanticModel.GetTypeInfo(vbOperand).Type.IsNullable() || IsNothingConvertedToNullable(vbOperand);
+
+    /// <summary>
+    /// A constant Nothing of any type (or none), e.g. (Nothing) or DirectCast(Nothing, Object), which VB treats as Nothing, lifting the operator for it
+    /// </summary>
+    public bool IsNothingConvertedToNullable(VBSyntax.ExpressionSyntax vbNode) =>
+        _semanticModel.GetConstantValue(vbNode) is { HasValue: true, Value: null } && _semanticModel.GetTypeInfo(vbNode).ConvertedType.IsNullable();
 
     /// <summary>
     /// { } matches only a value that isn't null, binding it with the C# operand's own (underlying) type, whatever that is; var matches any value

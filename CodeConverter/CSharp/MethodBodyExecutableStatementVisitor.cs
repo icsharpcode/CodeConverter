@@ -577,9 +577,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.
     /// Keyed on the VB statement, since e.g. &amp;= and += both become C#'s +=, and /= and \= both become /=.
     /// </summary>
-    private static KnownMethod? GetLateBoundOperatorOrNull(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
+    private KnownMethod? GetLateBoundOperatorOrNull(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
     {
-        if (lhsTypeInfo.Type?.SpecialType != SpecialType.System_Object && rhsTypeInfo.Type?.SpecialType != SpecialType.System_Object) return null;
+        // A constant Nothing is just Nothing to VB, whatever its type, e.g. DirectCast(Nothing, Object), so it's converted to the operator's type rather than bound late
+        var isRhsObject = rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
+                          && !(_semanticModel.GetConstantValue(node.Right) is { HasValue: true, Value: null } && rhsTypeInfo.ConvertedType?.SpecialType != SpecialType.System_Object);
+        if (lhsTypeInfo.Type?.SpecialType != SpecialType.System_Object && !isRhsObject) return null;
         string methodName = node.Kind() switch {
             VBasic.SyntaxKind.AddAssignmentStatement => "AddObject",
             VBasic.SyntaxKind.SubtractAssignmentStatement => "SubtractObject",

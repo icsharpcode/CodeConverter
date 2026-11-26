@@ -91,11 +91,18 @@ internal class TypeConversionAnalyzer
     /// VB's ^ converts both operands to Double, and is lifted to Double? over a Nullable operand: Nothing if either operand is, where a cast of it to Double would throw
     /// </summary>
     /// <param name="liftedResultType">A Nullable type to convert a lifted result to (e.g. a compound assignment's left side), so the conversion is lifted along with the operator</param>
+    private static ExpressionSyntax DefaultNullableDouble() =>
+        SyntaxFactory.DefaultExpression(SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword))));
+
     public ExpressionSyntax ConvertToPow(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, ITypeSymbol liftedResultType = null)
     {
         var doubleType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Double);
         var leftType = _semanticModel.GetTypeInfo(vbLeft).Type;
         var rightType = _semanticModel.GetTypeInfo(vbRight).Type;
+        // A constant Nothing VB lifts for makes the result Nothing, so it's a typed Double? null, which can be matched where a bare null or default can't
+        var nullableDoubleType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Nullable_T).Construct(doubleType);
+        if (_vbNullableExpressionsConverter.IsNothingConvertedToNullable(vbLeft)) (csLeft, leftType) = (DefaultNullableDouble(), nullableDoubleType);
+        if (_vbNullableExpressionsConverter.IsNothingConvertedToNullable(vbRight)) (csRight, rightType) = (DefaultNullableDouble(), nullableDoubleType);
         // The value of a Nullable operand has its underlying type
         // An operand's value bound by a pattern isn't what the VB node converts to, so has its type forced too
         ExpressionSyntax ToDouble(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax original, ITypeSymbol type, ExpressionSyntax value) =>
