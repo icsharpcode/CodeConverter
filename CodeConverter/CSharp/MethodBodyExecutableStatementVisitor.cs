@@ -320,72 +320,103 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// <summary>
     /// VB evaluates the receiver and arguments of a compound assignment's left side once, then the right side.
     /// Split into lhs = lhs op rhs, C# would evaluate them twice, so any that may have side effects (or be changed by the right side) are evaluated into locals first, in VB's order.
-    /// Once an argument is, the receiver is too unless it's a local or parameter, since evaluating the argument may change e.g. the field it reads.
-    /// A receiver that may be a structure (including a type parameter) and is a variable (e.g. an array element) is a ref local, so the assignment changes the original.
+    /// Once one is, any before it is too unless it's a local or parameter, since evaluating the later one may change e.g. the field the earlier one reads.
     /// </summary>
+    /// <remarks>
+    /// A member of a structure (or of a type parameter, which may be one) is changed in its storage, so that storage is broken down the same way rather than copied:
+    /// an array element is referred to again through its array and indices in locals, which works whatever the array's runtime type (a ref to an element of a covariant array throws),
+    /// and in async methods and iterators. Only storage that can't be broken down is a ref local, and not in a statement with an Await, since one can't be held across it.
+    /// </remarks>
     /// <param name="hoistIndex">Where among the statement's hoisted locals these go: before any the right side needs</param>
     /// <returns>Null where the left side can be evaluated twice, e.g. a local, a field of Me, or an array element with local or constant indices</returns>
     private ExpressionSyntax HoistLeftSideOperandsOrNull(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, int hoistIndex)
     {
-        var operation = _semanticModel.GetOperation(vbLeft);
-        // VB doesn't evaluate the instance expression of a Shared member, and C# refers to the type instead
-        var receiver = operation switch {
-            IArrayElementReferenceOperation element => element.ArrayReference,
-            IPropertyReferenceOperation property => property.Property.IsStatic ? null : property.Instance,
-            IFieldReferenceOperation field => field.Field.IsStatic ? null : field.Instance,
-            IDynamicMemberReferenceOperation lateBoundMember => lateBoundMember.Instance,
-            _ => null
-        };
-        var (csReceiver, csArguments) = csLeft switch {
-            ElementAccessExpressionSyntax elementAccess => (elementAccess.Expression, elementAccess.ArgumentList.Arguments),
-            InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation => (method.Expression, invocation.ArgumentList.Arguments),
-            InvocationExpressionSyntax invocation => (null, invocation.ArgumentList.Arguments),
-            MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
-            _ => (null, default)
-        };
-        // A late-bound member is accessed through a cast to dynamic: the receiver is what's cast
-        if (csReceiver?.SkipIntoParens() is CastExpressionSyntax { Type: IdentifierNameSyntax { Identifier.ValueText: "dynamic" } } dynamicCast) csReceiver = dynamicCast.Expression;
+        var operands = new List<LeftSideOperand>();
+        if (!TryCollectOperands(_semanticModel.GetOperation(vbLeft), csLeft, operands)) return null;
 
-        var argumentsToHoist = csArguments
-            .Where((csArgument, i) => csArgument.Expression is not LiteralExpressionSyntax && !IsEvaluatedTheSameTwice(GetArgumentOperationOrNull(operation, csArgument, i)))
-            .ToArray();
-        var hoistReceiver = csReceiver != null && receiver != null &&
-                            !(argumentsToHoist.Any() ? IsStableReference(receiver) : IsEvaluatedTheSameTwice(receiver));
-        if (!hoistReceiver && !argumentsToHoist.Any()) return null;
-
-        var isStructureVariable = hoistReceiver && receiver.Type?.IsReferenceType != true && receiver.IsAssignableExpression();
-        // A ref local can't be kept across an await or yield, so evaluating twice is the lesser evil there
-        if (isStructureVariable && IsInAsyncOrIteratorMethod(vbLeft)) return null;
+        var lastToHoist = operands.FindLastIndex(o => o.IsStorage || !IsEvaluatedTheSameTwice(o.Operation) && o.Expression is not LiteralExpressionSyntax);
+        if (lastToHoist < 0) return null;
+        var toHoist = operands.Take(lastToHoist + 1).Where((o, i) => i == lastToHoist || o.IsStorage || !IsStableReference(o.Operation)).ToArray();
+        if (toHoist.Any(o => o.IsStorage) && vbLeft.Parent.DescendantNodes().OfType<VBSyntax.AwaitExpressionSyntax>().Any()) return null;
 
         var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
-        if (hoistReceiver) {
-            var declaration = isStructureVariable
-                ? new AdditionalDeclaration("receiver", SyntaxFactory.RefExpression(csReceiver), SyntaxFactory.RefType(ValidSyntaxFactory.VarType))
-                : new AdditionalDeclaration("receiver", csReceiver, null);
+        foreach (var operand in toHoist) {
+            var declaration = operand.IsStorage
+                ? new AdditionalDeclaration("receiver", SyntaxFactory.RefExpression(operand.Expression), SyntaxFactory.RefType(ValidSyntaxFactory.VarType))
+                : new AdditionalDeclaration(operand.NameBase, operand.Expression, null);
             _perScopeState.HoistAt(hoistIndex++, declaration);
-            replacements.Add(csReceiver, isStructureVariable ? RefLocalReferences.Mark(declaration.IdentifierName, CommonConversions.GetTypeSyntax(receiver.Type)) : declaration.IdentifierName);
-        }
-        foreach (var csArgument in argumentsToHoist) {
-            var declaration = _perScopeState.HoistAt(hoistIndex++, new AdditionalDeclaration("index", csArgument.Expression, null));
-            replacements.Add(csArgument.Expression, declaration.IdentifierName);
+            replacements.Add(operand.Expression, operand.IsStorage
+                ? RefLocalReferences.Mark(declaration.IdentifierName, CommonConversions.GetTypeSyntax(operand.Operation.Type))
+                : declaration.IdentifierName);
         }
         return csLeft.ReplaceNodes(replacements.Keys, (original, _) => replacements[original]);
     }
 
+    /// <param name="IsStorage">Storage of a structure that can only be referred to again by reference</param>
+    private record LeftSideOperand(IOperation Operation, ExpressionSyntax Expression, string NameBase, bool IsStorage = false);
+
     /// <summary>
-    /// The VB argument a C# argument came from, matched by name for a named argument, else by position. Null where it can't be told.
+    /// The operands VB evaluates to find the storage <paramref name="operation"/> refers to, in VB's order, each paired with the C# expression it became
     /// </summary>
-    private static IOperation GetArgumentOperationOrNull(IOperation lhsOperation, ArgumentSyntax csArgument, int position)
+    /// <returns>False where the C# doesn't have the shape the VB does</returns>
+    private bool TryCollectOperands(IOperation operation, ExpressionSyntax csExpression, List<LeftSideOperand> operands)
     {
-        switch (lhsOperation) {
-            case IArrayElementReferenceOperation element:
-                return position < element.Indices.Length ? element.Indices[position] : null;
-            case IPropertyReferenceOperation property:
-                var parameterName = csArgument.NameColon?.Name.Identifier.ValueText
-                                    ?? (position < property.Property.Parameters.Length ? property.Property.Parameters[position].Name : null);
-                return property.Arguments.FirstOrDefault(a => string.Equals(a.Parameter?.Name, parameterName, StringComparison.OrdinalIgnoreCase))?.Value;
+        var cs = csExpression.SkipIntoParens();
+        switch (operation) {
+            case IArrayElementReferenceOperation element when cs is ElementAccessExpressionSyntax elementAccess && elementAccess.ArgumentList.Arguments.Count == element.Indices.Length:
+                operands.Add(new LeftSideOperand(element.ArrayReference, elementAccess.Expression, "receiver"));
+                operands.AddRange(element.Indices.Select((index, i) => new LeftSideOperand(index, elementAccess.ArgumentList.Arguments[i].Expression, "index")));
+                return true;
+            case IFieldReferenceOperation { Field.IsStatic: false } field when cs is MemberAccessExpressionSyntax memberAccess:
+                return TryCollectReceiverOperands(field.Instance, memberAccess.Expression, operands);
+            case IPropertyReferenceOperation { Property.IsStatic: false } property:
+                var (csReceiver, csArguments) = cs switch {
+                    ElementAccessExpressionSyntax elementAccess => (elementAccess.Expression, elementAccess.ArgumentList.Arguments),
+                    InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation => (method.Expression, invocation.ArgumentList.Arguments),
+                    InvocationExpressionSyntax invocation => (null, invocation.ArgumentList.Arguments),
+                    MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
+                    _ => (null, default)
+                };
+                if (csReceiver != null && !TryCollectReceiverOperands(property.Instance, csReceiver, operands)) return false;
+                // VB evaluates the arguments in parameter order, whatever order named ones are written in
+                foreach (var argument in property.Arguments) {
+                    var csArgument = csArguments.Select((a, i) => (Argument: a, Position: i))
+                        .FirstOrDefault(a => string.Equals(a.Argument.NameColon?.Name.Identifier.ValueText ?? (a.Position < property.Property.Parameters.Length ? property.Property.Parameters[a.Position].Name : null),
+                            argument.Parameter?.Name, StringComparison.OrdinalIgnoreCase)).Argument;
+                    if (csArgument != null) operands.Add(new LeftSideOperand(argument.Value, csArgument.Expression, "index"));
+                }
+                return true;
+            case IDynamicMemberReferenceOperation lateBoundMember when cs is MemberAccessExpressionSyntax memberAccess:
+                // A late-bound member is accessed through a cast to dynamic: the receiver is what's cast
+                var csInstance = memberAccess.Expression.SkipIntoParens() is CastExpressionSyntax { Type: IdentifierNameSyntax { Identifier.ValueText: "dynamic" } } dynamicCast
+                    ? dynamicCast.Expression
+                    : memberAccess.Expression;
+                operands.Add(new LeftSideOperand(lateBoundMember.Instance, csInstance, "receiver"));
+                return true;
             default:
-                return null;
+                // Nothing to evaluate again, e.g. a local or a Shared member (VB doesn't evaluate the instance expression of one, and C# refers to the type instead)
+                return true;
+        }
+    }
+
+    /// <summary>
+    /// An object is referred to by its value; a structure's storage (or a type parameter's, which may be one) is broken down further, so it's changed in place rather than in a copy
+    /// </summary>
+    private bool TryCollectReceiverOperands(IOperation instance, ExpressionSyntax csInstance, List<LeftSideOperand> operands)
+    {
+        switch (instance) {
+            case null or ILocalReferenceOperation or IParameterReferenceOperation or IInstanceReferenceOperation:
+                return true;
+            case { Type.IsReferenceType: true }:
+                operands.Add(new LeftSideOperand(instance, csInstance, "receiver"));
+                return true;
+            case IArrayElementReferenceOperation or IFieldReferenceOperation:
+                return TryCollectOperands(instance, csInstance, operands);
+            case var storage when storage.IsAssignableExpression():
+                operands.Add(new LeftSideOperand(storage, csInstance, "receiver", IsStorage: true));
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -394,16 +425,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// </summary>
     private static bool IsStableReference(IOperation operation) =>
         operation is null or ILiteralOperation or IInstanceReferenceOperation or ILocalReferenceOperation or IParameterReferenceOperation || operation.ConstantValue.HasValue;
-
-    private static bool IsInAsyncOrIteratorMethod(VBSyntax.ExpressionSyntax vbNode)
-    {
-        var modifiers = vbNode.Ancestors().Select(a => a switch {
-            VBSyntax.LambdaExpressionSyntax lambda => lambda.SubOrFunctionHeader.Modifiers,
-            VBSyntax.MethodBlockBaseSyntax method => method.BlockStatement.Modifiers,
-            _ => (SyntaxTokenList?)null
-        }).FirstOrDefault(m => m != null);
-        return modifiers?.Any(m => m.IsKind(VBasic.SyntaxKind.AsyncKeyword, VBasic.SyntaxKind.IteratorKeyword)) == true;
-    }
 
     /// <summary>
     /// Constants, Me, locals and parameters, fields of those, and intrinsic operators on them give the same value when evaluated again with no side effects.
