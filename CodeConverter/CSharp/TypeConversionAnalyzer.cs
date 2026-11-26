@@ -105,10 +105,10 @@ internal class TypeConversionAnalyzer
 
         if (liftedResultType?.GetNullableUnderlyingType() is { } resultValueType) {
             return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight,
-                (left, right) => AddExplicitConversion(vbLeft, Pow(left, right), forceSourceType: doubleType, forceTargetType: resultValueType), GetTypeSyntax(liftedResultType), t => GetTypeSyntax(t)) ?? Pow(csLeft, csRight);
+                (left, right) => AddExplicitConversion(vbLeft, Pow(left, right), forceSourceType: doubleType, forceTargetType: resultValueType), GetTypeSyntax(liftedResultType)) ?? Pow(csLeft, csRight);
         }
         var nullableDouble = SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword)));
-        return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight, Pow, nullableDouble, t => GetTypeSyntax(t)) ?? Pow(csLeft, csRight);
+        return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight, Pow, nullableDouble) ?? Pow(csLeft, csRight);
     }
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)

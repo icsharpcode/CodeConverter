@@ -39,6 +39,12 @@ internal class NameGenerator
     }
 
     /// <summary>
+    /// For a local (or pattern variable) declared in the C# block that holds the node's statement, without reserving the name
+    /// </summary>
+    public bool IsLocalNameFreeInScope(SemanticModel semanticModel, VBasic.VisualBasicSyntaxNode node, string name) =>
+        !GetNamesDeclaredInContainingBlock(node).Contains(name) && !GetScopeStarts(node).Any(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name).Any());
+
+    /// <summary>
     /// For a name declared in a scope of its own (e.g. a query range variable), which a name in a sibling nested scope doesn't conflict with, unlike a local's
     /// </summary>
     public bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string name) =>
