@@ -307,4 +307,81 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task OperatorsOnEachSmallTypeAreCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte, s1 As Short, s2 As Short, sb As SByte, us As UShort)
+        Dim a = Not b1
+        Dim b = b1 Xor b2
+        Dim c = s1 Or s2
+        Dim d = s1 And s2
+        Dim e = s1 Xor s2
+        Dim f = Not s1
+        Dim g = sb And sb
+        Dim h = -sb
+        Dim i = Not us
+        Dim j = us Or us
+        Dim k = +b1
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2, short s1, short s2, sbyte sb, ushort us)
+    {
+        byte a = (byte)~b1;
+        byte b = (byte)(b1 ^ b2);
+        short c = (short)(s1 | s2);
+        short d = (short)(s1 & s2);
+        short e = (short)(s1 ^ s2);
+        short f = (short)~s1;
+        sbyte g = (sbyte)(sb & sb);
+        sbyte h = (sbyte)-sb;
+        ushort i = (ushort)~us;
+        ushort j = (ushort)(us | us);
+        byte k = (byte)+b1;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task UserDefinedOperatorsAreNotPromotedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Structure S
+    Public Shared Operator And(x As S, y As S) As Byte
+        Return 1
+    End Operator
+    Public Shared Operator +(x As S, y As Byte) As S
+        Return x
+    End Operator
+End Structure
+
+Class TestClass
+    Private Sub TestMethod(x As S, b1 As Byte, b2 As Byte)
+        Dim a = x And x
+        Dim b = x + (b1 And b2)
+    End Sub
+End Class", @"
+internal partial struct S
+{
+    public static byte operator &(S x, S y)
+    {
+        return 1;
+    }
+    public static S operator +(S x, byte y)
+    {
+        return x;
+    }
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(S x, byte b1, byte b2)
+    {
+        byte a = x & x;
+        var b = x + (byte)(b1 & b2);
+    }
+}");
+    }
 }
