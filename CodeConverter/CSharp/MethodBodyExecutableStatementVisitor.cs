@@ -294,34 +294,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
             return GetPostAssignmentStatements(node).Insert(0, SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, lhs, rhs)));
         }
-        var isShift = node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement);
-        var shiftedType = isShift ? CommonConversions.TypeConversionAnalyzer.GetVbShiftedType(lhsTypeInfo.Type) : null;
-        if (isShift) {
-            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(shiftedType, node.Right, typeConvertedRhs);
-        }
-
-        // Split out compound operator if type conversion needed on result
-        if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
-                
-            // The right operand is converted to the operator's type, except a shift count, which is always Integer
-            var nonCompoundResultType = shiftedType ?? rhsTypeInfo.ConvertedType;
-            // Unlike a C# compound operator, a setter call doesn't cast the promoted int back
-            var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
-            var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)
-                ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: shiftedType)
-                : lhs;
-            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs);
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
-            if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
-                kind = SyntaxKind.SimpleAssignmentExpression;
-                typeConvertedRhs = typeConvertedNonCompoundRhs;
-            }
-        } else if (setMethodName != null && node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation which might need casting back to lhsType
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: _semanticModel.Compilation.GetTypeByMetadataName("System.Double"), forceTargetType: lhsTypeInfo.Type);
-            kind = SyntaxKind.SimpleAssignmentExpression;
-            typeConvertedRhs = typeConvertedNonCompoundRhs;
-        }
+        typeConvertedRhs = ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
 
         rhs = typeConvertedRhs;
 
@@ -352,6 +325,43 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
         }
         return postAssignment.Insert(0, AssignTo(rhs));
+    }
+
+    /// <summary>
+    /// A C# compound operator casts its result back to the left side's type, so it's only split out where the conversion back differs, or for a setter call, which doesn't cast.
+    /// </summary>
+    private ExpressionSyntax ConvertNonLateBoundCompoundRhs(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax typeConvertedRhs, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, string setMethodName, ref SyntaxKind kind)
+    {
+        var isShift = node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement);
+        var shiftedType = isShift ? CommonConversions.TypeConversionAnalyzer.GetVbShiftedType(lhsTypeInfo.Type) : null;
+        if (isShift) {
+            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(shiftedType, node.Right, typeConvertedRhs);
+        }
+
+        // Split out compound operator if type conversion needed on result
+        if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
+                
+            // The right operand is converted to the operator's type, except a shift count, which is always Integer
+            var nonCompoundResultType = shiftedType ?? rhsTypeInfo.ConvertedType;
+            // Unlike a C# compound operator, a setter call doesn't cast the promoted int back
+            var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
+            var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)
+                ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: shiftedType)
+                : lhs;
+            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs);
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
+            if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
+                kind = SyntaxKind.SimpleAssignmentExpression;
+                typeConvertedRhs = typeConvertedNonCompoundRhs;
+            }
+        } else if (setMethodName != null && node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation which might need casting back to lhsType
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: _semanticModel.Compilation.GetTypeByMetadataName("System.Double"), forceTargetType: lhsTypeInfo.Type);
+            kind = SyntaxKind.SimpleAssignmentExpression;
+            typeConvertedRhs = typeConvertedNonCompoundRhs;
+        }
+
+        return typeConvertedRhs;
     }
 
     /// <summary>
