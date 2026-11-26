@@ -61,6 +61,9 @@ internal class TypeConversionAnalyzer
     public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) => _smallIntegerOperatorPromotion.GetCSharpOperatorResultType(vbResultType);
 
     /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetShiftCountMaskOrNull"/>
+    /// <remarks>
+    /// A constant count out of range is replaced by its masked value, which is what VB shifts by, so a named constant loses its name there; one in range keeps it.
+    /// </remarks>
     public ExpressionSyntax MaskShiftCountIfNeeded(ITypeSymbol shiftedType, VBSyntax.ExpressionSyntax vbCount, ExpressionSyntax csCount)
     {
         if (SmallIntegerOperatorPromotion.GetShiftCountMaskOrNull(shiftedType) is not { } mask) return csCount;

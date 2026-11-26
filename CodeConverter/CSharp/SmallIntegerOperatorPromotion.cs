@@ -54,14 +54,15 @@ internal class SmallIntegerOperatorPromotion
     /// Whether the C# conversion of <paramref name="vbNode"/> is a promoted int that must be cast back to its VB type
     /// </summary>
     public bool NeedsCastToVbType(VBSyntax.ExpressionSyntax vbNode) =>
-        Memoized(_needsCastToVbType, vbNode.SkipIntoParens(), _ => AnalyzeNeedsCastToVbType(vbNode));
+        Memoized(_needsCastToVbType, vbNode.SkipIntoParens(), AnalyzeNeedsCastToVbType);
 
-    private bool AnalyzeNeedsCastToVbType(VBSyntax.ExpressionSyntax vbNode)
+    /// <param name="node">An operator, not parenthesized</param>
+    private bool AnalyzeNeedsCastToVbType(VBSyntax.ExpressionSyntax node)
     {
-        if (GetPromotedTypeOrNull(vbNode) is not { } vbType) return false;
-        var outermost = vbNode.OutermostParenthesizedOrSelf();
-        if (!IsConstantThatMayBeOutOfRange(vbNode) && IsOperandWhoseCongruenceIsKeptBy(outermost, vbType)) return false;
-        return !AcceptsPromotedValue(outermost, vbType, IsResultInRange(vbNode.SkipIntoParens()));
+        if (GetPromotedTypeOrNull(node) is not { } vbType) return false;
+        var outermost = node.OutermostParenthesizedOrSelf();
+        if (!IsConstantThatMayBeOutOfRange(node) && IsOperandWhoseCongruenceIsKeptBy(outermost, vbType)) return false;
+        return !AcceptsPromotedValue(outermost, vbType, IsResultInRange(node));
     }
 
     /// <summary>
