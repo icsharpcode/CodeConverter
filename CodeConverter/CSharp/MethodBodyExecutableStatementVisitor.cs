@@ -425,7 +425,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     /// <summary>
     /// A later operand can change a local or parameter by passing it ByRef, or through a lambda that captures it.
-    /// That lambda may have been created earlier and be called by anything the later operand calls, so where it calls anything, any lambda in the method counts.
+    /// That lambda may have been created earlier and be called by anything the later operand calls, so where it calls anything, any lambda in the method counts,
+    /// as does a query, whose clauses are lambdas. A call can also change a Static local by calling the method again.
     /// </summary>
     private bool IsWrittenByAny(IOperation operand, IEnumerable<LeftSideOperand> laterOperands, VBSyntax.ExpressionSyntax vbLeft)
     {
@@ -439,7 +440,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return laterOperations.SelectMany(o => o.DescendantsAndSelf()).Any(o =>
                    o is IArgumentOperation { Parameter.RefKind: not RefKind.None } argument && RefersTo(argument.Value, symbol) ||
                    o is IAnonymousFunctionOperation lambda && lambda.Descendants().Any(d => RefersTo(d, symbol)))
-               || laterOperations.Any(o => !IsEvaluatedTheSameTwice(o)) && IsCapturedByAnyLambdaInMethod(symbol, vbLeft);
+               || laterOperations.Any(o => !IsEvaluatedTheSameTwice(o)) && (symbol is ILocalSymbol { IsStatic: true } || IsCapturedByAnyLambdaInMethod(symbol, vbLeft));
 
         static bool RefersTo(IOperation operation, ISymbol symbol) =>
             operation is ILocalReferenceOperation local && SymbolEqualityComparer.Default.Equals(local.Local, symbol) ||
@@ -449,7 +450,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private bool IsCapturedByAnyLambdaInMethod(ISymbol symbol, VBSyntax.ExpressionSyntax vbNode)
     {
         var method = (SyntaxNode)vbNode.FirstAncestorOrSelf<VBSyntax.MethodBlockBaseSyntax>() ?? vbNode.SyntaxTree.GetRoot();
-        return method.DescendantNodes().OfType<VBSyntax.LambdaExpressionSyntax>()
+        return method.DescendantNodes().Where(n => n is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax)
             .SelectMany(lambda => lambda.DescendantNodes().OfType<VBSyntax.IdentifierNameSyntax>())
             .Any(name => string.Equals(name.Identifier.ValueText, symbol.Name, StringComparison.OrdinalIgnoreCase)
                          && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(name).Symbol, symbol));

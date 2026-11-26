@@ -1,5 +1,6 @@
-Option Strict Off
+﻿Option Strict Off
 Imports System
+Imports System.Linq
 Imports Xunit
 
 Public Class CompoundAssignmentEarlierLambdaTests
@@ -45,5 +46,39 @@ Public Class CompoundAssignmentEarlierLambdaTests
                                     End Function
         Item2(i, f()) += 10
         Return String.Join(",", _p(0, 1), _p(2, 1))
+    End Function
+
+    Private Shared Function Bump(ByRef i As Integer) As Boolean
+        i = 2
+        Return True
+    End Function
+
+    <Fact>
+    Public Sub LocalChangedByAQueryCreatedEarlier()
+        Dim i = 0
+        Dim q = From x In {1} Where Bump(i) Select x
+        Item2(i, q.Count()) += 10
+        Assert.Equal("10,0,2", String.Join(",", _p(0, 1), _p(2, 1), i))
+    End Sub
+
+    <Fact>
+    Public Sub StaticLocalChangedByAReentrantCall()
+        Assert.Equal("3,10,0", ChangeStatic(True) & "," & _p(0, 1) & "," & _p(3, 1))
+    End Sub
+
+    Private Function ChangeStatic(top As Boolean) As String
+        Static s As Integer = 0
+        If Not top Then
+            s = 3
+            Return ""
+        End If
+        s = 0
+        Item2(s, Reenter()) += 10
+        Return s.ToString()
+    End Function
+
+    Private Function Reenter() As Integer
+        ChangeStatic(False)
+        Return 1
     End Function
 End Class
