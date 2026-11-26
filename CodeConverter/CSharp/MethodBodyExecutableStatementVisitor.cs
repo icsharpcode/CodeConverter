@@ -549,12 +549,28 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         if ((lhsType.GetNullableUnderlyingType() ?? lhsType) is not INamedTypeSymbol { EnumUnderlyingType: { } underlyingType }
             || !node.IsKind(VBasic.SyntaxKind.AddAssignmentStatement, VBasic.SyntaxKind.SubtractAssignmentStatement)
-            || _semanticModel.GetTypeInfo(node.Right).Type is not { } rhsType) return false;
+            || _semanticModel.GetTypeInfo(node.Right) is not { Type: { } rhsType, ConvertedType: { } operandType }) return false;
         var rhsValueType = rhsType.GetNullableUnderlyingType() ?? rhsType;
-        if (!rhsValueType.IsIntegralType() || rhsValueType.IsEnumType()) return false;
-        // C# converts a constant that fits implicitly, as it does an integer type that widens
-        return _semanticModel.GetConstantValue(node.Right).HasValue || _semanticModel.Compilation.ClassifyCommonConversion(rhsValueType, underlyingType).IsImplicit;
+        // The right operand is converted to the operator's type, e.g. Decimal for a ULong enum plus an Integer
+        var operandValueType = operandType.GetNullableUnderlyingType() ?? operandType;
+        if (!rhsValueType.IsIntegralType() || rhsValueType.IsEnumType() || !operandValueType.IsIntegralType()) return false;
+        // C# converts an integer type that widens implicitly, and an int constant that fits
+        return _semanticModel.Compilation.ClassifyCommonConversion(operandValueType, underlyingType).IsImplicit
+            || operandValueType.SpecialType == SpecialType.System_Int32 && _semanticModel.GetConstantValue(node.Right) is { HasValue: true, Value: { } value }
+               && FitsIn(System.Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture), underlyingType.SpecialType);
     }
+
+    private static bool FitsIn(decimal value, SpecialType integralType) => integralType switch {
+        SpecialType.System_Byte => value is >= byte.MinValue and <= byte.MaxValue,
+        SpecialType.System_SByte => value is >= sbyte.MinValue and <= sbyte.MaxValue,
+        SpecialType.System_Int16 => value is >= short.MinValue and <= short.MaxValue,
+        SpecialType.System_UInt16 => value is >= ushort.MinValue and <= ushort.MaxValue,
+        SpecialType.System_Int32 => value is >= int.MinValue and <= int.MaxValue,
+        SpecialType.System_UInt32 => value is >= uint.MinValue and <= uint.MaxValue,
+        SpecialType.System_Int64 => value is >= long.MinValue and <= long.MaxValue,
+        SpecialType.System_UInt64 => value is >= ulong.MinValue and <= ulong.MaxValue,
+        _ => false
+    };
 
     /// <summary>
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.

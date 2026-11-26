@@ -1,4 +1,4 @@
-Option Strict Off
+﻿Option Strict Off
 Imports System
 Imports Xunit
 
@@ -26,5 +26,32 @@ Public Class EnumCompoundAssignmentTests
         Dim m As E? = E.A
         m *= 3
         Assert.Equal("15,7,5,6,2,True,3", String.Join(",", afterMultiply, afterIntDivide, afterSubtract, afterAddEnum, CInt(x), n Is Nothing, CInt(m)))
+    End Sub
+
+    Public Enum ByteEnum As Byte
+        A = 1
+    End Enum
+    Public Enum SByteEnum As SByte
+        A = 100
+    End Enum
+    Public Enum IntegerEnum As Integer
+        A = 1
+    End Enum
+    Public Enum ULongEnum As ULong
+        A = 1
+    End Enum
+
+    <Fact>
+    Public Sub PlusOrMinusConstantThatDoesntFitTheUnderlyingType()
+        Dim b = ByteEnum.A
+        b += -1
+        Dim s = SByteEnum.A
+        s -= 200
+        Dim i = IntegerEnum.A
+        i += 1L
+        i += 1UI
+        Dim u = ULongEnum.A
+        u += 1
+        Assert.Equal("0,-100,3,2", String.Join(",", CInt(b), CInt(s), CInt(i), CULng(u)))
     End Sub
 End Class

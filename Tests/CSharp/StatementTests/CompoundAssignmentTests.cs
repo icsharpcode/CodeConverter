@@ -427,4 +427,65 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task EnumPlusOrMinusConstantThatDoesntFitIsConvertedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum B As Byte
+    A = 1
+End Enum
+Enum S As SByte
+    A = 1
+End Enum
+Enum I As Integer
+    A = 1
+End Enum
+Enum U As ULong
+    A = 1
+End Enum
+Class C
+    Sub M(b As B, s As S, i As I, u As U)
+        b += 1
+        b += 1000
+        b += -1
+        s -= 200
+        i += 1L
+        i += 1UI
+        u += 1
+    End Sub
+End Class", @"using System;
+
+internal enum B : byte
+{
+    A = 1
+}
+
+internal enum S : sbyte
+{
+    A = 1
+}
+
+internal enum I : int
+{
+    A = 1
+}
+
+internal enum U : ulong
+{
+    A = 1UL
+}
+
+internal partial class C
+{
+    public void M(B b, S s, I i, U u)
+    {
+        b = b + 1;
+        b = (B)((int)b + 1000);
+        b = (B)((int)b + -1);
+        s = (S)((int)s - 200);
+        i = (I)((long)i + 1L);
+        i = (I)((long)i + 1L);
+        u = (U)Math.Round((decimal)u + 1m);
+    }
+}");
+    }
 }
