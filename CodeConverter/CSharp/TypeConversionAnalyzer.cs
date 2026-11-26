@@ -97,17 +97,18 @@ internal class TypeConversionAnalyzer
         var leftType = _semanticModel.GetTypeInfo(vbLeft).Type;
         var rightType = _semanticModel.GetTypeInfo(vbRight).Type;
         // The value of a Nullable operand has its underlying type
-        ExpressionSyntax ToDouble(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol type, ExpressionSyntax value) =>
-            AddExplicitConversion(vbNode, value, forceSourceType: type.GetNullableUnderlyingType(), forceTargetType: doubleType);
+        // An operand's value bound by a pattern isn't what the VB node converts to, so has its type forced too
+        ExpressionSyntax ToDouble(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax original, ITypeSymbol type, ExpressionSyntax value) =>
+            AddExplicitConversion(vbNode, value, forceSourceType: type.GetNullableUnderlyingType() ?? (value == original ? null : type), forceTargetType: doubleType);
         ExpressionSyntax Pow(ExpressionSyntax left, ExpressionSyntax right) =>
-            new KnownMethod(nameof(System), nameof(Math), nameof(Math.Pow)).Invoke(_extraUsingDirectives, ToDouble(vbLeft, leftType, left), ToDouble(vbRight, rightType, right));
+            new KnownMethod(nameof(System), nameof(Math), nameof(Math.Pow)).Invoke(_extraUsingDirectives, ToDouble(vbLeft, csLeft, leftType, left), ToDouble(vbRight, csRight, rightType, right));
 
         if (liftedResultType?.GetNullableUnderlyingType() is { } resultValueType) {
             return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight,
-                (left, right) => AddExplicitConversion(vbLeft, Pow(left, right), forceSourceType: doubleType, forceTargetType: resultValueType), GetTypeSyntax(liftedResultType)) ?? Pow(csLeft, csRight);
+                (left, right) => AddExplicitConversion(vbLeft, Pow(left, right), forceSourceType: doubleType, forceTargetType: resultValueType), GetTypeSyntax(liftedResultType), t => GetTypeSyntax(t)) ?? Pow(csLeft, csRight);
         }
         var nullableDouble = SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword)));
-        return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight, Pow, nullableDouble) ?? Pow(csLeft, csRight);
+        return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight, Pow, nullableDouble, t => GetTypeSyntax(t)) ?? Pow(csLeft, csRight);
     }
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)

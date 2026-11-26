@@ -1,4 +1,4 @@
-Option Strict Off
+﻿Option Strict Off
 Imports System
 Imports Xunit
 
@@ -65,6 +65,18 @@ Public Class NullableExponentiationTests
         Dim z As Double? = two ^ two
         Dim w As Integer? = n ^ 2
         Assert.Equal("Nothing,Nothing,4,Nothing", String.Join(",", Show(x), Show(y), Show(z), Show(w)))
+    End Sub
+
+    <Fact>
+    Public Sub DecimalExponentIsConvertedToDouble()
+        Dim d As Double? = 4
+        d ^= 0.5D
+        Dim arr As Double?() = {4}
+        arr(Logged(0, "I")) ^= 0.5D
+        Dim n As Double? = Nothing
+        Dim x As Double? = d ^ 2.5D
+        Dim y As Double? = n ^ 2.5D
+        Assert.Equal("2,2,5.656854249492381,Nothing", String.Join(",", Show(d), Show(arr(0)), Show(x), Show(y)))
     End Sub
 
     <Fact>
