@@ -333,6 +333,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             IArrayElementReferenceOperation element => element.ArrayReference,
             IPropertyReferenceOperation property => property.Property.IsStatic ? null : property.Instance,
             IFieldReferenceOperation field => field.Field.IsStatic ? null : field.Instance,
+            IDynamicMemberReferenceOperation lateBoundMember => lateBoundMember.Instance,
             _ => null
         };
         var (csReceiver, csArguments) = csLeft switch {
@@ -342,6 +343,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
             _ => (null, default)
         };
+        // A late-bound member is accessed through a cast to dynamic: the receiver is what's cast
+        if (csReceiver?.SkipIntoParens() is CastExpressionSyntax { Type: IdentifierNameSyntax { Identifier.ValueText: "dynamic" } } dynamicCast) csReceiver = dynamicCast.Expression;
 
         var argumentsToHoist = csArguments
             .Where((csArgument, i) => csArgument.Expression is not LiteralExpressionSyntax && !IsEvaluatedTheSameTwice(GetArgumentOperationOrNull(operation, csArgument, i)))

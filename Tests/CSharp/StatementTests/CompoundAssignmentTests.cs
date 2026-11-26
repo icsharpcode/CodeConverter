@@ -224,4 +224,34 @@ internal partial class H
     }
 }");
     }
+
+    [Fact]
+    public async Task LateBoundMemberReceiverIsEvaluatedOnceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Function GetO() As Object
+        Return Nothing
+    End Function
+
+    Sub M(o As Object)
+        GetO().F += 1
+        o.F += 1
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public object GetO()
+    {
+        return null;
+    }
+
+    public void M(object o)
+    {
+        var receiver = GetO();
+        ((dynamic)receiver).F = Operators.AddObject(((dynamic)receiver).F, 1);
+        ((dynamic)o).F = Operators.AddObject(((dynamic)o).F, 1);
+    }
+}");
+    }
 }
