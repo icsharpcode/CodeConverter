@@ -482,25 +482,32 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// </summary>
     private ExpressionSyntax ConvertAssignedValue(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs, string setMethodName, out SyntaxKind kind)
     {
-        var originalRhs = rhs;
-        if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            rhs = SyntaxFactory.InvocationExpression(
-                ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
-                ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
-        }
         kind = node.Kind().ConvertToken();
 
         var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
 
-        var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        var typeConvertedRhs = node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)
+            ? ConvertToPow(node, lhs, rhs)
+            : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
         if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
-            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, originalRhs);
+            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, rhs);
             var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
             kind = SyntaxKind.SimpleAssignmentExpression;
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
         }
         return ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
+    }
+
+    /// <summary>
+    /// VB's ^ converts both operands to Double, as for x = x ^ y, which Math.Pow needs for e.g. a Decimal, String or Boolean
+    /// </summary>
+    private ExpressionSyntax ConvertToPow(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs)
+    {
+        var doubleType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Double);
+        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)), ExpressionSyntaxExtensions.CreateArgList(
+            CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: doubleType),
+            CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, forceTargetType: doubleType)));
     }
 
     /// <summary>
@@ -523,7 +530,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
             var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)
                 ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: shiftedType)
-                : lhs;
+                : GetOperatorLeftOperand(node, lhs, lhsTypeInfo.Type, nonCompoundResultType);
             // The simplifier removes these parentheses where the right side doesn't need them, e.g. unlike a conditional
             var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs.AddParens());
             var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
@@ -540,6 +547,15 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         return typeConvertedRhs;
     }
+
+    /// <summary>
+    /// VB converts the left operand to the operator's type, as for x = x op y, e.g. a Single to Long for \, which C#'s / would otherwise divide fractionally.
+    /// An enum is left as it is for arithmetic, which C# has on enums.
+    /// </summary>
+    private ExpressionSyntax GetOperatorLeftOperand(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, ITypeSymbol operandType) =>
+        operandType != null && !SymbolEqualityComparer.Default.Equals(operandType, lhsType) && !(lhsType.GetNullableUnderlyingType() ?? lhsType).IsEnumType()
+            ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: operandType)
+            : lhs;
 
     /// <summary>
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.

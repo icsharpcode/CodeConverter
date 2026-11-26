@@ -351,4 +351,35 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task LeftOperandIsConvertedToTheOperatorsTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(m As Decimal, n As Integer?, s As String, b As Boolean, sg As Single, d As Double)
+        m ^= 2
+        n ^= 2
+        s ^= 2
+        b ^= 2
+        sg \= 2
+        d \= 2
+        m \= 2
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public void M(decimal m, int? n, string s, bool b, float sg, double d)
+    {
+        m = (decimal)Math.Pow((double)m, 2d);
+        n = (int?)Math.Round(Math.Pow((double)n, 2d));
+        s = Math.Pow(Conversions.ToDouble(s), 2d).ToString();
+        b = Conversions.ToBoolean(Math.Pow(Conversions.ToDouble(b), 2d));
+        sg = (long)Math.Round(sg) / 2L;
+        d = (long)Math.Round(d) / 2L;
+        m = (long)Math.Round(m) / 2L;
+    }
+}");
+    }
 }
