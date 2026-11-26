@@ -263,8 +263,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         // We know for sure the left-hand side is a getter invocation for compound assignments (e.g. this.get_Item(0) += 2),
         // but we need the setter name to build the final expression.
         string setMethodName = null;
+        IMethodSymbol setMethod = null;
         if (lOperation is IPropertyReferenceOperation pro && pro.Arguments.Any() && !Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
-            setMethodName = pro.Property.SetMethod?.Name;
+            setMethod = pro.Property.SetMethod;
+            setMethodName = setMethod?.Name;
         }
 
         // Anything the left side needs hoisted is evaluated before anything the right side does
@@ -299,7 +301,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 } else if (exprToReplace is IdentifierNameSyntax) {
                     exprToReplace = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(exprToReplace);
                 }
-                var newArgList = ies.ArgumentList.AddArguments(SyntaxFactory.Argument(rhs));
+                var newArgList = ies.ArgumentList.AddArguments(CreateSetterValueArgument(ies.ArgumentList, setMethod, rhs));
                 var newLhs = ies.WithExpression(exprToReplace).WithArgumentList(newArgList);
                 var postAssign = GetPostAssignmentStatements(node);
                 return postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs));
@@ -413,6 +415,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         IUnaryOperation { OperatorMethod: null } unary => IsEvaluatedTheSameTwice(unary.Operand),
         _ => false
     };
+
+    /// <summary>
+    /// A setter's value comes after its optional parameters, so where the getter's call leaves any out, or names its arguments, the value is named (else it would fill an optional parameter, or follow a named argument out of position, CS8323)
+    /// </summary>
+    private ArgumentSyntax CreateSetterValueArgument(ArgumentListSyntax getterArguments, IMethodSymbol setMethod, ExpressionSyntax value)
+    {
+        var argument = SyntaxFactory.Argument(value);
+        var setterParameters = setMethod?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+        var needsName = getterArguments.Arguments.Any(a => a.NameColon != null) || getterArguments.Arguments.Count < setterParameters.Length - 1;
+        // The converted setter always names it value, as a C# setter's is
+        return needsName ? argument.WithNameColon(SyntaxFactory.NameColon(ValidSyntaxFactory.IdentifierName("value"))) : argument;
+    }
 
     /// <summary>
     /// The value to assign, and the C# assignment's kind: a compound assignment may need splitting into lhs = lhs op rhs

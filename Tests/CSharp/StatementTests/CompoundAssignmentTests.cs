@@ -187,4 +187,41 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task SetterValueIsNamedWhereOptionalParametersAreLeftOutOrArgumentsNamedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class H
+    Public Property Q(i As Integer, Optional j As Integer = 0) As Integer
+        Get
+            Return 0
+        End Get
+        Set(newValue As Integer)
+        End Set
+    End Property
+
+    Sub M()
+        Q(1) += 1
+        Q(1, 2) += 1
+        Q(j:=1, i:=0) += 1
+    End Sub
+End Class", @"
+internal partial class H
+{
+    public int get_Q(int i, int j = 0)
+    {
+        return 0;
+    }
+    public void set_Q(int i, int j = 0, int value = default)
+    {
+    }
+
+    public void M()
+    {
+        set_Q(1, value: get_Q(1) + 1);
+        set_Q(1, 2, get_Q(1, 2) + 1);
+        set_Q(j: 1, i: 0, value: get_Q(j: 1, i: 0) + 1);
+    }
+}");
+    }
 }
