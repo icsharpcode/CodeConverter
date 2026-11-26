@@ -41,32 +41,15 @@ internal class TypeConversionAnalyzer
         _smallIntegerOperatorPromotion = new SmallIntegerOperatorPromotion(semanticModel);
     }
 
-    /// <summary>
-    /// Marks the unchecked contexts added for <see cref="CastPromotedOperatorResultIfNeeded"/>
-    /// </summary>
-    private static readonly SyntaxAnnotation PromotedConstantUncheckedAnnotation = new(nameof(PromotedConstantUncheckedAnnotation));
-
     /// <inheritdoc cref="SmallIntegerOperatorPromotion"/>
     public ExpressionSyntax CastPromotedOperatorResultIfNeeded(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode)
     {
         if (!_smallIntegerOperatorPromotion.NeedsCastToVbType(vbNode)) return csNode;
         var cast = CreateCast(csNode, _smallIntegerOperatorPromotion.GetPromotedTypeOrNull(vbNode));
-        return _smallIntegerOperatorPromotion.IsConstantThatMayBeOutOfRange(vbNode)
-            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, WithoutNestedPromotedConstantUnchecked(cast)).WithAdditionalAnnotations(PromotedConstantUncheckedAnnotation)
+        return _smallIntegerOperatorPromotion.NeedsOwnUncheckedContext(vbNode)
+            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, cast)
             : cast;
     }
-
-    /// <summary>
-    /// An unchecked context covers the whole expression, so an inner one of ours only adds noise.
-    /// Others stay: e.g. <c>unchecked((int)0x80000010)</c> is protected from the simplifier, which would otherwise make the literal a uint (see DocumentExtensions).
-    /// </summary>
-    /// <remarks>
-    /// This rewrites C# just built, rather than converting from the VB model, because whether a constant is out of range is decided for each operator as it's converted, innermost first,
-    /// and an outer one can only drop an inner unchecked once it adds its own. It only touches nodes this class annotated.
-    /// </remarks>
-    private static ExpressionSyntax WithoutNestedPromotedConstantUnchecked(ExpressionSyntax csNode) =>
-        csNode.ReplaceNodes(csNode.GetAnnotatedNodes(PromotedConstantUncheckedAnnotation).OfType<CSSyntax.CheckedExpressionSyntax>(),
-            (_, rewritten) => rewritten.Expression);
 
     /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetVbShiftedType"/>
     public ITypeSymbol GetVbShiftedType(ITypeSymbol leftType) => _smallIntegerOperatorPromotion.GetVbShiftedType(leftType);

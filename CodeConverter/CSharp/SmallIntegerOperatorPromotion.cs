@@ -74,6 +74,19 @@ internal class SmallIntegerOperatorPromotion
         _semanticModel.GetConstantValue(vbNode).HasValue && !IsResultInRange(vbNode.SkipIntoParens());
 
     /// <summary>
+    /// Whether this node's conversion is cast in an unchecked context of its own, rather than one an enclosing operator adds
+    /// </summary>
+    /// <remarks>
+    /// An unchecked context covers everything inside it, so only the outermost one is needed.
+    /// That's decided from the VB model rather than tracked while converting, since operators are converted innermost first (see <see cref="BinaryExpressionConverter"/>).
+    /// An enclosing operator that adds one is itself constant, so the search stops at the first ancestor that isn't.
+    /// </remarks>
+    public bool NeedsOwnUncheckedContext(VBSyntax.ExpressionSyntax vbNode) =>
+        IsConstantThatMayBeOutOfRange(vbNode) && !vbNode.OutermostParenthesizedOrSelf().Ancestors().OfType<VBSyntax.ExpressionSyntax>()
+            .TakeWhile(a => _semanticModel.GetConstantValue(a).HasValue)
+            .Any(a => NeedsCastToVbType(a) && IsConstantThatMayBeOutOfRange(a));
+
+    /// <summary>
     /// The VB type of an intrinsic operator on a small integer type, which C# promotes to int, or null for any other expression
     /// </summary>
     public ITypeSymbol GetPromotedTypeOrNull(VBSyntax.ExpressionSyntax vbNode)
