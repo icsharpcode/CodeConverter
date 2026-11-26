@@ -398,4 +398,28 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(2, CInt(RoundedEnum.A))
         Assert.Equal(4, CInt(RoundedEnum.B))
     End Sub
+
+    Private Class Holder
+        Public F As Object = 9
+    End Class
+
+    <Fact>
+    Public Sub LateBoundConcatenateAndMultiplyAssignments()
+        Dim o As Object = 1, s As String = "2"
+        s &= o
+        Assert.Equal("21", s)
+        Dim o2 As Object = 1
+        o2 &= "x"
+        Assert.Equal("1x", CStr(o2))
+        Dim h As New Holder()
+        With h
+            .F &= "z"
+        End With
+        Assert.Equal("9z", CStr(h.F))
+        Dim o3 As Object = 6, b As Byte = 7
+        o3 *= 2
+        Assert.Equal(12, CInt(o3))
+        b *= o3
+        Assert.Equal(CByte(84), b)
+    End Sub
 End Class

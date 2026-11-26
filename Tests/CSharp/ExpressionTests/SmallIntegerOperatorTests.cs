@@ -974,6 +974,10 @@ internal partial class TestClass
         o += 1
         b += ob
         o -= ob
+        o *= 2
+        o &= ""x""
+        Dim str As String = ""2""
+        str &= o
     End Sub
 End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -987,6 +991,10 @@ internal partial class TestClass
         o = Operators.AddObject(o, 1);
         b = Conversions.ToByte(Operators.AddObject(b, ob));
         o = Operators.SubtractObject(o, ob);
+        o = Operators.MultiplyObject(o, 2);
+        o += ""x"";
+        string str = ""2"";
+        str = Conversions.ToString(str + o);
     }
 }");
     }
