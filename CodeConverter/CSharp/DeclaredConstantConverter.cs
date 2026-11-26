@@ -1,4 +1,4 @@
-using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using ExpressionSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.ExpressionSyntax;
 using TypeSyntax = Microsoft.CodeAnalysis.CSharp.Syntax.TypeSyntax;
@@ -43,7 +43,7 @@ internal class DeclaredConstantConverter
         if (sourceType == null) return csValue;
         if (target.SpecialType == SpecialType.System_Object) return ConvertToObject(vbValue, csValue, value, sourceType, parameter);
         // C# converts a Single or Double to Decimal at runtime precision, VB at compile time to its own value, e.g. 0.1F gives 0.100000001490116
-        if (target.SpecialType == SpecialType.System_Decimal && sourceType.IsFractionalNumericType() && parameter is { ExplicitDefaultValue: decimal decimalValue }) {
+        if (target.SpecialType == SpecialType.System_Decimal && sourceType.IsFractionalNumericType() && parameter?.GetValidExplicitDefaultValueOrNull() is decimal decimalValue) {
             return LiteralConversions.GetLiteralExpression(decimalValue);
         }
         if (!IsConstantInCSharp(vbValue, csValue)) return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
@@ -77,7 +77,7 @@ internal class DeclaredConstantConverter
         if (vbValue.SkipIntoParens() is VBSyntax.LiteralExpressionSyntax or VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax && IsConstantInCSharp(vbValue, csValue)) {
             return csValue;
         }
-        if (parameter is { ExplicitDefaultValue: { } defaultValue } && GetSpecialTypeOrNull(defaultValue.GetType()) is { } defaultValueType) {
+        if (parameter?.GetValidExplicitDefaultValueOrNull() is { } defaultValue && GetSpecialTypeOrNull(defaultValue.GetType()) is { } defaultValueType) {
             return GetConvertedLiteralOrNull(defaultValue, defaultValueType, requiresExactType: true) ?? csValue;
         }
         return GetConvertedLiteralOrNull(value, sourceType, requiresExactType: true) ?? csValue;

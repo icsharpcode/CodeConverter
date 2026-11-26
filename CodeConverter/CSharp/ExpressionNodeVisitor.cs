@@ -1,4 +1,4 @@
-using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+﻿using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -575,15 +575,15 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
     private static bool NeedsDefaultAsAttributes(IParameterSymbol parameter) =>
         parameter.ContainingSymbol.GetParameters().Any(p => p.HasExplicitDefaultValue && (
             p.RefKind != RefKind.None
-            || p.Type.SpecialType == SpecialType.System_Object && p.ExplicitDefaultValue != null
-            || p.Type.SpecialType == SpecialType.System_DateTime && p.ExplicitDefaultValue != null));
+            || p.Type.SpecialType == SpecialType.System_Object && p.GetValidExplicitDefaultValueOrNull() != null
+            || p.Type.SpecialType == SpecialType.System_DateTime && p.GetValidExplicitDefaultValueOrNull() != null));
 
     /// <summary>
     /// An attribute argument can't be a decimal, so as C# does for a decimal default, the value is given in parts to DecimalConstant.
     /// That includes an Object parameter's Decimal default, as VB does. The value is the one VB converted the constant to, e.g. 0.1F gives 0.100000001490116 and True gives -1.
     /// </summary>
     private AttributeSyntax GetDecimalConstantAttributeOrNull(ISymbol parameter) =>
-        parameter is IParameterSymbol { HasExplicitDefaultValue: true, ExplicitDefaultValue: decimal value }
+        (parameter as IParameterSymbol)?.GetValidExplicitDefaultValueOrNull() is decimal value
             ? CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DecimalConstant"),
                 CommonConversions.CreateAttributeArgumentList(GetDecimalConstantArguments(value).Select(CS.SyntaxFactory.AttributeArgument).ToArray()))
             : null;

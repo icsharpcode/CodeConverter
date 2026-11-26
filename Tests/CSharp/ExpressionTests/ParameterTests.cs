@@ -385,4 +385,26 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task InvalidConstantDefaultDoesntStopConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(Optional n As Decimal = -1E30F, Optional o As Object = CByte(300))
+    End Sub
+End Class", @"
+internal partial class C
+{
+    public void M(decimal n = (decimal)-1E30f, object o = (byte)300)
+    {
+    }
+}
+2 source compilation errors:
+BC30439: Constant expression not representable in type 'Decimal'.
+BC30439: Constant expression not representable in type 'Byte'.
+3 target compilation errors:
+CS0031: Constant value '-1E+30' cannot be converted to a 'decimal'
+CS0221: Constant value '300' cannot be converted to a 'byte' (use 'unchecked' syntax to override)
+CS1763: 'o' is of type 'object'. A default parameter value of a reference type other than string can only be initialized with null", missingSemanticInfo: true);
+    }
 }
