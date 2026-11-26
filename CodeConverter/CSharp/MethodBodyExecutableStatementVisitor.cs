@@ -276,6 +276,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             lhs = ReturnVariable;
         }
 
+        var originalRhs = rhs;
         if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
             rhs = SyntaxFactory.InvocationExpression(
                 ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
@@ -288,13 +289,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
             
         var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
-        if (setMethodName == null && GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
-            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, rhs);
+        if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
+            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, originalRhs);
             var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
-            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
-            return GetPostAssignmentStatements(node).Insert(0, SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, lhs, rhs)));
+            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
+            kind = SyntaxKind.SimpleAssignmentExpression;
+        } else {
+            typeConvertedRhs = ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
         }
-        typeConvertedRhs = ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
 
         rhs = typeConvertedRhs;
 
@@ -366,8 +368,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
     /// <summary>
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.
-    /// Keyed on the VB statement, since e.g. &amp;= and += both become C#'s +=.
-    /// &amp;=, /=, \= and ^= keep their other conversions.
+    /// Keyed on the VB statement, since e.g. &amp;= and += both become C#'s +=, and /= and \= both become /=.
     /// </summary>
     private static KnownMethod? GetLateBoundOperatorOrNull(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
     {
@@ -376,6 +377,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             VBasic.SyntaxKind.AddAssignmentStatement => "AddObject",
             VBasic.SyntaxKind.SubtractAssignmentStatement => "SubtractObject",
             VBasic.SyntaxKind.MultiplyAssignmentStatement => "MultiplyObject",
+            VBasic.SyntaxKind.DivideAssignmentStatement => "DivideObject",
+            VBasic.SyntaxKind.IntegerDivideAssignmentStatement => "IntDivideObject",
+            VBasic.SyntaxKind.ExponentiateAssignmentStatement => "ExponentObject",
+            VBasic.SyntaxKind.ConcatenateAssignmentStatement => "ConcatenateObject",
             VBasic.SyntaxKind.LeftShiftAssignmentStatement => "LeftShiftObject",
             VBasic.SyntaxKind.RightShiftAssignmentStatement => "RightShiftObject",
             _ => null
