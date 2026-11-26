@@ -235,4 +235,33 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task CompoundAssignmentsStayCompoundWhereCSharpCastsBackAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte, s1 As Short, l As Long, i As Integer)
+        b1 <<= 1
+        s1 >>= 2
+        l <<= i
+        i >>= 3
+        b1 += b2
+        b1 = b1 And b2
+        b1 -= b2 Or b2
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2, short s1, long l, int i)
+    {
+        b1 <<= 1;
+        s1 >>= 2;
+        l <<= i;
+        i >>= 3;
+        b1 += b2;
+        b1 = (byte)(b1 & b2);
+        b1 -= (byte)(b2 | b2);
+    }
+}");
+    }
 }

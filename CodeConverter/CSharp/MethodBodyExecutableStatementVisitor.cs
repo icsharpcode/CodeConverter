@@ -293,7 +293,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
                 
             var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
+            var nonCompoundResultType = GetNonCompoundResultType(nonCompound, lhsTypeInfo, rhsTypeInfo);
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: nonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
             if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
                 kind = SyntaxKind.SimpleAssignmentExpression;
                 typeConvertedRhs = typeConvertedNonCompoundRhs;
@@ -335,6 +336,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         }
         return postAssignment.Insert(0, AssignTo(rhs));
     }
+
+    /// <summary>
+    /// The right operand is converted to the operator's type, except a shift count which is always Integer: a shift's result has the type of its left operand.
+    /// C# casts a compound shift's result back to the left operand's type too, whatever the count's type.
+    /// </summary>
+    private static ITypeSymbol GetNonCompoundResultType(SyntaxKind nonCompound, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo) =>
+        nonCompound is SyntaxKind.LeftShiftExpression or SyntaxKind.RightShiftExpression ? lhsTypeInfo.Type : rhsTypeInfo.ConvertedType;
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
     {
