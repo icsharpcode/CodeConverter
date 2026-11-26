@@ -934,4 +934,32 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task CoalesceOfTheSameSmallIntegerTypeIsCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(nb As Byte?, b As Byte, b2 As Byte)
+        Console.WriteLine(If(Not nb, CByte(0)))
+        Dim o1 As Object = If(nb << 2, b)
+        Dim s1 As String = If(Not nb, b)
+        Dim o2 As Object = If(nb And b2, CByte(0))
+        Dim v = If(nb And b2, CByte(0))
+        Dim w = If(nb And b2, 0)
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(byte? nb, byte b, byte b2)
+    {
+        Console.WriteLine((byte?)~nb ?? 0);
+        object o1 = (byte?)(nb << 2) ?? b;
+        string s1 = ((byte?)~nb ?? b).ToString();
+        object o2 = (byte?)(nb & b2) ?? 0;
+        byte v = (byte?)(nb & b2) ?? 0;
+        int w = nb & b2 ?? 0;
+    }
+}");
+    }
 }

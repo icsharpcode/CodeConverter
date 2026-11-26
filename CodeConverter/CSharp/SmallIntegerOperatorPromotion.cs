@@ -154,8 +154,12 @@ internal class SmallIntegerOperatorPromotion
         var convertedType = GetTargetType(outermost);
         var targetType = GetUnderlyingType(convertedType);
         var underlyingVbType = GetUnderlyingType(vbType);
-        var isConversionToAnotherType = IsConversionToAnotherType(convertedType, vbType);
-        if (isConversionToAnotherType && IsIntegralNoWiderThan(GetUnderlyingNumericType(targetType), underlyingVbType)) return true;
+        // C#'s ?? converts neither operand to the If's type, so the int stays an int, unless that's a wider type
+        var isCoalesced = IsCoalescedOperand(outermost);
+        var isConversionToAnotherType = isCoalesced
+            ? !SymbolEqualityComparer.Default.Equals(targetType, underlyingVbType)
+            : IsConversionToAnotherType(convertedType, vbType);
+        if (!isCoalesced && isConversionToAnotherType && IsIntegralNoWiderThan(GetUnderlyingNumericType(targetType), underlyingVbType)) return true;
         if (!isInRange) return false;
         if (targetType?.SpecialType is SpecialType.System_String or SpecialType.System_Boolean) return true;
         // Without a format string, an in-range int formats like the VB type (whereas e.g. :X formats a negative int with 32 bits)
@@ -175,9 +179,12 @@ internal class SmallIntegerOperatorPromotion
     private ITypeSymbol GetTargetType(VBSyntax.ExpressionSyntax outermost) => outermost.Parent switch {
         VBSyntax.CastExpressionSyntax or VBSyntax.PredefinedCastExpressionSyntax => _semanticModel.GetTypeInfo(outermost.Parent).Type,
         // The value of a nullable first operand is converted to the type of If, rather than to its own converted type
-        VBSyntax.BinaryConditionalExpressionSyntax coalesce when coalesce.FirstExpression == outermost => _semanticModel.GetTypeInfo(coalesce).Type,
+        VBSyntax.BinaryConditionalExpressionSyntax coalesce when IsCoalescedOperand(outermost) => _semanticModel.GetTypeInfo(coalesce).Type,
         _ => _semanticModel.GetTypeInfo(outermost).ConvertedType
     };
+
+    private static bool IsCoalescedOperand(VBSyntax.ExpressionSyntax outermost) =>
+        outermost.Parent is VBSyntax.BinaryConditionalExpressionSyntax coalesce && coalesce.FirstExpression == outermost;
 
     private static bool IsIntegralNoWiderThan(ITypeSymbol type, ITypeSymbol other) =>
         GetIntegralBitsOrNull(type) is { } bits && bits <= GetIntegralBitsOrNull(other);

@@ -339,4 +339,27 @@ Public Class SmallIntegerOperatorTests
         Dim d(3.5) As Integer
         Assert.Equal(5, d.Length)
     End Sub
+
+    Private Function TakeValue(i As Integer) As String
+        Return "Integer"
+    End Function
+
+    Private Function TakeValue(b As Byte) As String
+        Return "Byte"
+    End Function
+
+    <Fact>
+    Public Sub CoalesceWithSmallIntegerSecondOperand()
+        Dim nb As Byte? = 200, b As Byte = 7, b2 As Byte = 72
+        Assert.Equal(CByte(55), If(Not nb, CByte(0)))
+        Dim o As Object = If(nb << 2, b)
+        Assert.Equal(CByte(32), o)
+        Dim s As String = If(Not nb, b)
+        Assert.Equal("55", s)
+        Dim o2 As Object = If(nb And b2, CByte(0))
+        Assert.Equal(GetType(Byte), o2.GetType())
+        Assert.Equal("Byte", TakeValue(If(nb And b2, CByte(0))))
+        Dim v = If(nb And b2, CByte(0))
+        Assert.Equal(CByte(72), v)
+    End Sub
 End Class
