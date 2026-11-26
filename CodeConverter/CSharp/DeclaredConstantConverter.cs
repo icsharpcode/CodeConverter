@@ -39,7 +39,9 @@ internal class DeclaredConstantConverter
         if (_semanticModel.GetConstantValue(vbValue) is not { HasValue: true, Value: { } value }) return csValue;
         var target = targetType.GetNullableUnderlyingType() ?? targetType;
         var sourceType = _semanticModel.GetTypeInfo(vbValue).Type;
-        if (sourceType == null || target.SpecialType == SpecialType.System_Object) return csValue;
+        if (sourceType == null) return csValue;
+        // An Object takes the constant's own value
+        if (target.SpecialType == SpecialType.System_Object) return IsConstantInCSharp(vbValue, csValue) ? csValue : LiteralConversions.GetLiteralExpression(value);
         if (!IsConstantInCSharp(vbValue, csValue)) return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
         if (SymbolEqualityComparer.Default.Equals(sourceType, target)) return csValue;
         if (sourceType.IsFractionalNumericType() && SmallIntegerOperatorPromotion.GetUnderlyingNumericType(target).IsIntegralType()) {

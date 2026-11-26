@@ -299,4 +299,33 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ObjectConstantThatIsntACSharpConstantIsVbsValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class AAttribute
+    Inherits System.Attribute
+    Public O As Object
+End Class
+
+<A(O:=""a""c & ""b"")>
+Class C
+    Sub M(Optional o As Object = ""a""c & ""b"")
+    End Sub
+End Class", @"using System;
+using System.Runtime.InteropServices;
+
+internal partial class AAttribute : Attribute
+{
+    public object O;
+}
+
+[A(O = ""ab"")]
+internal partial class C
+{
+    public void M([Optional, DefaultParameterValue(""ab"")] object o)
+    {
+    }
+}");
+    }
 }
