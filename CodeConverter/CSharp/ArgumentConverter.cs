@@ -1,4 +1,5 @@
-﻿using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using Microsoft.VisualBasic;
 
 namespace ICSharpCode.CodeConverter.CSharp;
@@ -126,12 +127,15 @@ internal class ArgumentConverter
     }
 
 
-    private static CSSyntax.ExpressionSyntax LiteralOrDefault(object value, ITypeSymbol paramType)
+    /// <remarks>An enum parameter's default value is its underlying value, which C# only converts to the enum explicitly</remarks>
+    private CSSyntax.ExpressionSyntax LiteralOrDefault(object value, ITypeSymbol paramType)
     {
         if (value is null && paramType.IsValueType) {
             return ValidSyntaxFactory.DefaultExpression;
         }
-        return CommonConversions.Literal(value);
+        var literal = CommonConversions.Literal(value);
+        var underlyingType = paramType.GetNullableUnderlyingType() ?? paramType;
+        return underlyingType.IsEnumType() ? ValidSyntaxFactory.CastExpression(CommonConversions.GetTypeSyntax(underlyingType), literal.AddParens()) : literal;
     }
 
     private ISymbol GetInvocationSymbol(SyntaxNode invocation)

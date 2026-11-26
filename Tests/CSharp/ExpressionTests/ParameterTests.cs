@@ -273,4 +273,30 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task OmittedOptionalByRefEnumArgumentIsCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(Optional ByRef e As DayOfWeek = 1, Optional ByRef n As DayOfWeek? = 2)
+    End Sub
+    Sub Caller()
+        M()
+    End Sub
+End Class", @"using System;
+using System.Runtime.InteropServices;
+
+internal partial class C
+{
+    public void M([Optional, DefaultParameterValue((DayOfWeek)1)] ref DayOfWeek e, [Optional, DefaultParameterValue((DayOfWeek)2)] ref DayOfWeek? n)
+    {
+    }
+    public void Caller()
+    {
+        DayOfWeek arge = (DayOfWeek)1;
+        DayOfWeek? argn = (DayOfWeek)2;
+        M(e: ref arge, n: ref argn);
+    }
+}");
+    }
 }
