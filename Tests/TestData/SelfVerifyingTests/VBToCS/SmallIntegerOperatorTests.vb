@@ -2,6 +2,9 @@
 Imports Xunit
 
 Public Class SmallIntegerOperatorTests
+    Const C1 As UShort = 65534, C2 As UShort = 40000
+    Const CB As Byte = 200
+    Const K1 As Byte = CB << 1
 
     Private Function TakeInteger(i As Integer) As Integer
         Return i
@@ -119,5 +122,18 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(CByte(144), b1)
         us >>= big
         Assert.Equal(CUShort(32500), us)
+    End Sub
+
+    <Fact>
+    Public Sub ConstantsOutOfCSharpRangeKeepTheirVbValue()
+        Dim us As UShort = 5, b As Byte = 10
+        Dim x As UShort = (Not C1) * C2 + us
+        Assert.Equal(CUShort(40005), x)
+        Assert.Equal(CByte(144), K1)
+        Dim y As Integer = (Not CB) Mod b
+        Assert.Equal(5, y)
+        Dim z As Integer = (Not C1) * C2
+        Assert.Equal(40000, z)
+        Assert.Equal(CByte(55), Not CB)
     End Sub
 End Class

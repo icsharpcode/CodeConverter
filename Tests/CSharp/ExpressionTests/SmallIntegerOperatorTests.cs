@@ -409,4 +409,40 @@ internal partial class TestClass
 }}");
         Assert.True(stopwatch.Elapsed.TotalSeconds < 15, $"Took {stopwatch.Elapsed}");
     }
+
+    [Fact]
+    public async Task ConstantSubexpressionOutOfCSharpRangeIsCastUncheckedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Const C1 As UShort = 65534, C2 As UShort = 40000
+    Const CB As Byte = 200
+    Const K1 As Byte = CB << 1
+    Private Sub TestMethod(b As Byte, us As UShort)
+        Dim x As UShort = (Not C1) * C2 + us
+        Dim y As Integer = (Not CB) Mod b
+        Dim z As Integer = (Not C1) * C2
+        Select Case b
+            Case CB << 1
+        End Select
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private const ushort C1 = 65534;
+    private const ushort C2 = 40000;
+    private const byte CB = 200;
+    private const byte K1 = unchecked((byte)(CB << 1));
+    private void TestMethod(byte b, ushort us)
+    {
+        ushort x = (ushort)(unchecked((ushort)~C1) * C2 + us);
+        int y = unchecked((byte)~CB) % b;
+        int z = unchecked((ushort)~C1) * C2;
+        switch (b)
+        {
+            case unchecked((byte)(CB << 1)):
+                break;
+        }
+    }
+}");
+    }
 }

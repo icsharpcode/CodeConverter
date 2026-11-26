@@ -58,12 +58,14 @@ internal class SmallIntegerOperatorPromotion
     {
         if (GetPromotedTypeOrNull(vbNode) is not { } vbType) return false;
         var outermost = vbNode.OutermostParenthesizedOrSelf();
-        if (IsOperandWhoseCongruenceIsKeptBy(outermost, vbType)) return false;
+        if (!IsConstantThatMayBeOutOfRange(vbNode) && IsOperandWhoseCongruenceIsKeptBy(outermost, vbType)) return false;
         return !IsResultInRange(vbNode.SkipIntoParens()) || !AcceptsIntWithSameMeaning(outermost);
     }
 
     /// <summary>
-    /// C# rejects a constant cast that overflows unless it's unchecked, e.g. <c>(byte)~1</c>, whereas VB's constant <c>Not</c> is in range
+    /// C# rejects a constant cast that overflows unless it's unchecked, e.g. <c>(byte)~1</c>, whereas VB's constant <c>Not</c> is in range.
+    /// It also rejects a constant operation that overflows int, so such a constant is cast where it is, rather than by a wrapping parent:
+    /// e.g. <c>(Not C1) * C2</c> on UShort folds to -65535 * 40000.
     /// </summary>
     public bool IsConstantThatMayBeOutOfRange(VBSyntax.ExpressionSyntax vbNode) =>
         _semanticModel.GetConstantValue(vbNode).HasValue && !IsResultInRange(vbNode.SkipIntoParens());
@@ -117,6 +119,7 @@ internal class SmallIntegerOperatorPromotion
     private bool AnalyzeIsResultInRange(VBSyntax.ExpressionSyntax node)
     {
         var isSigned = GetUnderlyingType(_semanticModel.GetTypeInfo(node).Type).SpecialType is SpecialType.System_SByte or SpecialType.System_Int16;
+        if (_semanticModel.GetConstantValue(node).HasValue) return IsConstantResultInRange(node, isSigned);
         return node switch {
             VBSyntax.BinaryExpressionSyntax b => VBasic.VisualBasicExtensions.Kind(b) switch {
                 VBasic.SyntaxKind.AndExpression or VBasic.SyntaxKind.OrExpression or VBasic.SyntaxKind.ExclusiveOrExpression or VBasic.SyntaxKind.ModuloExpression =>
@@ -137,6 +140,15 @@ internal class SmallIntegerOperatorPromotion
             _ => false
         };
     }
+
+    /// <summary>
+    /// VB rejects a constant that overflows its type, so given exact operands, only the operators that wrap without overflowing (Not on an unsigned type, and &lt;&lt;) give C# a different value
+    /// </summary>
+    private bool IsConstantResultInRange(VBSyntax.ExpressionSyntax node, bool isSigned) => node switch {
+        VBSyntax.UnaryExpressionSyntax u => (isSigned || !u.IsKind(VBasic.SyntaxKind.NotExpression)) && IsCSharpValueInRange(u.Operand),
+        VBSyntax.BinaryExpressionSyntax b => !b.IsKind(VBasic.SyntaxKind.LeftShiftExpression) && IsCSharpValueInRange(b.Left) && IsCSharpValueInRange(b.Right),
+        _ => false
+    };
 
     private static bool Memoized(Dictionary<VBSyntax.ExpressionSyntax, bool> cache, VBSyntax.ExpressionSyntax node, Func<VBSyntax.ExpressionSyntax, bool> analyze)
     {
