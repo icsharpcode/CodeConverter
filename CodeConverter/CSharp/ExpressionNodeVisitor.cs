@@ -505,7 +505,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                         CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
                 }
             } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword)) || HasRefParametersAfterThisOne()) {
-                var defaultExpression = await node.Default.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+                var defaultExpression = await ConvertDefaultValueAsync(node.Default.Value);
                 var arg = CommonConversions.CreateAttributeArgumentList(CS.SyntaxFactory.AttributeArgument(defaultExpression));
                 _extraUsingDirectives.Add("System.Runtime.InteropServices");
                 _extraUsingDirectives.Add("System.Runtime.CompilerServices");
@@ -525,8 +525,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     // Set null here; FixCharDefaultsForStringParams (DeclarationNodeVisitor) adds the null-coalesce assignment.
                     @default = CS.SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.NullExpression);
                 } else {
-                    @default = CS.SyntaxFactory.EqualsValueClause(
-                        await node.Default.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+                    @default = CS.SyntaxFactory.EqualsValueClause(await ConvertDefaultValueAsync(node.Default.Value));
                 }
             }
         }
@@ -566,6 +565,17 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             }
         }
         return syntaxParamType;
+    }
+
+    /// <summary>
+    /// VB converts a default value to the parameter's type at compile time (e.g. rounding 1.5 to 2 for Integer), C# needs a constant of that type.
+    /// Nothing is already converted to C#'s default, which any parameter type accepts.
+    /// </summary>
+    private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue)
+    {
+        var csValue = await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        return vbValue.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression) ? csValue
+            : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbValue, csValue, isConst: true);
     }
 
     public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)

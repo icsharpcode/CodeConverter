@@ -5,6 +5,11 @@ Public Enum ByteFlags As Byte
     Top = 128
 End Enum
 
+Public Enum RoundedEnum
+    A = 1.5
+    B = 3.5
+End Enum
+
 Public Class SmallIntegerOperatorTests
     Const C1 As UShort = 65534, C2 As UShort = 40000
     Const CB As Byte = 200
@@ -381,5 +386,16 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(CByte(32), b2)
         Assert.Equal(CByte(32), CByte(200) << 2.5)
         Assert.Equal(CByte(32), CByte(200) << 9.5)
+    End Sub
+
+    Private Function Defaults(Optional x As Integer = 1.5, Optional y As Long = OneAndHalf, Optional z As Short = True << 3) As String
+        Return $"{x} {y} {z}"
+    End Function
+
+    <Fact>
+    Public Sub ConstantDefaultsAndEnumMembersAreConvertedAtCompileTime()
+        Assert.Equal("2 2 -8", Defaults())
+        Assert.Equal(2, CInt(RoundedEnum.A))
+        Assert.Equal(4, CInt(RoundedEnum.B))
     End Sub
 End Class
