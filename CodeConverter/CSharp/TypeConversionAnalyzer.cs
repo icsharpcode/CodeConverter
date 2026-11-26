@@ -31,7 +31,15 @@ internal class TypeConversionAnalyzer
         VBasic.SyntaxKind.AddExpression,
         VBasic.SyntaxKind.SubtractExpression,
         VBasic.SyntaxKind.MultiplyExpression,
-        VBasic.SyntaxKind.DivideExpression
+        VBasic.SyntaxKind.DivideExpression,
+        VBasic.SyntaxKind.AndExpression,
+        VBasic.SyntaxKind.OrExpression,
+        VBasic.SyntaxKind.ExclusiveOrExpression,
+        VBasic.SyntaxKind.LeftShiftExpression,
+        VBasic.SyntaxKind.RightShiftExpression,
+        VBasic.SyntaxKind.UnaryMinusExpression,
+        VBasic.SyntaxKind.UnaryPlusExpression,
+        VBasic.SyntaxKind.NotExpression
     };
 
     public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,

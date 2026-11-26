@@ -1549,6 +1549,27 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task ArrayInitializerOfSmallIntegerOperatorResultsIsCastToElementTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, s1 As Short)
+        Dim a As Byte() = {b1 And b1, b1}
+        Dim b As Short() = {s1 << 1}
+        Dim c As Short() = {-s1}
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, short s1)
+    {
+        byte[] a = new[] { (byte)(b1 & b1), b1 };
+        short[] b = new[] { (short)(s1 << 1) };
+        short[] c = new[] { (short)-s1 };
+    }
+}");
+    }
+
+    [Fact]
     public async Task DelegateExpressionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
