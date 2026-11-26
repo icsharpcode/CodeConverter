@@ -115,6 +115,17 @@ internal class SmallIntegerOperatorPromotion
             GetUnderlyingType(targetType)?.SpecialType == GetUnderlyingType(vbType).SpecialType) {
             return null;
         }
+        return GetInt32Like(vbType);
+    }
+
+    /// <summary>
+    /// The type C# gives an intrinsic operator whose VB result type is <paramref name="vbResultType"/>
+    /// </summary>
+    public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) =>
+        IsSmallIntegerType(GetUnderlyingType(vbResultType)) ? GetInt32Like(vbResultType) : vbResultType;
+
+    private ITypeSymbol GetInt32Like(ITypeSymbol vbType)
+    {
         var int32 = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Int32);
         return vbType.IsNullable() ? _semanticModel.Compilation.GetSpecialType(SpecialType.System_Nullable_T).Construct(int32) : int32;
     }

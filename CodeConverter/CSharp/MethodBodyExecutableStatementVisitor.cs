@@ -296,11 +296,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
                 
             var nonCompoundResultType = GetNonCompoundResultType(nonCompound, lhsTypeInfo, rhsTypeInfo);
+            // Unlike a C# compound operator, a setter call doesn't cast the promoted int back
+            var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
             var nonCompoundLhs = IsShift(nonCompound) && lhsTypeInfo.Type.IsEnumType()
                 ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: nonCompoundResultType)
                 : lhs;
             var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs);
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: nonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
             if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
                 kind = SyntaxKind.SimpleAssignmentExpression;
                 typeConvertedRhs = typeConvertedNonCompoundRhs;

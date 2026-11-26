@@ -183,4 +183,25 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal("FF", $"{sb And sb:X}")
         Assert.Equal("  200", $"{b1 Or b1,5}")
     End Sub
+
+    Private _q As Byte = 200
+    Private Property Q(i As Integer) As Byte
+        Get
+            Return _q
+        End Get
+        Set(value As Byte)
+            _q = value
+        End Set
+    End Property
+
+    <Fact>
+    Public Sub CompoundAssignmentsToParameterizedProperty()
+        Dim n = 9
+        Q(1) <<= n
+        Assert.Equal(CByte(144), Q(1))
+        Q(1) += CByte(50)
+        Assert.Equal(CByte(194), Q(1))
+        Q(1) >>= 9
+        Assert.Equal(CByte(97), Q(1))
+    End Sub
 End Class

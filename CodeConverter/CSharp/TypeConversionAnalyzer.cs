@@ -50,6 +50,9 @@ internal class TypeConversionAnalyzer
             : cast;
     }
 
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetCSharpOperatorResultType"/>
+    public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) => _smallIntegerOperatorPromotion.GetCSharpOperatorResultType(vbResultType);
+
     /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetShiftCountMaskOrNull"/>
     public ExpressionSyntax MaskShiftCountIfNeeded(ITypeSymbol shiftedType, VBSyntax.ExpressionSyntax vbCount, ExpressionSyntax csCount)
     {

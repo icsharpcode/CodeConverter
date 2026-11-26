@@ -581,4 +581,63 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task CompoundAssignmentToParameterizedPropertyCastsTheSetterArgumentAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Property Q(i As Integer) As Byte
+        Get
+            Return 0
+        End Get
+        Set(value As Byte)
+        End Set
+    End Property
+    Property R(i As Integer) As Short
+        Get
+            Return 0
+        End Get
+        Set(value As Short)
+        End Set
+    End Property
+    Private Sub TestMethod(b As Byte, s As Short, n As Integer)
+        Q(1) += b
+        Q(1) -= b
+        Q(1) \= b
+        Q(1) <<= n
+        Q(1) >>= 9
+        Q(1) = Q(1) And b
+        R(1) += s
+        R(1) <<= 1
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    public byte get_Q(int i)
+    {
+        return 0;
+    }
+    public void set_Q(int i, byte value)
+    {
+    }
+    public short get_R(int i)
+    {
+        return 0;
+    }
+    public void set_R(int i, short value)
+    {
+    }
+    private void TestMethod(byte b, short s, int n)
+    {
+        set_Q(1, (byte)(get_Q(1) + b));
+        set_Q(1, (byte)(get_Q(1) - b));
+        set_Q(1, (byte)(get_Q(1) / b));
+        set_Q(1, (byte)(get_Q(1) << (n & 7)));
+        set_Q(1, (byte)(get_Q(1) >> 1));
+        set_Q(1, (byte)(get_Q(1) & b));
+        set_R(1, (short)(get_R(1) + s));
+        set_R(1, (short)(get_R(1) << 1));
+    }
+}");
+    }
 }
