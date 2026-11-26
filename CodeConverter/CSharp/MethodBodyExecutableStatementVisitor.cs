@@ -448,8 +448,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var argument = SyntaxFactory.Argument(value);
         var setterParameters = setMethod?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
         var needsName = getterArguments.Arguments.Any(a => a.NameColon != null) || getterArguments.Arguments.Count < setterParameters.Length - 1;
-        // The converted setter always names it value, as a C# setter's is
-        return needsName ? argument.WithNameColon(SyntaxFactory.NameColon(ValidSyntaxFactory.IdentifierName("value"))) : argument;
+        if (!needsName || !setterParameters.Any()) return argument;
+        // A setter converted from this source names it value, as a C# setter's is; one in a referenced assembly keeps its own name
+        var valueName = setMethod.Locations.Any(l => l.IsInSource) ? "value" : CommonConversions.CsEscapedIdentifier(setterParameters.Last().Name).Text;
+        return argument.WithNameColon(SyntaxFactory.NameColon(ValidSyntaxFactory.IdentifierName(valueName)));
     }
 
     /// <summary>

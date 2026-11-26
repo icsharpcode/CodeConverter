@@ -1,4 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using ICSharpCode.CodeConverter.Common;
+using ICSharpCode.CodeConverter.CSharp;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
 using ICSharpCode.CodeConverter.Tests.TestRunners;
 using Xunit;
 
@@ -278,5 +284,38 @@ internal partial class C
         d = Math.Pow(d, 2d);
     }
 }");
+    }
+
+    [Fact]
+    public async Task SetterValueOfAReferencedPropertyIsNamedByItsParameterAsync()
+    {
+        var library = VisualBasicCompilation.Create("ReferencedLibrary",
+            new[] { VisualBasicSyntaxTree.ParseText(@"Public Class Library
+    Public Property Q(i As Integer, Optional j As Integer = 0) As Integer
+        Get
+            Return 0
+        End Get
+        Set(NewValue As Integer)
+        End Set
+    End Property
+End Class") },
+            DefaultReferences.With(), new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        using var image = new MemoryStream();
+        var emitted = library.Emit(image);
+        Assert.True(emitted.Success, string.Join(", ", emitted.Diagnostics));
+        var references = DefaultReferences.With().Append(MetadataReference.CreateFromImage(image.ToArray())).ToArray();
+
+        await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(@"Class C
+    Sub M(l As Library)
+        l.Q(1) += 1
+    End Sub
+End Class", @"
+internal partial class C
+{
+    public void M(Library l)
+    {
+        l.set_Q(1, NewValue: l.get_Q(1) + 1);
+    }
+}", new TextConversionOptions(references) { RootNamespaceOverride = string.Empty, ShowCompilationErrors = true });
     }
 }
