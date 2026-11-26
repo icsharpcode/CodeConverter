@@ -74,9 +74,14 @@ internal class NameGenerator
         return name;
     }
 
+    /// <summary>
+    /// A generated local is declared before the statement, in the block that contains it, and a C# local can't share a name with any local in a scope nested in its own,
+    /// even one declared before it, e.g. a For Each variable in an earlier loop (CS0136). So every statement in that block is a place to look the name up.
+    /// </summary>
     private static List<int> GetScopeStarts(VBasic.VisualBasicSyntaxNode node)
     {
-        return node.GetAncestorOrThis<VBSyntax.StatementSyntax>().DescendantNodesAndSelf()
+        var statement = node.GetAncestorOrThis<VBSyntax.StatementSyntax>();
+        return (statement.Parent ?? statement).DescendantNodesAndSelf()
             .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
     }
 
