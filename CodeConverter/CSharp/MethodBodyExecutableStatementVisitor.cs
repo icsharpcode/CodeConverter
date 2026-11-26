@@ -267,6 +267,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             setMethodName = pro.Property.SetMethod?.Name;
         }
 
+        // Anything the left side needs hoisted is evaluated before anything the right side does
+        var leftSideHoistIndex = _perScopeState.HoistedNodeCount;
         var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
 
         if (node.Left is VBSyntax.IdentifierNameSyntax id &&
@@ -278,10 +280,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var csRight = rhs;
         rhs = ConvertAssignedValue(node, lhs, csRight, setMethodName, out var kind);
-        var hoistedOperands = SyntaxFactory.List<StatementSyntax>();
         var isSplitCompound = !node.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) && (kind == SyntaxKind.SimpleAssignmentExpression || setMethodName != null);
-        if (isSplitCompound && await HoistLeftSideOperandsOrNullAsync(node.Left, lhs) is var (hoistedLhs, declarations)) {
-            (lhs, hoistedOperands) = (hoistedLhs, declarations);
+        if (isSplitCompound && HoistLeftSideOperandsOrNull(node.Left, lhs, leftSideHoistIndex) is { } hoistedLhs) {
+            lhs = hoistedLhs;
             rhs = ConvertAssignedValue(node, lhs, csRight, setMethodName, out kind);
         }
 
@@ -301,7 +302,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 var newArgList = ies.ArgumentList.AddArguments(SyntaxFactory.Argument(rhs));
                 var newLhs = ies.WithExpression(exprToReplace).WithArgumentList(newArgList);
                 var postAssign = GetPostAssignmentStatements(node);
-                return hoistedOperands.AddRange(postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs)));
+                return postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs));
             }
             return SingleStatement(lhs);
         }
@@ -309,28 +310,29 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var postAssignment = GetPostAssignmentStatements(node);
         StatementSyntax AssignTo(ExpressionSyntax value) => SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(kind, lhs, value));
         if (kind == SyntaxKind.SimpleAssignmentExpression && _writeBackPlacement.IsSimpleTargetReadByWriteBack(node)) {
-            return hoistedOperands.AddRange(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
+            return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
         }
-        return hoistedOperands.AddRange(postAssignment.Insert(0, AssignTo(rhs)));
+        return postAssignment.Insert(0, AssignTo(rhs));
     }
 
     /// <summary>
     /// VB evaluates the receiver and arguments of a compound assignment's left side once, then the right side.
     /// Split into lhs = lhs op rhs, C# would evaluate them twice, so any that may have side effects (or be changed by the right side) are evaluated into locals first, in VB's order.
+    /// Once an argument is, the receiver is too unless it's a local or parameter, since evaluating the argument may change e.g. the field it reads.
     /// A receiver that may be a structure (including a type parameter) and is a variable (e.g. an array element) is a ref local, so the assignment changes the original.
     /// </summary>
+    /// <param name="hoistIndex">Where among the statement's hoisted locals these go: before any the right side needs</param>
     /// <returns>Null where the left side can be evaluated twice, e.g. a local, a field of Me, or an array element with local or constant indices</returns>
-    private async Task<(ExpressionSyntax Lhs, SyntaxList<StatementSyntax> Declarations)?> HoistLeftSideOperandsOrNullAsync(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft)
+    private ExpressionSyntax HoistLeftSideOperandsOrNull(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, int hoistIndex)
     {
+        var operation = _semanticModel.GetOperation(vbLeft);
         // VB doesn't evaluate the instance expression of a Shared member, and C# refers to the type instead
-        var (receiver, arguments) = _semanticModel.GetOperation(vbLeft) switch {
-            IArrayElementReferenceOperation element => (element.ArrayReference, element.Indices),
-            IPropertyReferenceOperation property => (property.Property.IsStatic ? null : property.Instance, property.Arguments.Select(a => a.Value).ToImmutableArray()),
-            IFieldReferenceOperation field => (field.Field.IsStatic ? null : field.Instance, ImmutableArray<IOperation>.Empty),
-            _ => (null, ImmutableArray<IOperation>.Empty)
+        var receiver = operation switch {
+            IArrayElementReferenceOperation element => element.ArrayReference,
+            IPropertyReferenceOperation property => property.Property.IsStatic ? null : property.Instance,
+            IFieldReferenceOperation field => field.Field.IsStatic ? null : field.Instance,
+            _ => null
         };
-        if (IsEvaluatedTheSameTwice(receiver) && arguments.All(IsEvaluatedTheSameTwice)) return null;
-
         var (csReceiver, csArguments) = csLeft switch {
             ElementAccessExpressionSyntax elementAccess => (elementAccess.Expression, elementAccess.ArgumentList.Arguments),
             InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation => (method.Expression, invocation.ArgumentList.Arguments),
@@ -338,31 +340,55 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
             _ => (null, default)
         };
-        if (csReceiver == null && csArguments.Count == 0) return null;
 
-        var declarations = SyntaxFactory.List<StatementSyntax>();
+        var argumentsToHoist = csArguments
+            .Where((csArgument, i) => csArgument.Expression is not LiteralExpressionSyntax && !IsEvaluatedTheSameTwice(GetArgumentOperationOrNull(operation, csArgument, i)))
+            .ToArray();
+        var hoistReceiver = csReceiver != null && receiver != null &&
+                            !(argumentsToHoist.Any() ? IsStableReference(receiver) : IsEvaluatedTheSameTwice(receiver));
+        if (!hoistReceiver && !argumentsToHoist.Any()) return null;
+
+        var isStructureVariable = hoistReceiver && receiver.Type?.IsReferenceType != true && receiver.IsAssignableExpression();
+        // A ref local can't be kept across an await or yield, so evaluating twice is the lesser evil there
+        if (isStructureVariable && IsInAsyncOrIteratorMethod(vbLeft)) return null;
+
         var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
-        if (csReceiver != null && receiver != null && !IsEvaluatedTheSameTwice(receiver)) {
-            // As for With, a type parameter may be a structure too
-            var isStructureVariable = receiver.Type?.IsReferenceType != true && receiver.IsAssignableExpression();
-            // A ref local can't be kept across an await or yield, so evaluating twice is the lesser evil there
-            if (isStructureVariable && IsInAsyncOrIteratorMethod(vbLeft)) return null;
-            var value = isStructureVariable ? SyntaxFactory.RefExpression(csReceiver) : csReceiver;
-            var (declaration, reference) = CreateLocalVariableWithUniqueName(vbLeft, "receiver", value, isStructureVariable ? SyntaxFactory.RefType(ValidSyntaxFactory.VarType) : null);
-            if (isStructureVariable) reference = RefLocalReferences.Mark(reference, CommonConversions.GetTypeSyntax(receiver.Type));
-            declarations = declarations.Add(declaration);
-            replacements.Add(csReceiver, reference);
+        if (hoistReceiver) {
+            var declaration = isStructureVariable
+                ? new AdditionalDeclaration("receiver", SyntaxFactory.RefExpression(csReceiver), SyntaxFactory.RefType(ValidSyntaxFactory.VarType))
+                : new AdditionalDeclaration("receiver", csReceiver, null);
+            _perScopeState.HoistAt(hoistIndex++, declaration);
+            replacements.Add(csReceiver, isStructureVariable ? RefLocalReferences.Mark(declaration.IdentifierName, CommonConversions.GetTypeSyntax(receiver.Type)) : declaration.IdentifierName);
         }
-        var argumentsMatch = arguments.Length == csArguments.Count;
-        for (var i = 0; i < csArguments.Count; i++) {
-            var csArgument = csArguments[i].Expression;
-            if (csArgument is LiteralExpressionSyntax || argumentsMatch && IsEvaluatedTheSameTwice(arguments[i])) continue;
-            var (declaration, reference) = CreateLocalVariableWithUniqueName(vbLeft, "index", csArgument);
-            declarations = declarations.Add(declaration);
-            replacements.Add(csArgument, reference);
+        foreach (var csArgument in argumentsToHoist) {
+            var declaration = _perScopeState.HoistAt(hoistIndex++, new AdditionalDeclaration("index", csArgument.Expression, null));
+            replacements.Add(csArgument.Expression, declaration.IdentifierName);
         }
-        return declarations.Any() ? (csLeft.ReplaceNodes(replacements.Keys, (original, _) => replacements[original]), declarations) : null;
+        return csLeft.ReplaceNodes(replacements.Keys, (original, _) => replacements[original]);
     }
+
+    /// <summary>
+    /// The VB argument a C# argument came from, matched by name for a named argument, else by position. Null where it can't be told.
+    /// </summary>
+    private static IOperation GetArgumentOperationOrNull(IOperation lhsOperation, ArgumentSyntax csArgument, int position)
+    {
+        switch (lhsOperation) {
+            case IArrayElementReferenceOperation element:
+                return position < element.Indices.Length ? element.Indices[position] : null;
+            case IPropertyReferenceOperation property:
+                var parameterName = csArgument.NameColon?.Name.Identifier.ValueText
+                                    ?? (position < property.Property.Parameters.Length ? property.Property.Parameters[position].Name : null);
+                return property.Arguments.FirstOrDefault(a => string.Equals(a.Parameter?.Name, parameterName, StringComparison.OrdinalIgnoreCase))?.Value;
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
+    /// Refers to the same object however much else is evaluated in between
+    /// </summary>
+    private static bool IsStableReference(IOperation operation) =>
+        operation is null or ILiteralOperation or IInstanceReferenceOperation or ILocalReferenceOperation or IParameterReferenceOperation || operation.ConstantValue.HasValue;
 
     private static bool IsInAsyncOrIteratorMethod(VBSyntax.ExpressionSyntax vbNode)
     {

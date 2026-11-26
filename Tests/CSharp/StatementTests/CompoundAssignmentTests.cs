@@ -165,19 +165,21 @@ internal partial class C
 
     public void M(object o, int i, Holder h)
     {
+        var receiver = _objects;
         var index1 = Idx();
-        _objects[index1] = Operators.AddObject(_objects[index1], o);
+        receiver[index1] = Operators.AddObject(receiver[index1], o);
+        var receiver1 = _ints;
         var index2 = Idx();
-        _ints[index2] = (int)Math.Round(_ints[index2] + 2.5d);
-        ref var receiver = ref _points[Idx()];
-        receiver.X = Conversions.ToInteger(Operators.AddObject(receiver.X, o));
-        var receiver1 = GetH();
-        receiver1.F = Conversions.ToInteger(Operators.AddObject(receiver1.F, o));
-        var receiver2 = GetH();
-        receiver2.P = (int)Math.Round(receiver2.P + 2.5d);
+        receiver1[index2] = (int)Math.Round(receiver1[index2] + 2.5d);
+        ref var receiver2 = ref _points[Idx()];
+        receiver2.X = Conversions.ToInteger(Operators.AddObject(receiver2.X, o));
         var receiver3 = GetH();
+        receiver3.F = Conversions.ToInteger(Operators.AddObject(receiver3.F, o));
+        var receiver4 = GetH();
+        receiver4.P = (int)Math.Round(receiver4.P + 2.5d);
+        var receiver5 = GetH();
         var index3 = Idx();
-        receiver3.set_Q(index3, (byte)(receiver3.get_Q(index3) + 1));
+        receiver5.set_Q(index3, (byte)(receiver5.get_Q(index3) + 1));
         _ints[i] = Conversions.ToInteger(Operators.AddObject(_ints[i], o));
         h.F = Conversions.ToInteger(Operators.AddObject(h.F, o));
         _objects[i + 1] = Operators.AddObject(_objects[i + 1], o);
