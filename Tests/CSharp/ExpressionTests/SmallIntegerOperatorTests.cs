@@ -766,6 +766,9 @@ internal partial class TestClass
         Dim x As Long = 2.5
         Dim z As Long = 3.5
         Dim i As Integer = D
+        Dim sb As SByte = -2.5
+        Dim sh As Short = 5.5
+        Dim us As UShort = 0.5
         Const local As Long = Not D
         Select Case b
             Case Not D
@@ -786,6 +789,9 @@ internal partial class TestClass
         long x = 2L;
         long z = 4L;
         int i = 2;
+        sbyte sb = -2;
+        short sh = 6;
+        ushort us = 0;
         const long local = ~2L;
         switch (b)
         {
