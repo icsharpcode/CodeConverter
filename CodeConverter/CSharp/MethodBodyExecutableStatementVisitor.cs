@@ -276,7 +276,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             lhs = ReturnVariable;
         }
 
-        rhs = ConvertAssignedValue(node, lhs, rhs, setMethodName, out var kind);
+        var csRight = rhs;
+        rhs = ConvertAssignedValue(node, lhs, csRight, setMethodName, out var kind);
+        var hoistedOperands = SyntaxFactory.List<StatementSyntax>();
+        var isSplitCompound = !node.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) && (kind == SyntaxKind.SimpleAssignmentExpression || setMethodName != null);
+        if (isSplitCompound && await HoistLeftSideOperandsOrNullAsync(node.Left, lhs) is var (hoistedLhs, declarations)) {
+            (lhs, hoistedOperands) = (hoistedLhs, declarations);
+            rhs = ConvertAssignedValue(node, lhs, csRight, setMethodName, out kind);
+        }
 
         if (setMethodName != null) {
             if (lhs is InvocationExpressionSyntax ies) {
@@ -294,7 +301,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 var newArgList = ies.ArgumentList.AddArguments(SyntaxFactory.Argument(rhs));
                 var newLhs = ies.WithExpression(exprToReplace).WithArgumentList(newArgList);
                 var postAssign = GetPostAssignmentStatements(node);
-                return postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs));
+                return hoistedOperands.AddRange(postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs)));
             }
             return SingleStatement(lhs);
         }
@@ -302,10 +309,70 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var postAssignment = GetPostAssignmentStatements(node);
         StatementSyntax AssignTo(ExpressionSyntax value) => SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(kind, lhs, value));
         if (kind == SyntaxKind.SimpleAssignmentExpression && _writeBackPlacement.IsSimpleTargetReadByWriteBack(node)) {
-            return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
+            return hoistedOperands.AddRange(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
         }
-        return postAssignment.Insert(0, AssignTo(rhs));
+        return hoistedOperands.AddRange(postAssignment.Insert(0, AssignTo(rhs)));
     }
+
+    /// <summary>
+    /// VB evaluates the receiver and arguments of a compound assignment's left side once, then the right side.
+    /// Split into lhs = lhs op rhs, C# would evaluate them twice, so any that may have side effects (or be changed by the right side) are evaluated into locals first, in VB's order.
+    /// A receiver of a structure type that's a variable (e.g. an array element) is a ref local, so the assignment changes the original.
+    /// </summary>
+    /// <returns>Null where the left side can be evaluated twice, e.g. a local, a field of Me, or an array element with local or constant indices</returns>
+    private async Task<(ExpressionSyntax Lhs, SyntaxList<StatementSyntax> Declarations)?> HoistLeftSideOperandsOrNullAsync(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft)
+    {
+        var (receiver, arguments) = _semanticModel.GetOperation(vbLeft) switch {
+            IArrayElementReferenceOperation element => (element.ArrayReference, element.Indices),
+            IPropertyReferenceOperation property => (property.Instance, property.Arguments.Select(a => a.Value).ToImmutableArray()),
+            IFieldReferenceOperation field => (field.Instance, ImmutableArray<IOperation>.Empty),
+            _ => (null, ImmutableArray<IOperation>.Empty)
+        };
+        if (IsEvaluatedTheSameTwice(receiver) && arguments.All(IsEvaluatedTheSameTwice)) return null;
+
+        var (csReceiver, csArguments) = csLeft switch {
+            ElementAccessExpressionSyntax elementAccess => (elementAccess.Expression, elementAccess.ArgumentList.Arguments),
+            InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation => (method.Expression, invocation.ArgumentList.Arguments),
+            InvocationExpressionSyntax invocation => (null, invocation.ArgumentList.Arguments),
+            MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
+            _ => (null, default)
+        };
+        if (csReceiver == null && csArguments.Count == 0) return null;
+
+        var declarations = SyntaxFactory.List<StatementSyntax>();
+        var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
+        if (csReceiver != null && !IsEvaluatedTheSameTwice(receiver)) {
+            var isStructureVariable = receiver.Type?.IsValueType == true && receiver.IsAssignableExpression();
+            var value = isStructureVariable ? SyntaxFactory.RefExpression(csReceiver) : csReceiver;
+            var (declaration, reference) = CreateLocalVariableWithUniqueName(vbLeft, "receiver", value, isStructureVariable ? SyntaxFactory.RefType(ValidSyntaxFactory.VarType) : null);
+            if (isStructureVariable) reference = RefLocalReferences.Mark(reference, CommonConversions.GetTypeSyntax(receiver.Type));
+            declarations = declarations.Add(declaration);
+            replacements.Add(csReceiver, reference);
+        }
+        var argumentsMatch = arguments.Length == csArguments.Count;
+        for (var i = 0; i < csArguments.Count; i++) {
+            var csArgument = csArguments[i].Expression;
+            if (csArgument is LiteralExpressionSyntax || argumentsMatch && IsEvaluatedTheSameTwice(arguments[i])) continue;
+            var (declaration, reference) = CreateLocalVariableWithUniqueName(vbLeft, "index", csArgument);
+            declarations = declarations.Add(declaration);
+            replacements.Add(csArgument, reference);
+        }
+        return declarations.Any() ? (csLeft.ReplaceNodes(replacements.Keys, (original, _) => replacements[original]), declarations) : null;
+    }
+
+    /// <summary>
+    /// Constants, Me, locals and parameters, fields of those, and intrinsic operators on them give the same value when evaluated again with no side effects.
+    /// </summary>
+    private static bool IsEvaluatedTheSameTwice(IOperation operation) => operation switch {
+        null or ILiteralOperation or IInstanceReferenceOperation or ILocalReferenceOperation or IParameterReferenceOperation => true,
+        { ConstantValue.HasValue: true } => true,
+        IFieldReferenceOperation field => IsEvaluatedTheSameTwice(field.Instance),
+        IConversionOperation { OperatorMethod: null } conversion => IsEvaluatedTheSameTwice(conversion.Operand),
+        IParenthesizedOperation parenthesized => IsEvaluatedTheSameTwice(parenthesized.Operand),
+        IBinaryOperation { OperatorMethod: null } binary => IsEvaluatedTheSameTwice(binary.LeftOperand) && IsEvaluatedTheSameTwice(binary.RightOperand),
+        IUnaryOperation { OperatorMethod: null } unary => IsEvaluatedTheSameTwice(unary.Operand),
+        _ => false
+    };
 
     /// <summary>
     /// The value to assign, and the C# assignment's kind: a compound assignment may need splitting into lhs = lhs op rhs

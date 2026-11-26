@@ -81,4 +81,108 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task SplitCompoundAssignmentEvaluatesLeftSideOperandsOnceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Private _objects As Object()
+    Private _ints As Integer()
+    Private _points As Point()
+
+    Structure Point
+        Public X As Integer
+    End Structure
+
+    Class Holder
+        Public F As Integer
+        Property P As Integer
+        Property Q(i As Integer) As Byte
+            Get
+                Return 0
+            End Get
+            Set(value As Byte)
+            End Set
+        End Property
+    End Class
+
+    Function Idx() As Integer
+        Return 1
+    End Function
+
+    Function GetH() As Holder
+        Return New Holder()
+    End Function
+
+    Sub M(o As Object, i As Integer, h As Holder)
+        _objects(Idx()) += o
+        _ints(Idx()) += 2.5
+        _points(Idx()).X += o
+        GetH().F += o
+        GetH().P += 2.5
+        GetH().Q(Idx()) += 1
+        _ints(i) += o
+        h.F += o
+        _objects(i + 1) += o
+        _ints(Idx()) += 1
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    private object[] _objects;
+    private int[] _ints;
+    private Point[] _points;
+
+    public partial struct Point
+    {
+        public int X;
+    }
+
+    public partial class Holder
+    {
+        public int F;
+        public int P { get; set; }
+        public byte get_Q(int i)
+        {
+            return 0;
+        }
+        public void set_Q(int i, byte value)
+        {
+        }
+    }
+
+    public int Idx()
+    {
+        return 1;
+    }
+
+    public Holder GetH()
+    {
+        return new Holder();
+    }
+
+    public void M(object o, int i, Holder h)
+    {
+        var index1 = Idx();
+        _objects[index1] = Operators.AddObject(_objects[index1], o);
+        var index2 = Idx();
+        _ints[index2] = (int)Math.Round(_ints[index2] + 2.5d);
+        ref var receiver = ref _points[Idx()];
+        receiver.X = Conversions.ToInteger(Operators.AddObject(receiver.X, o));
+        var receiver1 = GetH();
+        receiver1.F = Conversions.ToInteger(Operators.AddObject(receiver1.F, o));
+        var receiver2 = GetH();
+        receiver2.P = (int)Math.Round(receiver2.P + 2.5d);
+        var receiver3 = GetH();
+        var index3 = Idx();
+        receiver3.set_Q(index3, (byte)(receiver3.get_Q(index3) + 1));
+        _ints[i] = Conversions.ToInteger(Operators.AddObject(_ints[i], o));
+        h.F = Conversions.ToInteger(Operators.AddObject(h.F, o));
+        _objects[i + 1] = Operators.AddObject(_objects[i + 1], o);
+        _ints[Idx()] += 1;
+    }
+}");
+    }
 }
