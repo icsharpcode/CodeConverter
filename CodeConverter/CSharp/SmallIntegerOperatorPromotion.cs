@@ -12,7 +12,7 @@ namespace ICSharpCode.CodeConverter.CSharp;
 /// <list type="bullet">
 /// <item>An operand of a wrapping operator (+, -, *, And, Or, Xor, Not, the left of &lt;&lt;) of the same type needs no cast: that operator's own result keeps the congruence and gets cast instead.</item>
 /// <item>A value already in range needs no cast where converting the int gives the same as converting the VB type: as an operand of another intrinsic operator (C# promotes it anyway),
-/// or converted to another numeric type, String or Boolean. That includes explicit conversions such as CInt, whose target type is what counts.</item>
+/// or converted to another numeric type (or enum), String or Boolean, or switched on by Select Case. That includes explicit conversions such as CInt, whose target type is what counts.</item>
 /// <item>Any value needs no cast where it's converted to an integral type (or enum of one) no wider than the VB type, or from a nullable to its value, since that conversion truncates it anyway, e.g. CByte(Not us).</item>
 /// <item>Anything else needs the cast: e.g. the VB type itself (a lambda return, an array element), Object (boxing), an enum, or a user-defined conversion.</item>
 /// </list>
@@ -160,8 +160,10 @@ internal class SmallIntegerOperatorPromotion
         if (targetType?.SpecialType is SpecialType.System_String or SpecialType.System_Boolean) return true;
         // Without a format string, an in-range int formats like the VB type (whereas e.g. :X formats a negative int with 32 bits)
         if (outermost.Parent is VBSyntax.InterpolationSyntax { FormatClause: null }) return true;
+        // Each case compares with the value, which an in-range int has just the same
+        if (outermost.Parent is VBSyntax.SelectStatementSyntax) return true;
         if (IsIntrinsicOperator(outermost.Parent)) return targetType.IsNumericType();
-        return targetType.IsNumericType() && isConversionToAnotherType;
+        return GetUnderlyingNumericType(targetType).IsNumericType() && isConversionToAnotherType;
     }
 
     /// <summary>

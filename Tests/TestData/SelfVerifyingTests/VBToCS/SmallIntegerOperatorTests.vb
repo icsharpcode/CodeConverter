@@ -288,4 +288,19 @@ Public Class SmallIntegerOperatorTests
         Dim x As Short = True << 3
         Assert.Equal(-8S, x)
     End Sub
+
+    <Fact>
+    Public Sub SelectCaseAndWiderEnumOfResults()
+        Dim b1 As Byte = 200, b2 As Byte = 72, result = ""
+        Select Case b1 And b2
+            Case 72 : result &= "a"
+            Case Else : result &= "x"
+        End Select
+        Select Case Not b1
+            Case 55 : result &= "b"
+            Case Else : result &= "y"
+        End Select
+        Assert.Equal("ab", result)
+        Assert.Equal(CType(200, DayOfWeek), CType(b1 Or b1, DayOfWeek))
+    End Sub
 End Class

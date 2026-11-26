@@ -828,4 +828,48 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task InRangeResultConvertedToWiderEnumOrSwitchedOnIsNotCastAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum ES As Short
+    A
+End Enum
+
+Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte)
+        Dim a = CType(b1 Or b2, ES)
+        Dim b = CType(Not b1, ES)
+        Select Case b1 And b2
+            Case 1
+        End Select
+        Select Case Not b1
+            Case 1
+        End Select
+    End Sub
+End Class", @"
+internal enum ES : short
+{
+    A
+}
+
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2)
+    {
+        ES a = (ES)(b1 | b2);
+        ES b = (ES)(byte)~b1;
+        switch (b1 & b2)
+        {
+            case 1:
+                break;
+        }
+        switch ((byte)~b1)
+        {
+            case 1:
+                break;
+        }
+    }
+}");
+    }
 }
