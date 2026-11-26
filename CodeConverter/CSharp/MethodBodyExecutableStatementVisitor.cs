@@ -369,7 +369,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 return true;
             case IFieldReferenceOperation { Field.IsStatic: false } field when cs is MemberAccessExpressionSyntax memberAccess:
                 return TryCollectReceiverOperands(field.Instance, memberAccess.Expression, operands);
-            case IPropertyReferenceOperation { Property.IsStatic: false } property:
+            case IPropertyReferenceOperation property:
                 var (csReceiver, csArguments) = cs switch {
                     ElementAccessExpressionSyntax elementAccess => (elementAccess.Expression, elementAccess.ArgumentList.Arguments),
                     InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation => (method.Expression, invocation.ArgumentList.Arguments),
@@ -377,7 +377,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                     MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
                     _ => (null, default)
                 };
-                if (csReceiver != null && !TryCollectReceiverOperands(property.Instance, csReceiver, operands)) return false;
+                // A Shared property's arguments are evaluated all the same, without a receiver (VB doesn't evaluate the instance expression, and C# refers to the type)
+                if (csReceiver != null && !property.Property.IsStatic && !TryCollectReceiverOperands(property.Instance, csReceiver, operands)) return false;
                 // VB evaluates the arguments in parameter order, whatever order named ones are written in
                 foreach (var argument in property.Arguments) {
                     var csArgument = csArguments.Select((a, i) => (Argument: a, Position: i))
