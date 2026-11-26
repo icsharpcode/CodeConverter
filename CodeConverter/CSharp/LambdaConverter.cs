@@ -77,11 +77,22 @@ internal class LambdaConverter
     /// VB converts a single-line lambda's body to the return type as a Return statement would (e.g. Byte to Short), C# needs that conversion to be implicit.
     /// </summary>
     /// <remarks>
-    /// Not within an expression tree: there, operators such as Object comparisons are converted to C# operators that already give the return type,
-    /// which the VB types don't reflect, so a conversion would only add noise.
+    /// Except where the C# body already has the return type, which the VB types don't show:
+    /// <list type="bullet">
+    /// <item>a nested lambda returned as a delegate: C# infers its type from the return type, so it needs no delegate creation</item>
+    /// <item>an Object comparison in an expression tree: it becomes a C# comparison giving bool (see <see cref="VisualBasicEqualityComparison"/>), where VB gives Object</item>
+    /// </list>
     /// </remarks>
-    private ExpressionSyntax ConvertToReturnType(VBSyntax.ExpressionSyntax vbBody, ExpressionSyntax csBody, bool isWithinExpressionTree) =>
-        isWithinExpressionTree ? csBody : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbBody, csBody);
+    private ExpressionSyntax ConvertToReturnType(VBSyntax.ExpressionSyntax vbBody, ExpressionSyntax csBody, bool isWithinExpressionTree)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(vbBody);
+        var isTargetTypedLambda = vbBody.SkipIntoParens() is VBSyntax.LambdaExpressionSyntax && typeInfo.ConvertedType?.TypeKind == TypeKind.Delegate;
+        var isExpressionTreeObjectComparison = isWithinExpressionTree && typeInfo.Type?.SpecialType == SpecialType.System_Object &&
+                                               vbBody.SkipIntoParens().IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
+                                                   VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+                                                   VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression);
+        return isTargetTypedLambda || isExpressionTreeObjectComparison ? csBody : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbBody, csBody);
+    }
 
     public async Task<CSharpSyntaxNode> ConvertAsync(VBSyntax.LambdaExpressionSyntax vbNode,
         ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)

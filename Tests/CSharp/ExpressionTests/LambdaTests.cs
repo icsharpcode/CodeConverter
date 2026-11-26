@@ -73,4 +73,71 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task SingleLineLambdaBodyConversionToEachKindOfReturnTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq.Expressions
+Imports System.Threading.Tasks
+Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte, i As Integer, o As Object, bytes As Byte())
+        Dim g As Func(Of Func(Of Integer)) = Function() Function() 1
+        Dim g2 As Func(Of Func(Of Integer, Integer)) = Function() Function(x) x
+        Dim g3 As Func(Of Action) = Function() Sub() Console.WriteLine()
+        Dim g4 As Func(Of Object) = Function() Function() 1
+        Dim fo As Func(Of Object) = Function() b1 And b2
+        Dim fa As Func(Of Task(Of Byte)) = Async Function() i
+        Dim fs As Func(Of String) = Function() i
+        Dim fe As Func(Of DayOfWeek) = Function() i
+        Dim fd As Func(Of Decimal) = Function() i
+        Dim fc As Func(Of Char) = Function() ""a""
+        Dim fdt As Func(Of Date) = Function() ""2020-01-01""
+        Dim ex As Expression(Of Func(Of Byte)) = Function() i
+        Dim ex2 As Expression(Of Func(Of Byte)) = Function() b1 And b2
+        Dim ex3 As Expression(Of Func(Of Boolean)) = Function() o = Nothing
+        Dim q1 = From x In bytes Select x And b1
+        Dim q2 = From x In bytes Where (x And b1) = 0 Select x
+        Dim q3 = From x In bytes Group By k = x And b1 Into Group
+        Dim q4 = bytes.AsQueryable().Select(Function(x) x And b1)
+        Dim q5 = bytes.AsQueryable().Select(Function(x) Not x)
+        Dim an = New With {.A = b1 And b2, .B = Not b1}
+    End Sub
+End Class", @"using System;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2, int i, object o, byte[] bytes)
+    {
+        Func<Func<int>> g = () => () => 1;
+        Func<Func<int, int>> g2 = () => x => x;
+        Func<Action> g3 = () => () => Console.WriteLine();
+        Func<object> g4 = () => new Func<int>(() => 1);
+        Func<object> fo = () => (byte)(b1 & b2);
+        Func<Task<byte>> fa = async () => (byte)i;
+        Func<string> fs = () => i.ToString();
+        Func<DayOfWeek> fe = () => (DayOfWeek)i;
+        Func<decimal> fd = () => i;
+        Func<char> fc = () => 'a';
+        Func<DateTime> fdt = () => Conversions.ToDate(""2020-01-01"");
+        Expression<Func<byte>> ex = () => (byte)i;
+        Expression<Func<byte>> ex2 = () => (byte)(b1 & b2);
+        Expression<Func<bool>> ex3 = () => o == default;
+        var q1 = from x in bytes
+                 select (byte)(x & b1);
+        var q2 = from x in bytes
+                 where (x & b1) == 0
+                 select x;
+        var q3 = from x in bytes
+                 group x by (byte)(x & b1) into Group
+                 select new { k = Group.Key, Group };
+        var q4 = bytes.AsQueryable().Select(x => (byte)(x & b1));
+        var q5 = bytes.AsQueryable().Select(x => (byte)~x);
+        var an = new { A = (byte)(b1 & b2), B = (byte)~b1 };
+    }
+}");
+    }
 }

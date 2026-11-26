@@ -204,4 +204,17 @@ Public Class SmallIntegerOperatorTests
         Q(1) >>= 9
         Assert.Equal(CByte(97), Q(1))
     End Sub
+
+    <Fact>
+    Public Sub LambdaBodiesConvertToTheReturnType()
+        Dim i As Integer = 300, b1 As Byte = 200
+        Dim narrowed As Func(Of Byte) = Function() i - 100
+        Assert.Equal(CByte(200), narrowed())
+        Dim tree As System.Linq.Expressions.Expression(Of Func(Of Short)) = Function() b1 Or CByte(1)
+        Assert.Equal(201S, tree.Compile()())
+        Dim nested As Func(Of Func(Of Integer)) = Function() Function() Not b1
+        Assert.Equal(55, nested()())
+        Dim boxed As Func(Of Object) = Function() b1 Or b1
+        Assert.Equal(GetType(Byte), boxed().GetType())
+    End Sub
 End Class
