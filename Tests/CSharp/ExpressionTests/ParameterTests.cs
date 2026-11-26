@@ -234,4 +234,43 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task ConstantWithoutACSharpConversionIsVbsValueAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum Col
+    Red
+    Green
+End Enum
+
+Class TAttribute
+    Inherits System.Attribute
+    Public Property B As Boolean
+End Class
+
+<T(B:=Col.Green)>
+Class C
+    Sub M(Optional b As Boolean = Col.Green, Optional e As Col = True, Optional s As String = ChrW(66) & ""b"", Optional d As Double = Col.Green)
+    End Sub
+End Class", @"using System;
+
+internal enum Col
+{
+    Red,
+    Green
+}
+
+internal partial class TAttribute : Attribute
+{
+    public bool B { get; set; }
+}
+
+[T(B = true)]
+internal partial class C
+{
+    public void M(bool b = true, Col e = (Col)(-1), string s = ""Bb"", double d = (double)Col.Green)
+    {
+    }
+}");
+    }
 }

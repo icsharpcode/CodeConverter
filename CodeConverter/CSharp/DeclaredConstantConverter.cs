@@ -40,29 +40,41 @@ internal class DeclaredConstantConverter
         var target = targetType.GetNullableUnderlyingType() ?? targetType;
         var sourceType = _semanticModel.GetTypeInfo(vbValue).Type;
         if (sourceType == null || target.SpecialType == SpecialType.System_Object) return csValue;
-        if (!IsConstantInCSharp(csValue)) return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
+        if (!IsConstantInCSharp(vbValue, csValue)) return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
         if (SymbolEqualityComparer.Default.Equals(sourceType, target)) return csValue;
         if (sourceType.IsFractionalNumericType() && SmallIntegerOperatorPromotion.GetUnderlyingNumericType(target).IsIntegralType()) {
             return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
         }
 
-        // An enum converts to and from a number only explicitly (and may not be in the C# compilation yet)
-        if (sourceType.IsEnumType() || target.IsEnumType()) return ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), csValue);
-        if (sourceType.SpecialType == SpecialType.None || target.SpecialType == SpecialType.None) return csValue;
-        var conversion = _csCompilation.ClassifyConversion(GetCSharpSpecialType(sourceType), GetCSharpSpecialType(target));
+        // An enum converts to and from a number only explicitly (and may not be in the C# compilation yet), so its conversions are those of its underlying type
+        var isEnumConversion = sourceType.IsEnumType() || target.IsEnumType();
+        var csSource = GetCSharpSpecialTypeOrNull(SmallIntegerOperatorPromotion.GetUnderlyingNumericType(sourceType));
+        var csTarget = GetCSharpSpecialTypeOrNull(SmallIntegerOperatorPromotion.GetUnderlyingNumericType(target));
+        if (csSource == null || csTarget == null) return csValue;
+        var conversion = _csCompilation.ClassifyConversion(csSource, csTarget);
+        if (isEnumConversion) {
+            return conversion.IsNumeric || conversion.IsIdentity
+                ? ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), csValue)
+                : GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
+        }
         if (!requiresExactType && (conversion.IsImplicit || IsImplicitConstantConversion(value, target))) return csValue;
         if (conversion.Exists) return ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), csValue);
         return GetConvertedLiteralOrNull(value, target, requiresExactType) ?? csValue;
     }
 
     /// <summary>
-    /// Calls (e.g. to Conversions or Math.Round) are never C# constants, except nameof
+    /// Calls (e.g. to Conversions or Math.Round) are never C# constants, except nameof.
+    /// Nor is a concatenation with a Char, which C# only folds for strings, e.g. ChrW(66) &amp; "b" becomes 'B' + "b".
     /// </summary>
-    private static bool IsConstantInCSharp(ExpressionSyntax csValue) =>
+    private bool IsConstantInCSharp(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue) =>
         !csValue.DescendantNodesAndSelf().OfType<CSSyntax.InvocationExpressionSyntax>()
-            .Any(i => i.Expression is not CSSyntax.IdentifierNameSyntax { Identifier.ValueText: "nameof" });
+            .Any(i => i.Expression is not CSSyntax.IdentifierNameSyntax { Identifier.ValueText: "nameof" }) &&
+        !vbValue.DescendantNodesAndSelf().OfType<VBSyntax.BinaryExpressionSyntax>()
+            .Any(b => b.IsKind(VBasic.SyntaxKind.ConcatenateExpression, VBasic.SyntaxKind.AddExpression) &&
+                      (_semanticModel.GetTypeInfo(b.Left).Type?.SpecialType == SpecialType.System_Char || _semanticModel.GetTypeInfo(b.Right).Type?.SpecialType == SpecialType.System_Char));
 
-    private ITypeSymbol GetCSharpSpecialType(ITypeSymbol vbType) => _csCompilation.GetSpecialType(vbType.SpecialType);
+    private ITypeSymbol GetCSharpSpecialTypeOrNull(ITypeSymbol vbType) =>
+        vbType?.SpecialType is { } specialType && specialType != SpecialType.None ? _csCompilation.GetSpecialType(specialType) : null;
 
     private static bool IsImplicitConstantConversion(object value, ITypeSymbol target) =>
         value switch {
@@ -88,6 +100,7 @@ internal class DeclaredConstantConverter
         if (!ExpressionEvaluator.ConversionsTypeFullNames.TryGetValue(numericTarget.GetFullMetadataName(), out var conversion)) return null;
         var literal = LiteralConversions.GetLiteralExpression(conversion.Invoke(null, new[] { value }), convertedType: numericTarget);
         var hasNoLiteralOfItsType = numericTarget.SpecialType is SpecialType.System_Byte or SpecialType.System_SByte or SpecialType.System_Int16 or SpecialType.System_UInt16;
-        return target.IsEnumType() || requiresExactType && hasNoLiteralOfItsType ? ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), literal) : literal;
+        // A cast of a negative literal needs parentheses: (E)-1 parses as a subtraction
+        return target.IsEnumType() || requiresExactType && hasNoLiteralOfItsType ? ValidSyntaxFactory.CastExpression(_getTypeSyntax(target), literal.AddParens()) : literal;
     }
 }
