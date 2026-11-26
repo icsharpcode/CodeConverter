@@ -445,4 +445,52 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ConversionToAnotherNumericTypeCastsOnceAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, b2 As Byte, s1 As Short, s2 As Short, us As UShort, sb As SByte)
+        Dim a = CByte(us >> 8)
+        Dim b = CByte(s1 And s2)
+        Dim c = CInt(b1 And b2)
+        Dim d = CInt(us >> 8)
+        Dim e = CType(us And us, Integer)
+        Dim f = CLng(Not sb)
+        Dim g As Byte = s1 And s2
+        Dim h As SByte = b1 And b2
+        Dim i = CByte(Not us)
+        Dim j = CInt(Not b1)
+        Dim k As Short = b1 And b2
+        Dim m As Integer = b1 Mod b2
+        Dim n As Integer = sb \ sb
+        Dim o As Integer = +b1
+        Dim p = CDbl(Not b1)
+        Dim q As Func(Of Short) = Function() b1 And b2
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, byte b2, short s1, short s2, ushort us, sbyte sb)
+    {
+        byte a = (byte)(us >> 8);
+        byte b = (byte)(s1 & s2);
+        int c = b1 & b2;
+        int d = us >> 8;
+        int e = us & us;
+        long f = ~sb;
+        byte g = (byte)(s1 & s2);
+        sbyte h = (sbyte)(b1 & b2);
+        byte i = (byte)~us;
+        int j = (byte)~b1;
+        short k = (short)(b1 & b2);
+        int m = b1 % b2;
+        int n = (sbyte)(sb / sb);
+        int o = +b1;
+        double p = (byte)~b1;
+        Func<short> q = () => (short)(b1 & b2);
+    }
+}");
+    }
 }

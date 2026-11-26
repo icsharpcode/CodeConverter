@@ -204,13 +204,15 @@ internal class TypeConversionAnalyzer
     }
 
     /// <remarks>
-    /// The source type is the VB one even for an operator C# promotes to int: <see cref="CastPromotedOperatorResultIfNeeded"/> has cast it back wherever the int would differ.
+    /// An operator C# promotes to int is still an int here unless <see cref="CastPromotedOperatorResultIfNeeded"/> cast it back
     /// </remarks>
     private (ITypeSymbol Type, ITypeSymbol ConvertedType) GetTypeInfo(VBSyntax.ExpressionSyntax vbNode,
         ITypeSymbol type = null, ITypeSymbol convertedType = null)
     {
         var typeInfo = _semanticModel.GetTypeInfo(vbNode);
-        return (type ?? typeInfo.Type, convertedType ?? typeInfo.ConvertedType);
+        convertedType ??= typeInfo.ConvertedType;
+        type ??= _smallIntegerOperatorPromotion.GetCSharpTypeOrNull(vbNode, convertedType) ?? typeInfo.Type;
+        return (type, convertedType);
     }
 
     private CSSyntax.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)

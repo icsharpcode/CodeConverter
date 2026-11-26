@@ -136,4 +136,20 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(40000, z)
         Assert.Equal(CByte(55), Not CB)
     End Sub
+
+    <Fact>
+    Public Sub ExplicitConversionsOfResults()
+        Dim b1 As Byte = 200, us As UShort = 65400, s1 As Short = 300, sb As SByte = -128
+        Assert.Equal(CByte(135), CByte(Not us))
+        Assert.Equal(55, CInt(Not b1))
+        Assert.Equal(CByte(44), CByte(s1 And 255S))
+        Assert.Equal(127L, CLng(Not sb))
+        Assert.Equal(55.0, CDbl(Not b1))
+        Dim f As Func(Of Short) = Function() Not b1
+        Assert.Equal(55S, f())
+        Dim i As Integer = b1 Mod CByte(7)
+        Assert.Equal(4, i)
+        Dim j As Integer = +b1
+        Assert.Equal(200, j)
+    End Sub
 End Class

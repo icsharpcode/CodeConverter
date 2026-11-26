@@ -11,10 +11,12 @@ namespace ICSharpCode.CodeConverter.CSharp;
 /// <remarks>
 /// <list type="bullet">
 /// <item>An operand of a wrapping operator (+, -, *, And, Or, Xor, Not, the left of &lt;&lt;) of the same type needs no cast: that operator's own result keeps the congruence and gets cast instead.</item>
-/// <item>A value already in range needs no cast where an int converts with the same meaning: as an operand of another intrinsic operator (C# promotes it anyway),
-/// or where it converts to a wider numeric type, String or Boolean.</item>
+/// <item>A value already in range needs no cast where converting the int gives the same as converting the VB type: as an operand of another intrinsic operator (C# promotes it anyway),
+/// or converted to another numeric type, String or Boolean. That includes explicit conversions such as CInt, whose target type is what counts.</item>
+/// <item>Any value needs no cast where it's converted to an integral type no wider than the VB type, since that conversion truncates it anyway, e.g. CByte(Not us).</item>
 /// <item>Anything else needs the cast: e.g. the VB type itself (a lambda return, an array element), Object (boxing), an enum, or a user-defined conversion.</item>
 /// </list>
+/// Where no cast is needed, <see cref="GetCSharpTypeOrNull"/> tells the conversion to the target that the source is an int.
 /// VB spec: https://learn.microsoft.com/dotnet/visual-basic/reference/language-specification/expressions#operator-types
 /// C# spec: https://learn.microsoft.com/dotnet/csharp/language-reference/language-specification/expressions#12473-binary-numeric-promotions
 /// </remarks>
@@ -59,7 +61,7 @@ internal class SmallIntegerOperatorPromotion
         if (GetPromotedTypeOrNull(vbNode) is not { } vbType) return false;
         var outermost = vbNode.OutermostParenthesizedOrSelf();
         if (!IsConstantThatMayBeOutOfRange(vbNode) && IsOperandWhoseCongruenceIsKeptBy(outermost, vbType)) return false;
-        return !IsResultInRange(vbNode.SkipIntoParens()) || !AcceptsIntWithSameMeaning(outermost);
+        return !AcceptsPromotedValue(outermost, vbType, IsResultInRange(vbNode.SkipIntoParens()));
     }
 
     /// <summary>
@@ -102,14 +104,46 @@ internal class SmallIntegerOperatorPromotion
                GetUnderlyingType(parentType).SpecialType == GetUnderlyingType(vbType).SpecialType;
     }
 
-    private bool AcceptsIntWithSameMeaning(VBSyntax.ExpressionSyntax outermost)
+    /// <summary>
+    /// The type the value is converted to by its consumer, unless that's the VB type itself
+    /// </summary>
+    /// <remarks>For an explicit conversion (e.g. CInt), the operand's own converted type is just its type</remarks>
+    public ITypeSymbol GetCSharpTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol targetType)
     {
-        var convertedType = GetUnderlyingType(_semanticModel.GetTypeInfo(outermost).ConvertedType);
-        if (convertedType?.SpecialType is SpecialType.System_String or SpecialType.System_Boolean) return true;
-        if (IsIntrinsicOperator(outermost.Parent)) return convertedType.IsNumericType();
-        return convertedType?.SpecialType is SpecialType.System_Int32 or SpecialType.System_Int64
-            or SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal;
+        if (GetPromotedTypeOrNull(vbNode) is not { } vbType || NeedsCastToVbType(vbNode) ||
+            GetUnderlyingType(targetType)?.SpecialType == GetUnderlyingType(vbType).SpecialType) {
+            return null;
+        }
+        var int32 = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Int32);
+        return vbType.IsNullable() ? _semanticModel.Compilation.GetSpecialType(SpecialType.System_Nullable_T).Construct(int32) : int32;
     }
+
+    private bool AcceptsPromotedValue(VBSyntax.ExpressionSyntax outermost, ITypeSymbol vbType, bool isInRange)
+    {
+        var targetType = GetUnderlyingType(GetTargetType(outermost));
+        var underlyingVbType = GetUnderlyingType(vbType);
+        if (IsIntegralNoWiderThan(targetType, underlyingVbType) && targetType.SpecialType != underlyingVbType.SpecialType) return true;
+        if (!isInRange) return false;
+        if (targetType?.SpecialType is SpecialType.System_String or SpecialType.System_Boolean) return true;
+        if (IsIntrinsicOperator(outermost.Parent)) return targetType.IsNumericType();
+        return targetType.IsNumericType() && targetType.SpecialType != underlyingVbType.SpecialType;
+    }
+
+    private ITypeSymbol GetTargetType(VBSyntax.ExpressionSyntax outermost) => outermost.Parent switch {
+        VBSyntax.CastExpressionSyntax or VBSyntax.PredefinedCastExpressionSyntax => _semanticModel.GetTypeInfo(outermost.Parent).Type,
+        _ => _semanticModel.GetTypeInfo(outermost).ConvertedType
+    };
+
+    private static bool IsIntegralNoWiderThan(ITypeSymbol type, ITypeSymbol other) =>
+        GetIntegralBitsOrNull(type) is { } bits && bits <= GetIntegralBitsOrNull(other);
+
+    private static int? GetIntegralBitsOrNull(ITypeSymbol type) => type?.SpecialType switch {
+        SpecialType.System_Byte or SpecialType.System_SByte => 8,
+        SpecialType.System_Int16 or SpecialType.System_UInt16 => 16,
+        SpecialType.System_Int32 or SpecialType.System_UInt32 => 32,
+        SpecialType.System_Int64 or SpecialType.System_UInt64 => 64,
+        _ => null
+    };
 
     /// <summary>
     /// Whether the C# value of the promoted operator always equals the VB value, rather than just being congruent to it
@@ -133,7 +167,7 @@ internal class SmallIntegerOperatorPromotion
                 // Not maps the signed range onto itself (~x == -x - 1)
                 VBasic.SyntaxKind.NotExpression => isSigned && IsCSharpValueInRange(u.Operand),
                 VBasic.SyntaxKind.UnaryPlusExpression => IsCSharpValueInRange(u.Operand),
-                // VB negates an unsigned operand in the next wider signed type, e.g. Byte as Short
+                // VB negates an operand of another type (e.g. Byte or Boolean) in the result type, which is wide enough for every negated value
                 VBasic.SyntaxKind.UnaryMinusExpression => !IsSameUnderlyingType(u, u.Operand) && IsCSharpValueInRange(u.Operand),
                 _ => false
             },
