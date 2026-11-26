@@ -733,7 +733,7 @@ public partial class Issue567
     public void DoSomething(ref string str)
     {
         Other.lst = new List<string>(new[] { 4.ToString(), 5.ToString(), 6.ToString() });
-        Other.lst2 = new List<object>(new[] { 4.ToString(), 5.ToString(), 6.ToString() });
+        Other.lst2 = new List<object>(new object[] { 4.ToString(), 5.ToString(), 6.ToString() });
         str = 999.ToString();
     }
 
@@ -756,7 +756,7 @@ public partial class Issue567
 internal static partial class Other
 {
     public static List<string> lst = new List<string>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
-    public static List<object> lst2 = new List<object>(new[] { 1.ToString(), 2.ToString(), 3.ToString() });
+    public static List<object> lst2 = new List<object>(new object[] { 1.ToString(), 2.ToString(), 3.ToString() });
 }");
     }
 

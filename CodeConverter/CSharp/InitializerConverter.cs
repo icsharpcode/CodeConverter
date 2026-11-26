@@ -55,7 +55,7 @@ internal class InitializerConverter
         }
 
         bool hasExpressionToInferTypeFrom = node.Initializers.SelectMany(n => n.DescendantNodesAndSelf()).Any(n => n is not VBasic.Syntax.CollectionInitializerSyntax);
-        if (hasExpressionToInferTypeFrom && !HasUserDefinedConversionItem(node)) {
+        if (hasExpressionToInferTypeFrom && AllItemsAlreadyHaveElementType(node, elementType)) {
             var commas = Enumerable.Repeat(CS.SyntaxFactory.Token(CS.SyntaxKind.CommaToken), dimensions - 1);
             return CS.SyntaxFactory.ImplicitArrayCreationExpression(CS.SyntaxFactory.TokenList(commas), initializer);
         }
@@ -68,14 +68,14 @@ internal class InitializerConverter
     }
 
     /// <summary>
-    /// C# `new[] { ... }` infers the element type from the items alone, ignoring the target type.
-    /// VB converts each item to the target element type, so a user-defined conversion (e.g. String to a Key class)
-    /// would leave C# inferring the wrong array type. In that case the element type must be explicit.
+    /// C# `new[] { ... }` infers the element type from the items alone, ignoring the target type, whereas VB converts each item to the target element type.
+    /// So the implicit form is only safe when every item already has exactly the target element type.
+    /// Otherwise (e.g. a user-defined conversion from String to a Key class, Integer items for an Object() target) the element type must be explicit.
     /// </summary>
-    private bool HasUserDefinedConversionItem(VBasic.Syntax.CollectionInitializerSyntax node) =>
-        node.Initializers.Any(i => i is VBasic.Syntax.CollectionInitializerSyntax nested
-            ? HasUserDefinedConversionItem(nested)
-            : _semanticModel.GetOperation(i)?.Parent is IConversionOperation { OperatorMethod: not null });
+    private bool AllItemsAlreadyHaveElementType(VBasic.Syntax.CollectionInitializerSyntax node, ITypeSymbol elementType) =>
+        node.Initializers.All(i => i is VBasic.Syntax.CollectionInitializerSyntax nested
+            ? AllItemsAlreadyHaveElementType(nested, _semanticModel.GetTypeInfo(nested).ConvertedType.GetEnumerableElementTypeOrDefault() ?? elementType)
+            : SymbolEqualityComparer.Default.Equals(_semanticModel.GetTypeInfo(i).Type, elementType));
 
     public async Task<CSharpSyntaxNode> ConvertObjectMemberInitializerAsync(VBasic.Syntax.ObjectMemberInitializerSyntax node)
     {

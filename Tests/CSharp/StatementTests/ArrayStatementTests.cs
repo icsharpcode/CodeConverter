@@ -57,7 +57,7 @@ internal partial class TestClass
     public async Task NonDefaultTypedArrayDeclarationStatementAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Dim o As Object() = {""a""}", @"{
-    object[] o = new[] { ""a"" };
+    object[] o = new object[] { ""a"" };
 }");
     }
 

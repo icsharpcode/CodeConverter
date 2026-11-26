@@ -1526,6 +1526,29 @@ public partial class TestClass
     }
 
     [Fact]
+    public async Task ArrayInitializerItemsNotOfTargetElementTypeGetExplicitArrayTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer)
+        Dim a As Object() = {1, 2}
+        Dim b As Object() = {1, ""a""}
+        Dim c As Double() = {1, 2.5}
+        Dim d As Integer() = {x, 2}
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int x)
+    {
+        object[] a = new object[] { 1, 2 };
+        object[] b = new object[] { 1, ""a"" };
+        double[] c = new double[] { 1d, 2.5d };
+        int[] d = new[] { x, 2 };
+    }
+}");
+    }
+
+    [Fact]
     public async Task DelegateExpressionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
@@ -1929,7 +1952,7 @@ public partial class TargetTypeTestClass
 
     private static void Main()
     {
-        Action[] actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
+        Action[] actions = new Action[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
         var objects = new List<object>() { new Action(() => Debug.Print(3.ToString())), new Action(() => Debug.Print(4.ToString())) };
     }
 }");
