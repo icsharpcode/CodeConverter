@@ -732,4 +732,23 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task UncheckedConstantKeepsInnerUncheckedHexLiteralAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod()
+        Dim b As Byte = Not CByte((&H80000010 \ 3) And &HFF)
+        Dim us As UShort = Not CUShort((&H80000010 >> 20) And &HFFFF)
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod()
+    {
+        byte b = unchecked((byte)~(((byte)(((((unchecked((int)0x80000010)) / 3))) & 0xFF))));
+        ushort us = unchecked((ushort)~(((ushort)(((((unchecked((int)0x80000010)) >> 20))) & 0xFFFF))));
+    }
+}");
+    }
 }

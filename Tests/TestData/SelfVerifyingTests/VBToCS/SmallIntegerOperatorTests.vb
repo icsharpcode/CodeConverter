@@ -237,4 +237,15 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(-3L, Not m)
         Assert.Equal(-5L, Not f)
     End Sub
+
+    <Fact>
+    Public Sub NegativeHexIntegerLiteralInsideUncheckedConstant()
+        Dim b As Byte = Not CByte((&H80000010 \ 3) And &HFF)
+        Assert.Equal(CByte(164), b)
+        Dim us As UShort = Not CUShort((&H80000010 >> 20) And &HFFFF)
+        Assert.Equal(CUShort(2047), us)
+        Dim m As Byte = Not CByte((&H80000010 Mod 7) + 7)
+        Assert.Equal(CByte(248), m)
+        Assert.True((Not CByte((&H80000010 \ 3) And &HFF)) > 100)
+    End Sub
 End Class

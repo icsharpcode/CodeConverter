@@ -40,21 +40,27 @@ internal class TypeConversionAnalyzer
         _smallIntegerOperatorPromotion = new SmallIntegerOperatorPromotion(semanticModel);
     }
 
+    /// <summary>
+    /// Marks the unchecked contexts added for <see cref="CastPromotedOperatorResultIfNeeded"/>
+    /// </summary>
+    private static readonly SyntaxAnnotation PromotedConstantUncheckedAnnotation = new(nameof(PromotedConstantUncheckedAnnotation));
+
     /// <inheritdoc cref="SmallIntegerOperatorPromotion"/>
     public ExpressionSyntax CastPromotedOperatorResultIfNeeded(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode)
     {
         if (!_smallIntegerOperatorPromotion.NeedsCastToVbType(vbNode)) return csNode;
         var cast = CreateCast(csNode, _smallIntegerOperatorPromotion.GetPromotedTypeOrNull(vbNode));
         return _smallIntegerOperatorPromotion.IsConstantThatMayBeOutOfRange(vbNode)
-            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, WithoutNestedUnchecked(cast))
+            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, WithoutNestedPromotedConstantUnchecked(cast)).WithAdditionalAnnotations(PromotedConstantUncheckedAnnotation)
             : cast;
     }
 
     /// <summary>
-    /// An unchecked context covers the whole expression, so an inner one only adds noise
+    /// An unchecked context covers the whole expression, so an inner one of ours only adds noise.
+    /// Others stay: e.g. <c>unchecked((int)0x80000010)</c> is protected from the simplifier, which would otherwise make the literal a uint (see DocumentExtensions).
     /// </summary>
-    private static ExpressionSyntax WithoutNestedUnchecked(ExpressionSyntax csNode) =>
-        csNode.ReplaceNodes(csNode.DescendantNodes().OfType<CSSyntax.CheckedExpressionSyntax>().Where(c => c.IsKind(SyntaxKind.UncheckedExpression)),
+    private static ExpressionSyntax WithoutNestedPromotedConstantUnchecked(ExpressionSyntax csNode) =>
+        csNode.ReplaceNodes(csNode.GetAnnotatedNodes(PromotedConstantUncheckedAnnotation).OfType<CSSyntax.CheckedExpressionSyntax>(),
             (_, rewritten) => rewritten.Expression);
 
     /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetCSharpOperatorResultType"/>
