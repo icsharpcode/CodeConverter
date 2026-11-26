@@ -266,4 +266,26 @@ Public Class SmallIntegerOperatorTests
                 Assert.Fail("Not HalfD")
         End Select
     End Sub
+
+    <Fact>
+    Public Sub CompoundShiftsOfNonIntegralLeftSides()
+        Dim bo As Boolean = True, d As Double = 2.5, s As String = "3", nd As Double? = 1.5, noValue As Double? = Nothing
+        Dim f As Single = 9.5F, m As Decimal = 2.5D
+        bo <<= 1
+        Assert.True(bo)
+        d <<= 2
+        Assert.Equal(8.0, d)
+        s <<= 2
+        Assert.Equal("12", s)
+        nd <<= 2
+        Assert.Equal(8.0, nd)
+        noValue <<= 2
+        Assert.False(noValue.HasValue)
+        f >>= 1
+        Assert.Equal(5.0F, f)
+        m <<= 1
+        Assert.Equal(4D, m)
+        Dim x As Short = True << 3
+        Assert.Equal(-8S, x)
+    End Sub
 End Class

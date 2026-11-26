@@ -64,6 +64,9 @@ internal class TypeConversionAnalyzer
         csNode.ReplaceNodes(csNode.GetAnnotatedNodes(PromotedConstantUncheckedAnnotation).OfType<CSSyntax.CheckedExpressionSyntax>(),
             (_, rewritten) => rewritten.Expression);
 
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetVbShiftedType"/>
+    public ITypeSymbol GetVbShiftedType(ITypeSymbol leftType) => _smallIntegerOperatorPromotion.GetVbShiftedType(leftType);
+
     /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetCSharpOperatorResultType"/>
     public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) => _smallIntegerOperatorPromotion.GetCSharpOperatorResultType(vbResultType);
 

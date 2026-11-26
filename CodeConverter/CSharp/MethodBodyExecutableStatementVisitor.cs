@@ -288,18 +288,21 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
             
         var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
-        if (node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement)) {
-            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(lhsTypeInfo.Type, node.Right, typeConvertedRhs);
+        var isShift = node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement);
+        var shiftedType = isShift ? CommonConversions.TypeConversionAnalyzer.GetVbShiftedType(lhsTypeInfo.Type) : null;
+        if (isShift) {
+            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(shiftedType, node.Right, typeConvertedRhs);
         }
 
         // Split out compound operator if type conversion needed on result
         if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
                 
-            var nonCompoundResultType = GetNonCompoundResultType(nonCompound, lhsTypeInfo, rhsTypeInfo);
+            // The right operand is converted to the operator's type, except a shift count, which is always Integer
+            var nonCompoundResultType = shiftedType ?? rhsTypeInfo.ConvertedType;
             // Unlike a C# compound operator, a setter call doesn't cast the promoted int back
             var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
-            var nonCompoundLhs = IsShift(nonCompound) && lhsTypeInfo.Type.IsEnumType()
-                ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: nonCompoundResultType)
+            var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)
+                ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: shiftedType)
                 : lhs;
             var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs);
             var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
@@ -345,15 +348,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return postAssignment.Insert(0, AssignTo(rhs));
     }
 
-    /// <summary>
-    /// The right operand is converted to the operator's type, except a shift count which is always Integer: a shift's result has the type of its left operand.
-    /// C# casts a compound shift's result back to the left operand's type too, whatever the count's type.
-    /// VB shifts an enum (with Option Strict Off) as its underlying type, C# can't shift an enum at all.
-    /// </summary>
-    private static ITypeSymbol GetNonCompoundResultType(SyntaxKind nonCompound, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo) =>
-        IsShift(nonCompound) ? SmallIntegerOperatorPromotion.GetUnderlyingNumericType(lhsTypeInfo.Type) : rhsTypeInfo.ConvertedType;
-
-    private static bool IsShift(SyntaxKind kind) => kind is SyntaxKind.LeftShiftExpression or SyntaxKind.RightShiftExpression;
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
     {

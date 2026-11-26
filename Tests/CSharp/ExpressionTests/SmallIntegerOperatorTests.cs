@@ -795,4 +795,37 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task CompoundShiftOfNonIntegralLeftSideShiftsItsVbConversionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(bo As Boolean, d As Double, f As Single, m As Decimal, s As String, nd As Double?, n As Integer)
+        bo <<= 1
+        bo <<= n
+        d <<= 2
+        f >>= 1
+        m <<= 1
+        s <<= 2
+        nd <<= 2
+        Dim x As Short = True << 3
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private void TestMethod(bool bo, double d, float f, decimal m, string s, double? nd, int n)
+    {
+        bo = Conversions.ToBoolean(Conversions.ToShort(bo) << 1);
+        bo = Conversions.ToBoolean(Conversions.ToShort(bo) << (n & 15));
+        d = (long)Math.Round(d) << 2;
+        f = (long)Math.Round(f) >> 1;
+        m = (long)Math.Round(m) << 1;
+        s = (Conversions.ToLong(s) << 2).ToString();
+        nd = (nd.HasValue ? (long?)Math.Round(nd.Value) : null) << 2;
+        short x = (short)(Conversions.ToShort(true) << 3);
+    }
+}");
+    }
 }

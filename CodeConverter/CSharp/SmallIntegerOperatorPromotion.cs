@@ -119,6 +119,25 @@ internal class SmallIntegerOperatorPromotion
     }
 
     /// <summary>
+    /// The type VB shifts a left operand of <paramref name="leftType"/> as, which is also the shift's result type: an integral type stays as it is.
+    /// With Option Strict Off, an enum is shifted as its underlying type, Boolean as Short, and a fractional type or String as Long. C# can shift none of those.
+    /// </summary>
+    /// <remarks>https://learn.microsoft.com/dotnet/visual-basic/language-reference/operators/left-shift-operator</remarks>
+    public ITypeSymbol GetVbShiftedType(ITypeSymbol leftType)
+    {
+        var compilation = _semanticModel.Compilation;
+        var underlying = GetUnderlyingType(leftType);
+        var shifted = underlying switch {
+            INamedTypeSymbol { EnumUnderlyingType: { } enumUnderlyingType } => enumUnderlyingType,
+            { SpecialType: SpecialType.System_Boolean } => compilation.GetSpecialType(SpecialType.System_Int16),
+            { SpecialType: SpecialType.System_Single or SpecialType.System_Double or SpecialType.System_Decimal or SpecialType.System_String } =>
+                compilation.GetSpecialType(SpecialType.System_Int64),
+            _ => underlying
+        };
+        return leftType.IsNullable() ? compilation.GetSpecialType(SpecialType.System_Nullable_T).Construct(shifted) : shifted;
+    }
+
+    /// <summary>
     /// The type C# gives an intrinsic operator whose VB result type is <paramref name="vbResultType"/>
     /// </summary>
     public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) =>
@@ -216,7 +235,8 @@ internal class SmallIntegerOperatorPromotion
     private bool IsConstantShiftExact(VBSyntax.BinaryExpressionSyntax shift)
     {
         var mask = GetShiftCountMaskOrNull(_semanticModel.GetTypeInfo(shift).Type) ?? 31;
-        var left = Convert.ToInt64(_semanticModel.GetConstantValue(shift.Left).Value);
+        // VB's True is -1 as a number
+        var left = _semanticModel.GetConstantValue(shift.Left).Value is bool b ? (b ? -1 : 0) : Convert.ToInt64(_semanticModel.GetConstantValue(shift.Left).Value);
         var count = Convert.ToInt32(_semanticModel.GetConstantValue(shift.Right).Value) & mask;
         return left << count == Convert.ToInt64(_semanticModel.GetConstantValue(shift).Value);
     }
