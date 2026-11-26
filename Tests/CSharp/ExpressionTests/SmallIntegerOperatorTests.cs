@@ -962,4 +962,32 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task LateBoundCompoundAssignmentCallsTheObjectOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b As Byte, ob As Object, o As Object, i As Integer)
+        b <<= ob
+        i >>= ob
+        o <<= 2
+        o += 1
+        b += ob
+        o -= ob
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    private void TestMethod(byte b, object ob, object o, int i)
+    {
+        b = Conversions.ToByte(Operators.LeftShiftObject(b, ob));
+        i = Conversions.ToInteger(Operators.RightShiftObject(i, ob));
+        o = Operators.LeftShiftObject(o, 2);
+        o = Operators.AddObject(o, 1);
+        b = Conversions.ToByte(Operators.AddObject(b, ob));
+        o = Operators.SubtractObject(o, ob);
+    }
+}");
+    }
 }

@@ -362,4 +362,19 @@ Public Class SmallIntegerOperatorTests
         Dim v = If(nb And b2, CByte(0))
         Assert.Equal(CByte(72), v)
     End Sub
+
+    <Fact>
+    Public Sub LateBoundCompoundAssignments()
+        Dim b As Byte = 200, ob As Object = 9, o As Object = 3, i As Integer = 1024
+        b <<= ob
+        Assert.Equal(CByte(144), b)
+        i >>= ob
+        Assert.Equal(2, i)
+        o <<= 2
+        Assert.Equal(12, o)
+        o += 1
+        Assert.Equal(13, o)
+        b += ob
+        Assert.Equal(CByte(153), b)
+    End Sub
 End Class

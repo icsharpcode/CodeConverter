@@ -288,6 +288,12 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
             
         var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        if (setMethodName == null && GetLateBoundOperatorOrNull(kind, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
+            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, rhs);
+            var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+            rhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
+            return GetPostAssignmentStatements(node).Insert(0, SyntaxFactory.ExpressionStatement(SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, lhs, rhs)));
+        }
         var isShift = node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement);
         var shiftedType = isShift ? CommonConversions.TypeConversionAnalyzer.GetVbShiftedType(lhsTypeInfo.Type) : null;
         if (isShift) {
@@ -348,6 +354,24 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return postAssignment.Insert(0, AssignTo(rhs));
     }
 
+
+    /// <summary>
+    /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for
+    /// </summary>
+    private static KnownMethod? GetLateBoundOperatorOrNull(SyntaxKind compoundKind, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
+    {
+        if (lhsTypeInfo.Type?.SpecialType != SpecialType.System_Object && rhsTypeInfo.Type?.SpecialType != SpecialType.System_Object) return null;
+        string methodName = compoundKind switch {
+            SyntaxKind.AddAssignmentExpression => "AddObject",
+            SyntaxKind.SubtractAssignmentExpression => "SubtractObject",
+            SyntaxKind.MultiplyAssignmentExpression => "MultiplyObject",
+            SyntaxKind.ModuloAssignmentExpression => "ModObject",
+            SyntaxKind.LeftShiftAssignmentExpression => "LeftShiftObject",
+            SyntaxKind.RightShiftAssignmentExpression => "RightShiftObject",
+            _ => null
+        };
+        return methodName == null ? null : new KnownMethod("Microsoft.VisualBasic.CompilerServices", "Operators", methodName);
+    }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
     {
