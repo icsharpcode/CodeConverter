@@ -343,6 +343,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
         if (csReceiver != null && !IsEvaluatedTheSameTwice(receiver)) {
             var isStructureVariable = receiver.Type?.IsValueType == true && receiver.IsAssignableExpression();
+            // A ref local can't be kept across an await or yield, so evaluating twice is the lesser evil there
+            if (isStructureVariable && IsInAsyncOrIteratorMethod(vbLeft)) return null;
             var value = isStructureVariable ? SyntaxFactory.RefExpression(csReceiver) : csReceiver;
             var (declaration, reference) = CreateLocalVariableWithUniqueName(vbLeft, "receiver", value, isStructureVariable ? SyntaxFactory.RefType(ValidSyntaxFactory.VarType) : null);
             if (isStructureVariable) reference = RefLocalReferences.Mark(reference, CommonConversions.GetTypeSyntax(receiver.Type));
@@ -358,6 +360,16 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             replacements.Add(csArgument, reference);
         }
         return declarations.Any() ? (csLeft.ReplaceNodes(replacements.Keys, (original, _) => replacements[original]), declarations) : null;
+    }
+
+    private static bool IsInAsyncOrIteratorMethod(VBSyntax.ExpressionSyntax vbNode)
+    {
+        var modifiers = vbNode.Ancestors().Select(a => a switch {
+            VBSyntax.LambdaExpressionSyntax lambda => lambda.SubOrFunctionHeader.Modifiers,
+            VBSyntax.MethodBlockBaseSyntax method => method.BlockStatement.Modifiers,
+            _ => (SyntaxTokenList?)null
+        }).FirstOrDefault(m => m != null);
+        return modifiers?.Any(m => m.IsKind(VBasic.SyntaxKind.AsyncKeyword, VBasic.SyntaxKind.IteratorKeyword)) == true;
     }
 
     /// <summary>
