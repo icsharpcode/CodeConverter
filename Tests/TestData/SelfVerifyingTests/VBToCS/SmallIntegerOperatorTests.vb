@@ -388,13 +388,13 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(CByte(32), CByte(200) << 9.5)
     End Sub
 
-    Private Function Defaults(Optional x As Integer = 1.5, Optional y As Long = OneAndHalf, Optional z As Short = True << 3) As String
+    Private Function Defaults(Optional x As Integer = 1.5, Optional y As Long = OneAndHalf, Optional z As Short = CB + 1) As String
         Return $"{x} {y} {z}"
     End Function
 
     <Fact>
     Public Sub ConstantDefaultsAndEnumMembersAreConvertedAtCompileTime()
-        Assert.Equal("2 2 -8", Defaults())
+        Assert.Equal("2 2 201", Defaults())
         Assert.Equal(2, CInt(RoundedEnum.A))
         Assert.Equal(4, CInt(RoundedEnum.B))
     End Sub

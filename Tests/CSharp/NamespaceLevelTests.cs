@@ -1101,4 +1101,44 @@ public partial class Class1
 }
 ");
     }
+
+    [Fact]
+    public async Task FractionalEnumMemberValueIsRoundedButOtherValuesKeepTheirExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Module Constants
+    Public Const D As Double = 2.5
+End Module
+
+Enum G
+    A = 1
+    B = A + 1
+    N = -A
+    H = 1.5
+    C = D
+End Enum
+
+Enum L As Long
+    A = 1
+    B = A << 3
+End Enum", @"
+internal static partial class Constants
+{
+    public const double D = 2.5d;
+}
+
+internal enum G
+{
+    A = 1,
+    B = A + 1,
+    N = -A,
+    H = 2,
+    C = 2
+}
+
+internal enum L : long
+{
+    A = 1L,
+    B = A << 3
+}");
+    }
 }

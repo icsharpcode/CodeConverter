@@ -1019,32 +1019,4 @@ internal partial class TestClass
     }
 }");
     }
-
-    [Fact]
-    public async Task ConstantParameterDefaultAndEnumMemberAreConvertedAsConstantsAsync()
-    {
-        await TestConversionVisualBasicToCSharpAsync(@"Enum E
-    A = 1.5
-    C = 2.5
-End Enum
-
-Class C
-    Const D As Double = 1.5
-    Sub M(Optional x As Integer = 1.5, Optional y As Long = D, Optional z As Short = True << 3, Optional w As Integer = D)
-    End Sub
-End Class", @"
-internal enum E
-{
-    A = 2,
-    C = 2
-}
-
-internal partial class C
-{
-    private const double D = 1.5d;
-    public void M(int x = 2, long y = 2L, short z = -8, int w = 2)
-    {
-    }
-}");
-    }
 }

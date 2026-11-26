@@ -132,4 +132,29 @@ public partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task FractionalDefaultIsRoundedButOtherDefaultsKeepTheirExpressionAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Const D As Double = 1.5
+    Const X As Integer = 5
+    Sub M(Optional a As Integer = 1.5, Optional y As Long = D, Optional b As Byte = X + 1, Optional c As Long = X * 2, Optional ui As UInteger = X, Optional dm As Decimal = X, Optional sb As SByte = -X, Optional n As Integer? = Nothing)
+    End Sub
+    Sub R(Optional ByRef r As Integer = 2.5, Optional ByRef s As Integer = X)
+    End Sub
+End Class", @"using System.Runtime.InteropServices;
+
+internal partial class C
+{
+    private const double D = 1.5d;
+    private const int X = 5;
+    public void M(int a = 2, long y = 2L, byte b = X + 1, long c = X * 2, uint ui = X, decimal dm = X, sbyte sb = -X, int? n = default)
+    {
+    }
+    public void R([Optional, DefaultParameterValue(2)] ref int r, [Optional, DefaultParameterValue(X)] ref int s)
+    {
+    }
+}");
+    }
 }

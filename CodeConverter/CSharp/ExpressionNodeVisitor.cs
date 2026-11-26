@@ -567,16 +567,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         return syntaxParamType;
     }
 
-    /// <summary>
-    /// VB converts a default value to the parameter's type at compile time (e.g. rounding 1.5 to 2 for Integer), C# needs a constant of that type.
-    /// Nothing is already converted to C#'s default, which any parameter type accepts.
-    /// </summary>
-    private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue)
-    {
-        var csValue = await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
-        return vbValue.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression) ? csValue
-            : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbValue, csValue, isConst: true);
-    }
+    /// <inheritdoc cref="TypeConversionAnalyzer.RoundFractionalConstantIfNeeded"/>
+    private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue) =>
+        CommonConversions.TypeConversionAnalyzer.RoundFractionalConstantIfNeeded(vbValue, await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
 
     public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)
     {

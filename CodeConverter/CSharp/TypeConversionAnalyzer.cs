@@ -100,6 +100,15 @@ internal class TypeConversionAnalyzer
             _ => null
         };
 
+    /// <summary>
+    /// A parameter default or enum member value must be a constant of its type. VB rounds a fractional one to an integral type at compile time, which C# won't do.
+    /// Any other value is left as written, which C# converts implicitly as a constant, so a calculation or a named constant stays visible.
+    /// </summary>
+    public ExpressionSyntax RoundFractionalConstantIfNeeded(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode) =>
+        AnalyzeConversion(vbNode, isConst: true) == TypeConversionKind.FractionalNumberRoundThenCast
+            ? AddExplicitConversion(vbNode, csNode, isConst: true)
+            : csNode;
+
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
         if (csNode == null) return null;
