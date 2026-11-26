@@ -1557,7 +1557,6 @@ internal partial class TestGenericCast
     public async Task TestInferringImplicitGenericTypesAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"
-Imports System
 Imports System.Linq
 
 Public Class TestClass
@@ -1591,7 +1590,6 @@ Public Class TestClass
     End Sub
 End Class
 ", @"
-using System;
 using System.Linq;
 using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
 
@@ -1618,10 +1616,10 @@ public partial class TestClass
         double[] doubleArr = Enumerable.Repeat(2d, 5).ToArray();
         decimal[] decimalArr = Enumerable.Repeat(3m, 5).ToArray();
         bool[] boolArr = Enumerable.Repeat(Conversions.ToBoolean(1), 5).ToArray();
-        int[] intArr = Enumerable.Repeat((int)Math.Round(1.0d), 5).ToArray();
-        uint[] uintArr = Enumerable.Repeat((uint)Math.Round(1.0d), 5).ToArray();
-        long[] longArr = Enumerable.Repeat((long)Math.Round(1.0d), 5).ToArray();
-        ulong[] ulongArr = Enumerable.Repeat((ulong)Math.Round(1.0d), 5).ToArray();
+        int[] intArr = Enumerable.Repeat(1, 5).ToArray();
+        uint[] uintArr = Enumerable.Repeat(1U, 5).ToArray();
+        long[] longArr = Enumerable.Repeat(1L, 5).ToArray();
+        ulong[] ulongArr = Enumerable.Repeat(1UL, 5).ToArray();
         char[] charArr = Enumerable.Repeat('a', 5).ToArray();
         string[] strArr = Enumerable.Repeat(""a"", 5).ToArray();
         object[] objArr1 = Enumerable.Repeat((object)""a"", 5).ToArray();

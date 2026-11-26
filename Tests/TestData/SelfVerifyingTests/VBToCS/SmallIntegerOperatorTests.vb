@@ -9,6 +9,8 @@ Public Class SmallIntegerOperatorTests
     Const C1 As UShort = 65534, C2 As UShort = 40000
     Const CB As Byte = 200
     Const K1 As Byte = CB << 1
+    Const HalfD As Double = 2.5
+    Const NotHalfD As Long = Not HalfD
 
     Private Function TakeInteger(i As Integer) As Integer
         Return i
@@ -247,5 +249,21 @@ Public Class SmallIntegerOperatorTests
         Dim m As Byte = Not CByte((&H80000010 Mod 7) + 7)
         Assert.Equal(CByte(248), m)
         Assert.True((Not CByte((&H80000010 \ 3) And &HFF)) > 100)
+    End Sub
+
+    <Fact>
+    Public Sub FractionalConstantsRoundToEven()
+        Assert.Equal(-3L, NotHalfD)
+        Dim x As Long = 2.5
+        Assert.Equal(2L, x)
+        Dim y As Long = 3.5
+        Assert.Equal(4L, y)
+        Dim b As Byte = 4.5
+        Assert.Equal(CByte(4), b)
+        Select Case -3L
+            Case Not HalfD
+            Case Else
+                Assert.Fail("Not HalfD")
+        End Select
     End Sub
 End Class

@@ -751,4 +751,48 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ConstantFractionalConvertedToIntegralIsFoldedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Const D As Double = 2.5
+    Const L1 As Long = Not D
+    Const L2 As Long = D
+    Sub M(Optional x As Long = Not D)
+    End Sub
+    Sub T(b As Long)
+        Dim y As Long = Not 2.5
+        Dim x As Long = 2.5
+        Dim z As Long = 3.5
+        Dim i As Integer = D
+        Const local As Long = Not D
+        Select Case b
+            Case Not D
+        End Select
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private const double D = 2.5d;
+    private const long L1 = ~2L;
+    private const long L2 = 2L;
+    public void M(long x = ~2L)
+    {
+    }
+    public void T(long b)
+    {
+        long y = ~2L;
+        long x = 2L;
+        long z = 4L;
+        int i = 2;
+        const long local = ~2L;
+        switch (b)
+        {
+            case ~2L:
+                break;
+        }
+    }
+}");
+    }
 }

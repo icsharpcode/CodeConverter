@@ -1,4 +1,5 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using System.Globalization;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -121,6 +122,7 @@ internal class TypeConversionAnalyzer
     {
         switch (conversionKind) {
             case TypeConversionKind.FractionalNumberRoundThenCast:
+                if (GetRoundedConstantOrNull(vbNode, vbConvertedType) is { } roundedConstant) return roundedConstant;
                 csNode = vbType.IsNullable() && vbConvertedType.IsNullable() 
                     ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(vbNode, csNode, GetMathRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
                     : AddRoundInvocation(vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode);
@@ -162,6 +164,32 @@ internal class TypeConversionAnalyzer
             default:
                 throw new ArgumentOutOfRangeException(nameof(conversionKind), conversionKind, null);
         }
+    }
+
+    /// <summary>
+    /// VB converts a fractional constant at compile time, rounding to even, so the result is still a constant (e.g. for a Const or a Case), whereas Math.Round isn't.
+    /// Only a literal or a named constant is folded, so a calculation stays visible.
+    /// </summary>
+    private ExpressionSyntax GetRoundedConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
+    {
+        var node = vbNode.SkipIntoParens();
+        if (node is VBSyntax.UnaryExpressionSyntax { RawKind: (int)VBasic.SyntaxKind.UnaryMinusExpression } negation) node = negation.Operand.SkipIntoParens();
+        if (node is not (VBSyntax.LiteralExpressionSyntax or VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax)) return null;
+        if (_semanticModel.GetConstantValue(vbNode) is not { HasValue: true, Value: double or float or decimal } constant) return null;
+        var targetType = vbConvertedType.GetNullableUnderlyingType() ?? vbConvertedType;
+        var rounded = constant.Value is decimal m ? Math.Round(m) : (object)Math.Round(Convert.ToDouble(constant.Value, CultureInfo.InvariantCulture));
+        var value = targetType.SpecialType switch {
+            SpecialType.System_Byte => Convert.ToByte(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_SByte => Convert.ToSByte(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_Int16 => Convert.ToInt16(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt16 => Convert.ToUInt16(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_Int32 => Convert.ToInt32(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt32 => Convert.ToUInt32(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_Int64 => Convert.ToInt64(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt64 => (object)Convert.ToUInt64(rounded, CultureInfo.InvariantCulture),
+            _ => null
+        };
+        return value == null ? null : LiteralConversions.GetLiteralExpression(value, convertedType: targetType);
     }
 
     private TypeSyntax GetTypeSyntax(ITypeSymbol type) => (TypeSyntax)_csSyntaxGenerator.TypeExpression(type);
