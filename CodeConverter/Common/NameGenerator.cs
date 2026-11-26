@@ -93,10 +93,22 @@ internal class NameGenerator
     /// </summary>
     private static IReadOnlyCollection<string> GetNamesDeclaredInContainingBlock(VBasic.VisualBasicSyntaxNode node)
     {
-        var statement = node.GetAncestorOrThis<VBSyntax.StatementSyntax>();
+        var statement = GetExecutableStatementOrSelf(node.GetAncestorOrThis<VBSyntax.StatementSyntax>());
         return statement is VBSyntax.ExecutableStatementSyntax { Parent: { } block }
             ? NamesDeclaredPerBlock.GetValue(block, GetNamesDeclaredWithin)
             : Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// A block's header (e.g. If, ElseIf, Loop Until, Case, For Each) isn't a statement of its own in C#: a name declared in it is in scope in the block's body,
+    /// so it's the names of the block it heads, and the block that contains that, which matter
+    /// </summary>
+    private static VBSyntax.StatementSyntax GetExecutableStatementOrSelf(VBSyntax.StatementSyntax statement)
+    {
+        while (statement is not VBSyntax.ExecutableStatementSyntax && statement?.Parent is VBSyntax.StatementSyntax and not VBSyntax.DeclarationStatementSyntax and var parent) {
+            statement = parent;
+        }
+        return statement;
     }
 
     private static readonly ConditionalWeakTable<SyntaxNode, HashSet<string>> NamesDeclaredPerBlock = new();
