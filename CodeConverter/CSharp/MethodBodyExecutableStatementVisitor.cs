@@ -501,7 +501,8 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)
                 ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: shiftedType)
                 : lhs;
-            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs);
+            // The simplifier removes these parentheses where the right side doesn't need them, e.g. unlike a conditional
+            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs.AddParens());
             var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
             if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
                 kind = SyntaxKind.SimpleAssignmentExpression;

@@ -318,4 +318,37 @@ internal partial class C
     }
 }", new TextConversionOptions(references) { RootNamespaceOverride = string.Empty, ShowCompilationErrors = true });
     }
+
+    [Fact]
+    public async Task SplitCompoundRightSideIsParenthesizedAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Property Q(i As Integer) As Integer
+        Get
+            Return 0
+        End Get
+        Set(value As Integer)
+        End Set
+    End Property
+    Sub M(i As Integer, c As Boolean, b As Byte)
+        Q(i) \= If(c, 1, 2)
+        b += If(c, 1, 2)
+    End Sub
+End Class", @"
+internal partial class C
+{
+    public int get_Q(int i)
+    {
+        return 0;
+    }
+    public void set_Q(int i, int value)
+    {
+    }
+    public void M(int i, bool c, byte b)
+    {
+        set_Q(i, get_Q(i) / (c ? 1 : 2));
+        b = (byte)(b + (c ? 1 : 2));
+    }
+}");
+    }
 }
