@@ -140,4 +140,39 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task SingleLineLambdaReturningObjectComparisonIsNotConvertedToBooleanAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Imports System.Linq.Expressions
+
+Class TestClass
+    Sub M(rows As Object(), o As Object)
+        Dim w = rows.Where(Function(r) r = 5)
+        Dim f As Func(Of Boolean) = Function() Not o = 5
+        Dim q = rows.AsQueryable().Where(Function(r) r = Nothing AndAlso o = Nothing)
+        Dim x = rows.Where(Function(r) (r = 5 OrElse o < 5) AndAlso r IsNot Nothing)
+        Dim a = rows.Where(Function(r) r = 5 And o = 5)
+        Dim n = rows.Where(Function(r) r)
+        Dim e As Expression(Of Func(Of Boolean)) = Function() o = Nothing
+    End Sub
+End Class", @"using System;
+using System.Linq;
+using System.Linq.Expressions;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class TestClass
+{
+    public void M(object[] rows, object o)
+    {
+        var w = rows.Where(r => Operators.ConditionalCompareObjectEqual(r, 5, false));
+        Func<bool> f = () => !Operators.ConditionalCompareObjectEqual(o, 5, false);
+        var q = rows.AsQueryable().Where(r => r == default && o == default);
+        var x = rows.Where(r => (Operators.ConditionalCompareObjectEqual(r, 5, false) || Operators.ConditionalCompareObjectLess(o, 5, false)) && r is not null);
+        var a = rows.Where(r => Conversions.ToBoolean(Operators.AndObject(Operators.ConditionalCompareObjectEqual(r, 5, false), Operators.ConditionalCompareObjectEqual(o, 5, false))));
+        var n = rows.Where(r => Conversions.ToBoolean(r));
+        Expression<Func<bool>> e = () => o == default;
+    }
+}");
+    }
 }

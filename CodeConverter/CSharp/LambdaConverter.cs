@@ -64,7 +64,7 @@ internal class LambdaConverter
                 convertedStatements = await ConvertMethodBodyStatementsAsync(statement, statement.Yield().ToArray());
             } else {
                 var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
-                csNode = ConvertToReturnType((VBSyntax.ExpressionSyntax)node.Body, csNode, tracker.IsWithinExpressionTree);
+                csNode = ConvertToReturnType((VBSyntax.ExpressionSyntax)node.Body, csNode);
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode) };
             }
 
@@ -80,19 +80,30 @@ internal class LambdaConverter
     /// Except where the C# body already has the return type, which the VB types don't show:
     /// <list type="bullet">
     /// <item>a nested lambda returned as a delegate: C# infers its type from the return type, so it needs no delegate creation</item>
-    /// <item>an Object comparison in an expression tree: it becomes a C# comparison giving bool (see <see cref="VisualBasicEqualityComparison"/>), where VB gives Object</item>
+    /// <item>a Boolean made from Object comparisons: VB gives Object, the C# conversion gives bool (see <see cref="IsBooleanInCSharp"/>)</item>
     /// </list>
     /// </remarks>
-    private ExpressionSyntax ConvertToReturnType(VBSyntax.ExpressionSyntax vbBody, ExpressionSyntax csBody, bool isWithinExpressionTree)
+    private ExpressionSyntax ConvertToReturnType(VBSyntax.ExpressionSyntax vbBody, ExpressionSyntax csBody)
     {
         var typeInfo = _semanticModel.GetTypeInfo(vbBody);
         var isTargetTypedLambda = vbBody.SkipIntoParens() is VBSyntax.LambdaExpressionSyntax && typeInfo.ConvertedType?.TypeKind == TypeKind.Delegate;
-        var isExpressionTreeObjectComparison = isWithinExpressionTree && typeInfo.Type?.SpecialType == SpecialType.System_Object &&
-                                               vbBody.SkipIntoParens().IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
-                                                   VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
-                                                   VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression);
-        return isTargetTypedLambda || isExpressionTreeObjectComparison ? csBody : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbBody, csBody);
+        var isAlreadyBoolean = typeInfo.Type?.SpecialType == SpecialType.System_Object && typeInfo.ConvertedType?.SpecialType == SpecialType.System_Boolean && IsBooleanInCSharp(vbBody);
+        return isTargetTypedLambda || isAlreadyBoolean ? csBody : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbBody, csBody);
     }
+
+    /// <summary>
+    /// A comparison converts to a C# comparison, or for Object operands to Operators.ConditionalCompareObject* (bool) where it's tested as a Boolean, or == in an expression tree.
+    /// So do Not, AndAlso and OrElse of those, whereas And, Or and Xor of Objects convert to Operators.AndObject etc., which give Object.
+    /// </summary>
+    private static bool IsBooleanInCSharp(VBSyntax.ExpressionSyntax vbNode) => vbNode.SkipIntoParens() switch {
+        VBSyntax.UnaryExpressionSyntax not when not.IsKind(VBasic.SyntaxKind.NotExpression) => IsBooleanInCSharp(not.Operand),
+        VBSyntax.TypeOfExpressionSyntax => true,
+        var node => node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
+            VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+            VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression,
+            VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression,
+            VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)
+    };
 
     public async Task<CSharpSyntaxNode> ConvertAsync(VBSyntax.LambdaExpressionSyntax vbNode,
         ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)
