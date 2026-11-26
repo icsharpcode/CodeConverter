@@ -310,6 +310,38 @@ internal partial class C
     }
 
     [Fact]
+    public async Task AttributeArrayObjectElementsKeepVbsTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E As Byte
+    A = 1
+End Enum
+Class AAttribute
+    Inherits System.Attribute
+    Sub New(o As Object())
+    End Sub
+End Class
+<A(New Object() {CByte(True), CType(2.5, E), CShort(-1), 3, ""s""})>
+Class C
+End Class", @"using System;
+
+internal enum E : byte
+{
+    A = 1
+}
+internal partial class AAttribute : Attribute
+{
+    public AAttribute(object[] o)
+    {
+    }
+}
+
+[A(new object[] { (byte)255, (E)2, (short)(-1), 3, ""s"" })]
+internal partial class C
+{
+}");
+    }
+
+    [Fact]
     public async Task OmittedOptionalByRefEnumArgumentIsCastAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class C

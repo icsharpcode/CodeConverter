@@ -114,11 +114,34 @@ internal class ArgumentConverter
         var csValue = await a.Expression.AcceptAsync<CSSyntax.ExpressionSyntax>(TriviaConvertingExpressionVisitor);
         // The constructor parameter's or the property's type
         var targetType = _semanticModel.GetTypeInfo(a.Expression).ConvertedType;
-        var attr = CS.SyntaxFactory.AttributeArgument(CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(a.Expression, csValue, targetType));
+        var attr = CS.SyntaxFactory.AttributeArgument(ConvertAttributeArgumentConstant(a.Expression, csValue, targetType));
         if (a.IsNamed) {
             attr = attr.WithNameEquals(CS.SyntaxFactory.NameEquals(await a.NameColonEquals.Name.AcceptAsync<CSSyntax.IdentifierNameSyntax>(TriviaConvertingExpressionVisitor)));
         }
         return attr;
+    }
+
+    /// <summary>
+    /// An attribute argument must be a C# constant (CS0182), as must each element of an array argument, e.g. an Object element CByte(True), which is the Byte 255
+    /// </summary>
+    private CSSyntax.ExpressionSyntax ConvertAttributeArgumentConstant(VBSyntax.ExpressionSyntax vbValue, CSSyntax.ExpressionSyntax csValue, ITypeSymbol targetType)
+    {
+        var vbElements = vbValue.SkipIntoParens() switch {
+            VBSyntax.ArrayCreationExpressionSyntax arrayCreation => arrayCreation.Initializer.Initializers,
+            VBSyntax.CollectionInitializerSyntax collectionInitializer => collectionInitializer.Initializers,
+            _ => default
+        };
+        var csInitializer = csValue.SkipIntoParens() switch {
+            CSSyntax.ArrayCreationExpressionSyntax arrayCreation => arrayCreation.Initializer,
+            CSSyntax.ImplicitArrayCreationExpressionSyntax arrayCreation => arrayCreation.Initializer,
+            CSSyntax.InitializerExpressionSyntax initializer => initializer,
+            _ => null
+        };
+        if (csInitializer == null || vbElements.Count == 0 || csInitializer.Expressions.Count != vbElements.Count) {
+            return CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(vbValue, csValue, targetType);
+        }
+        var csElements = csInitializer.Expressions.Select((csElement, i) => ConvertAttributeArgumentConstant(vbElements[i], csElement, _semanticModel.GetTypeInfo(vbElements[i]).ConvertedType));
+        return csValue.ReplaceNode(csInitializer, csInitializer.WithExpressions(CS.SyntaxFactory.SeparatedList(csElements, csInitializer.Expressions.GetSeparators())));
     }
 
     public async Task<CSSyntax.ArgumentListSyntax> ConvertArgumentListOrEmptyAsync(SyntaxNode node, VBSyntax.ArgumentListSyntax argumentList)
