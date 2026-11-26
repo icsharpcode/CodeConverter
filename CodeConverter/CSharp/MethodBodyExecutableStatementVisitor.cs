@@ -336,7 +336,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var lastToHoist = operands.FindLastIndex(o => o.IsStorage || !IsEvaluatedTheSameTwice(o.Operation) && o.Expression is not LiteralExpressionSyntax);
         if (lastToHoist < 0) return null;
-        var toHoist = operands.Take(lastToHoist + 1).Where((o, i) => i == lastToHoist || o.IsStorage || !IsStableReference(o.Operation)).ToArray();
+        var toHoist = operands.Take(lastToHoist + 1)
+            .Where((o, i) => i == lastToHoist || o.IsStorage || !IsStableReference(o.Operation) || IsWrittenByAny(o.Operation, operands.Skip(i + 1)))
+            .ToArray();
         if (toHoist.Any(o => o.IsStorage) && vbLeft.Parent.DescendantNodes().OfType<VBSyntax.AwaitExpressionSyntax>().Any()) return null;
 
         var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
@@ -422,7 +424,27 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     }
 
     /// <summary>
-    /// Refers to the same object however much else is evaluated in between
+    /// A later operand can change a local or parameter by passing it ByRef, or through a lambda that captures it
+    /// </summary>
+    private static bool IsWrittenByAny(IOperation operand, IEnumerable<LeftSideOperand> laterOperands)
+    {
+        var symbol = operand switch {
+            ILocalReferenceOperation local => (ISymbol)local.Local,
+            IParameterReferenceOperation parameter => parameter.Parameter,
+            _ => null
+        };
+        if (symbol == null) return false;
+        return laterOperands.SelectMany(o => o.Operation.DescendantsAndSelf()).Any(o =>
+            o is IArgumentOperation { Parameter.RefKind: not RefKind.None } argument && RefersTo(argument.Value, symbol) ||
+            o is IAnonymousFunctionOperation lambda && lambda.Descendants().Any(d => RefersTo(d, symbol)));
+
+        static bool RefersTo(IOperation operation, ISymbol symbol) =>
+            operation is ILocalReferenceOperation local && SymbolEqualityComparer.Default.Equals(local.Local, symbol) ||
+            operation is IParameterReferenceOperation parameter && SymbolEqualityComparer.Default.Equals(parameter.Parameter, symbol);
+    }
+
+    /// <summary>
+    /// Refers to the same object however much else is evaluated in between, unless something changes the local or parameter (see <see cref="IsWrittenByAny"/>)
     /// </summary>
     private static bool IsStableReference(IOperation operation) =>
         operation is null or ILiteralOperation or IInstanceReferenceOperation or ILocalReferenceOperation or IParameterReferenceOperation || operation.ConstantValue.HasValue;
