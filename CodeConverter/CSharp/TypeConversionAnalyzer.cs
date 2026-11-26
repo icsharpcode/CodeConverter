@@ -125,7 +125,7 @@ internal class TypeConversionAnalyzer
     {
         switch (conversionKind) {
             case TypeConversionKind.FractionalNumberRoundThenCast:
-                if (GetRoundedConstantOrNull(vbNode, vbConvertedType) is { } roundedConstant) return roundedConstant;
+                if (GetRoundedConstantOrNull(vbNode, csNode, vbConvertedType) is { } roundedConstant) return roundedConstant;
                 csNode = vbType.IsNullable() && vbConvertedType.IsNullable() 
                     ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(vbNode, csNode, GetMathRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
                     : AddRoundInvocation(vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode);
@@ -172,9 +172,12 @@ internal class TypeConversionAnalyzer
     /// <summary>
     /// VB converts a fractional constant at compile time, rounding to even, so the result is still a constant (e.g. for a Const or a Case), whereas Math.Round isn't.
     /// Only a literal or a named constant is folded, so a calculation stays visible.
+    /// A caller may convert a larger C# expression than <paramref name="vbNode"/> (e.g. the whole of a compound assignment), which mustn't be replaced by its constant.
     /// </summary>
-    private ExpressionSyntax GetRoundedConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
+    private ExpressionSyntax GetRoundedConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbConvertedType)
     {
+        var csValue = csNode.SkipIntoParens() is CSSyntax.PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.UnaryMinusExpression } csNegation ? csNegation.Operand.SkipIntoParens() : csNode.SkipIntoParens();
+        if (csValue is not (CSSyntax.LiteralExpressionSyntax or IdentifierNameSyntax or MemberAccessExpressionSyntax)) return null;
         var node = vbNode.SkipIntoParens();
         if (node is VBSyntax.UnaryExpressionSyntax { RawKind: (int)VBasic.SyntaxKind.UnaryMinusExpression } negation) node = negation.Operand.SkipIntoParens();
         if (node is not (VBSyntax.LiteralExpressionSyntax or VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax)) return null;

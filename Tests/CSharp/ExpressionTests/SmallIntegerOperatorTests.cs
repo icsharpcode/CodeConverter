@@ -878,4 +878,60 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task FractionalConstantInCompoundAssignmentOrArrayBoundIsNotFoldedAloneAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Const D As Double = 1.5
+    Const D4 As Double = 4.4
+    Property P As Integer
+    Property Q(i As Integer) As Byte
+        Get
+            Return 0
+        End Get
+        Set(value As Byte)
+        End Set
+    End Property
+    Sub M(i As Integer, b As Byte, l As Long, s As Short, dv As Double)
+        i += 2.5
+        b *= 1.5
+        l -= D
+        s /= 4.0
+        P += 0.5
+        Q(1) += 2.5
+        Dim c(D4) As Integer
+        Dim a(2.5) As Integer
+        ReDim a(D)
+        Dim e(dv) As Integer
+    End Sub
+End Class", @"using System;
+
+internal partial class C
+{
+    private const double D = 1.5d;
+    private const double D4 = 4.4d;
+    public int P { get; set; }
+    public byte get_Q(int i)
+    {
+        return 0;
+    }
+    public void set_Q(int i, byte value)
+    {
+    }
+    public void M(int i, byte b, long l, short s, double dv)
+    {
+        i = (int)Math.Round(i + 2.5d);
+        b = (byte)Math.Round(b * 1.5d);
+        l = (long)Math.Round(l - D);
+        s = (short)Math.Round(s / 4.0d);
+        P = (int)Math.Round(P + 0.5d);
+        set_Q(1, (byte)Math.Round(get_Q(1) + 2.5d));
+        var c = new int[5];
+        var a = new int[3];
+        a = new int[3];
+        var e = new int[(int)Math.Round(dv) + 1];
+    }
+}");
+    }
 }

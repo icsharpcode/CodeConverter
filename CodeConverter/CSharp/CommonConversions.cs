@@ -579,11 +579,13 @@ internal class CommonConversions
             VBSyntax.ExpressionSyntax upperBoundExpression = a is VBSyntax.SimpleArgumentSyntax sas ? sas.Expression
                 : a is VBSyntax.RangeArgumentSyntax ras ? ras.UpperBound
                 : throw new ArgumentOutOfRangeException(nameof(a), a, null);
-            var increaseArrayUpperBoundExpressionAsync = await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
-            return TypeConversionAnalyzer.AddExplicitConversion(upperBoundExpression, increaseArrayUpperBoundExpressionAsync);
+            return await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
         });
     }
 
+    /// <summary>
+    /// VB converts the upper bound to Integer (e.g. rounding a Double) before adding one to get the length
+    /// </summary>
     private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpressionAsync(VBSyntax.ExpressionSyntax expr)
     {
         var op = SemanticModel.GetOperation(expr);
@@ -591,7 +593,10 @@ internal class CommonConversions
         if (constant.HasValue && constant.Value is int)
             return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
-        var convertedExpression = await expr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        var convertedExpression = TypeConversionAnalyzer.AddExplicitConversion(expr, await expr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        if (convertedExpression is CSSyntax.LiteralExpressionSyntax { Token.Value: int convertedConstant }) {
+            return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(convertedConstant + 1));
+        }
 
         if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
             bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1

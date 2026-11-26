@@ -10,6 +10,8 @@ Public Class SmallIntegerOperatorTests
     Const CB As Byte = 200
     Const K1 As Byte = CB << 1
     Const HalfD As Double = 2.5
+    Const OneAndHalf As Double = 1.5
+    Const FourPointFour As Double = 4.4
     Const NotHalfD As Long = Not HalfD
 
     Private Function TakeInteger(i As Integer) As Integer
@@ -302,5 +304,39 @@ Public Class SmallIntegerOperatorTests
         End Select
         Assert.Equal("ab", result)
         Assert.Equal(CType(200, DayOfWeek), CType(b1 Or b1, DayOfWeek))
+    End Sub
+
+    Private Property IntProperty As Integer = 1
+
+    <Fact>
+    Public Sub CompoundAssignmentsWithFractionalConstants()
+        Dim i As Integer = 10, b As Byte = 10, l As Long = 10, s As Short = 10, ni As Integer? = 10
+        i += 2.5
+        Assert.Equal(12, i)
+        b *= 1.5
+        Assert.Equal(CByte(15), b)
+        l -= OneAndHalf
+        Assert.Equal(8L, l)
+        s /= 4.0
+        Assert.Equal(2S, s)
+        IntProperty += 0.5
+        Assert.Equal(2, IntProperty)
+        ni += 2.5
+        Assert.Equal(12, ni)
+        Q(1) = 200
+        Q(1) += 2.5
+        Assert.Equal(CByte(202), Q(1))
+    End Sub
+
+    <Fact>
+    Public Sub ArrayBoundsWithFractionalConstants()
+        Dim c(FourPointFour) As Integer
+        Assert.Equal(5, c.Length)
+        Dim a(2.5) As Integer
+        Assert.Equal(3, a.Length)
+        ReDim a(OneAndHalf)
+        Assert.Equal(3, a.Length)
+        Dim d(3.5) As Integer
+        Assert.Equal(5, d.Length)
     End Sub
 End Class
