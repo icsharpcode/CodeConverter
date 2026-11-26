@@ -212,4 +212,26 @@ internal partial class C
     }
 }");
     }
+
+    [Fact]
+    public async Task DecimalDefaultInAttributeFormIsADecimalConstantAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(Optional o As Object = 1, Optional d As Decimal = 1.5D, Optional n As Decimal? = -2.25D)
+    End Sub
+    Sub R(Optional ByRef d As Decimal = 2.5D)
+    End Sub
+End Class", @"using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+internal partial class C
+{
+    public void M([Optional, DefaultParameterValue(1)] object o, [Optional, DecimalConstant(1, 0, 0U, 0U, 15U)] decimal d, [Optional, DecimalConstant(2, 1, 0U, 0U, 225U)] decimal? n)
+    {
+    }
+    public void R([Optional, DecimalConstant(1, 0, 0U, 0U, 25U)] ref decimal d)
+    {
+    }
+}");
+    }
 }

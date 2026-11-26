@@ -513,7 +513,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
                 };
                 if (!node.Default.Value.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    optionalAttributes.Add(CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
+                    optionalAttributes.Add(GetDecimalConstantAttributeOrNull(vbSymbol, node.Default.Value)
+                        ?? CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
                 }
                 attributes.Insert(0,
                     CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalAttributes)));
@@ -576,6 +577,25 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             p.RefKind != RefKind.None
             || p.Type.SpecialType == SpecialType.System_Object && p.ExplicitDefaultValue != null
             || p.Type.SpecialType == SpecialType.System_DateTime && p.ExplicitDefaultValue != null));
+
+    /// <summary>
+    /// An attribute argument can't be a decimal, so as C# does for a decimal default, the value is given in parts to DecimalConstant
+    /// </summary>
+    private AttributeSyntax GetDecimalConstantAttributeOrNull(ISymbol parameter, VBSyntax.ExpressionSyntax vbValue)
+    {
+        var type = (parameter as IParameterSymbol)?.Type;
+        if ((type?.GetNullableUnderlyingType() ?? type)?.SpecialType != SpecialType.System_Decimal ||
+            _semanticModel.GetConstantValue(vbValue) is not { HasValue: true, Value: { } value }) {
+            return null;
+        }
+        var bits = decimal.GetBits(Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture));
+        var scale = (byte)((bits[3] >> 16) & 0xFF);
+        var sign = (byte)(bits[3] < 0 ? 1 : 0);
+        var arguments = new ExpressionSyntax[] { CommonConversions.Literal(scale), CommonConversions.Literal(sign),
+            CommonConversions.Literal((uint)bits[2]), CommonConversions.Literal((uint)bits[1]), CommonConversions.Literal((uint)bits[0]) };
+        return CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DecimalConstant"),
+            CommonConversions.CreateAttributeArgumentList(arguments.Select(CS.SyntaxFactory.AttributeArgument).ToArray()));
+    }
 
     /// <inheritdoc cref="DeclaredConstantConverter"/>
     /// <param name="requiresExactType">For [DefaultParameterValue], whose argument is an Object, so C# won't convert it to the parameter's type</param>
