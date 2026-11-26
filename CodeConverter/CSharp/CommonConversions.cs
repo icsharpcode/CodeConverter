@@ -667,13 +667,21 @@ internal class CommonConversions
     /// A parameterized property's setter takes the value after the index parameters.
     /// When an index argument is named, or an optional one is left out, the value must be named too, since a positional argument can't follow them.
     /// </summary>
+    /// <summary>
+    /// A setter's value comes after its optional parameters, so where the getter's call leaves any out, or names its arguments, the value is named
+    /// (else it would fill an optional parameter, or follow a named argument out of position, CS8323).
+    /// A setter converted from this source names it value, as a C# setter's is; one in a referenced assembly keeps its own name.
+    /// </summary>
     public static CSSyntax.ArgumentListSyntax AddSetterValueArgument(CSSyntax.ArgumentListSyntax indexArgs, IPropertySymbol property, ExpressionSyntax value)
     {
         var valueArg = SyntaxFactory.Argument(value);
         var mustNameValue = indexArgs.Arguments.Count != property.GetParameters().Length ||
                             indexArgs.Arguments.Any(t => t.NameColon != null);
         if (mustNameValue) {
-            valueArg = valueArg.WithNameColon(SyntaxFactory.NameColon("value"));
+            var valueName = property.SetMethod is { Parameters: { Length: > 0 } setterParameters } setMethod && !setMethod.Locations.Any(l => l.IsInSource)
+                ? CsEscapedIdentifier(setterParameters.Last().Name).Text
+                : "value";
+            valueArg = valueArg.WithNameColon(SyntaxFactory.NameColon(ValidSyntaxFactory.IdentifierName(valueName)));
         }
 
         return indexArgs.WithArguments(indexArgs.Arguments.Add(valueArg));

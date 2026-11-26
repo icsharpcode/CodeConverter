@@ -308,6 +308,10 @@ End Class") },
         await AssertConvertedCodeResultEqualsAsync<VBToCSConversion>(@"Class C
     Sub M(l As Library)
         l.Q(1) += 1
+        l.Q(2) = 5
+        F(l.Q(3))
+    End Sub
+    Sub F(ByRef x As Integer)
     End Sub
 End Class", @"
 internal partial class C
@@ -315,6 +319,13 @@ internal partial class C
     public void M(Library l)
     {
         l.set_Q(1, NewValue: l.get_Q(1) + 1);
+        l.set_Q(2, NewValue: 5);
+        int argx = l.get_Q(3);
+        F(ref argx);
+        l.set_Q(3, NewValue: argx);
+    }
+    public void F(ref int x)
+    {
     }
 }", new TextConversionOptions(references) { RootNamespaceOverride = string.Empty, ShowCompilationErrors = true });
     }
