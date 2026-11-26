@@ -474,7 +474,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
 
         var typeConvertedRhs = node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)
-            ? ConvertToPow(node, lhs, rhs)
+            ? CommonConversions.TypeConversionAnalyzer.ConvertToPow(node.Left, lhs, node.Right, rhs, liftedResultType: lhsTypeInfo.Type.IsNullable() ? lhsTypeInfo.Type : null)
             : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
         if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
             var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, rhs);
@@ -483,17 +483,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
         }
         return ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
-    }
-
-    /// <summary>
-    /// VB's ^ converts both operands to Double, as for x = x ^ y, which Math.Pow needs for e.g. a Decimal, String or Boolean
-    /// </summary>
-    private ExpressionSyntax ConvertToPow(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs)
-    {
-        var doubleType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Double);
-        return SyntaxFactory.InvocationExpression(ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)), ExpressionSyntaxExtensions.CreateArgList(
-            CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: doubleType),
-            CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs, forceTargetType: doubleType)));
     }
 
     /// <summary>
@@ -525,8 +514,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 typeConvertedRhs = typeConvertedNonCompoundRhs;
             }
         } else if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation (a Double) which might need converting back to lhsType
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: _semanticModel.Compilation.GetTypeByMetadataName("System.Double"), forceTargetType: lhsTypeInfo.Type);
+            // Math.Pow gives a Double, which might need converting back to the left side's type. A Nullable left side's is converted within the lifted operator.
+            var powType = lhsTypeInfo.Type.IsNullable() ? lhsTypeInfo.Type : rhsTypeInfo.ConvertedType;
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: powType, forceTargetType: lhsTypeInfo.Type);
             kind = SyntaxKind.SimpleAssignmentExpression;
             typeConvertedRhs = typeConvertedNonCompoundRhs;
         }

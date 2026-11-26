@@ -384,7 +384,7 @@ internal partial class C
     public void M(decimal m, int? n, string s, bool b, float sg, double d)
     {
         m = (decimal)Math.Pow((double)m, 2d);
-        n = (int?)Math.Round(Math.Pow((double)n, 2d));
+        n = n.HasValue ? (int)Math.Round(Math.Pow(n.Value, 2d)) : null;
         s = Math.Pow(Conversions.ToDouble(s), 2d).ToString();
         b = Conversions.ToBoolean(Math.Pow(Conversions.ToDouble(b), 2d));
         sg = (long)Math.Round(sg) / 2L;

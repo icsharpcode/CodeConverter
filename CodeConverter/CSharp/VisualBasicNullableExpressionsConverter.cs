@@ -101,6 +101,50 @@ internal class VisualBasicNullableExpressionsConverter
         return ForRelationalOperators(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
     }
 
+    /// <summary>
+    /// VB lifts an operator C# has no lifted form of (e.g. ^, which becomes Math.Pow) over Nullable operands: Nothing if either operand is, else the operator on their values.
+    /// VB evaluates both operands first, so an operand that isn't safely reusable is only evaluated once, in order, through a tuple pattern.
+    /// </summary>
+    /// <param name="applyToValues">The operator on the operands' values (of their underlying types)</param>
+    /// <returns>Null where neither operand is Nullable</returns>
+    public ExpressionSyntax? LiftOrNull(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight,
+        Func<ExpressionSyntax, ExpressionSyntax, ExpressionSyntax> applyToValues, TypeSyntax nullableResultType)
+    {
+        var isLeftNullable = _semanticModel.GetTypeInfo(vbLeft).Type.IsNullable();
+        var isRightNullable = _semanticModel.GetTypeInfo(vbRight).Type.IsNullable();
+        if (!isLeftNullable && !isRightNullable || IsWithinExpressionTree) return null;
+        var whenNull = ValidSyntaxFactory.CastExpression(nullableResultType, ValidSyntaxFactory.NullExpression);
+
+        if (IsSafelyReusable(vbLeft) && IsSafelyReusable(vbRight)) {
+            ExpressionSyntax? hasValues = null;
+            if (isLeftNullable) hasValues = hasValues.AndHasValue(csLeft);
+            if (isRightNullable) hasValues = hasValues.AndHasValue(csRight);
+            var leftValue = isLeftNullable ? csLeft.NullableGetValueExpression() : csLeft;
+            var rightValue = isRightNullable ? csRight.NullableGetValueExpression() : csRight;
+            return hasValues!.Conditional(applyToValues(leftValue, rightValue), whenNull);
+        }
+
+        var leftPattern = ValuePattern(isLeftNullable, out var leftName);
+        var rightPattern = ValuePattern(isRightNullable, out var rightName);
+        var operands = SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight) }));
+        var positionalPattern = SyntaxFactory.RecursivePattern(null,
+            SyntaxFactory.PositionalPatternClause(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Subpattern(leftPattern), SyntaxFactory.Subpattern(rightPattern) })), null, null);
+        return SyntaxFactory.IsPatternExpression(operands, positionalPattern).Conditional(applyToValues(leftName, rightName), whenNull);
+    }
+
+    /// <summary>
+    /// { } matches only a Nullable with a value, binding the value; var matches any value
+    /// </summary>
+    private PatternSyntax ValuePattern(bool isNullable, out ExpressionSyntax name)
+    {
+        var identifier = SyntaxFactory.Identifier(GetArgName());
+        name = ValidSyntaxFactory.IdentifierName(identifier);
+        var designation = SyntaxFactory.SingleVariableDesignation(identifier);
+        return isNullable
+            ? SyntaxFactory.RecursivePattern(null, null, SyntaxFactory.PropertyPatternClause(), designation)
+            : SyntaxFactory.VarPattern(designation);
+    }
+
     private bool IsNullable(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
     {
         return typeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
