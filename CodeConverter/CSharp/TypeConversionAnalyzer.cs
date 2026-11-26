@@ -87,8 +87,14 @@ internal class TypeConversionAnalyzer
         return SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseAndExpression, csCount.AddParens(), LiteralConversions.GetLiteralExpression(mask)).AddParens();
     }
 
+    /// <remarks>A fractional constant is the integer VB converts it to, rounding to even</remarks>
     private long? GetIntegralConstantOrNull(VBSyntax.ExpressionSyntax vbNode) =>
-        _semanticModel.GetConstantValue(vbNode) is { HasValue: true, Value: sbyte or byte or short or ushort or int or uint or long } constant ? Convert.ToInt64(constant.Value) : null;
+        _semanticModel.GetConstantValue(vbNode) switch {
+            { HasValue: true, Value: sbyte or byte or short or ushort or int or uint or long } constant => Convert.ToInt64(constant.Value, CultureInfo.InvariantCulture),
+            { HasValue: true, Value: decimal m } => (long)Math.Round(m),
+            { HasValue: true, Value: double or float } constant => (long)Math.Round(Convert.ToDouble(constant.Value, CultureInfo.InvariantCulture)),
+            _ => null
+        };
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {

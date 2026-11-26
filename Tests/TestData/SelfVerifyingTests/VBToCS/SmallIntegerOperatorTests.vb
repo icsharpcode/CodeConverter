@@ -376,5 +376,10 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(13, o)
         b += ob
         Assert.Equal(CByte(153), b)
+        Dim b2 As Byte = 200
+        b2 <<= 1.5
+        Assert.Equal(CByte(32), b2)
+        Assert.Equal(CByte(32), CByte(200) << 2.5)
+        Assert.Equal(CByte(32), CByte(200) << 9.5)
     End Sub
 End Class

@@ -990,4 +990,25 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task FractionalConstantShiftCountIsNotMaskedAgainAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b As Byte)
+        b <<= 1.5
+        Dim x = b << 2.5
+        Dim y = b << 9.5
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b)
+    {
+        b <<= 2;
+        byte x = (byte)(b << 2);
+        byte y = (byte)(b << 2);
+    }
+}");
+    }
 }
