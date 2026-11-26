@@ -56,7 +56,8 @@ internal static class DocumentExtensions
     private static bool CsWouldBeSimplifiedIncorrectly(SyntaxNode n)
     {
         //"private int value = unchecked((int)0x80000010);" is simplified to "private int value = unchecked(0x80000010);"
-        // which causes CS0266: "Cannot implicitly convert type 'uint' to 'int'"
+        // which causes CS0266: "Cannot implicitly convert type 'uint' to 'int'", or silently makes the literal unsigned where its type isn't forced (e.g. in a division)
+        // Only that cast needs protecting: protecting other casts in unchecked would leave every ancestor unsimplified too (see doNotSimplify above).
         return (n is CSSyntax.CastExpressionSyntax { Parent : CSSyntax.CheckedExpressionSyntax, Expression: CSSyntax.LiteralExpressionSyntax })
                || n is CSSyntax.BlockSyntax block && MustKeepBraces(block);
     }

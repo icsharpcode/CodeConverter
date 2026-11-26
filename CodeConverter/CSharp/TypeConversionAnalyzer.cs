@@ -60,6 +60,10 @@ internal class TypeConversionAnalyzer
     /// An unchecked context covers the whole expression, so an inner one of ours only adds noise.
     /// Others stay: e.g. <c>unchecked((int)0x80000010)</c> is protected from the simplifier, which would otherwise make the literal a uint (see DocumentExtensions).
     /// </summary>
+    /// <remarks>
+    /// This rewrites C# just built, rather than converting from the VB model, because whether a constant is out of range is decided for each operator as it's converted, innermost first,
+    /// and an outer one can only drop an inner unchecked once it adds its own. It only touches nodes this class annotated.
+    /// </remarks>
     private static ExpressionSyntax WithoutNestedPromotedConstantUnchecked(ExpressionSyntax csNode) =>
         csNode.ReplaceNodes(csNode.GetAnnotatedNodes(PromotedConstantUncheckedAnnotation).OfType<CSSyntax.CheckedExpressionSyntax>(),
             (_, rewritten) => rewritten.Expression);

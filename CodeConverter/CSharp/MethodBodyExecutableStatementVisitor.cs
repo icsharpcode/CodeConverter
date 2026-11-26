@@ -354,7 +354,6 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return postAssignment.Insert(0, AssignTo(rhs));
     }
 
-
     /// <summary>
     /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for
     /// </summary>

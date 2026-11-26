@@ -92,15 +92,15 @@ internal class LambdaConverter
     }
 
     /// <summary>
-    /// A comparison converts to a C# comparison, or for Object operands to Operators.ConditionalCompareObject* (bool) where it's tested as a Boolean, or == in an expression tree.
-    /// So do Not, AndAlso and OrElse of those, whereas And, Or and Xor of Objects convert to Operators.AndObject etc., which give Object.
+    /// A comparison of Objects converts to Operators.ConditionalCompareObject* (bool) where it's tested as a Boolean, or to == in an expression tree, and Not of that stays bool.
+    /// AndAlso and OrElse always convert to C#'s &amp;&amp; and ||, which give bool whatever VB's operand types, whereas And, Or and Xor of Objects convert to Operators.AndObject etc., which give Object.
     /// </summary>
+    /// <remarks>Only reached for an Object-typed body: Is, IsNot and TypeOf are Boolean even on Objects</remarks>
     private static bool IsBooleanInCSharp(VBSyntax.ExpressionSyntax vbNode) => vbNode.SkipIntoParens() switch {
-        VBSyntax.UnaryExpressionSyntax not when not.IsKind(VBasic.SyntaxKind.NotExpression) => IsBooleanInCSharp(not.Operand),
+        VBSyntax.UnaryExpressionSyntax notExpression when notExpression.IsKind(VBasic.SyntaxKind.NotExpression) => IsBooleanInCSharp(notExpression.Operand),
         var node => node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
             VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
             VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression,
-            VBasic.SyntaxKind.IsExpression, VBasic.SyntaxKind.IsNotExpression,
             VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)
     };
 
