@@ -69,6 +69,18 @@ internal class SmallIntegerOperatorPromotion
         return IsSmallIntegerType(GetUnderlyingType(type)) ? type : null;
     }
 
+    /// <summary>
+    /// VB masks a shift count to the bits of the shifted type (e.g. 7 for Byte), C# masks it to the bits of the promoted int (31).
+    /// Larger types match, so need no mask.
+    /// </summary>
+    /// <remarks>https://learn.microsoft.com/dotnet/visual-basic/language-reference/operators/left-shift-operator</remarks>
+    public static int? GetShiftCountMaskOrNull(ITypeSymbol shiftedType) =>
+        GetUnderlyingType(shiftedType)?.SpecialType switch {
+            SpecialType.System_Byte or SpecialType.System_SByte => 7,
+            SpecialType.System_Int16 or SpecialType.System_UInt16 => 15,
+            _ => null
+        };
+
     private bool IsOperandWhoseCongruenceIsKeptBy(VBSyntax.ExpressionSyntax outermost, ITypeSymbol vbType)
     {
         var parent = outermost.Parent as VBSyntax.ExpressionSyntax;

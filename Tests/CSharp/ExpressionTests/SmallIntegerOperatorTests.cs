@@ -264,4 +264,47 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ShiftCountIsMaskedToTheBitsOfTheShiftedTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, sb As SByte, s1 As Short, us As UShort, i As Integer, l As Long, nb As Byte?, n As Integer, nn As Integer?)
+        Dim a = b1 << n
+        Dim b = sb >> n
+        Dim c = s1 << n
+        Dim d = us >> n
+        Dim e = b1 << 9
+        Dim f = b1 >> -1
+        Dim g = b1 << 7
+        Dim h = s1 << 15
+        Dim j = i << n
+        Dim k = l >> n
+        Dim m = nb << n
+        Dim o = b1 << nn
+        b1 <<= n
+        us >>= 17
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, sbyte sb, short s1, ushort us, int i, long l, byte? nb, int n, int? nn)
+    {
+        byte a = (byte)(b1 << (n & 7));
+        sbyte b = (sbyte)(sb >> (n & 7));
+        short c = (short)(s1 << (n & 15));
+        ushort d = (ushort)(us >> (n & 15));
+        byte e = (byte)(b1 << 1);
+        byte f = (byte)(b1 >> 7);
+        byte g = (byte)(b1 << 7);
+        short h = (short)(s1 << 15);
+        int j = i << n;
+        long k = l >> n;
+        var m = (byte?)(nb << (n & 7));
+        var o = (byte?)(b1 << (nn & 7));
+        b1 <<= n & 7;
+        us >>= 1;
+    }
+}");
+    }
 }

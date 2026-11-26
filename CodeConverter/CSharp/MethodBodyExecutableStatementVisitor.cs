@@ -288,6 +288,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
             
         var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        if (node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement)) {
+            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(lhsTypeInfo.Type, node.Right, typeConvertedRhs);
+        }
 
         // Split out compound operator if type conversion needed on result
         if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {

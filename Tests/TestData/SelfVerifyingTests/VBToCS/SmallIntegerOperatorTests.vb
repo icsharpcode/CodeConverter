@@ -100,4 +100,24 @@ Public Class SmallIntegerOperatorTests
         Assert.Equal(GetType(Short), CObj(ns << 1).GetType())
         Assert.Null(noValue Or nb)
     End Sub
+
+    <Fact>
+    Public Sub ShiftCountsAreMaskedToTheBitsOfTheShiftedType()
+        Dim b1 As Byte = 200, sb As SByte = -128, s As Short = -32768, us As UShort = 65000
+        Dim nb As Byte? = 200
+        Dim n = 9, big = 17, minusOne = -1
+        Assert.Equal(CByte(144), b1 << n)
+        Assert.Equal(CByte(100), b1 >> n)
+        Assert.Equal(CByte(0), b1 << minusOne)
+        Assert.Equal(CSByte(-64), sb >> n)
+        Assert.Equal(0S, s << big)
+        Assert.Equal(CUShort(32500), us >> big)
+        Assert.Equal(CByte(144), nb << n)
+        Dim i As Integer = b1 << n
+        Assert.Equal(144, i)
+        b1 <<= n
+        Assert.Equal(CByte(144), b1)
+        us >>= big
+        Assert.Equal(CUShort(32500), us)
+    End Sub
 End Class

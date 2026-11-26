@@ -104,6 +104,9 @@ internal class BinaryExpressionConverter
                           && forceLhsTargetType == null;
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
         rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        if (node.IsKind(VBasic.SyntaxKind.LeftShiftExpression, VBasic.SyntaxKind.RightShiftExpression)) {
+            rhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(lhsTypeInfo.ConvertedType, node.Right, rhs);
+        }
 
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
         var op = CS.SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
