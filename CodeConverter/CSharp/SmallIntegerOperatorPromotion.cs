@@ -192,13 +192,26 @@ internal class SmallIntegerOperatorPromotion
     }
 
     /// <summary>
-    /// VB rejects a constant that overflows its type, so given exact operands, only the operators that wrap without overflowing (Not on an unsigned type, and &lt;&lt;) give C# a different value
+    /// VB rejects a constant that overflows its type, so given exact operands, only the operators that wrap without overflowing (Not on an unsigned type, and &lt;&lt;) can give C# a different value.
+    /// Not on an unsigned type always does; a left shift does if it carries bits out of the type.
     /// </summary>
     private bool IsConstantResultInRange(VBSyntax.ExpressionSyntax node, bool isSigned) => node switch {
         VBSyntax.UnaryExpressionSyntax u => (isSigned || !u.IsKind(VBasic.SyntaxKind.NotExpression)) && IsCSharpValueInRange(u.Operand),
-        VBSyntax.BinaryExpressionSyntax b => !b.IsKind(VBasic.SyntaxKind.LeftShiftExpression) && IsCSharpValueInRange(b.Left) && IsCSharpValueInRange(b.Right),
+        VBSyntax.BinaryExpressionSyntax b when b.IsKind(VBasic.SyntaxKind.LeftShiftExpression) => IsCSharpValueInRange(b.Left) && IsConstantShiftExact(b),
+        VBSyntax.BinaryExpressionSyntax b => IsCSharpValueInRange(b.Left) && IsCSharpValueInRange(b.Right),
         _ => false
     };
+
+    /// <summary>
+    /// C# shifts the exact left operand by the masked count without wrapping, see <see cref="GetShiftCountMaskOrNull"/>
+    /// </summary>
+    private bool IsConstantShiftExact(VBSyntax.BinaryExpressionSyntax shift)
+    {
+        var mask = GetShiftCountMaskOrNull(_semanticModel.GetTypeInfo(shift).Type) ?? 31;
+        var left = Convert.ToInt64(_semanticModel.GetConstantValue(shift.Left).Value);
+        var count = Convert.ToInt32(_semanticModel.GetConstantValue(shift.Right).Value) & mask;
+        return left << count == Convert.ToInt64(_semanticModel.GetConstantValue(shift).Value);
+    }
 
     private static bool Memoized(Dictionary<VBSyntax.ExpressionSyntax, bool> cache, VBSyntax.ExpressionSyntax node, Func<VBSyntax.ExpressionSyntax, bool> analyze)
     {

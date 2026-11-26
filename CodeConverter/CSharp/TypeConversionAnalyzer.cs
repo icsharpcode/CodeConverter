@@ -46,9 +46,16 @@ internal class TypeConversionAnalyzer
         if (!_smallIntegerOperatorPromotion.NeedsCastToVbType(vbNode)) return csNode;
         var cast = CreateCast(csNode, _smallIntegerOperatorPromotion.GetPromotedTypeOrNull(vbNode));
         return _smallIntegerOperatorPromotion.IsConstantThatMayBeOutOfRange(vbNode)
-            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, cast)
+            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, WithoutNestedUnchecked(cast))
             : cast;
     }
+
+    /// <summary>
+    /// An unchecked context covers the whole expression, so an inner one only adds noise
+    /// </summary>
+    private static ExpressionSyntax WithoutNestedUnchecked(ExpressionSyntax csNode) =>
+        csNode.ReplaceNodes(csNode.DescendantNodes().OfType<CSSyntax.CheckedExpressionSyntax>().Where(c => c.IsKind(SyntaxKind.UncheckedExpression)),
+            (_, rewritten) => rewritten.Expression);
 
     /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetCSharpOperatorResultType"/>
     public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) => _smallIntegerOperatorPromotion.GetCSharpOperatorResultType(vbResultType);

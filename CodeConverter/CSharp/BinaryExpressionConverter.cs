@@ -104,15 +104,18 @@ internal class BinaryExpressionConverter
                           && forceLhsTargetType == null;
         lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
         rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        var isShiftMaskedToNothing = false;
         if (node.IsKind(VBasic.SyntaxKind.LeftShiftExpression, VBasic.SyntaxKind.RightShiftExpression)) {
-            rhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(_semanticModel.GetTypeInfo(node).Type, node.Right, rhs);
+            var maskedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(_semanticModel.GetTypeInfo(node).Type, node.Right, rhs);
+            isShiftMaskedToNothing = maskedRhs != rhs && maskedRhs is CSSyntax.LiteralExpressionSyntax { Token.Value: 0 };
+            rhs = maskedRhs;
         }
 
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
         var op = CS.SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
         var csBinExp = CS.SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-        var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        var exp = isShiftMaskedToNothing ? lhs : _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
         exp = CommonConversions.TypeConversionAnalyzer.CastPromotedOperatorResultIfNeeded(node, exp);
         return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) || exp is CSSyntax.CheckedExpressionSyntax ? exp : exp.AddParens();
     }

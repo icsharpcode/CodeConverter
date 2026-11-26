@@ -640,4 +640,37 @@ internal partial class TestClass
     }
 }");
     }
+
+    [Fact]
+    public async Task ConstantShiftIsUncheckedOnlyWhenItLeavesTheRangeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Const CB1 As Byte = 3
+    Const CB2 As Byte = 200
+    Const K1 As Byte = CB1 << 1
+    Const K2 As Byte = CB2 << 1
+    Private Sub TestMethod(b As Byte)
+        Dim i1 As Integer = CB1 << 1
+        Dim i2 = (CB1 << 2) Or b
+        Dim i3 = 1US << 16
+        Dim i4 = Not (CB1 << 2)
+        Dim i5 = Not (Not 1US)
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private const byte CB1 = 3;
+    private const byte CB2 = 200;
+    private const byte K1 = CB1 << 1;
+    private const byte K2 = unchecked((byte)(CB2 << 1));
+    private void TestMethod(byte b)
+    {
+        int i1 = CB1 << 1;
+        byte i2 = (byte)(CB1 << 2 | b);
+        ushort i3 = 1;
+        byte i4 = unchecked((byte)~(CB1 << 2));
+        ushort i5 = unchecked((ushort)~(ushort)~1);
+    }
+}");
+    }
 }
