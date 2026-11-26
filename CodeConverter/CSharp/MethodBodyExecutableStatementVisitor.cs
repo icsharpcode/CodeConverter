@@ -337,7 +337,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var lastToHoist = operands.FindLastIndex(o => o.IsStorage || !IsEvaluatedTheSameTwice(o.Operation) && o.Expression is not LiteralExpressionSyntax);
         if (lastToHoist < 0) return null;
         var toHoist = operands.Take(lastToHoist + 1)
-            .Where((o, i) => i == lastToHoist || o.IsStorage || !IsStableReference(o.Operation) || IsWrittenByAny(o.Operation, operands.Skip(i + 1)))
+            .Where((o, i) => i == lastToHoist || o.IsStorage || !IsStableReference(o.Operation) || IsWrittenByAny(o.Operation, operands.Skip(i + 1), vbLeft))
             .ToArray();
         if (toHoist.Any(o => o.IsStorage) && vbLeft.Parent.DescendantNodes().OfType<VBSyntax.AwaitExpressionSyntax>().Any()) return null;
 
@@ -424,9 +424,10 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     }
 
     /// <summary>
-    /// A later operand can change a local or parameter by passing it ByRef, or through a lambda that captures it
+    /// A later operand can change a local or parameter by passing it ByRef, or through a lambda that captures it.
+    /// That lambda may have been created earlier and be called by anything the later operand calls, so where it calls anything, any lambda in the method counts.
     /// </summary>
-    private static bool IsWrittenByAny(IOperation operand, IEnumerable<LeftSideOperand> laterOperands)
+    private bool IsWrittenByAny(IOperation operand, IEnumerable<LeftSideOperand> laterOperands, VBSyntax.ExpressionSyntax vbLeft)
     {
         var symbol = operand switch {
             ILocalReferenceOperation local => (ISymbol)local.Local,
@@ -434,13 +435,24 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             _ => null
         };
         if (symbol == null) return false;
-        return laterOperands.SelectMany(o => o.Operation.DescendantsAndSelf()).Any(o =>
-            o is IArgumentOperation { Parameter.RefKind: not RefKind.None } argument && RefersTo(argument.Value, symbol) ||
-            o is IAnonymousFunctionOperation lambda && lambda.Descendants().Any(d => RefersTo(d, symbol)));
+        var laterOperations = laterOperands.Select(o => o.Operation).ToArray();
+        return laterOperations.SelectMany(o => o.DescendantsAndSelf()).Any(o =>
+                   o is IArgumentOperation { Parameter.RefKind: not RefKind.None } argument && RefersTo(argument.Value, symbol) ||
+                   o is IAnonymousFunctionOperation lambda && lambda.Descendants().Any(d => RefersTo(d, symbol)))
+               || laterOperations.Any(o => !IsEvaluatedTheSameTwice(o)) && IsCapturedByAnyLambdaInMethod(symbol, vbLeft);
 
         static bool RefersTo(IOperation operation, ISymbol symbol) =>
             operation is ILocalReferenceOperation local && SymbolEqualityComparer.Default.Equals(local.Local, symbol) ||
             operation is IParameterReferenceOperation parameter && SymbolEqualityComparer.Default.Equals(parameter.Parameter, symbol);
+    }
+
+    private bool IsCapturedByAnyLambdaInMethod(ISymbol symbol, VBSyntax.ExpressionSyntax vbNode)
+    {
+        var method = (SyntaxNode)vbNode.FirstAncestorOrSelf<VBSyntax.MethodBlockBaseSyntax>() ?? vbNode.SyntaxTree.GetRoot();
+        return method.DescendantNodes().OfType<VBSyntax.LambdaExpressionSyntax>()
+            .SelectMany(lambda => lambda.DescendantNodes().OfType<VBSyntax.IdentifierNameSyntax>())
+            .Any(name => string.Equals(name.Identifier.ValueText, symbol.Name, StringComparison.OrdinalIgnoreCase)
+                         && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(name).Symbol, symbol));
     }
 
     /// <summary>
