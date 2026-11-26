@@ -97,7 +97,6 @@ internal class LambdaConverter
     /// </summary>
     private static bool IsBooleanInCSharp(VBSyntax.ExpressionSyntax vbNode) => vbNode.SkipIntoParens() switch {
         VBSyntax.UnaryExpressionSyntax not when not.IsKind(VBasic.SyntaxKind.NotExpression) => IsBooleanInCSharp(not.Operand),
-        VBSyntax.TypeOfExpressionSyntax => true,
         var node => node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
             VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
             VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression,
