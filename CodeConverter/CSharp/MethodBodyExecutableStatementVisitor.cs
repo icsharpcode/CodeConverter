@@ -276,29 +276,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             lhs = ReturnVariable;
         }
 
-        var originalRhs = rhs;
-        if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            rhs = SyntaxFactory.InvocationExpression(
-                ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
-                ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
-        }
-        var kind = node.Kind().ConvertToken();
-
-            
-        var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
-        var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-            
-        var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
-        if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
-            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, originalRhs);
-            var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
-            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
-            kind = SyntaxKind.SimpleAssignmentExpression;
-        } else {
-            typeConvertedRhs = ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
-        }
-
-        rhs = typeConvertedRhs;
+        rhs = ConvertAssignedValue(node, lhs, rhs, setMethodName, out var kind);
 
         if (setMethodName != null) {
             if (lhs is InvocationExpressionSyntax ies) {
@@ -327,6 +305,32 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
         }
         return postAssignment.Insert(0, AssignTo(rhs));
+    }
+
+    /// <summary>
+    /// The value to assign, and the C# assignment's kind: a compound assignment may need splitting into lhs = lhs op rhs
+    /// </summary>
+    private ExpressionSyntax ConvertAssignedValue(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs, string setMethodName, out SyntaxKind kind)
+    {
+        var originalRhs = rhs;
+        if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+            rhs = SyntaxFactory.InvocationExpression(
+                ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
+                ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
+        }
+        kind = node.Kind().ConvertToken();
+
+        var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+        var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+
+        var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
+            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, originalRhs);
+            var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+            kind = SyntaxKind.SimpleAssignmentExpression;
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
+        }
+        return ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
     }
 
     /// <summary>
