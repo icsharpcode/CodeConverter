@@ -64,6 +64,7 @@ internal class LambdaConverter
                 convertedStatements = await ConvertMethodBodyStatementsAsync(statement, statement.Yield().ToArray());
             } else {
                 var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
+                csNode = ConvertToReturnType((VBSyntax.ExpressionSyntax)node.Body, csNode, tracker.IsWithinExpressionTree);
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode) };
             }
 
@@ -71,6 +72,16 @@ internal class LambdaConverter
             return await ConvertAsync(node, param, convertedStatements);
         }
     }
+
+    /// <summary>
+    /// VB converts a single-line lambda's body to the return type as a Return statement would (e.g. Byte to Short), C# needs that conversion to be implicit.
+    /// </summary>
+    /// <remarks>
+    /// Not within an expression tree: there, operators such as Object comparisons are converted to C# operators that already give the return type,
+    /// which the VB types don't reflect, so a conversion would only add noise.
+    /// </remarks>
+    private ExpressionSyntax ConvertToReturnType(VBSyntax.ExpressionSyntax vbBody, ExpressionSyntax csBody, bool isWithinExpressionTree) =>
+        isWithinExpressionTree ? csBody : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbBody, csBody);
 
     public async Task<CSharpSyntaxNode> ConvertAsync(VBSyntax.LambdaExpressionSyntax vbNode,
         ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)

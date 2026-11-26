@@ -53,4 +53,24 @@ public partial class ConversionTest3
     }
 }");
     }
+
+    [Fact]
+    public async Task SingleLineLambdaBodyIsConvertedToReturnTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(i As Integer, b As Byte)
+        Dim narrowed As Func(Of Byte) = Function() i
+        Dim widened As Func(Of Long) = Function() b
+    End Sub
+End Class", @"using System;
+
+internal partial class TestClass
+{
+    private void TestMethod(int i, byte b)
+    {
+        Func<byte> narrowed = () => (byte)i;
+        Func<long> widened = () => b;
+    }
+}");
+    }
 }
