@@ -2610,7 +2610,7 @@ End Sub",
 {
     var widened = ((long)x, s);
     var literals = (1d, 2L, (byte)3);
-    var shortArithmetic = ((short)(s * s), s * s);
+    var shortArithmetic = ((short)(s * s), (int)(short)(s * s));
     var stringAndChar = (""a"", 'b');
     var nothings = ((string)null, default(int));
 }");

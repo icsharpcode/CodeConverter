@@ -110,6 +110,7 @@ internal class BinaryExpressionConverter
 
         var csBinExp = CS.SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
         var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        exp = CommonConversions.TypeConversionAnalyzer.CastPromotedOperatorResultIfNeeded(node, exp);
         return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
     }
 

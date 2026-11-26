@@ -25,22 +25,7 @@ internal class TypeConversionAnalyzer
     private readonly ExpressionEvaluator _expressionEvaluator;
     private readonly VisualBasicNullableExpressionsConverter _vbNullableExpressionsConverter;
 
-    private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = {
-        VBasic.SyntaxKind.IntegerDivideExpression,
-        VBasic.SyntaxKind.ModuloExpression,
-        VBasic.SyntaxKind.AddExpression,
-        VBasic.SyntaxKind.SubtractExpression,
-        VBasic.SyntaxKind.MultiplyExpression,
-        VBasic.SyntaxKind.DivideExpression,
-        VBasic.SyntaxKind.AndExpression,
-        VBasic.SyntaxKind.OrExpression,
-        VBasic.SyntaxKind.ExclusiveOrExpression,
-        VBasic.SyntaxKind.LeftShiftExpression,
-        VBasic.SyntaxKind.RightShiftExpression,
-        VBasic.SyntaxKind.UnaryMinusExpression,
-        VBasic.SyntaxKind.UnaryPlusExpression,
-        VBasic.SyntaxKind.NotExpression
-    };
+    private readonly SmallIntegerOperatorPromotion _smallIntegerOperatorPromotion;
 
     public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
         HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, ExpressionEvaluator expressionEvaluator, 
@@ -52,6 +37,17 @@ internal class TypeConversionAnalyzer
         _csSyntaxGenerator = csSyntaxGenerator;
         _expressionEvaluator = expressionEvaluator;
         _vbNullableExpressionsConverter = vbNullableExpressionsConverter;
+        _smallIntegerOperatorPromotion = new SmallIntegerOperatorPromotion(semanticModel);
+    }
+
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion"/>
+    public ExpressionSyntax CastPromotedOperatorResultIfNeeded(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode)
+    {
+        if (!_smallIntegerOperatorPromotion.NeedsCastToVbType(vbNode)) return csNode;
+        var cast = CreateCast(csNode, _smallIntegerOperatorPromotion.GetPromotedTypeOrNull(vbNode));
+        return _smallIntegerOperatorPromotion.IsConstantThatMayBeOutOfRange(vbNode)
+            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, cast)
+            : cast;
     }
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
@@ -197,40 +193,14 @@ internal class TypeConversionAnalyzer
         return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
     }
 
-    /// <summary>
-    /// The VB operators are different to C#, e.g. VB: short * short = short, C#: short * short = int
-    /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/operators-and-expressions/arithmetic-operators
-    /// https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/arithmetic-operators#:~:text=The%20following%20operators%20perform%20arithmetic,%2C%20and%20%2D%20(subtraction)%20operators
-    /// </summary>
+    /// <remarks>
+    /// The source type is the VB one even for an operator C# promotes to int: <see cref="CastPromotedOperatorResultIfNeeded"/> has cast it back wherever the int would differ.
+    /// </remarks>
     private (ITypeSymbol Type, ITypeSymbol ConvertedType) GetTypeInfo(VBSyntax.ExpressionSyntax vbNode,
         ITypeSymbol type = null, ITypeSymbol convertedType = null)
     {
         var typeInfo = _semanticModel.GetTypeInfo(vbNode);
-        type ??= typeInfo.Type;
-        convertedType ??= typeInfo.ConvertedType;
-        if (type.IsNumericType()) {
-            VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
-            type = GetTypeOrNull(vbNode, type.SpecialType) ?? type;
-        }
-        return (type, convertedType);
-    }
-
-    private ITypeSymbol GetTypeOrNull(VBSyntax.ExpressionSyntax vbNode, SpecialType type)
-    {
-        var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
-        if (Int32ArithmeticExpressionKinds.Contains(syntaxKind))
-        {
-            var mappedSpecialType = type switch {
-                SpecialType.System_SByte => SpecialType.System_Int32,
-                SpecialType.System_Byte => SpecialType.System_Int32,
-                SpecialType.System_Int16 => SpecialType.System_Int32,
-                SpecialType.System_UInt16 => SpecialType.System_Int32,
-                var other => other
-            };
-            return _semanticModel.Compilation.GetSpecialType(mappedSpecialType);
-        }
-
-        return null;
+        return (type ?? typeInfo.Type, convertedType ?? typeInfo.ConvertedType);
     }
 
     private CSSyntax.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)

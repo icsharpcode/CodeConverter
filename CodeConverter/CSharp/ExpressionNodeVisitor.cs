@@ -410,11 +410,12 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
             }
         }
 
-        return CS.SyntaxFactory.PrefixUnaryExpression(
+        var csUnary = CS.SyntaxFactory.PrefixUnaryExpression(
             kind,
             CS.SyntaxFactory.Token(csTokenKind),
             expr.AddParens()
         );
+        return CommonConversions.TypeConversionAnalyzer.CastPromotedOperatorResultIfNeeded(node, csUnary);
     }
 
     private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr, ITypeSymbol operandConvertedType)
