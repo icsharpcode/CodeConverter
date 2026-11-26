@@ -401,7 +401,9 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         CS.SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
 
         if (kind == CS.SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
-            if (t.IsNumericType() || t.IsEnumType()) {
+            var underlyingType = t.GetNullableUnderlyingType() ?? t;
+            if (underlyingType.IsNumericType() || underlyingType.IsEnumType()) {
+                kind = CS.SyntaxKind.BitwiseNotExpression;
                 csTokenKind = CS.SyntaxKind.TildeToken;
             } else if (await NegateAndSimplifyOrNullAsync(node, expr, t) is { } simpleNegation) {
                 return simpleNegation;
