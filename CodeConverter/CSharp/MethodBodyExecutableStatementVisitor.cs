@@ -1038,7 +1038,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         // Then From is extracted ahead of them, unless nothing they evaluate can change it, so that it has its value from before them, as To and Step have theirs from before the control variable is assigned.
         var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
         var toNeedsVariable = !_semanticModel.GetConstantValue(stmt.ToValue).HasValue;
-        var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue;
+        var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue && !IsLocalUnchangedByLoop(stmt.StepClause.StepValue, node);
         var fitsDeclaration = declaration != null && !initializers.Any() && (!stepNeedsVariable || SymbolEqualityComparer.Default.Equals(GetCsStepType(controlVarType), controlVarType));
         if (!fitsDeclaration && (toNeedsVariable || stepNeedsVariable) && MayBeChangedByOrChange(stmt.FromValue, toNeedsVariable ? stmt.ToValue : null, stepNeedsVariable ? stmt.StepClause.StepValue : null)) {
             var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
@@ -1082,6 +1082,23 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     private async Task<(IReadOnlyCollection<CommonConversions.VariablesDeclaration> Variables, IReadOnlyCollection<CSharpSyntaxNode> Methods)> SplitVariableDeclarationsAsync(VBSyntax.VariableDeclaratorSyntax v, bool preferExplicitType = false)
     {
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
+    }
+
+    /// <summary>
+    /// A local or parameter that the loop doesn't write (directly, ByRef or in a lambda), and that no lambda captures, has the same value at every iteration
+    /// </summary>
+    private bool IsLocalUnchangedByLoop(VBSyntax.ExpressionSyntax vbValue, VBSyntax.ForBlockSyntax loop)
+    {
+        var symbol = _semanticModel.GetOperation(vbValue) switch {
+            ILocalReferenceOperation local when !local.Local.IsStatic => (ISymbol)local.Local,
+            IParameterReferenceOperation parameter => parameter.Parameter,
+            _ => null
+        };
+        if (symbol == null || SymbolEqualityComparer.Default.Equals(symbol, _semanticModel.GetSymbolInfo(loop.ForStatement.ControlVariable).Symbol)) return false;
+        if (IsCapturedByAnyLambdaInMethod(symbol, vbValue)) return false;
+        if (!loop.Statements.Any()) return true;
+        var dataFlow = _semanticModel.AnalyzeDataFlow(loop.Statements.First(), loop.Statements.Last());
+        return dataFlow.Succeeded && !dataFlow.WrittenInside.Contains(symbol, SymbolEqualityComparer.Default);
     }
 
     /// <summary>

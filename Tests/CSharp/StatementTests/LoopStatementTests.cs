@@ -566,7 +566,7 @@ internal partial class Issue453
 {
     public void PrintLoop(int startIndex, int endIndex, int step)
     {
-        for (int i = startIndex, loopTo = endIndex, loopStep = step; loopStep >= 0 ? i <= loopTo : i >= loopTo; i += loopStep)
+        for (int i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += step)
             Debug.WriteLine(i);
     }
 }");
@@ -607,13 +607,9 @@ internal partial class ForEnumAsync
 {
     public void PrintLoop(MyEnum startIndex, MyEnum endIndex, MyEnum step)
     {
-        var loopTo = endIndex;
-        var loopStep = (int)step;
-        for (MyEnum i = startIndex; loopStep >= 0 ? i <= loopTo : i >= loopTo; i += loopStep)
+        for (MyEnum i = startIndex, loopTo = endIndex; (int)step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
             Debug.WriteLine(i);
-        var loopTo1 = endIndex;
-        var loopStep1 = (int)step;
-        for (MyEnum i2 = startIndex; loopStep1 >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += loopStep1)
+        for (MyEnum i2 = startIndex, loopTo1 = endIndex; (int)step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
             Debug.WriteLine(i2);
         for (MyEnum i3 = startIndex, loopTo2 = endIndex; i3 <= loopTo2; i3 += 3)
             Debug.WriteLine(i3);
@@ -1496,6 +1492,42 @@ internal partial class C
         for (i = 1; loopStep2 >= 0 ? i <= 9 : i >= 9; i += loopStep2)
         {
         }
+    }
+}");
+    }
+    [Fact]
+    public async Task ForStepLocalIsOnlyExtractedWhereTheLoopMayChangeItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(n As Integer)
+        Dim s = 2
+        For i = 1 To 9 Step s
+        Next
+        For i = 1 To 9 Step s
+            s += 1
+        Next
+        For i = 1 To 9 Step n
+            Bump(n)
+        Next
+    End Sub
+    Sub Bump(ByRef x As Integer)
+    End Sub
+End Class", @"
+internal partial class C
+{
+    public void M(int n)
+    {
+        int s = 2;
+        for (int i = 1; s >= 0 ? i <= 9 : i >= 9; i += s)
+        {
+        }
+        for (int i = 1, loopStep = s; loopStep >= 0 ? i <= 9 : i >= 9; i += loopStep)
+            s += 1;
+        for (int i = 1, loopStep1 = n; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
+            Bump(ref n);
+    }
+    public void Bump(ref int x)
+    {
     }
 }");
     }
