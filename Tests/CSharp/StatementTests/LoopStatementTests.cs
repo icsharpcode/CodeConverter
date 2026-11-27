@@ -502,9 +502,9 @@ End Sub", @"public void Main()
 {
     float foo = 3.5f;
     int index;
-    index = (int)Math.Round(Conversion.Int(foo));
+    int loopFrom = (int)Math.Round(Conversion.Int(foo));
     var loopTo = (int)Math.Round(Conversion.Int(foo * 3f));
-    for (; index <= loopTo; index++)
+    for (index = loopFrom; index <= loopTo; index++)
         Console.WriteLine(index);
 }");
     }
@@ -1487,9 +1487,9 @@ internal partial class C
         {
         }
         int i;
-        i = L(3);
+        int loopFrom = L(3);
         var loopStep1 = stepField;
-        for (; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
+        for (i = loopFrom; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
         {
         }
         var loopStep2 = i;

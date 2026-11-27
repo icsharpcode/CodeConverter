@@ -1033,22 +1033,24 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csToValue = await stmt.ToValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
 
-        // In Visual Basic, the From, To and Step expressions are evaluated once, in that order, but in C# To and Step are evaluated for every iteration.
-        // Any that isn't a constant is extracted as a variable: in the loop's declaration where it has the control variable's type, else before the loop,
-        // with From (if it may have side effects) ahead of them.
+        // In Visual Basic, the From, To and Step expressions are evaluated once, in that order, before the control variable is assigned, but in C# To and Step are evaluated for every iteration.
+        // Any that isn't a constant is extracted as a variable: in the loop's declaration where it has the control variable's type, else before the loop.
+        // Then From is extracted ahead of them, unless nothing they evaluate can change it, so that it has its value from before them, as To and Step have theirs from before the control variable is assigned.
         var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
         var toNeedsVariable = !_semanticModel.GetConstantValue(stmt.ToValue).HasValue;
         var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue;
         var fitsDeclaration = declaration != null && !initializers.Any() && (!stepNeedsVariable || SymbolEqualityComparer.Default.Equals(GetCsStepType(controlVarType), controlVarType));
-        if (!fitsDeclaration && (toNeedsVariable || stepNeedsVariable) && !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.FromValue))) {
+        if (!fitsDeclaration && (toNeedsVariable || stepNeedsVariable) && MayBeChangedByOrChange(stmt.FromValue, toNeedsVariable ? stmt.ToValue : null, stepNeedsVariable ? stmt.StepClause.StepValue : null)) {
+            var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
+            var loopFrom = ValidSyntaxFactory.IdentifierName(loopFromVariableName);
             if (initializers.Any()) {
-                preLoopStatements.AddRange(initializers.Select(SyntaxFactory.ExpressionStatement));
-                initializers.Clear();
+                var assignment = (AssignmentExpressionSyntax)initializers[0];
+                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, assignment.Right, controlVarTypeSyntax)));
+                initializers[0] = assignment.WithRight(loopFrom);
             } else {
-                var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
                 var fromVariable = declaration.Variables[0];
                 preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, fromVariable.Initializer.Value, controlVarTypeSyntax)));
-                declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(fromVariable.WithInitializer(SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.IdentifierName(loopFromVariableName)))));
+                declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(fromVariable.WithInitializer(SyntaxFactory.EqualsValueClause(loopFrom))));
             }
         }
         ExpressionSyntax ExtractVariable(string nameBase, ExpressionSyntax value)
@@ -1081,6 +1083,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     {
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
     }
+
+    /// <summary>
+    /// From may change (e.g. a field a later call sets) or may change what the others read, unless it's a constant, or it and the others are all evaluated without side effects
+    /// </summary>
+    private bool MayBeChangedByOrChange(VBSyntax.ExpressionSyntax from, params VBSyntax.ExpressionSyntax[] others) =>
+        !_semanticModel.GetConstantValue(from).HasValue
+        && !new[] { from }.Concat(others).Where(e => e != null).All(e => IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e)));
 
     /// <summary>
     /// The step is added to the control variable: for an enum, that's an integer of its underlying type
