@@ -100,10 +100,10 @@ internal class BinaryExpressionConverter
         var rhsTypeIgnoringNullable = rhsTypeInfo.Type.GetNullableUnderlyingType() ?? rhsTypeInfo.Type;
         omitConversion |= lhsTypeIgnoringNullable != null && rhsTypeIgnoringNullable != null &&
                           lhsTypeIgnoringNullable.IsEnumType() && SymbolEqualityComparer.Default.Equals(lhsTypeIgnoringNullable, rhsTypeIgnoringNullable)
-                          && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
+                          && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression, VBasic.SyntaxKind.ConcatenateExpression)
                           && forceLhsTargetType == null;
         var isConcatenation = node.IsKind(VBasic.SyntaxKind.ConcatenateExpression);
-        lhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Left, lhs) : null)
+        lhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Left, lhs, isLeftOperand: true) : null)
               ?? (omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType));
         rhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Right, rhs) : null)
               ?? (omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs));

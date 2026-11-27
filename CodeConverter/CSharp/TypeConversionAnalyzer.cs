@@ -89,12 +89,13 @@ internal class TypeConversionAnalyzer
 
     /// <summary>
     /// VB's &amp; converts a Nullable operand to a string as its boxed value: Nothing is empty, a Date is in VB's format and an enum is its number,
-    /// whereas C#'s + gives an enum's name and a DateTime's own format. Other types' strings are the same.
+    /// whereas C#'s + gives an enum's name and a DateTime's own format. Other types' strings are the same, but a left operand is converted to String explicitly,
+    /// which would take its value and throw for Nothing.
     /// </summary>
     /// <returns>Null where C#'s string concatenation gives the same</returns>
-    public ExpressionSyntax ConvertConcatenatedNullableOrNull(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode)
+    public ExpressionSyntax ConvertConcatenatedNullableOrNull(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool isLeftOperand = false)
     {
-        if (_semanticModel.GetTypeInfo(vbNode).Type?.GetNullableUnderlyingType() is not { } valueType || !valueType.IsEnumType() && !valueType.IsDateType()) return null;
+        if (_semanticModel.GetTypeInfo(vbNode).Type?.GetNullableUnderlyingType() is not { } valueType || !isLeftOperand && !valueType.IsEnumType() && !valueType.IsDateType()) return null;
         var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
         var boxed = ValidSyntaxFactory.CastExpression(GetTypeSyntax(objectType), csNode.AddParens());
         return AddExplicitConversion(vbNode, boxed, forceSourceType: objectType, forceTargetType: _semanticModel.Compilation.GetSpecialType(SpecialType.System_String));

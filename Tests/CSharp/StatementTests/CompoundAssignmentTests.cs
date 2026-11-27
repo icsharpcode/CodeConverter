@@ -637,4 +637,35 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task ConcatenationOfEnumsAndOfANullableLeftOperandIsAsVbsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E
+    A
+End Enum
+Class C
+    Sub M(e As E, ne As E?, ni As Integer?, nb As Boolean?, s As String)
+        s = e & ne
+        s = e & e
+        s = ni & ""x""
+        s = nb & s
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum E
+{
+    A
+}
+
+internal partial class C
+{
+    public void M(E e, E? ne, int? ni, bool? nb, string s)
+    {
+        s = ((int)e).ToString() + Conversions.ToString(ne);
+        s = ((int)e).ToString() + ((int)e).ToString();
+        s = Conversions.ToString(ni) + ""x"";
+        s = Conversions.ToString(nb) + s;
+    }
+}");
+    }
 }

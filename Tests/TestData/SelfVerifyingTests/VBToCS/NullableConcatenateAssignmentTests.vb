@@ -42,4 +42,14 @@ Public Class NullableConcatenateAssignmentTests
         c &= "z"
         Assert.Equal("a", CStr(c))
     End Sub
+
+    <Fact>
+    Public Sub EnumsAndANullableLeftOperandConcatenateAsVbDoes()
+        Dim e = Colour.Red
+        Dim ne As Colour? = Colour.Red
+        Dim ni As Integer? = Nothing
+        Dim nb As Boolean? = Nothing
+        Dim nc As Char? = Nothing
+        Assert.Equal("11|11|x|y|z", (e & ne) & "|" & (e & e) & "|" & (ni & "x") & "|" & (nb & "y") & "|" & (nc & "z"))
+    End Sub
 End Class
