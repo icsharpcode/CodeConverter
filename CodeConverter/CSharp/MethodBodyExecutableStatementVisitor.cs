@@ -1031,41 +1031,37 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csToValue = await stmt.ToValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
 
-        // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
-        // If it could evaluate differently or has side effects, it must be extracted as a variable
-        if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
-            var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-            var toVariableId = ValidSyntaxFactory.IdentifierName(loopToVariableName);
-
-            var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
-            if (initializers.Any()) {
-                var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(
-                    CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
-                // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
-                preLoopStatements.Add(loopEndDeclaration);
-            } else {
-                declaration = declaration == null
-                    ? SyntaxFactory.VariableDeclaration(controlVarTypeSyntax,
-                        SyntaxFactory.SingletonSeparatedList(loopToAssignment))
-                    : declaration.AddVariables(loopToAssignment).WithType(controlVarTypeSyntax);
-            }
-
-            csToValue = toVariableId;
-        }
-
+        // In Visual Basic, the From, To and Step expressions are evaluated once, in that order, but in C# To and Step are evaluated for every iteration.
+        // Any that isn't a constant is extracted as a variable: in the loop's declaration where it has the control variable's type, else before the loop,
+        // with From (if it may have side effects) ahead of them.
         var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
-        // Like the To expression, the Step expression is only evaluated once in Visual Basic, but in C# is evaluated for each condition and each step.
-        // One that may evaluate differently (e.g. calls a function) is extracted as a variable, in the loop's declaration if it has the control variable's type.
-        if (csStepValue != null && !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.StepClause.StepValue))) {
-            var loopStepVariableName = GetUniqueVariableNameInScope(node, "loopStep");
-            var stepType = _semanticModel.GetTypeInfo(stmt.StepClause.StepValue).ConvertedType;
-            if (initializers.Any() || declaration == null || !SymbolEqualityComparer.Default.Equals(stepType, controlVarType)) {
-                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopStepVariableName, csStepValue)));
+        var toNeedsVariable = !_semanticModel.GetConstantValue(stmt.ToValue).HasValue;
+        var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue;
+        var fitsDeclaration = declaration != null && !initializers.Any() && (!stepNeedsVariable || SymbolEqualityComparer.Default.Equals(GetCsStepType(controlVarType), controlVarType));
+        if (!fitsDeclaration && (toNeedsVariable || stepNeedsVariable) && !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.FromValue))) {
+            if (initializers.Any()) {
+                preLoopStatements.AddRange(initializers.Select(SyntaxFactory.ExpressionStatement));
+                initializers.Clear();
             } else {
-                declaration = declaration.AddVariables(CommonConversions.CreateVariableDeclarator(loopStepVariableName, csStepValue)).WithType(controlVarTypeSyntax);
+                var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
+                var fromVariable = declaration.Variables[0];
+                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, fromVariable.Initializer.Value, controlVarTypeSyntax)));
+                declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(fromVariable.WithInitializer(SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.IdentifierName(loopFromVariableName)))));
             }
-            csStepValue = ValidSyntaxFactory.IdentifierName(loopStepVariableName);
         }
+        ExpressionSyntax ExtractVariable(string nameBase, ExpressionSyntax value)
+        {
+            var variableName = GetUniqueVariableNameInScope(node, nameBase);
+            if (fitsDeclaration) {
+                declaration = declaration.AddVariables(CommonConversions.CreateVariableDeclarator(variableName, value)).WithType(controlVarTypeSyntax);
+            } else {
+                // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
+                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(variableName, value)));
+            }
+            return ValidSyntaxFactory.IdentifierName(variableName);
+        }
+        if (toNeedsVariable) csToValue = ExtractVariable("loopTo", csToValue);
+        if (stepNeedsVariable) csStepValue = ExtractVariable("loopStep", csStepValue);
 
         var (csCondition, csStep) = ConvertConditionAndStepClause(stmt, id, csToValue, csStepValue);
 
@@ -1084,13 +1080,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
     }
 
+    /// <summary>
+    /// The step is added to the control variable: for an enum, that's an integer of its underlying type
+    /// </summary>
+    private static ITypeSymbol GetCsStepType(ITypeSymbol controlVarType) =>
+        controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
+
     private async Task<ExpressionSyntax> ConvertStepValueAsync(VBSyntax.ForStatementSyntax stmt, ITypeSymbol controlVarType)
     {
         var vbStepValue = stmt.StepClause?.StepValue;
+        var csStepType = GetCsStepType(controlVarType);
         var csStepValue = await vbStepValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        // For an enum, you need to add on an integer for example:
-        var forceStepType = controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
-        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: forceStepType);
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: csStepType);
     }
 
     private (ExpressionSyntax, ExpressionSyntax) ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue, ExpressionSyntax csStepValue)

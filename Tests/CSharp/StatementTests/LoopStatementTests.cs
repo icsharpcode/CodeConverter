@@ -502,8 +502,9 @@ End Sub", @"public void Main()
 {
     float foo = 3.5f;
     int index;
+    index = (int)Math.Round(Conversion.Int(foo));
     var loopTo = (int)Math.Round(Conversion.Int(foo * 3f));
-    for (index = (int)Math.Round(Conversion.Int(foo)); index <= loopTo; index++)
+    for (; index <= loopTo; index++)
         Console.WriteLine(index);
 }");
     }
@@ -565,7 +566,7 @@ internal partial class Issue453
 {
     public void PrintLoop(int startIndex, int endIndex, int step)
     {
-        for (int i = startIndex, loopTo = endIndex; step >= 0 ? i <= loopTo : i >= loopTo; i += step)
+        for (int i = startIndex, loopTo = endIndex, loopStep = step; loopStep >= 0 ? i <= loopTo : i >= loopTo; i += loopStep)
             Debug.WriteLine(i);
     }
 }");
@@ -606,9 +607,13 @@ internal partial class ForEnumAsync
 {
     public void PrintLoop(MyEnum startIndex, MyEnum endIndex, MyEnum step)
     {
-        for (MyEnum i = startIndex, loopTo = endIndex; (int)step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
+        var loopTo = endIndex;
+        var loopStep = (int)step;
+        for (MyEnum i = startIndex; loopStep >= 0 ? i <= loopTo : i >= loopTo; i += loopStep)
             Debug.WriteLine(i);
-        for (MyEnum i2 = startIndex, loopTo1 = endIndex; (int)step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
+        var loopTo1 = endIndex;
+        var loopStep1 = (int)step;
+        for (MyEnum i2 = startIndex; loopStep1 >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += loopStep1)
             Debug.WriteLine(i2);
         for (MyEnum i3 = startIndex, loopTo2 = endIndex; i3 <= loopTo2; i3 += 3)
             Debug.WriteLine(i3);
@@ -1437,6 +1442,60 @@ internal partial class TestClass
     private int F()
     {
         return 1;
+    }
+}");
+    }
+    [Fact]
+    public async Task ForEvaluatesFromToAndStepOnceInOrderAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum Col
+    A
+    E = 4
+End Enum
+Class C
+    Private stepField As Integer = 1
+    Function L(v As Integer) As Integer
+        Return v
+    End Function
+    Sub M()
+        For e As Col = Col.A To Col.E Step L(2)
+        Next
+        Dim i As Integer
+        For i = L(3) To 9 Step stepField
+        Next
+        For i = 1 To 9 Step i
+        Next
+    End Sub
+End Class", @"
+internal enum Col
+{
+    A,
+    E = 4
+}
+
+internal partial class C
+{
+    private int stepField = 1;
+    public int L(int v)
+    {
+        return v;
+    }
+    public void M()
+    {
+        var loopStep = L(2);
+        for (Col e = Col.A; loopStep >= 0 ? e <= Col.E : e >= Col.E; e += loopStep)
+        {
+        }
+        int i;
+        i = L(3);
+        var loopStep1 = stepField;
+        for (; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
+        {
+        }
+        var loopStep2 = i;
+        for (i = 1; loopStep2 >= 0 ? i <= 9 : i >= 9; i += loopStep2)
+        {
+        }
     }
 }");
     }
