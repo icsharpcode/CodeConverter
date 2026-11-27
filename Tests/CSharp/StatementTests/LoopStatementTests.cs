@@ -502,9 +502,9 @@ End Sub", @"public void Main()
 {
     float foo = 3.5f;
     int index;
-    int loopFrom = (int)Math.Round(Conversion.Int(foo));
+    index = (int)Math.Round(Conversion.Int(foo));
     var loopTo = (int)Math.Round(Conversion.Int(foo * 3f));
-    for (index = loopFrom; index <= loopTo; index++)
+    for (; index <= loopTo; index++)
         Console.WriteLine(index);
 }");
     }
@@ -607,9 +607,13 @@ internal partial class ForEnumAsync
 {
     public void PrintLoop(MyEnum startIndex, MyEnum endIndex, MyEnum step)
     {
-        for (MyEnum i = startIndex, loopTo = endIndex; (int)step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
+        var loopTo = endIndex;
+        var loopStep = (int)step;
+        for (MyEnum i = startIndex; loopStep >= 0 ? i <= loopTo : i >= loopTo; i += loopStep)
             Debug.WriteLine(i);
-        for (MyEnum i2 = startIndex, loopTo1 = endIndex; (int)step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
+        var loopTo1 = endIndex;
+        var loopStep1 = (int)step;
+        for (MyEnum i2 = startIndex; loopStep1 >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += loopStep1)
             Debug.WriteLine(i2);
         for (MyEnum i3 = startIndex, loopTo2 = endIndex; i3 <= loopTo2; i3 += 3)
             Debug.WriteLine(i3);
@@ -1483,9 +1487,9 @@ internal partial class C
         {
         }
         int i;
-        int loopFrom = L(3);
+        i = L(3);
         var loopStep1 = stepField;
-        for (i = loopFrom; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
+        for (; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
         {
         }
         var loopStep2 = i;
@@ -1528,6 +1532,61 @@ internal partial class C
     }
     public void Bump(ref int x)
     {
+    }
+}");
+    }
+    [Fact]
+    public async Task ForFromIsOnlyExtractedWhereToOrStepCouldChangeOrReadItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Function F() As Integer
+        Return 1
+    End Function
+    Sub M(start As Integer, lst As System.Collections.Generic.List(Of Integer), ByRef s As Integer, conv As String)
+        Dim i As Integer
+        For i = start To lst.Count - 1
+        Next
+        For i = F() To F()
+        Next
+        For i = F() To i + 2
+        Next
+        For j = 1 To 9 Step s
+        Next
+        For j As Integer = 1 To 9 Step conv
+        Next
+    End Sub
+End Class", @"using System.Collections.Generic;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public int F()
+    {
+        return 1;
+    }
+    public void M(int start, List<int> lst, ref int s, string conv)
+    {
+        int i;
+        var loopTo = lst.Count - 1;
+        for (i = start; i <= loopTo; i++)
+        {
+        }
+        i = F();
+        var loopTo1 = F();
+        for (; i <= loopTo1; i++)
+        {
+        }
+        var loopFrom = F();
+        var loopTo2 = i + 2;
+        for (i = loopFrom; i <= loopTo2; i++)
+        {
+        }
+        for (int j = 1, loopStep = s; loopStep >= 0 ? j <= 9 : j >= 9; j += loopStep)
+        {
+        }
+        for (int j = 1, loopStep1 = Conversions.ToInteger(conv); loopStep1 >= 0 ? j <= 9 : j >= 9; j += loopStep1)
+        {
+        }
     }
 }");
     }

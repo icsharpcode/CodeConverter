@@ -1035,22 +1035,33 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         // In Visual Basic, the From, To and Step expressions are evaluated once, in that order, before the control variable is assigned, but in C# To and Step are evaluated for every iteration.
         // Any that isn't a constant is extracted as a variable: in the loop's declaration where it has the control variable's type, else before the loop.
-        // Then From is extracted ahead of them, unless nothing they evaluate can change it, so that it has its value from before them, as To and Step have theirs from before the control variable is assigned.
+        // Then From goes ahead of them where it must be evaluated first, as a variable where they read the control variable or it's declared by the loop.
         var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
         var toNeedsVariable = !_semanticModel.GetConstantValue(stmt.ToValue).HasValue;
-        var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue && !IsLocalUnchangedByLoop(stmt.StepClause.StepValue, node);
+        var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue
+            && !(csStepValue.SkipIntoParens() is IdentifierNameSyntax && IsLocalUnchangedByLoop(stmt.StepClause.StepValue, node));
         var fitsDeclaration = declaration != null && !initializers.Any() && (!stepNeedsVariable || SymbolEqualityComparer.Default.Equals(GetCsStepType(controlVarType), controlVarType));
-        if (!fitsDeclaration && (toNeedsVariable || stepNeedsVariable) && MayBeChangedByOrChange(stmt.FromValue, toNeedsVariable ? stmt.ToValue : null, stepNeedsVariable ? stmt.StepClause.StepValue : null)) {
-            var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
-            var loopFrom = ValidSyntaxFactory.IdentifierName(loopFromVariableName);
-            if (initializers.Any()) {
-                var assignment = (AssignmentExpressionSyntax)initializers[0];
-                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, assignment.Right, controlVarTypeSyntax)));
-                initializers[0] = assignment.WithRight(loopFrom);
-            } else {
-                var fromVariable = declaration.Variables[0];
-                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, fromVariable.Initializer.Value, controlVarTypeSyntax)));
-                declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(fromVariable.WithInitializer(SyntaxFactory.EqualsValueClause(loopFrom))));
+        var extracted = new[] { toNeedsVariable ? stmt.ToValue : null, stepNeedsVariable ? stmt.StepClause.StepValue : null }.Where(e => e != null).ToArray();
+        if (!fitsDeclaration && extracted.Any() && !_semanticModel.GetConstantValue(stmt.FromValue).HasValue) {
+            // To and Step may read an outside control variable if they name it, or if it's e.g. a field or captured local that what they call could read
+            var readsControlVariable = initializers.Any() && (GetUnaliasedLocalOrNull((VBSyntax.ExpressionSyntax)stmt.ControlVariable) == null || extracted.Any(e => RefersTo(e, controlVarSymbol)));
+            var mustBeEvaluatedFirst = !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.FromValue))
+                || extracted.Any(e => !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e))) && !IsUnchangedBy(stmt.FromValue, extracted);
+            if (initializers.Any() && mustBeEvaluatedFirst && !readsControlVariable) {
+                preLoopStatements.AddRange(initializers.Select(SyntaxFactory.ExpressionStatement));
+                initializers.Clear();
+            } else if (readsControlVariable || mustBeEvaluatedFirst) {
+                var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
+                var loopFrom = ValidSyntaxFactory.IdentifierName(loopFromVariableName);
+                if (initializers.Any()) {
+                    var assignment = (AssignmentExpressionSyntax)initializers[0];
+                    preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, assignment.Right)));
+                    initializers[0] = assignment.WithRight(loopFrom);
+                } else {
+                    var fromVariable = declaration.Variables[0];
+                    preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, fromVariable.Initializer.Value)));
+                    declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(fromVariable.WithInitializer(SyntaxFactory.EqualsValueClause(loopFrom))));
+                }
             }
         }
         ExpressionSyntax ExtractVariable(string nameBase, ExpressionSyntax value)
@@ -1085,28 +1096,43 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     }
 
     /// <summary>
-    /// A local or parameter that the loop doesn't write (directly, ByRef or in a lambda), and that no lambda captures, has the same value at every iteration
+    /// A local or ByVal parameter that the loop doesn't write (directly, ByRef or in a lambda), and that no lambda captures, has the same value at every iteration.
+    /// A ByRef parameter may be changed through what it refers to, e.g. a field the loop sets.
     /// </summary>
     private bool IsLocalUnchangedByLoop(VBSyntax.ExpressionSyntax vbValue, VBSyntax.ForBlockSyntax loop)
     {
-        var symbol = _semanticModel.GetOperation(vbValue) switch {
-            ILocalReferenceOperation local when !local.Local.IsStatic => (ISymbol)local.Local,
-            IParameterReferenceOperation parameter => parameter.Parameter,
-            _ => null
-        };
+        var symbol = GetUnaliasedLocalOrNull(vbValue);
         if (symbol == null || SymbolEqualityComparer.Default.Equals(symbol, _semanticModel.GetSymbolInfo(loop.ForStatement.ControlVariable).Symbol)) return false;
-        if (IsCapturedByAnyLambdaInMethod(symbol, vbValue)) return false;
         if (!loop.Statements.Any()) return true;
         var dataFlow = _semanticModel.AnalyzeDataFlow(loop.Statements.First(), loop.Statements.Last());
         return dataFlow.Succeeded && !dataFlow.WrittenInside.Contains(symbol, SymbolEqualityComparer.Default);
     }
 
     /// <summary>
-    /// From may change (e.g. a field a later call sets) or may change what the others read, unless it's a constant, or it and the others are all evaluated without side effects
+    /// From keeps its value while To and Step are evaluated if it's a local or ByVal parameter that they don't write (directly or ByRef) and no lambda captures
     /// </summary>
-    private bool MayBeChangedByOrChange(VBSyntax.ExpressionSyntax from, params VBSyntax.ExpressionSyntax[] others) =>
-        !_semanticModel.GetConstantValue(from).HasValue
-        && !new[] { from }.Concat(others).Where(e => e != null).All(e => IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e)));
+    private bool IsUnchangedBy(VBSyntax.ExpressionSyntax from, IEnumerable<VBSyntax.ExpressionSyntax> others)
+    {
+        var symbol = GetUnaliasedLocalOrNull(from);
+        return symbol != null && others.All(e => _semanticModel.AnalyzeDataFlow(e) is { Succeeded: true } dataFlow && !dataFlow.WrittenInside.Contains(symbol, SymbolEqualityComparer.Default));
+    }
+
+    /// <summary>
+    /// A local (not Static) or ByVal parameter that no lambda captures: only code that names it can change it
+    /// </summary>
+    private ISymbol GetUnaliasedLocalOrNull(VBSyntax.ExpressionSyntax vbValue)
+    {
+        var symbol = _semanticModel.GetOperation(vbValue) switch {
+            ILocalReferenceOperation local when !local.Local.IsStatic => (ISymbol)local.Local,
+            IParameterReferenceOperation { Parameter.RefKind: RefKind.None } parameter => parameter.Parameter,
+            _ => null
+        };
+        return symbol == null || IsCapturedByAnyLambdaInMethod(symbol, vbValue) ? null : symbol;
+    }
+
+    private bool RefersTo(VBSyntax.ExpressionSyntax vbExpression, ISymbol symbol) =>
+        vbExpression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>()
+            .Any(name => string.Equals(name.Identifier.ValueText, symbol.Name, StringComparison.OrdinalIgnoreCase) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(name).Symbol, symbol));
 
     /// <summary>
     /// The step is added to the control variable: for an enum, that's an integer of its underlying type
