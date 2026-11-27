@@ -612,4 +612,29 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task NothingConstantKeepsItsNameWhereConversionsConvertsItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Const StrC As String = Nothing
+    Const ObjC As Object = Nothing
+    Sub M()
+        Dim b As Boolean = StrC
+        Dim i As Integer = ObjC
+        Dim j = CInt(StrC)
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    private const string StrC = null;
+    private const object ObjC = null;
+    public void M()
+    {
+        bool b = Conversions.ToBoolean(StrC);
+        int i = Conversions.ToInteger(ObjC);
+        int j = Conversions.ToInteger(StrC);
+    }
+}");
+    }
 }

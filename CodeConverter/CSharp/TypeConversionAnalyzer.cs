@@ -101,21 +101,27 @@ internal class TypeConversionAnalyzer
     }
 
     /// <summary>
-    /// A constant Nothing is Nothing whatever its type, e.g. DirectCast(Nothing, Object), so converted to a structure it's the default value rather than a null that can't be unboxed.
+    /// A constant Nothing typed as Object is Nothing, e.g. DirectCast(Nothing, Object), so converted to a structure it's the default value rather than a null that can't be unboxed.
     /// VB may convert it through a structure, e.g. a Date for Date &amp; Nothing, which then gives that default's string rather than an empty one.
+    /// Where a Conversions method converts it directly, that already gives the default, and keeps e.g. a constant's name.
+    /// A String Nothing isn't converted this way: VB converts it as a string, which throws for e.g. a Boolean or a Date.
     /// </summary>
     private ExpressionSyntax ConvertNothingConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol forceTargetType)
     {
         if (vbNode == null || vbNode.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression)
             || _semanticModel.GetConstantValue(vbNode) is not { HasValue: true, Value: null }) return null;
-        var targetType = forceTargetType ?? _semanticModel.GetTypeInfo(vbNode).ConvertedType;
+        var typeInfo = _semanticModel.GetTypeInfo(vbNode);
+        if (typeInfo.Type is { SpecialType: not SpecialType.System_Object }) return null;
+        var targetType = forceTargetType ?? typeInfo.ConvertedType;
         var operation = _semanticModel.GetOperation(vbNode);
         var structureType = (operation?.Parent as IConversionOperation)?.Type is { IsValueType: true } converted && !converted.IsNullable()
             ? converted
             : targetType is { IsValueType: true } && !targetType.IsNullable() ? targetType : null;
         if (structureType == null) return null;
+        var isDirect = SymbolEqualityComparer.Default.Equals(structureType, targetType);
+        if (isDirect && ExpressionEvaluator.ConversionsTypeFullNames.ContainsKey(structureType.GetFullMetadataName())) return null;
         var defaultValue = SyntaxFactory.DefaultExpression(GetTypeSyntax(structureType));
-        return SymbolEqualityComparer.Default.Equals(structureType, targetType) ? defaultValue
+        return isDirect ? defaultValue
             : AddExplicitConversion(vbNode, defaultValue, forceSourceType: structureType, forceTargetType: targetType);
     }
 
