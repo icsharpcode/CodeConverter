@@ -596,7 +596,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// (dividing by zero gives Infinity, which VB can't convert), which the typed path's cast doesn't
     /// </remarks>
     private bool IsBoundLate(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo) =>
-        _semanticModel.GetOperation(node) switch {
+        (lhsTypeInfo.Type?.SpecialType == SpecialType.System_Object || rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object) && _semanticModel.GetOperation(node) switch {
             IExpressionStatementOperation { Operation: ICompoundAssignmentOperation compound } => IsOnObject(compound),
             ICompoundAssignmentOperation compound => IsOnObject(compound),
             _ => lhsTypeInfo.Type?.SpecialType == SpecialType.System_Object || rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
