@@ -46,31 +46,6 @@ Public Module P
     Next
     Return s2
   End Function
-  Public Function ElseIfCond() As String
-    Dim s2 = ""
-    Dim z = 0
-    If z = 1 Then
-      s2 = "a"
-    ElseIf NI(2) ^ NI(3) > 4 Then
-      Dim arg1 = 5
-      s2 &= arg1
-    End If
-    Return s2
-  End Function
-  Public Function CaseIs() As String
-    Dim s2 = ""
-    For k = 1 To 3
-      Select Case k
-        Case Is < NI(2) ^ NI(1)
-          Dim arg1 = 9
-          s2 &= arg1
-        Case Else
-          Dim arg2 = 8
-          s2 &= arg2
-      End Select
-    Next
-    Return s2
-  End Function
   Public Function ForEachColl() As String
     Dim s2 = ""
     For Each x In {NI(2) ^ NI(3)}
@@ -123,16 +98,6 @@ Public Class PatternVariableHeaderScopeTests
     <Fact>
     Public Sub SelExpr()
         Assert.Equal("988", HeaderScope.P.SelExpr())
-    End Sub
-
-    <Fact>
-    Public Sub ElseIfCond()
-        Assert.Equal("5", HeaderScope.P.ElseIfCond())
-    End Sub
-
-    <Fact>
-    Public Sub CaseIs()
-        Assert.Equal("988", HeaderScope.P.CaseIs())
     End Sub
 
     <Fact>

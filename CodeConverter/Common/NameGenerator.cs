@@ -100,13 +100,15 @@ internal class NameGenerator
     }
 
     /// <summary>
-    /// A block's header (e.g. If, ElseIf, Loop Until, Case, For Each) isn't a statement of its own in C#: a name declared in it is in scope in the block's body,
-    /// so it's the names of the block it heads, and the block that contains that, which matter
+    /// A block's header (e.g. If, ElseIf, Loop Until, Case Is, Catch When, For Each) isn't a statement of its own in C#: a name declared in it is in scope in the block's body,
+    /// so it's the names of the block it heads, and the block that contains that, which matter.
+    /// Part blocks such as ElseIf, Case and Catch aren't statements, so it's the executable block they're part of.
     /// </summary>
     private static VBSyntax.StatementSyntax GetExecutableStatementOrSelf(VBSyntax.StatementSyntax statement)
     {
-        while (statement is not VBSyntax.ExecutableStatementSyntax && statement?.Parent is VBSyntax.StatementSyntax and not VBSyntax.DeclarationStatementSyntax and var parent) {
-            statement = parent;
+        if (statement is VBSyntax.ExecutableStatementSyntax or null) return statement;
+        for (var node = statement.Parent; node is not (null or VBSyntax.DeclarationStatementSyntax or VBSyntax.LambdaExpressionSyntax); node = node.Parent) {
+            if (node is VBSyntax.ExecutableStatementSyntax executable) return executable;
         }
         return statement;
     }
