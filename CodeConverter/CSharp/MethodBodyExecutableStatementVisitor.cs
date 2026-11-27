@@ -1038,7 +1038,21 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             csToValue = toVariableId;
         }
 
-        var (csCondition, csStep) = await ConvertConditionAndStepClauseAsync(stmt, id, csToValue, controlVarType);
+        var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
+        // Like the To expression, the Step expression is only evaluated once in Visual Basic, but in C# is evaluated for each condition and each step.
+        // One that may evaluate differently (e.g. calls a function) is extracted as a variable, in the loop's declaration if it has the control variable's type.
+        if (csStepValue != null && !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.StepClause.StepValue))) {
+            var loopStepVariableName = GetUniqueVariableNameInScope(node, "loopStep");
+            var stepType = _semanticModel.GetTypeInfo(stmt.StepClause.StepValue).ConvertedType;
+            if (initializers.Any() || declaration == null || !SymbolEqualityComparer.Default.Equals(stepType, controlVarType)) {
+                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopStepVariableName, csStepValue)));
+            } else {
+                declaration = declaration.AddVariables(CommonConversions.CreateVariableDeclarator(loopStepVariableName, csStepValue)).WithType(controlVarTypeSyntax);
+            }
+            csStepValue = ValidSyntaxFactory.IdentifierName(loopStepVariableName);
+        }
+
+        var (csCondition, csStep) = ConvertConditionAndStepClause(stmt, id, csToValue, csStepValue);
 
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
         var forStatementSyntax = SyntaxFactory.ForStatement(
@@ -1055,13 +1069,18 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
     }
 
-    private async Task<(ExpressionSyntax, ExpressionSyntax)> ConvertConditionAndStepClauseAsync(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue, ITypeSymbol controlVarType)
+    private async Task<ExpressionSyntax> ConvertStepValueAsync(VBSyntax.ForStatementSyntax stmt, ITypeSymbol controlVarType)
     {
         var vbStepValue = stmt.StepClause?.StepValue;
-        var csStepValue = await (stmt.StepClause?.StepValue).AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        var csStepValue = await vbStepValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         // For an enum, you need to add on an integer for example:
         var forceStepType = controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
-        csStepValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: forceStepType);
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: forceStepType);
+    }
+
+    private (ExpressionSyntax, ExpressionSyntax) ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue, ExpressionSyntax csStepValue)
+    {
+        var vbStepValue = stmt.StepClause?.StepValue;
 
         var nonNegativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
         var negativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);

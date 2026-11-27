@@ -230,7 +230,7 @@ internal partial class ContrivedFuncInferenceExample
 {
     private void TestMethod()
     {
-        for (Blah index = (pList) => pList.All(x => true), loopTo = new Blah(); new Blah() >= 0 ? index <= loopTo : index >= loopTo; index += new Blah())
+        for (Blah index = (pList) => pList.All(x => true), loopTo = new Blah(), loopStep = new Blah(); loopStep >= 0 ? index <= loopTo : index >= loopTo; index += loopStep)
         {
             bool buffer = index.Check(new List<string>());
             Console.WriteLine($""{buffer}"");
