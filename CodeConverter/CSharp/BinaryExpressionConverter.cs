@@ -102,8 +102,11 @@ internal class BinaryExpressionConverter
                           lhsTypeIgnoringNullable.IsEnumType() && SymbolEqualityComparer.Default.Equals(lhsTypeIgnoringNullable, rhsTypeIgnoringNullable)
                           && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
                           && forceLhsTargetType == null;
-        lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
-        rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        var isConcatenation = node.IsKind(VBasic.SyntaxKind.ConcatenateExpression);
+        lhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Left, lhs) : null)
+              ?? (omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType));
+        rhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Right, rhs) : null)
+              ?? (omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs));
         var isShiftMaskedToNothing = false;
         if (node.IsKind(VBasic.SyntaxKind.LeftShiftExpression, VBasic.SyntaxKind.RightShiftExpression)) {
             var maskedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(_semanticModel.GetTypeInfo(node).Type, node.Right, rhs);

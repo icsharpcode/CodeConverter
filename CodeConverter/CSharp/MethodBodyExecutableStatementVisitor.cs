@@ -488,7 +488,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
 
         var typeConvertedRhs = node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)
             ? CommonConversions.TypeConversionAnalyzer.ConvertToPow(node.Left, lhs, node.Right, rhs, liftedResultType: lhsTypeInfo.Type.IsNullable() ? lhsTypeInfo.Type : null)
-            : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+            : node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement) && CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Right, rhs) is { } concatenated
+                ? concatenated
+                : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
         if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
             var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, rhs);
             var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);

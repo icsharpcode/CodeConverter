@@ -580,4 +580,36 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task ConcatenationOfNullableDateOrEnumAndOfCharIsAsVbsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Enum E
+    A
+End Enum
+Class C
+    Sub M(s As String, d As Date?, e As E?, c As Char)
+        s &= d
+        s &= e
+        s = s & d & e
+        c &= ""z""
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal enum E
+{
+    A
+}
+
+internal partial class C
+{
+    public void M(string s, DateTime? d, E? e, char c)
+    {
+        s += Conversions.ToString(d);
+        s += Conversions.ToString(e);
+        s = s + Conversions.ToString(d) + Conversions.ToString(e);
+        c = Conversions.ToChar(Conversions.ToString(c) + ""z"");
+    }
+}");
+    }
 }

@@ -88,6 +88,19 @@ internal class TypeConversionAnalyzer
         new DeclaredConstantConverter(_semanticModel, _csCompilation, GetTypeSyntax).Convert(vbValue, csValue, targetType, requiresExactType, parameter);
 
     /// <summary>
+    /// VB's &amp; converts a Nullable operand to a string as its boxed value: Nothing is empty, a Date is in VB's format and an enum is its number,
+    /// whereas C#'s + gives an enum's name and a DateTime's own format. Other types' strings are the same.
+    /// </summary>
+    /// <returns>Null where C#'s string concatenation gives the same</returns>
+    public ExpressionSyntax ConvertConcatenatedNullableOrNull(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode)
+    {
+        if (_semanticModel.GetTypeInfo(vbNode).Type?.GetNullableUnderlyingType() is not { } valueType || !valueType.IsEnumType() && !valueType.IsDateType()) return null;
+        var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+        var boxed = ValidSyntaxFactory.CastExpression(GetTypeSyntax(objectType), csNode.AddParens());
+        return AddExplicitConversion(vbNode, boxed, forceSourceType: objectType, forceTargetType: _semanticModel.Compilation.GetSpecialType(SpecialType.System_String));
+    }
+
+    /// <summary>
     /// A constant Nothing is Nothing whatever its type, e.g. DirectCast(Nothing, Object), so converted to a structure it's the default value rather than a null that can't be unboxed.
     /// VB may convert it through a structure, e.g. a Date for Date &amp; Nothing, which then gives that default's string rather than an empty one.
     /// </summary>
@@ -399,7 +412,7 @@ internal class TypeConversionAnalyzer
             !csConversion.IsImplicit && underlyingVbType.IsFractionalNumericType() && underlyingVbConvertedType.IsIntegralOrEnumType();
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
-            if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
+            if (!sourceForced && ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
                 typeConversionKind =
                     TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                 return true;
