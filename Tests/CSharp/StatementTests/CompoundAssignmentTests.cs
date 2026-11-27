@@ -511,4 +511,28 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task ParenthesizedNothingIsTypedAsNothingIsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(x As Integer, d As Double, t As Date)
+        x /= (Nothing)
+        x /= Nothing
+        d += (Nothing)
+        t += Nothing
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public void M(int x, double d, DateTime t)
+    {
+        x = (int)Math.Round(x / default(double));
+        x = (int)Math.Round(x / (double)default);
+        d += default(double);
+        t = Conversions.ToDate(Conversions.ToString(t) + null);
+    }
+}");
+    }
 }

@@ -249,7 +249,7 @@ internal class TypeConversionAnalyzer
         {
             return TypeConversionKind.Unknown;
         }
-        if (vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) return TypeConversionKind.NonDestructiveCast;
+        if (forceSourceType == null && vbNode.SkipIntoParens().IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) return TypeConversionKind.NonDestructiveCast;
 
         if (vbType is null) {
             return GetCommonDelegateTypeOrNull(vbNode, vbConvertedType) is {} ? TypeConversionKind.DelegateConstructor : TypeConversionKind.Unknown;
