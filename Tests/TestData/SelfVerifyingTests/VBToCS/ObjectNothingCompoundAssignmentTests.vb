@@ -1,4 +1,4 @@
-Option Strict Off
+﻿Option Strict Off
 Imports System
 Imports Xunit
 
@@ -78,5 +78,27 @@ Public Class ObjectNothingCompoundAssignmentTests
                                                                                                                             x ^= CObj(Nothing)
                                                                                                                             Return x
                                                                                                                         End Function)))
+    End Sub
+
+    <Fact>
+    Public Sub VbBindsObjectNothingToTheOtherOperandsType()
+        Dim n As Integer? = 5
+        n &= DirectCast(Nothing, Object)
+        Dim d As Double? = 1.5
+        d &= CObj(Nothing)
+        Dim ns As SV? = New SV(3)
+        ns += DirectCast(Nothing, Object)
+        Dim s As String = Nothing
+        s += DirectCast(Nothing, Object)
+        Dim t As String = "a"
+        t &= CType(Nothing, Object)
+        Assert.Equal("5,1.5,Nothing,,a", String.Join(",", n, CStr(d).Replace(Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator, "."), If(ns.HasValue, "SV", "Nothing"), s, t))
+    End Sub
+
+    <Fact>
+    Public Sub ObjectNothingConvertedToAStructureIsItsDefault()
+        Dim d As Date = DirectCast(Nothing, Object)
+        Dim sv As SV = CObj(Nothing)
+        Assert.Equal("True,0", (d = Nothing) & "," & sv.X)
     End Sub
 End Class

@@ -88,6 +88,25 @@ internal class TypeConversionAnalyzer
         new DeclaredConstantConverter(_semanticModel, _csCompilation, GetTypeSyntax).Convert(vbValue, csValue, targetType, requiresExactType, parameter);
 
     /// <summary>
+    /// A constant Nothing is Nothing whatever its type, e.g. DirectCast(Nothing, Object), so converted to a structure it's the default value rather than a null that can't be unboxed.
+    /// VB may convert it through a structure, e.g. a Date for Date &amp; Nothing, which then gives that default's string rather than an empty one.
+    /// </summary>
+    private ExpressionSyntax ConvertNothingConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol forceTargetType)
+    {
+        if (vbNode == null || vbNode.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression)
+            || _semanticModel.GetConstantValue(vbNode) is not { HasValue: true, Value: null }) return null;
+        var targetType = forceTargetType ?? _semanticModel.GetTypeInfo(vbNode).ConvertedType;
+        var operation = _semanticModel.GetOperation(vbNode);
+        var structureType = (operation?.Parent as IConversionOperation)?.Type is { IsValueType: true } converted && !converted.IsNullable()
+            ? converted
+            : targetType is { IsValueType: true } && !targetType.IsNullable() ? targetType : null;
+        if (structureType == null) return null;
+        var defaultValue = SyntaxFactory.DefaultExpression(GetTypeSyntax(structureType));
+        return SymbolEqualityComparer.Default.Equals(structureType, targetType) ? defaultValue
+            : AddExplicitConversion(vbNode, defaultValue, forceSourceType: structureType, forceTargetType: targetType);
+    }
+
+    /// <summary>
     /// VB's ^ converts both operands to Double, and is lifted to Double? over a Nullable operand: Nothing if either operand is, where a cast of it to Double would throw
     /// </summary>
     /// <param name="liftedResultType">A Nullable type to convert a lifted result to (e.g. a compound assignment's left side), so the conversion is lifted along with the operator</param>
@@ -121,6 +140,7 @@ internal class TypeConversionAnalyzer
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
         if (csNode == null) return null;
+        if (forceSourceType == null && ConvertNothingConstantOrNull(vbNode, forceTargetType) is { } nothing) return nothing;
 
         var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
         csNode = addParenthesisIfNeeded && conversionKind is TypeConversionKind.DestructiveCast or TypeConversionKind.NonDestructiveCast

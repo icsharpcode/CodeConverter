@@ -542,10 +542,17 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// VB converts the left operand to the operator's type, as for x = x op y, e.g. a Single to Long for \, which C#'s / would otherwise divide fractionally.
     /// An enum is left as it is for + or - of an integer its underlying type holds, which C# has on enums, but not for other operators (e.g. *), which C# doesn't (CS0019).
     /// </summary>
-    private ExpressionSyntax GetOperatorLeftOperand(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, ITypeSymbol operandType) =>
-        operandType != null && !SymbolEqualityComparer.Default.Equals(operandType, lhsType) && !IsEnumPlusOrMinusInteger(node, lhsType)
-            ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: operandType)
-            : lhs;
+    private ExpressionSyntax GetOperatorLeftOperand(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, ITypeSymbol operandType)
+    {
+        if (operandType == null || SymbolEqualityComparer.Default.Equals(operandType, lhsType) || IsEnumPlusOrMinusInteger(node, lhsType)) return lhs;
+        // & converts a Nullable's Nothing to an empty string, rather than taking its value and throwing as CStr does
+        if (node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement) && lhsType.IsNullable()) {
+            var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+            var boxed = ValidSyntaxFactory.CastExpression(CommonConversions.GetTypeSyntax(objectType), lhs.AddParens());
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, boxed, forceSourceType: objectType, forceTargetType: operandType);
+        }
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: operandType);
+    }
 
     private bool IsEnumPlusOrMinusInteger(VBSyntax.AssignmentStatementSyntax node, ITypeSymbol lhsType)
     {
@@ -579,19 +586,26 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
     /// Keyed on the VB statement, since e.g. &amp;= and += both become C#'s +=, and /= and \= both become /=.
     /// </summary>
     /// <summary>
-    /// VB lifts an arithmetic operator on a Nullable number for a constant Nothing of any type, e.g. DirectCast(Nothing, Object), giving Nothing, which the late-bound operator
-    /// converted back can't. Elsewhere the late-bound operator is kept, as it matches VB: e.g. a structure's operator takes Nothing as its default value,
-    /// and a Date or a concatenation throws as VB does.
+    /// VB binds the operator late where its operands are Object, but a constant Nothing is just Nothing whatever its type (e.g. DirectCast(Nothing, Object)),
+    /// so the operator is bound to the other operand's type. The bound operation says which: it operates on Object only when bound late.
     /// </summary>
-    private bool IsLiftedOverObjectNothing(VBSyntax.AssignmentStatementSyntax node, ITypeSymbol lhsType) =>
-        _semanticModel.GetConstantValue(node.Right) is { HasValue: true, Value: null }
-        && lhsType.GetNullableUnderlyingType() is { } valueType && (valueType.IsNumericType() || valueType.IsEnumType() || valueType.SpecialType == SpecialType.System_Boolean)
-        && !node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement);
+    /// <remarks>
+    /// The one exception is / of an Object Nothing into an integer: it gives the same Double, and the late-bound result's conversion back keeps VB's overflow check
+    /// (dividing by zero gives Infinity, which VB can't convert), which the typed path's cast doesn't
+    /// </remarks>
+    private bool IsBoundLate(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo) =>
+        _semanticModel.GetOperation(node) switch {
+            IExpressionStatementOperation { Operation: ICompoundAssignmentOperation compound } => IsOnObject(compound),
+            ICompoundAssignmentOperation compound => IsOnObject(compound),
+            _ => lhsTypeInfo.Type?.SpecialType == SpecialType.System_Object || rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
+        } || node.IsKind(VBasic.SyntaxKind.DivideAssignmentStatement) && rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
+             && (lhsTypeInfo.Type.IsIntegralType() || lhsTypeInfo.Type.IsEnumType());
+
+    private static bool IsOnObject(ICompoundAssignmentOperation compound) => compound.OperatorMethod == null && compound.Value.Type?.SpecialType == SpecialType.System_Object;
 
     private KnownMethod? GetLateBoundOperatorOrNull(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
     {
-        var isRhsObject = rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object && !IsLiftedOverObjectNothing(node, lhsTypeInfo.Type);
-        if (lhsTypeInfo.Type?.SpecialType != SpecialType.System_Object && !isRhsObject) return null;
+        if (!IsBoundLate(node, lhsTypeInfo, rhsTypeInfo)) return null;
         string methodName = node.Kind() switch {
             VBasic.SyntaxKind.AddAssignmentStatement => "AddObject",
             VBasic.SyntaxKind.SubtractAssignmentStatement => "SubtractObject",

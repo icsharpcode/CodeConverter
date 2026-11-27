@@ -535,4 +535,49 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task ObjectNothingIsBoundAsVbBindsItAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Structure SV
+    Public X As Integer
+    Public Shared Operator +(a As SV, b As SV) As SV
+        Return a
+    End Operator
+End Structure
+Class C
+    Sub M(t As Date, sv As SV, ns As SV?, i As Integer, n As Integer?, s As String, o As Object)
+        t += DirectCast(Nothing, Object)
+        sv += DirectCast(Nothing, Object)
+        ns += DirectCast(Nothing, Object)
+        i /= DirectCast(Nothing, Object)
+        n &= DirectCast(Nothing, Object)
+        s += DirectCast(Nothing, Object)
+        i += o
+    End Sub
+End Class", @"using System;
+using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial struct SV
+{
+    public int X;
+    public static SV operator +(SV a, SV b)
+    {
+        return a;
+    }
+}
+
+internal partial class C
+{
+    public void M(DateTime t, SV sv, SV? ns, int i, int? n, string s, object o)
+    {
+        t = Conversions.ToDate(Conversions.ToString(t) + Conversions.ToString(default(DateTime)));
+        sv += default(SV);
+        ns += (SV?)(object)null;
+        i = Conversions.ToInteger(Operators.DivideObject(i, null));
+        n = Conversions.ToInteger(Conversions.ToString(n) + Conversions.ToString(null));
+        s += Conversions.ToString(null);
+        i = Conversions.ToInteger(Operators.AddObject(i, o));
+    }
+}");
+    }
 }
