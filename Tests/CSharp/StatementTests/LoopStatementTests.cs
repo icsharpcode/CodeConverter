@@ -1542,8 +1542,7 @@ internal partial class C
         Dim i As Integer
         For i = start To lst.Count - 1
         Next
-        Dim k As Integer
-        For k = F() To F()
+        For i = F() To F()
         Next
         For i = F() To i + 2
         Next
@@ -1568,10 +1567,9 @@ internal partial class C
         for (i = start; i <= loopTo; i++)
         {
         }
-        int k;
-        k = F();
+        i = F();
         var loopTo1 = F();
-        for (; k <= loopTo1; k++)
+        for (; i <= loopTo1; i++)
         {
         }
         var loopFrom = F();
@@ -1671,6 +1669,39 @@ internal partial class C
         for (arr[1] = 1; loopStep2 >= 0 ? arr[1] <= 5 : arr[1] >= 5; arr[1] += loopStep2)
         {
         }
+    }
+}");
+    }
+    [Fact]
+    public async Task ForFromIsAssignedFirstWhereNoHandlerCanSeeTheControlVariableAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Function M(a As Integer()) As Long
+        Dim i As Long
+        For i = LBound(a) To UBound(a)
+        Next
+        For i = LBound(a) To UBound(a)
+        Next
+        Return i
+    End Function
+End Class", @"using Microsoft.VisualBasic; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public long M(int[] a)
+    {
+        long i;
+        i = Information.LBound(a);
+        var loopTo = (long)Information.UBound(a);
+        for (; i <= loopTo; i++)
+        {
+        }
+        i = Information.LBound(a);
+        var loopTo1 = (long)Information.UBound(a);
+        for (; i <= loopTo1; i++)
+        {
+        }
+        return i;
     }
 }");
     }

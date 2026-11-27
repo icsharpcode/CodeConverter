@@ -1047,9 +1047,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var readsControlVariable = initializers.Any() && (GetUnaliasedLocalOrNull((VBSyntax.ExpressionSyntax)stmt.ControlVariable) == null || extracted.Any(e => RefersTo(e, controlVarSymbol)));
             var mustBeEvaluatedFirst = !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.FromValue))
                 || extracted.Any(e => !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e))) && !IsUnchangedBy(stmt.FromValue, extracted);
-            // Assigned ahead of To and Step, it would keep From's value where they throw, which VB doesn't assign, so only where nothing outside the loop reads it
-            readsControlVariable |= mustBeEvaluatedFirst && initializers.Any()
-                && extracted.Any(e => !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e))) && IsReadOutside(node, controlVarSymbol);
+            // Assigned ahead of To and Step, it would keep From's value where they throw, which VB doesn't assign, so only where nothing can see that:
+            // the exception leaves the method unless the loop is within a Try or the method has On Error, and then the variable must be read outside the loop
+            readsControlVariable |= mustBeEvaluatedFirst && initializers.Any() && extracted.Any(MayThrow) && IsSeenAfterAnException(node, controlVarSymbol);
             if (initializers.Any() && mustBeEvaluatedFirst && !readsControlVariable) {
                 preLoopStatements.AddRange(initializers.Select(SyntaxFactory.ExpressionStatement));
                 initializers.Clear();
@@ -1126,8 +1126,23 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return stepType.IsNumericType() && conversion.IsImplicit && conversion.IsNumeric;
     }
 
-    private bool IsReadOutside(VBSyntax.ForBlockSyntax loop, ISymbol symbol) =>
-        _semanticModel.AnalyzeDataFlow(loop) is not { Succeeded: true } dataFlow || dataFlow.ReadOutside.Contains(symbol, SymbolEqualityComparer.Default);
+    /// <summary>
+    /// A Nullable converted to a value type throws for Nothing, as may anything with side effects
+    /// </summary>
+    private bool MayThrow(VBSyntax.ExpressionSyntax vbValue) =>
+        !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(vbValue))
+        || _semanticModel.GetTypeInfo(vbValue) is { Type: var type, ConvertedType: var convertedType } && type.IsNullable() && !convertedType.IsNullable();
+
+    private bool IsSeenAfterAnException(VBSyntax.ForBlockSyntax loop, ISymbol symbol)
+    {
+        var method = loop.Ancestors().FirstOrDefault(a => a is VBSyntax.MethodBlockBaseSyntax or VBSyntax.LambdaExpressionSyntax);
+        var isHandled = loop.Ancestors().TakeWhile(a => a != method).Any(a => a is VBSyntax.TryBlockSyntax)
+                        || method != null && method.DescendantNodes().Any(n => n is VBSyntax.OnErrorGoToStatementSyntax or VBSyntax.OnErrorResumeNextStatementSyntax);
+        if (!isHandled) return false;
+        // A function's return variable is read when it returns
+        if (symbol is ILocalSymbol { IsFunctionValue: true }) return true;
+        return _semanticModel.AnalyzeDataFlow(loop) is not { Succeeded: true } dataFlow || dataFlow.ReadOutside.Contains(symbol, SymbolEqualityComparer.Default);
+    }
 
     /// <summary>
     /// From keeps its value while To and Step are evaluated if it's a local or ByVal parameter that they don't write (directly or ByRef) and no lambda captures
