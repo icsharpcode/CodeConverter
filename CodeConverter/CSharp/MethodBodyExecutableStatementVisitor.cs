@@ -1039,7 +1039,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
         var toNeedsVariable = !_semanticModel.GetConstantValue(stmt.ToValue).HasValue;
         var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue
-            && !(csStepValue.SkipIntoParens() is IdentifierNameSyntax && IsLocalUnchangedByLoop(stmt.StepClause.StepValue, node));
+            && !(IsBareOrCheaplyConverted(stmt.StepClause.StepValue, csStepValue, GetCsStepType(controlVarType)) && IsLocalUnchangedByLoop(stmt.StepClause.StepValue, node));
         var fitsDeclaration = declaration != null && !initializers.Any() && (!stepNeedsVariable || SymbolEqualityComparer.Default.Equals(GetCsStepType(controlVarType), controlVarType));
         var extracted = new[] { toNeedsVariable ? stmt.ToValue : null, stepNeedsVariable ? stmt.StepClause.StepValue : null }.Where(e => e != null).ToArray();
         if (!fitsDeclaration && extracted.Any() && !_semanticModel.GetConstantValue(stmt.FromValue).HasValue) {
@@ -1047,6 +1047,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             var readsControlVariable = initializers.Any() && (GetUnaliasedLocalOrNull((VBSyntax.ExpressionSyntax)stmt.ControlVariable) == null || extracted.Any(e => RefersTo(e, controlVarSymbol)));
             var mustBeEvaluatedFirst = !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.FromValue))
                 || extracted.Any(e => !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e))) && !IsUnchangedBy(stmt.FromValue, extracted);
+            // Assigned ahead of To and Step, it would keep From's value where they throw, which VB doesn't assign, so only where nothing outside the loop reads it
+            readsControlVariable |= mustBeEvaluatedFirst && initializers.Any()
+                && extracted.Any(e => !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e))) && IsReadOutside(node, controlVarSymbol);
             if (initializers.Any() && mustBeEvaluatedFirst && !readsControlVariable) {
                 preLoopStatements.AddRange(initializers.Select(SyntaxFactory.ExpressionStatement));
                 initializers.Clear();
@@ -1107,6 +1110,24 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var dataFlow = _semanticModel.AnalyzeDataFlow(loop.Statements.First(), loop.Statements.Last());
         return dataFlow.Succeeded && !dataFlow.WrittenInside.Contains(symbol, SymbolEqualityComparer.Default);
     }
+
+    /// <summary>
+    /// Converting to the step's C# type can't throw and is cheap for an enum to its underlying type or a widening numeric conversion, so then it's as good as the bare name
+    /// </summary>
+    private bool IsBareOrCheaplyConverted(VBSyntax.ExpressionSyntax vbStep, ExpressionSyntax csStep, ITypeSymbol csStepType)
+    {
+        var unparenthesized = csStep.SkipIntoParens();
+        if (unparenthesized is IdentifierNameSyntax) return true;
+        if (unparenthesized is not CastExpressionSyntax { Expression: var castOperand } || castOperand.SkipIntoParens() is not IdentifierNameSyntax) return false;
+        var stepType = _semanticModel.GetTypeInfo(vbStep).Type;
+        if (stepType == null || csStepType == null) return false;
+        if (stepType is INamedTypeSymbol { EnumUnderlyingType: { } underlyingType }) return SymbolEqualityComparer.Default.Equals(underlyingType, csStepType);
+        var conversion = _semanticModel.Compilation.ClassifyCommonConversion(stepType, csStepType);
+        return stepType.IsNumericType() && conversion.IsImplicit && conversion.IsNumeric;
+    }
+
+    private bool IsReadOutside(VBSyntax.ForBlockSyntax loop, ISymbol symbol) =>
+        _semanticModel.AnalyzeDataFlow(loop) is not { Succeeded: true } dataFlow || dataFlow.ReadOutside.Contains(symbol, SymbolEqualityComparer.Default);
 
     /// <summary>
     /// From keeps its value while To and Step are evaluated if it's a local or ByVal parameter that they don't write (directly or ByRef) and no lambda captures

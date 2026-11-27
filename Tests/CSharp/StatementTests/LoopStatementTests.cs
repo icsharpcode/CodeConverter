@@ -607,13 +607,9 @@ internal partial class ForEnumAsync
 {
     public void PrintLoop(MyEnum startIndex, MyEnum endIndex, MyEnum step)
     {
-        var loopTo = endIndex;
-        var loopStep = (int)step;
-        for (MyEnum i = startIndex; loopStep >= 0 ? i <= loopTo : i >= loopTo; i += loopStep)
+        for (MyEnum i = startIndex, loopTo = endIndex; (int)step >= 0 ? i <= loopTo : i >= loopTo; i += (int)step)
             Debug.WriteLine(i);
-        var loopTo1 = endIndex;
-        var loopStep1 = (int)step;
-        for (MyEnum i2 = startIndex; loopStep1 >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += loopStep1)
+        for (MyEnum i2 = startIndex, loopTo1 = endIndex; (int)step >= 0 ? i2 <= loopTo1 : i2 >= loopTo1; i2 += (int)step)
             Debug.WriteLine(i2);
         for (MyEnum i3 = startIndex, loopTo2 = endIndex; i3 <= loopTo2; i3 += 3)
             Debug.WriteLine(i3);
@@ -1546,7 +1542,8 @@ internal partial class C
         Dim i As Integer
         For i = start To lst.Count - 1
         Next
-        For i = F() To F()
+        Dim k As Integer
+        For k = F() To F()
         Next
         For i = F() To i + 2
         Next
@@ -1571,9 +1568,10 @@ internal partial class C
         for (i = start; i <= loopTo; i++)
         {
         }
-        i = F();
+        int k;
+        k = F();
         var loopTo1 = F();
-        for (; i <= loopTo1; i++)
+        for (; k <= loopTo1; k++)
         {
         }
         var loopFrom = F();
@@ -1585,6 +1583,92 @@ internal partial class C
         {
         }
         for (int j = 1, loopStep1 = Conversions.ToInteger(conv); loopStep1 >= 0 ? j <= 9 : j >= 9; j += loopStep1)
+        {
+        }
+    }
+}");
+    }
+    [Fact]
+    public async Task ForFromIsKeptApartWhereToMayThrowAndTheControlVariableIsReadAfterAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Function F() As Integer
+        Return 1
+    End Function
+    Function M(f2 As String) As Integer
+        Dim i As Integer
+        Try
+            For i = F() To F()
+            Next
+        Catch
+        End Try
+        For i = f2 To i + F()
+        Next
+        Return i
+    End Function
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public int F()
+    {
+        return 1;
+    }
+    public int M(string f2)
+    {
+        var i = default(int);
+        try
+        {
+            var loopFrom = F();
+            var loopTo = F();
+            for (i = loopFrom; i <= loopTo; i++)
+            {
+            }
+        }
+        catch
+        {
+        }
+        var loopFrom1 = Conversions.ToInteger(f2);
+        var loopTo1 = i + F();
+        for (i = loopFrom1; i <= loopTo1; i++)
+        {
+        }
+        return i;
+    }
+}");
+    }
+    [Fact]
+    public async Task ForStepCastIsLeftInPlaceOnlyWhereItCantThrowAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Private arr As Integer() = {0, 0}
+    Sub M(b As Byte, l As Long, n As Integer?)
+        For i As Integer = 1 To 9 Step b
+        Next
+        For i As Integer = 1 To 9 Step CInt(l)
+        Next
+        For i As Integer = 1 To 9 Step n
+        Next
+        For arr(1) = 1 To 5 Step CInt(l)
+        Next
+    End Sub
+End Class", @"
+internal partial class C
+{
+    private int[] arr = new[] { 0, 0 };
+    public void M(byte b, long l, int? n)
+    {
+        for (int i = 1; b >= 0 ? i <= 9 : i >= 9; i += b)
+        {
+        }
+        for (int i = 1, loopStep = (int)l; loopStep >= 0 ? i <= 9 : i >= 9; i += loopStep)
+        {
+        }
+        for (int i = 1, loopStep1 = (int)n; loopStep1 >= 0 ? i <= 9 : i >= 9; i += loopStep1)
+        {
+        }
+        var loopStep2 = (int)l;
+        for (arr[1] = 1; loopStep2 >= 0 ? arr[1] <= 5 : arr[1] >= 5; arr[1] += loopStep2)
         {
         }
     }
