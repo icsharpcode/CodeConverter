@@ -103,7 +103,8 @@ internal class BinaryExpressionConverter
                           && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression, VBasic.SyntaxKind.ConcatenateExpression)
                           && forceLhsTargetType == null;
         var isConcatenation = node.IsKind(VBasic.SyntaxKind.ConcatenateExpression);
-        lhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Left, lhs, isLeftOperand: true) : null)
+        // Where the other operand is a String, C#'s + gives an empty string for a Nullable's null as VB does, so only an enum's or a Date's string differs
+        lhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Left, lhs, isLeftOperand: !omitConversion) : null)
               ?? (omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType));
         rhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Right, rhs) : null)
               ?? (omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs));

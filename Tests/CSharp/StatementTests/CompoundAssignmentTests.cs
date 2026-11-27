@@ -663,8 +663,33 @@ internal partial class C
     {
         s = ((int)e).ToString() + Conversions.ToString(ne);
         s = ((int)e).ToString() + ((int)e).ToString();
-        s = Conversions.ToString(ni) + ""x"";
-        s = Conversions.ToString(nb) + s;
+        s = ni + ""x"";
+        s = nb + s;
+    }
+}");
+    }
+    [Fact]
+    public async Task NothingCastToObjectIsTheDefaultAndANullableBesideAStringIsLeftAsItIsAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(ni As Integer?, s As String)
+        Dim x As Integer = CObj(Nothing)
+        Dim y As Integer = DirectCast(Nothing, Object)
+        Dim c As Char = CType(Nothing, Object)
+        s = ni & ""x""
+        s = ni & ni
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public void M(int? ni, string s)
+    {
+        int x = default;
+        int y = default;
+        char c = default;
+        s = ni + ""x"";
+        s = Conversions.ToString(ni) + ni;
     }
 }");
     }

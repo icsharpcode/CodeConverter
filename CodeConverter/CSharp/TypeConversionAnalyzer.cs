@@ -104,7 +104,7 @@ internal class TypeConversionAnalyzer
     /// <summary>
     /// A constant Nothing typed as Object is Nothing, e.g. DirectCast(Nothing, Object), so converted to a structure it's the default value rather than a null that can't be unboxed.
     /// VB may convert it through a structure, e.g. a Date for Date &amp; Nothing, which then gives that default's string rather than an empty one.
-    /// Where a Conversions method converts it directly, that already gives the default, and keeps e.g. a constant's name.
+    /// Where a Conversions method converts a named constant directly, that gives the default too, and keeps the constant's name.
     /// A String Nothing isn't converted this way: VB converts it as a string, which throws for e.g. a Boolean or a Date.
     /// </summary>
     private ExpressionSyntax ConvertNothingConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol forceTargetType)
@@ -120,7 +120,9 @@ internal class TypeConversionAnalyzer
             : targetType is { IsValueType: true } && !targetType.IsNullable() ? targetType : null;
         if (structureType == null) return null;
         var isDirect = SymbolEqualityComparer.Default.Equals(structureType, targetType);
-        if (isDirect && ExpressionEvaluator.ConversionsTypeFullNames.ContainsKey(structureType.GetFullMetadataName())) return null;
+        // A named constant keeps its name, which a Conversions method converts to the default too
+        if (isDirect && vbNode.SkipIntoParens() is VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax
+            && ExpressionEvaluator.ConversionsTypeFullNames.ContainsKey(structureType.GetFullMetadataName())) return null;
         var defaultValue = SyntaxFactory.DefaultExpression(GetTypeSyntax(structureType));
         return isDirect ? defaultValue
             : AddExplicitConversion(vbNode, defaultValue, forceSourceType: structureType, forceTargetType: targetType);
