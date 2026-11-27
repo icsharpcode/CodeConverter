@@ -512,8 +512,9 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         // Split out compound operator if type conversion needed on result
         if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
                 
-            // The right operand is converted to the operator's type, except a shift count, which is always Integer
-            var nonCompoundResultType = shiftedType ?? rhsTypeInfo.ConvertedType;
+            // The right operand is converted to the operator's type, except a shift count, which is always Integer, and a Nullable concatenated, which stays as it is (C# concatenates its value or nothing)
+            var nonCompoundResultType = shiftedType
+                ?? (node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement) ? _semanticModel.Compilation.GetSpecialType(SpecialType.System_String) : rhsTypeInfo.ConvertedType);
             // Unlike a C# compound operator, a setter call doesn't cast the promoted int back
             var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
             var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)

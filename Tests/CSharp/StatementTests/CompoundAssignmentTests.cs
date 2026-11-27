@@ -488,4 +488,27 @@ internal partial class C
     }
 }");
     }
+    [Fact]
+    public async Task ConcatenationOfNullableIsAsForTheBinaryOperatorAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(s As String, o As Object, n As Integer?, d As Double?, b As Boolean?)
+        s &= n
+        s &= d
+        s &= b
+        o &= n
+    End Sub
+End Class", @"using Microsoft.VisualBasic.CompilerServices; // Install-Package Microsoft.VisualBasic
+
+internal partial class C
+{
+    public void M(string s, object o, int? n, double? d, bool? b)
+    {
+        s += n;
+        s += d;
+        s += b;
+        o = Operators.ConcatenateObject(o, n);
+    }
+}");
+    }
 }
