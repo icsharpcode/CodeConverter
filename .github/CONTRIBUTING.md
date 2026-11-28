@@ -65,6 +65,7 @@ At the moment there's just a very small amount of first draft documentation. Con
 ## Moving away from legacy patterns in the code
 * Just do: The code currently cares about both a correct conversion, **and** creating readable output in many places. But since we've introduced [`ReduceAsync`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.simplification.simplifier?view=roslyn-dotnet), it's generally best to fully qualify and parenthesize things and allow it to be auto-simplified later.
 * Just do: The code currently makes heavy use of reading the syntax tree. In the vast majority of cases, we should move to using ISymbol and IOperation available from the semantic model. We should also be using `GetCsSymbolOrNull` in some cases where there's a possibility of the CSharp model having different information (though bear in mind it will often be null when there's even a minor compilation issue in the source, so we need a fallback).
+* Prefer the symbol and type APIs (`GetTypeInfo`, `GetSymbolInfo`, `ISymbol`) over `GetOperation` where they answer the question: building and walking IOperation trees is noticeably slower, so reserve it for things only operations expose (e.g. the implicit conversion or argument shape of an expression).
 * Investigate: The code heavily uses SyntaxFactory at the moment. In future I intend to make further use of [`SyntaxGenerator`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.editing.syntaxgenerator?view=roslyn-dotnet).
 
 ## Resources

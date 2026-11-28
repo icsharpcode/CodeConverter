@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### VB -> C#
 
 * Linq query conversion drastically changed in [#1395](https://github.com/icsharpcode/CodeConverter/pull/1305). Please report any bugs - especially regressions!
+* Use an explicit array type unless every initializer item already has the element type, so user-defined conversions apply - [#1211](https://github.com/icsharpcode/CodeConverter/issues/1211)
+* Cast Byte/SByte/Short/UShort operator results back to their VB type where C#'s int promotion would be visible, and mask shift counts by the shifted type
+* Evaluate a split compound assignment's receiver, indices and operands once, in VB's order; use the late-bound Operators call wherever VB binds late; lift `^`/`^=` over Nullable
+* Convert parameter defaults, enum member values and attribute arguments to their declared type as C# constants, including Decimal and Object defaults
+* Evaluate a For loop's From, To and Step once, in VB's order
+* Concatenate Nullable, enum and Date operands with `&`/`&=` as VB does
+* Keep generated local names clear of locals in block headers and sibling scopes
 
 ### C# -> VB
 
@@ -19,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Don't emit Me on the first parameter of an extension method - [#1118](https://github.com/icsharpcode/CodeConverter/issues/1118)
 * Truncate towards zero when converting a fractional number to an integer, instead of inheriting VB's rounding - [#1021](https://github.com/icsharpcode/CodeConverter/issues/1021)
 * Add Overloads to methods, properties and indexers when an inherited member has the same name
+* Evaluate built-in nint/nuint operators on Long/ULong, so the distance between two pointers doesn't throw or fail to compile
+* Convert nint/nuint to IntPtr/UIntPtr instead of the undefined nint/System.nint
 
 ## [10.0.2] - 2026-11-08
 

@@ -49,9 +49,10 @@ internal class ExpressionEvaluator
             && IsProbablyConstExpression(vbOperation)) return (csNode, isExactType);
 
         if (TryCompileTimeEvaluate(vbOperation, out var result)) {
-            if (type.Name == "Char" && result is int resultInt) {
+            // A constant Nothing may have no type, e.g. in Const c As Object = Nothing
+            if (type?.Name == "Char" && result is int resultInt) {
                 result = Strings.ChrW(resultInt);
-            } else if (ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
+            } else if (type != null && ConversionsTypeFullNames.TryGetValue(type.GetFullMetadataName(), out var method)) {
                 result = method.Invoke(null, new[] { result });
             }
             return (LiteralConversions.GetLiteralExpression(result, convertedType: type), true);

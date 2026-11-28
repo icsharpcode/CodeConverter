@@ -579,11 +579,13 @@ internal class CommonConversions
             VBSyntax.ExpressionSyntax upperBoundExpression = a is VBSyntax.SimpleArgumentSyntax sas ? sas.Expression
                 : a is VBSyntax.RangeArgumentSyntax ras ? ras.UpperBound
                 : throw new ArgumentOutOfRangeException(nameof(a), a, null);
-            var increaseArrayUpperBoundExpressionAsync = await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
-            return TypeConversionAnalyzer.AddExplicitConversion(upperBoundExpression, increaseArrayUpperBoundExpressionAsync);
+            return await IncreaseArrayUpperBoundExpressionAsync(upperBoundExpression);
         });
     }
 
+    /// <summary>
+    /// VB converts the upper bound to Integer (e.g. rounding a Double) before adding one to get the length
+    /// </summary>
     private async Task<ExpressionSyntax> IncreaseArrayUpperBoundExpressionAsync(VBSyntax.ExpressionSyntax expr)
     {
         var op = SemanticModel.GetOperation(expr);
@@ -591,20 +593,19 @@ internal class CommonConversions
         if (constant.HasValue && constant.Value is int)
             return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal((int)constant.Value + 1));
 
-        var convertedExpression = await expr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+        var convertedExpression = TypeConversionAnalyzer.AddExplicitConversion(expr, await expr.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+        if (convertedExpression is CSSyntax.LiteralExpressionSyntax { Token.Value: int convertedConstant }) {
+            return SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(convertedConstant + 1));
+        }
 
         if (op is IBinaryOperation bOp && bOp.OperatorKind == BinaryOperatorKind.Subtract &&
             bOp.RightOperand.ConstantValue.HasValue && bOp.RightOperand.ConstantValue.Value is int subtractedVal && subtractedVal == 1
             && convertedExpression.SkipIntoParens() is CSSyntax.BinaryExpressionSyntax bExp && bExp.IsKind(CSSyntaxKind.SubtractExpression))
             return bExp.Left;
 
-        if (convertedExpression is CSSyntax.ConditionalExpressionSyntax ce) {
-            convertedExpression = SyntaxFactory.ParenthesizedExpression(convertedExpression);
-        }
-
-        return SyntaxFactory.BinaryExpression(
-            CSSyntaxKind.SubtractExpression,
-            convertedExpression, SyntaxFactory.Token(CSSyntaxKind.PlusToken), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
+        // The simplifier removes these parentheses where they're redundant
+        return SyntaxFactory.BinaryExpression(CSSyntaxKind.AddExpression,
+            convertedExpression.AddParens(), SyntaxFactory.LiteralExpression(CSSyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(1)));
     }
 
     public async Task<SyntaxList<CSSyntax.AttributeListSyntax>> ConvertAttributesAsync(SyntaxList<VBSyntax.AttributeListSyntax> attributeListSyntaxs)
@@ -666,13 +667,21 @@ internal class CommonConversions
     /// A parameterized property's setter takes the value after the index parameters.
     /// When an index argument is named, or an optional one is left out, the value must be named too, since a positional argument can't follow them.
     /// </summary>
+    /// <summary>
+    /// A setter's value comes after its optional parameters, so where the getter's call leaves any out, or names its arguments, the value is named
+    /// (else it would fill an optional parameter, or follow a named argument out of position, CS8323).
+    /// A setter converted from this source names it value, as a C# setter's is; one in a referenced assembly keeps its own name.
+    /// </summary>
     public static CSSyntax.ArgumentListSyntax AddSetterValueArgument(CSSyntax.ArgumentListSyntax indexArgs, IPropertySymbol property, ExpressionSyntax value)
     {
         var valueArg = SyntaxFactory.Argument(value);
         var mustNameValue = indexArgs.Arguments.Count != property.GetParameters().Length ||
                             indexArgs.Arguments.Any(t => t.NameColon != null);
         if (mustNameValue) {
-            valueArg = valueArg.WithNameColon(SyntaxFactory.NameColon("value"));
+            var valueName = property.SetMethod is { Parameters: { Length: > 0 } setterParameters } setMethod && !setMethod.Locations.Any(l => l.IsInSource)
+                ? CsEscapedIdentifier(setterParameters.Last().Name).Text
+                : "value";
+            valueArg = valueArg.WithNameColon(SyntaxFactory.NameColon(ValidSyntaxFactory.IdentifierName(valueName)));
         }
 
         return indexArgs.WithArguments(indexArgs.Arguments.Add(valueArg));

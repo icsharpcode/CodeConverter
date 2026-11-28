@@ -64,6 +64,7 @@ internal class LambdaConverter
                 convertedStatements = await ConvertMethodBodyStatementsAsync(statement, statement.Yield().ToArray());
             } else {
                 var csNode = await node.Body.AcceptAsync<ExpressionSyntax>(CommonConversions.TriviaConvertingExpressionVisitor);
+                csNode = ConvertToReturnType((VBSyntax.ExpressionSyntax)node.Body, csNode);
                 convertedStatements = new[] { SyntaxFactory.ExpressionStatement(csNode) };
             }
 
@@ -71,6 +72,37 @@ internal class LambdaConverter
             return await ConvertAsync(node, param, convertedStatements);
         }
     }
+
+    /// <summary>
+    /// VB converts a single-line lambda's body to the return type as a Return statement would (e.g. Byte to Short), C# needs that conversion to be implicit.
+    /// </summary>
+    /// <remarks>
+    /// Except where the C# body already has the return type, which the VB types don't show:
+    /// <list type="bullet">
+    /// <item>a nested lambda returned as a delegate: C# infers its type from the return type, so it needs no delegate creation</item>
+    /// <item>a Boolean made from Object comparisons: VB gives Object, the C# conversion gives bool (see <see cref="IsBooleanInCSharp"/>)</item>
+    /// </list>
+    /// </remarks>
+    private ExpressionSyntax ConvertToReturnType(VBSyntax.ExpressionSyntax vbBody, ExpressionSyntax csBody)
+    {
+        var typeInfo = _semanticModel.GetTypeInfo(vbBody);
+        var isTargetTypedLambda = vbBody.SkipIntoParens() is VBSyntax.LambdaExpressionSyntax && typeInfo.ConvertedType?.TypeKind == TypeKind.Delegate;
+        var isAlreadyBoolean = typeInfo.Type?.SpecialType == SpecialType.System_Object && typeInfo.ConvertedType?.SpecialType == SpecialType.System_Boolean && IsBooleanInCSharp(vbBody);
+        return isTargetTypedLambda || isAlreadyBoolean ? csBody : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbBody, csBody);
+    }
+
+    /// <summary>
+    /// A comparison of Objects converts to Operators.ConditionalCompareObject* (bool) where it's tested as a Boolean, or to == in an expression tree, and Not of that stays bool.
+    /// AndAlso and OrElse always convert to C#'s &amp;&amp; and ||, which give bool whatever VB's operand types, whereas And, Or and Xor of Objects convert to Operators.AndObject etc., which give Object.
+    /// </summary>
+    /// <remarks>Only reached for an Object-typed body: Is, IsNot and TypeOf are Boolean even on Objects</remarks>
+    private static bool IsBooleanInCSharp(VBSyntax.ExpressionSyntax vbNode) => vbNode.SkipIntoParens() switch {
+        VBSyntax.UnaryExpressionSyntax notExpression when notExpression.IsKind(VBasic.SyntaxKind.NotExpression) => IsBooleanInCSharp(notExpression.Operand),
+        var node => node.IsKind(VBasic.SyntaxKind.EqualsExpression, VBasic.SyntaxKind.NotEqualsExpression,
+            VBasic.SyntaxKind.LessThanExpression, VBasic.SyntaxKind.LessThanOrEqualExpression,
+            VBasic.SyntaxKind.GreaterThanExpression, VBasic.SyntaxKind.GreaterThanOrEqualExpression,
+            VBasic.SyntaxKind.AndAlsoExpression, VBasic.SyntaxKind.OrElseExpression)
+    };
 
     public async Task<CSharpSyntaxNode> ConvertAsync(VBSyntax.LambdaExpressionSyntax vbNode,
         ParameterListSyntax param, IReadOnlyCollection<StatementSyntax> convertedStatements)

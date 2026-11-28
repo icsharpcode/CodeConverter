@@ -1,4 +1,5 @@
-﻿using ICSharpCode.CodeConverter.Util.FromRoslyn;
+﻿using System.Globalization;
+using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.FindSymbols;
@@ -25,14 +26,7 @@ internal class TypeConversionAnalyzer
     private readonly ExpressionEvaluator _expressionEvaluator;
     private readonly VisualBasicNullableExpressionsConverter _vbNullableExpressionsConverter;
 
-    private static readonly VBasic.SyntaxKind[] Int32ArithmeticExpressionKinds = {
-        VBasic.SyntaxKind.IntegerDivideExpression,
-        VBasic.SyntaxKind.ModuloExpression,
-        VBasic.SyntaxKind.AddExpression,
-        VBasic.SyntaxKind.SubtractExpression,
-        VBasic.SyntaxKind.MultiplyExpression,
-        VBasic.SyntaxKind.DivideExpression
-    };
+    private readonly SmallIntegerOperatorPromotion _smallIntegerOperatorPromotion;
 
     public TypeConversionAnalyzer(SemanticModel semanticModel, CSharpCompilation csCompilation,
         HashSet<string> extraUsingDirectives, SyntaxGenerator csSyntaxGenerator, ExpressionEvaluator expressionEvaluator, 
@@ -44,11 +38,131 @@ internal class TypeConversionAnalyzer
         _csSyntaxGenerator = csSyntaxGenerator;
         _expressionEvaluator = expressionEvaluator;
         _vbNullableExpressionsConverter = vbNullableExpressionsConverter;
+        _smallIntegerOperatorPromotion = new SmallIntegerOperatorPromotion(semanticModel);
+    }
+
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion"/>
+    public ExpressionSyntax CastPromotedOperatorResultIfNeeded(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode)
+    {
+        if (!_smallIntegerOperatorPromotion.NeedsCastToVbType(vbNode)) return csNode;
+        var cast = CreateCast(csNode, _smallIntegerOperatorPromotion.GetPromotedTypeOrNull(vbNode));
+        return _smallIntegerOperatorPromotion.NeedsOwnUncheckedContext(vbNode)
+            ? SyntaxFactory.CheckedExpression(SyntaxKind.UncheckedExpression, cast)
+            : cast;
+    }
+
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetVbShiftedType"/>
+    public ITypeSymbol GetVbShiftedType(ITypeSymbol leftType) => _smallIntegerOperatorPromotion.GetVbShiftedType(leftType);
+
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetCSharpOperatorResultType"/>
+    public ITypeSymbol GetCSharpOperatorResultType(ITypeSymbol vbResultType) => _smallIntegerOperatorPromotion.GetCSharpOperatorResultType(vbResultType);
+
+    /// <inheritdoc cref="SmallIntegerOperatorPromotion.GetShiftCountMaskOrNull"/>
+    /// <remarks>
+    /// A constant count out of range is replaced by its masked value, which is what VB shifts by, so a named constant loses its name there; one in range keeps it.
+    /// </remarks>
+    public ExpressionSyntax MaskShiftCountIfNeeded(ITypeSymbol shiftedType, VBSyntax.ExpressionSyntax vbCount, ExpressionSyntax csCount)
+    {
+        if (SmallIntegerOperatorPromotion.GetShiftCountMaskOrNull(shiftedType) is not { } mask) return csCount;
+        if (GetIntegralConstantOrNull(vbCount) is { } count) {
+            return count is >= 0 && count <= mask ? csCount : LiteralConversions.GetLiteralExpression((int)(count & mask));
+        }
+        if (vbCount.SkipIntoParens() is VBSyntax.BinaryExpressionSyntax { RawKind: (int)VBasic.SyntaxKind.AndExpression } and &&
+            (GetIntegralConstantOrNull(and.Left) ?? GetIntegralConstantOrNull(and.Right)) is >= 0 and var andMask && andMask <= mask) {
+            return csCount;
+        }
+        return SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseAndExpression, csCount.AddParens(), LiteralConversions.GetLiteralExpression(mask)).AddParens();
+    }
+
+    /// <remarks>A fractional constant is the integer VB converts it to, rounding to even</remarks>
+    private long? GetIntegralConstantOrNull(VBSyntax.ExpressionSyntax vbNode) =>
+        _semanticModel.GetConstantValue(vbNode) switch {
+            { HasValue: true, Value: sbyte or byte or short or ushort or int or uint or long } constant => Convert.ToInt64(constant.Value, CultureInfo.InvariantCulture),
+            { HasValue: true, Value: decimal m } => (long)Math.Round(m),
+            { HasValue: true, Value: double or float } constant => (long)Math.Round(Convert.ToDouble(constant.Value, CultureInfo.InvariantCulture)),
+            _ => null
+        };
+
+    /// <inheritdoc cref="DeclaredConstantConverter"/>
+    public ExpressionSyntax ConvertDeclaredConstant(VBSyntax.ExpressionSyntax vbValue, ExpressionSyntax csValue, ITypeSymbol targetType, bool requiresExactType = false, IParameterSymbol parameter = null) =>
+        new DeclaredConstantConverter(_semanticModel, _csCompilation, GetTypeSyntax).Convert(vbValue, csValue, targetType, requiresExactType, parameter);
+
+    /// <summary>
+    /// VB's &amp; converts a Nullable operand to a string as its boxed value: Nothing is empty, a Date is in VB's format and an enum is its number,
+    /// whereas C#'s + gives an enum's name and a DateTime's own format. Other types' strings are the same, but a left operand is converted to String explicitly,
+    /// which would take its value and throw for Nothing.
+    /// </summary>
+    /// <returns>Null where C#'s string concatenation gives the same</returns>
+    public ExpressionSyntax ConvertConcatenatedNullableOrNull(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool isLeftOperand = false)
+    {
+        if (_semanticModel.GetTypeInfo(vbNode).Type?.GetNullableUnderlyingType() is not { } valueType || !isLeftOperand && !valueType.IsEnumType() && !valueType.IsDateType()) return null;
+        var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+        var boxed = ValidSyntaxFactory.CastExpression(GetTypeSyntax(objectType), csNode.AddParens());
+        return AddExplicitConversion(vbNode, boxed, forceSourceType: objectType, forceTargetType: _semanticModel.Compilation.GetSpecialType(SpecialType.System_String));
+    }
+
+    /// <summary>
+    /// A constant Nothing typed as Object is Nothing, e.g. DirectCast(Nothing, Object), so converted to a structure it's the default value rather than a null that can't be unboxed.
+    /// VB may convert it through a structure, e.g. a Date for Date &amp; Nothing, which then gives that default's string rather than an empty one.
+    /// Where a Conversions method converts a named constant directly, that gives the default too, and keeps the constant's name.
+    /// A String Nothing isn't converted this way: VB converts it as a string, which throws for e.g. a Boolean or a Date.
+    /// </summary>
+    private ExpressionSyntax ConvertNothingConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol forceTargetType)
+    {
+        if (vbNode == null || vbNode.SkipIntoParens().IsKind(VBasic.SyntaxKind.NothingLiteralExpression)
+            || _semanticModel.GetConstantValue(vbNode) is not { HasValue: true, Value: null }) return null;
+        var typeInfo = _semanticModel.GetTypeInfo(vbNode);
+        if (typeInfo.Type is { SpecialType: not SpecialType.System_Object }) return null;
+        var targetType = forceTargetType ?? typeInfo.ConvertedType;
+        var operation = _semanticModel.GetOperation(vbNode);
+        var structureType = (operation?.Parent as IConversionOperation)?.Type is { IsValueType: true } converted && !converted.IsNullable()
+            ? converted
+            : targetType is { IsValueType: true } && !targetType.IsNullable() ? targetType : null;
+        if (structureType == null) return null;
+        var isDirect = SymbolEqualityComparer.Default.Equals(structureType, targetType);
+        // A named constant keeps its name, which a Conversions method converts to the default too
+        if (isDirect && vbNode.SkipIntoParens() is VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax
+            && ExpressionEvaluator.ConversionsTypeFullNames.ContainsKey(structureType.GetFullMetadataName())) return null;
+        var defaultValue = SyntaxFactory.DefaultExpression(GetTypeSyntax(structureType));
+        return isDirect ? defaultValue
+            : AddExplicitConversion(vbNode, defaultValue, forceSourceType: structureType, forceTargetType: targetType);
+    }
+
+    /// <summary>
+    /// VB's ^ converts both operands to Double, and is lifted to Double? over a Nullable operand: Nothing if either operand is, where a cast of it to Double would throw
+    /// </summary>
+    /// <param name="liftedResultType">A Nullable type to convert a lifted result to (e.g. a compound assignment's left side), so the conversion is lifted along with the operator</param>
+    private static ExpressionSyntax DefaultNullableDouble() =>
+        SyntaxFactory.DefaultExpression(SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword))));
+
+    public ExpressionSyntax ConvertToPow(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight, ITypeSymbol liftedResultType = null)
+    {
+        var doubleType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Double);
+        var leftType = _semanticModel.GetTypeInfo(vbLeft).Type;
+        var rightType = _semanticModel.GetTypeInfo(vbRight).Type;
+        // A constant Nothing VB lifts for makes the result Nothing, so it's a typed Double? null, which can be matched where a bare null or default can't
+        var nullableDoubleType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Nullable_T).Construct(doubleType);
+        if (_vbNullableExpressionsConverter.IsNothingConvertedToNullable(vbLeft)) (csLeft, leftType) = (DefaultNullableDouble(), nullableDoubleType);
+        if (_vbNullableExpressionsConverter.IsNothingConvertedToNullable(vbRight)) (csRight, rightType) = (DefaultNullableDouble(), nullableDoubleType);
+        // The value of a Nullable operand has its underlying type
+        // An operand's value bound by a pattern isn't what the VB node converts to, so has its type forced too
+        ExpressionSyntax ToDouble(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax original, ITypeSymbol type, ExpressionSyntax value) =>
+            AddExplicitConversion(vbNode, value, forceSourceType: type.GetNullableUnderlyingType() ?? (value == original ? null : type), forceTargetType: doubleType);
+        ExpressionSyntax Pow(ExpressionSyntax left, ExpressionSyntax right) =>
+            new KnownMethod(nameof(System), nameof(Math), nameof(Math.Pow)).Invoke(_extraUsingDirectives, ToDouble(vbLeft, csLeft, leftType, left), ToDouble(vbRight, csRight, rightType, right));
+
+        if (liftedResultType?.GetNullableUnderlyingType() is { } resultValueType) {
+            return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight,
+                (left, right) => AddExplicitConversion(vbLeft, Pow(left, right), forceSourceType: doubleType, forceTargetType: resultValueType), GetTypeSyntax(liftedResultType)) ?? Pow(csLeft, csRight);
+        }
+        var nullableDouble = SyntaxFactory.NullableType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword)));
+        return _vbNullableExpressionsConverter.LiftOrNull(vbLeft, csLeft, vbRight, csRight, Pow, nullableDouble) ?? Pow(csLeft, csRight);
     }
 
     public ExpressionSyntax AddExplicitConversion(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, bool addParenthesisIfNeeded = true, bool defaultToCast = false, bool isConst = false, ITypeSymbol forceSourceType = null, ITypeSymbol forceTargetType = null)
     {
         if (csNode == null) return null;
+        if (forceSourceType == null && ConvertNothingConstantOrNull(vbNode, forceTargetType) is { } nothing) return nothing;
 
         var conversionKind = AnalyzeConversion(vbNode, defaultToCast, isConst, forceSourceType, forceTargetType);
         csNode = addParenthesisIfNeeded && conversionKind is TypeConversionKind.DestructiveCast or TypeConversionKind.NonDestructiveCast
@@ -81,6 +195,7 @@ internal class TypeConversionAnalyzer
     {
         switch (conversionKind) {
             case TypeConversionKind.FractionalNumberRoundThenCast:
+                if (GetRoundedConstantOrNull(vbNode, csNode, vbConvertedType) is { } roundedConstant) return roundedConstant;
                 csNode = vbType.IsNullable() && vbConvertedType.IsNullable() 
                     ? _vbNullableExpressionsConverter.InvokeConversionWhenNotNull(vbNode, csNode, GetMathRoundMemberAccess(), GetTypeSyntax(vbConvertedType)) 
                     : AddRoundInvocation(vbType.IsNullable() ? csNode.NullableGetValueExpression() : csNode);
@@ -124,6 +239,35 @@ internal class TypeConversionAnalyzer
         }
     }
 
+    /// <summary>
+    /// VB converts a fractional constant at compile time, rounding to even, so the result is still a constant (e.g. for a Const or a Case), whereas Math.Round isn't.
+    /// Only a literal or a named constant is folded, so a calculation stays visible.
+    /// A caller may convert a larger C# expression than <paramref name="vbNode"/> (e.g. the whole of a compound assignment), which mustn't be replaced by its constant.
+    /// </summary>
+    private ExpressionSyntax GetRoundedConstantOrNull(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, ITypeSymbol vbConvertedType)
+    {
+        var csValue = csNode.SkipIntoParens() is CSSyntax.PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.UnaryMinusExpression } csNegation ? csNegation.Operand.SkipIntoParens() : csNode.SkipIntoParens();
+        if (csValue is not (CSSyntax.LiteralExpressionSyntax or IdentifierNameSyntax or MemberAccessExpressionSyntax)) return null;
+        var node = vbNode.SkipIntoParens();
+        if (node is VBSyntax.UnaryExpressionSyntax { RawKind: (int)VBasic.SyntaxKind.UnaryMinusExpression } negation) node = negation.Operand.SkipIntoParens();
+        if (node is not (VBSyntax.LiteralExpressionSyntax or VBSyntax.IdentifierNameSyntax or VBSyntax.MemberAccessExpressionSyntax)) return null;
+        if (_semanticModel.GetConstantValue(vbNode) is not { HasValue: true, Value: double or float or decimal } constant) return null;
+        var targetType = vbConvertedType.GetNullableUnderlyingType() ?? vbConvertedType;
+        var rounded = constant.Value is decimal m ? Math.Round(m) : (object)Math.Round(Convert.ToDouble(constant.Value, CultureInfo.InvariantCulture));
+        var value = targetType.SpecialType switch {
+            SpecialType.System_Byte => Convert.ToByte(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_SByte => Convert.ToSByte(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_Int16 => Convert.ToInt16(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt16 => Convert.ToUInt16(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_Int32 => Convert.ToInt32(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt32 => Convert.ToUInt32(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_Int64 => Convert.ToInt64(rounded, CultureInfo.InvariantCulture),
+            SpecialType.System_UInt64 => (object)Convert.ToUInt64(rounded, CultureInfo.InvariantCulture),
+            _ => null
+        };
+        return value == null ? null : LiteralConversions.GetLiteralExpression(value, convertedType: targetType);
+    }
+
     private TypeSyntax GetTypeSyntax(ITypeSymbol type) => (TypeSyntax)_csSyntaxGenerator.TypeExpression(type);
 
     private ExpressionSyntax CreateCast(ExpressionSyntax csNode, ITypeSymbol vbConvertedType)
@@ -147,7 +291,7 @@ internal class TypeConversionAnalyzer
         {
             return TypeConversionKind.Unknown;
         }
-        if (vbNode.IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) return TypeConversionKind.NonDestructiveCast;
+        if (forceSourceType == null && vbNode.SkipIntoParens().IsKind(Microsoft.CodeAnalysis.VisualBasic.SyntaxKind.NothingLiteralExpression)) return TypeConversionKind.NonDestructiveCast;
 
         if (vbType is null) {
             return GetCommonDelegateTypeOrNull(vbNode, vbConvertedType) is {} ? TypeConversionKind.DelegateConstructor : TypeConversionKind.Unknown;
@@ -189,40 +333,16 @@ internal class TypeConversionAnalyzer
         return AnalyzeVbConversion(alwaysExplicit, vbType, vbConvertedType, vbConversion);
     }
 
-    /// <summary>
-    /// The VB operators are different to C#, e.g. VB: short * short = short, C#: short * short = int
-    /// https://docs.microsoft.com/en-us/dotnet/visual-basic/programming-guide/language-features/operators-and-expressions/arithmetic-operators
-    /// https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/arithmetic-operators#:~:text=The%20following%20operators%20perform%20arithmetic,%2C%20and%20%2D%20(subtraction)%20operators
-    /// </summary>
+    /// <remarks>
+    /// An operator C# promotes to int is still an int here unless <see cref="CastPromotedOperatorResultIfNeeded"/> cast it back
+    /// </remarks>
     private (ITypeSymbol Type, ITypeSymbol ConvertedType) GetTypeInfo(VBSyntax.ExpressionSyntax vbNode,
         ITypeSymbol type = null, ITypeSymbol convertedType = null)
     {
         var typeInfo = _semanticModel.GetTypeInfo(vbNode);
-        type ??= typeInfo.Type;
         convertedType ??= typeInfo.ConvertedType;
-        if (type.IsNumericType()) {
-            VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
-            type = GetTypeOrNull(vbNode, type.SpecialType) ?? type;
-        }
+        type ??= _smallIntegerOperatorPromotion.GetCSharpTypeOrNull(vbNode, convertedType) ?? typeInfo.Type;
         return (type, convertedType);
-    }
-
-    private ITypeSymbol GetTypeOrNull(VBSyntax.ExpressionSyntax vbNode, SpecialType type)
-    {
-        var syntaxKind = VBasic.VisualBasicExtensions.Kind(vbNode.SkipIntoParens());
-        if (Int32ArithmeticExpressionKinds.Contains(syntaxKind))
-        {
-            var mappedSpecialType = type switch {
-                SpecialType.System_SByte => SpecialType.System_Int32,
-                SpecialType.System_Byte => SpecialType.System_Int32,
-                SpecialType.System_Int16 => SpecialType.System_Int32,
-                SpecialType.System_UInt16 => SpecialType.System_Int32,
-                var other => other
-            };
-            return _semanticModel.Compilation.GetSpecialType(mappedSpecialType);
-        }
-
-        return null;
     }
 
     private CSSyntax.NameSyntax GetCommonDelegateTypeOrNull(VBSyntax.ExpressionSyntax vbNode, ITypeSymbol vbConvertedType)
@@ -301,7 +421,7 @@ internal class TypeConversionAnalyzer
             !csConversion.IsImplicit && underlyingVbType.IsFractionalNumericType() && underlyingVbConvertedType.IsIntegralOrEnumType();
 
         if (!csConversion.Exists || csConversion.IsUnboxing) {
-            if (ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
+            if (!sourceForced && ConvertStringToCharLiteral(vbNode, vbConvertedType, out _)) {
                 typeConversionKind =
                     TypeConversionKind.Identity; // Already handled elsewhere by other usage of method
                 return true;

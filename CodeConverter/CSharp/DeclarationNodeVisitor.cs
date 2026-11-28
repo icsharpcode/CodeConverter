@@ -467,10 +467,10 @@ internal class DeclarationNodeVisitor : VBasic.VisualBasicSyntaxVisitor<Task<CSh
     public override async Task<CSharpSyntaxNode> VisitEnumMemberDeclaration(VBSyntax.EnumMemberDeclarationSyntax node)
     {
         var attributes = await CommonConversions.ConvertAttributesAsync(node.AttributeLists);
-        return CS.SyntaxFactory.EnumMemberDeclaration(
-            attributes, CommonConversions.ConvertIdentifier(node.Identifier),
-            await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor)
-        );
+        var initializer = await node.Initializer.AcceptAsync<EqualsValueClauseSyntax>(_triviaConvertingExpressionVisitor);
+        var underlyingType = (_semanticModel.GetDeclaredSymbol(node)?.ContainingType as INamedTypeSymbol)?.EnumUnderlyingType;
+        initializer = initializer?.WithValue(CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(node.Initializer.Value, initializer.Value, underlyingType));
+        return CS.SyntaxFactory.EnumMemberDeclaration(attributes, CommonConversions.ConvertIdentifier(node.Identifier), initializer);
     }
 
     public override async Task<CSharpSyntaxNode> VisitDelegateStatement(VBSyntax.DelegateStatementSyntax node)

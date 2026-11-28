@@ -40,6 +40,17 @@ internal class PerScopeState
         return additionalLocal;
     }
 
+    public int HoistedNodeCount => _hoistedNodesPerScope.Peek().HoistedNodes.Count;
+
+    /// <summary>
+    /// Hoists before the ones hoisted since <paramref name="index"/> was the <see cref="HoistedNodeCount"/>, so their declarations come first
+    /// </summary>
+    public T HoistAt<T>(int index, T additionalLocal) where T : IHoistedNode
+    {
+        _hoistedNodesPerScope.Peek().HoistedNodes.Insert(index, additionalLocal);
+        return additionalLocal;
+    }
+
     public T HoistToParent<T>(T additionalLocal) where T : IHoistedNode
     {
         _hoistedNodesPerScope.ElementAt(1).Add(additionalLocal);
