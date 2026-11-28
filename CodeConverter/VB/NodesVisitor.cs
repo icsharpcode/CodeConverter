@@ -54,6 +54,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     private readonly CommonConversions _commonConversions;
     private readonly NativeIntegerOperators _nativeIntegerOperators;
     private readonly HashSet<string> _addedNames = new();
+    private readonly Dictionary<INamedTypeSymbol, ILookup<string, ISymbol>> _inheritedOverloadableMembers = new(SymbolEqualityComparer.Default);
 
     private int _placeholder = 1;
     private readonly bool _outputWillBeOverflowChecked;
@@ -540,10 +541,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             if (!((CS.CSharpSyntaxTree)node.SyntaxTree).HasUsingDirective("System.Runtime.CompilerServices"))
                 _extraImports.Add(nameof(System) + "." + nameof(System.Runtime) + "." + nameof(System.Runtime.CompilerServices));
         }
-        var needsOverloads = methodInfo?.ContainingType?.GetMembers(methodInfo.Name).Except(methodInfo.Yield()).Any(m => m.IsOverride);
-        if (needsOverloads == true) {
-            modifiers = modifiers.Add(SyntaxFactory.Token(SyntaxKind.OverloadsKeyword));
-        }
+        modifiers = WithOverloadsIfNeeded(modifiers, node, methodInfo);
         var implementsClause = methodInfo == null ? null : CreateImplementsClauseSyntaxOrNull(methodInfo, ref id);
         if (isVoidSub) {
             var stmt = SyntaxFactory.SubStatement(
@@ -566,6 +564,44 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
             if (!requiresBody) return stmt;
             return SyntaxFactory.FunctionBlock(stmt, block);
         }
+    }
+
+    /// <summary>
+    /// A VB method or property declared without Overloads, Overrides or Shadows hides every accessible inherited member
+    /// of the same name (case-insensitively, BC40003), also in interfaces, whereas C# only hides the same signature.
+    /// Overloads keeps the C# lookup. Once one member of a name is Overloads or Overrides, VB requires Overloads on the
+    /// others in the type (BC31409). A Module inherits nothing and doesn't allow Overloads (BC36917).
+    /// Only an inherited member of the same kind counts: VB can't overload a property with a method (or the reverse),
+    /// so such a member stays hidden by name either way.
+    /// https://learn.microsoft.com/en-us/dotnet/visual-basic/language-reference/modifiers/overloads
+    /// </summary>
+    private SyntaxTokenList WithOverloadsIfNeeded(SyntaxTokenList modifiers, CSSyntax.MemberDeclarationSyntax node, ISymbol member)
+    {
+        if (member == null || modifiers.Any(SyntaxKind.OverloadsKeyword) || GetMemberContext(node) == TokenContext.MemberInModule) return modifiers;
+        var hasOverrideOfSameName = member.ContainingType.GetMembers(member.Name).Except(member.Yield()).Any(m => m.IsOverride);
+        var needsOverloads = hasOverrideOfSameName || !member.IsOverride && IsOverloadable(member) && HasAccessibleInheritedNamesake(member);
+        return needsOverloads ? modifiers.Add(SyntaxFactory.Token(SyntaxKind.OverloadsKeyword)) : modifiers;
+    }
+
+    private static bool IsOverloadable(ISymbol member) =>
+        member is IMethodSymbol { MethodKind: MethodKind.Ordinary } or IPropertySymbol { ExplicitInterfaceImplementations.IsEmpty: true };
+
+    /// <remarks>Compares metadata names, which are the VB names: an indexer is "this[]" in C#.</remarks>
+    private bool HasAccessibleInheritedNamesake(ISymbol member) =>
+        GetAccessibleInheritedOverloadableMembers(member.ContainingType)[member.MetadataName].Any(m => m.Kind == member.Kind);
+
+    /// <remarks>Cached per type, so a type with many members reads its base types once.</remarks>
+    private ILookup<string, ISymbol> GetAccessibleInheritedOverloadableMembers(INamedTypeSymbol type)
+    {
+        if (!_inheritedOverloadableMembers.TryGetValue(type, out var members)) {
+            IEnumerable<INamedTypeSymbol> inheritedTypes = type.TypeKind == TypeKind.Interface ? type.AllInterfaces : type.GetBaseTypes();
+            members = inheritedTypes
+                .SelectMany(t => t.GetMembers())
+                .Where(m => IsOverloadable(m) && _semanticModel.Compilation.IsSymbolAccessibleWithin(m, type))
+                .ToLookup(m => m.MetadataName, CaseInsensitiveComparison.Comparer);
+            _inheritedOverloadableMembers.Add(type, members);
+        }
+        return members;
     }
 
     /// <remarks>
@@ -611,7 +647,7 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
     public override VisualBasicSyntaxNode VisitPropertyDeclaration(CSSyntax.PropertyDeclarationSyntax node)
     {
         var id = _commonConversions.ConvertIdentifier(node.Identifier);
-        var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
+        var modifiers = WithOverloadsIfNeeded(CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), node, _semanticModel.GetDeclaredSymbol(node));
         var initializer = node.Initializer == null ? null
             : SyntaxFactory.EqualsValue((ExpressionSyntax)_commonConversions.ConvertTopLevelExpression(node.Initializer.Value));
         return ConvertPropertyBlock(node, id, modifiers, null, node.ExpressionBody, initializer);
@@ -619,14 +655,25 @@ internal class NodesVisitor : CS.CSharpSyntaxVisitor<VisualBasicSyntaxNode>
 
     public override VisualBasicSyntaxNode VisitIndexerDeclaration(CSSyntax.IndexerDeclarationSyntax node)
     {
-        var id = _commonConversions.ConvertIdentifier(node.ThisKeyword);
-        var modifiers = CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node));
+        var indexer = _semanticModel.GetDeclaredSymbol(node) as IPropertySymbol;
+        var id = WithIndexerName(_commonConversions.ConvertIdentifier(node.ThisKeyword), indexer);
+        var modifiers = WithOverloadsIfNeeded(CommonConversions.ConvertModifiers(node.Modifiers, GetMemberContext(node)), node, indexer);
         if (modifiers.Any(x => x.IsKind(SyntaxKind.PrivateKeyword))) {
         } else {
             modifiers = modifiers.Insert(0, SyntaxFactory.Token(SyntaxKind.DefaultKeyword));
         }
         var parameterListSyntax = (ParameterListSyntax) node.ParameterList?.Accept(TriviaConvertingVisitor);
         return ConvertPropertyBlock(node, id, modifiers, parameterListSyntax, node.ExpressionBody, null);
+    }
+
+    /// <summary>
+    /// VB declares an indexer as a default property under its metadata name, which [IndexerName] changes from "Item".
+    /// An explicit implementation keeps "Item": its metadata name is qualified, and Implements does the binding.
+    /// </summary>
+    private static SyntaxToken WithIndexerName(SyntaxToken id, IPropertySymbol indexer)
+    {
+        if (indexer == null || !indexer.ExplicitInterfaceImplementations.IsEmpty || indexer.MetadataName == id.ValueText) return id;
+        return id.CopyAnnotationsTo(SyntaxFactory.Identifier(id.LeadingTrivia, indexer.MetadataName, id.TrailingTrivia));
     }
 
     private VisualBasicSyntaxNode ConvertPropertyBlock(CSSyntax.BasePropertyDeclarationSyntax node,

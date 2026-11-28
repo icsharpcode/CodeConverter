@@ -272,6 +272,315 @@ Friend Class TestSubclass
 End Class", conversionOptions: EmptyNamespaceOptionStrictOff);
     }
 
+    [Fact]
+    public async Task TestMethodOverloadingInheritedMethodIsOverloadsAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"class BaseClass
+{
+    public static void SomeAction()
+    {
+    }
+}
+
+class DerivedClass : BaseClass
+{
+    public static void SomeAction(string t)
+    {
+        SomeAction();
+    }
+}", @"Friend Class BaseClass
+    Public Shared Sub SomeAction()
+    End Sub
+End Class
+
+Friend Class DerivedClass
+    Inherits BaseClass
+    Public Shared Overloads Sub SomeAction(t As String)
+        SomeAction()
+    End Sub
+End Class");
+    }
+
+    [Fact]
+    public async Task TestMethodOverloadingObjectMethodIsOverloadsAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System.Collections.Generic;
+
+public class Item
+{
+    public string Name;
+}
+
+public class Comparer : IEqualityComparer<Item>
+{
+    public bool Equals(Item x, Item y)
+    {
+        return x.Name == y.Name;
+    }
+
+    public int GetHashCode(Item obj)
+    {
+        return obj.Name.GetHashCode();
+    }
+}", @"Imports System.Collections.Generic
+
+Public Class Item
+    Public Name As String
+End Class
+
+Public Class Comparer
+    Implements IEqualityComparer(Of Item)
+    Public Overloads Function Equals(x As Item, y As Item) As Boolean Implements IEqualityComparer(Of Item).Equals
+        Return Equals(x.Name, y.Name)
+    End Function
+
+    Public Overloads Function GetHashCode(obj As Item) As Integer Implements IEqualityComparer(Of Item).GetHashCode
+        Return obj.Name.GetHashCode()
+    End Function
+End Class");
+    }
+
+    [Fact]
+    public async Task TestMembersOverloadingInheritedMembersAreOverloadsAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System;
+
+public struct Point : IEquatable<Point>
+{
+    public int X;
+    public bool Equals(Point other) { return X == other.X; }
+    public string ToString(string format) { return X.ToString(format); }
+}
+
+public class BaseList
+{
+    public string this[string key] { get { return key; } }
+    public virtual void Add(object item) { }
+    public void Remove<T>(T item) { }
+}
+
+public class DerivedList : BaseList
+{
+    public int this[int index] { get { return index + this[""a""].Length; } }
+    public void Add(int item) { Add((object)item); }
+    public void Remove(int item) { Remove<object>(item); }
+    public void remove(string item) { }
+}
+
+public interface IBase
+{
+    void Run(int i);
+}
+
+public interface IDerived : IBase
+{
+    void Run(string s);
+}
+
+public static class User
+{
+    public static void Use(IDerived d) { d.Run(1); d.Run(""s""); }
+}",
+            @"Imports System
+
+Public Structure Point
+    Implements IEquatable(Of Point)
+    Public X As Integer
+    Public Overloads Function Equals(other As Point) As Boolean Implements IEquatable(Of Point).Equals
+        Return X = other.X
+    End Function
+    Public Overloads Function ToString(format As String) As String
+        Return X.ToString(format)
+    End Function
+End Structure
+
+Public Class BaseList
+    Default Public ReadOnly Property Item(key As String) As String
+        Get
+            Return key
+        End Get
+    End Property
+    Public Overridable Sub Add(item As Object)
+    End Sub
+    Public Sub Remove(Of T)(item As T)
+    End Sub
+End Class
+
+Public Class DerivedList
+    Inherits BaseList
+    Default Public Overloads ReadOnly Property Item(index As Integer) As Integer
+        Get
+            Return index + Me(""a"").Length
+        End Get
+    End Property
+    Public Overloads Sub Add(item As Integer)
+        MyBase.Add(item)
+    End Sub
+    Public Overloads Sub Remove(item As Integer)
+        Remove(Of Object)(item)
+    End Sub
+    Public Overloads Sub remove(item As String)
+    End Sub
+End Class
+
+Public Interface IBase
+    Sub Run(i As Integer)
+End Interface
+
+Public Interface IDerived
+    Inherits IBase
+    Overloads Sub Run(s As String)
+End Interface
+
+Public Module User
+    Public Sub Use(d As IDerived)
+        d.Run(1)
+        d.Run(""s"")
+    End Sub
+End Module");
+    }
+
+    [Fact]
+    public async Task TestNestedStaticClassMethodOverloadingObjectMethodIsOverloadsAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"class Outer
+{
+    public static class Helpers
+    {
+        public static bool Equals(int a, int b)
+        {
+            return a == b;
+        }
+    }
+}", @"Friend Class Outer
+    Public NotInheritable Class Helpers
+        Public Shared Overloads Function Equals(a As Integer, b As Integer) As Boolean
+            Return a = b
+        End Function
+    End Class
+End Class");
+    }
+
+    [Fact]
+    public async Task TestIndexerWithIndexerNameAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"using System.Runtime.CompilerServices;
+
+public class BaseText
+{
+    [IndexerName(""Chars"")]
+    public char this[string key] { get { return key[0]; } }
+}
+
+public class DerivedText : BaseText
+{
+    [IndexerName(""Chars"")]
+    public char this[int index] { get { return this[""a""]; } }
+}", @"Imports System.Runtime.CompilerServices
+
+Public Class BaseText
+    <IndexerName(""Chars"")>
+    Default Public ReadOnly Property Chars(key As String) As Char
+        Get
+            Return key(0)
+        End Get
+    End Property
+End Class
+
+Public Class DerivedText
+    Inherits BaseText
+    <IndexerName(""Chars"")>
+    Default Public Overloads ReadOnly Property Chars(index As Integer) As Char
+        Get
+            Return Me(""a"")
+        End Get
+    End Property
+End Class");
+    }
+
+    [Fact]
+    public async Task TestMethodNotOverloadingInheritedMethodHasNoOverloadsAsync()
+    {
+        await TestConversionCSharpToVisualBasicAsync(
+            @"class BaseClass
+{
+    public virtual void Run()
+    {
+    }
+
+    private void Hidden()
+    {
+    }
+
+    public int Count { get; set; }
+}
+
+class DerivedClass : BaseClass
+{
+    public override void Run()
+    {
+    }
+
+    public int Count(int i)
+    {
+        return i;
+    }
+
+    public void Hidden(int i)
+    {
+    }
+}
+
+static class Helpers
+{
+    public static bool Equals(int a, int b)
+    {
+        return a == b;
+    }
+
+    public static string ToString(int[] values, string separator)
+    {
+        return string.Join(separator, values);
+    }
+}", @"Friend Class BaseClass
+    Public Overridable Sub Run()
+    End Sub
+
+    Private Sub Hidden()
+    End Sub
+
+    Public Property Count As Integer
+End Class
+
+Friend Class DerivedClass
+    Inherits BaseClass
+    Public Overrides Sub Run()
+    End Sub
+
+    Public Function Count(i As Integer) As Integer
+        Return i
+    End Function
+
+    Public Sub Hidden(i As Integer)
+    End Sub
+End Class
+
+Friend Module Helpers
+    Public Function Equals(a As Integer, b As Integer) As Boolean
+        Return a = b
+    End Function
+
+    Public Function ToString(values As Integer(), separator As String) As String
+        Return String.Join(separator, values)
+    End Function
+End Module");
+    }
+
 
     [Fact]
     public async Task OperatorOverloadsAsync()
