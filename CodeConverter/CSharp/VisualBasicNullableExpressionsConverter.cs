@@ -101,6 +101,54 @@ internal class VisualBasicNullableExpressionsConverter
         return ForRelationalOperators(vbNode, csBinExp, lhs, rhs, isLhsNullable, isRhsNullable).AddParens();
     }
 
+    /// <summary>
+    /// VB lifts an operator C# has no lifted form of (e.g. ^, which becomes Math.Pow) over Nullable operands: Nothing if either operand is, else the operator on their values.
+    /// VB evaluates both operands first, so an operand that isn't safely reusable is only evaluated once, in order, through a tuple pattern.
+    /// </summary>
+    /// <param name="applyToValues">The operator on the operands' values: each a C# operand's value, which may not have the VB operand's type, e.g. int for a Short? Mod</param>
+    /// <returns>Null where neither operand is Nullable</returns>
+    public ExpressionSyntax? LiftOrNull(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, VBSyntax.ExpressionSyntax vbRight, ExpressionSyntax csRight,
+        Func<ExpressionSyntax, ExpressionSyntax, ExpressionSyntax> applyToValues, TypeSyntax nullableResultType)
+    {
+        var isLeftNullable = MayBeNothing(vbLeft);
+        var isRightNullable = MayBeNothing(vbRight);
+        if (!isLeftNullable && !isRightNullable || IsWithinExpressionTree) return null;
+        var whenNull = ValidSyntaxFactory.CastExpression(nullableResultType, ValidSyntaxFactory.NullExpression);
+
+        if (IsSafelyReusable(vbLeft) && IsPlainName(csLeft) && IsSafelyReusable(vbRight) && IsPlainName(csRight)) {
+            ExpressionSyntax? hasValues = null;
+            if (isLeftNullable) hasValues = hasValues.AndHasValue(csLeft);
+            if (isRightNullable) hasValues = hasValues.AndHasValue(csRight);
+            var leftValue = isLeftNullable ? csLeft.NullableGetValueExpression() : csLeft;
+            var rightValue = isRightNullable ? csRight.NullableGetValueExpression() : csRight;
+            return hasValues!.Conditional(applyToValues(leftValue, rightValue), whenNull);
+        }
+
+        var leftName = ValidSyntaxFactory.IdentifierName(GetArgName(vbLeft));
+        var rightName = ValidSyntaxFactory.IdentifierName(GetArgName(vbLeft));
+        // Parsed with its spacing, since the formatter otherwise puts each { } of a positional pattern on lines of its own
+        var match = (IsPatternExpressionSyntax)SyntaxFactory.ParseExpression($"(l, r) is ({ValuePattern(isLeftNullable)} {leftName}, {ValuePattern(isRightNullable)} {rightName})");
+        var operands = SyntaxFactory.TupleExpression(SyntaxFactory.SeparatedList(new[] { SyntaxFactory.Argument(csLeft), SyntaxFactory.Argument(csRight) }));
+        return match.WithExpression(operands).Conditional(applyToValues(leftName, rightName), whenNull);
+    }
+
+    /// <summary>
+    /// A Nullable operand, or Nothing converted to one
+    /// </summary>
+    private bool MayBeNothing(VBSyntax.ExpressionSyntax vbOperand) =>
+        _semanticModel.GetTypeInfo(vbOperand).Type.IsNullable() || IsNothingConvertedToNullable(vbOperand);
+
+    /// <summary>
+    /// A constant Nothing of any type (or none), e.g. (Nothing) or DirectCast(Nothing, Object), which VB treats as Nothing, lifting the operator for it
+    /// </summary>
+    public bool IsNothingConvertedToNullable(VBSyntax.ExpressionSyntax vbNode) =>
+        _semanticModel.GetConstantValue(vbNode) is { HasValue: true, Value: null } && _semanticModel.GetTypeInfo(vbNode).ConvertedType.IsNullable();
+
+    /// <summary>
+    /// { } matches only a value that isn't null, binding it with the C# operand's own (underlying) type, whatever that is; var matches any value
+    /// </summary>
+    private static string ValuePattern(bool mayBeNull) => mayBeNull ? "{ }" : "var";
+
     private bool IsNullable(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, TypeInfo typeInfo)
     {
         return typeInfo.Type.IsNullable() && !csNode.AnyInParens(x => x.HasAnnotation(IsNotNullableAnnotation)) && GetNullabilityWithinBooleanExpression(vbNode) != KnownNullability.NotNull;
@@ -116,7 +164,17 @@ internal class VisualBasicNullableExpressionsConverter
         return hasValueCheck.And(convertValue(csExpr));
     }
 
-    private string GetArgName() => $"arg{Interlocked.Increment(ref _argCounter)}";
+    /// <summary>
+    /// A pattern variable can't share a name with a local in scope, or in its block (CS0128, CS0136), e.g. a user's own arg1
+    /// </summary>
+    private string GetArgName(VisualBasicSyntaxNode scope)
+    {
+        string name;
+        do {
+            name = $"arg{Interlocked.Increment(ref _argCounter)}";
+        } while (!NameGenerator.CS.IsLocalNameFreeInScope(_semanticModel, scope, name));
+        return name;
+    }
 
     private ExpressionSyntax? PatternVar(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, out ExpressionSyntax lhsName)
     {
@@ -124,22 +182,22 @@ internal class VisualBasicNullableExpressionsConverter
             lhsName = csLeft;
             return null;
         } else {
-            return PatternVar(csLeft, out lhsName);
+            return PatternVar(csLeft, vbLeft, out lhsName);
         }
     }
 
-    private ExpressionSyntax PatternVar(ExpressionSyntax expr, out ExpressionSyntax name)
+    private ExpressionSyntax PatternVar(ExpressionSyntax expr, VisualBasicSyntaxNode scope, out ExpressionSyntax name)
     {
-        var arg = GetArgName();
+        var arg = GetArgName(scope);
         var identifier = SyntaxFactory.Identifier(arg);
         name = ValidSyntaxFactory.IdentifierName(identifier);
 
         return SyntaxFactory.IsPatternExpression(expr.AddParensUnlessPrimary(), SyntaxFactory.VarPattern(SyntaxFactory.SingleVariableDesignation(identifier)));
     }
 
-    private ExpressionSyntax PatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
+    private ExpressionSyntax PatternObject(ExpressionSyntax expr, VisualBasicSyntaxNode scope, out ExpressionSyntax name)
     {
-        var identifier = SyntaxFactory.Identifier(GetArgName());
+        var identifier = SyntaxFactory.Identifier(GetArgName(scope));
         name = ValidSyntaxFactory.IdentifierName(identifier);
         var variable = SyntaxFactory.SingleVariableDesignation(identifier);
 
@@ -147,9 +205,9 @@ internal class VisualBasicNullableExpressionsConverter
         return NotFormattedIsPattern.WithExpression(expr.AddParensUnlessPrimary()).WithPattern(recursivePattern.WithDesignation(variable));
     }
 
-    private ExpressionSyntax NegatedPatternObject(ExpressionSyntax expr, out ExpressionSyntax name)
+    private ExpressionSyntax NegatedPatternObject(ExpressionSyntax expr, VisualBasicSyntaxNode scope, out ExpressionSyntax name)
     {
-        var identifier = SyntaxFactory.Identifier(GetArgName());
+        var identifier = SyntaxFactory.Identifier(GetArgName(scope));
         name = ValidSyntaxFactory.IdentifierName(identifier);
         var variable = SyntaxFactory.SingleVariableDesignation(identifier);
         var unaryPattern = (UnaryPatternSyntax)NotFormattedNegatedIsPattern.Pattern;
@@ -224,7 +282,7 @@ internal class VisualBasicNullableExpressionsConverter
 
         var lhsPattern = PatternVar(vbNode.Left, lhs, out var lhsName);
 
-        var rhsPattern = NegatedPatternObject(rhs, out var rhsName);
+        var rhsPattern = NegatedPatternObject(rhs, vbNode, out var rhsName);
 
         var whenFalse = !isRhsNullable ?
             rhs.Conditional(True, lhsName) :
@@ -252,19 +310,19 @@ internal class VisualBasicNullableExpressionsConverter
 
         // Ensure both sides executed even if other side null check is false - it's important this goes first since the sort is stable and this needs to happen in all cases
         if (isLhsNullable && !rhsReusable) {
-            conditions.Add((false, PatternVar(rhsName, out rhsName)));
+            conditions.Add((false, PatternVar(rhsName, vbNode, out rhsName)));
             rhsReusable = true;
         } else if (isRhsNullable && !lhsReusable) {
-            conditions.Add((false, PatternVar(lhsName, out lhsName)));
+            conditions.Add((false, PatternVar(lhsName, vbNode, out lhsName)));
             lhsReusable = true;
         }
 
         if (isLhsNullable) {
-            var lhsCondition = HasValue(lhsReusable, ref lhsName);
+            var lhsCondition = HasValue(lhsReusable, vbNode, ref lhsName);
             conditions.Add((lhsReusable, lhsCondition));
         }
         if (isRhsNullable) {
-            var rhsCondition = HasValue(rhsReusable, ref rhsName);
+            var rhsCondition = HasValue(rhsReusable, vbNode, ref rhsName);
             conditions.Add((rhsReusable, rhsCondition));
         }
 
@@ -304,15 +362,24 @@ internal class VisualBasicNullableExpressionsConverter
     private static bool IsLiftedOperatorFalseWhenVbIsNothing(VBSyntax.BinaryExpressionSyntax vbNode, bool isLhsNullable, bool isRhsNullable) =>
         vbNode.IsOrderingComparison() || vbNode.IsKind(VBasic.SyntaxKind.EqualsExpression) && !(isLhsNullable && isRhsNullable);
 
-    private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode), ref csName);
-    private ExpressionSyntax HasValue(bool reusable, ref ExpressionSyntax csName)
+    /// <remarks>
+    /// The C# may be more than the VB node converts to, e.g. a compound assignment's lhs op rhs converted for its right side's node, so it must be a plain name too
+    /// </remarks>
+    private ExpressionSyntax HasValue(VBasic.Syntax.ExpressionSyntax vbNode, ref ExpressionSyntax csName) => HasValue(IsSafelyReusable(vbNode) && IsPlainName(csName), vbNode, ref csName);
+
+    private static bool IsPlainName(ExpressionSyntax csExpression) => csExpression.SkipIntoParens() switch {
+        IdentifierNameSyntax or LiteralExpressionSyntax or ThisExpressionSyntax => true,
+        MemberAccessExpressionSyntax memberAccess => IsPlainName(memberAccess.Expression),
+        _ => false
+    };
+    private ExpressionSyntax HasValue(bool reusable, VisualBasicSyntaxNode scope, ref ExpressionSyntax csName)
     {
         if (reusable) {
             var nullableHasValueExpression = csName.NullableHasValueExpression();
             csName = csName.NullableGetValueExpression();
             return nullableHasValueExpression;
         } else {
-            return PatternObject(csName, out csName);
+            return PatternObject(csName, scope, out csName);
         }
     }
 

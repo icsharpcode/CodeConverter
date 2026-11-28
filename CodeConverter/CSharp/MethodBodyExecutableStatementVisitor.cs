@@ -263,10 +263,14 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         // We know for sure the left-hand side is a getter invocation for compound assignments (e.g. this.get_Item(0) += 2),
         // but we need the setter name to build the final expression.
         string setMethodName = null;
+        IPropertySymbol setterProperty = null;
         if (lOperation is IPropertyReferenceOperation pro && pro.Arguments.Any() && !Microsoft.CodeAnalysis.VisualBasic.VisualBasicExtensions.IsDefault(pro.Property)) {
-            setMethodName = pro.Property.SetMethod?.Name;
+            setterProperty = pro.Property;
+            setMethodName = setterProperty.SetMethod?.Name;
         }
 
+        // Anything the left side needs hoisted is evaluated before anything the right side does
+        var leftSideHoistIndex = _perScopeState.HoistedNodeCount;
         var rhs = await node.Right.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
 
         if (node.Left is VBSyntax.IdentifierNameSyntax id &&
@@ -276,36 +280,13 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             lhs = ReturnVariable;
         }
 
-        if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            rhs = SyntaxFactory.InvocationExpression(
-                ValidSyntaxFactory.MemberAccess(nameof(Math), nameof(Math.Pow)),
-                ExpressionSyntaxExtensions.CreateArgList(lhs, rhs));
+        var csRight = rhs;
+        rhs = ConvertAssignedValue(node, lhs, csRight, setMethodName, out var kind);
+        var isSplitCompound = !node.IsKind(VBasic.SyntaxKind.SimpleAssignmentStatement) && (kind == SyntaxKind.SimpleAssignmentExpression || setMethodName != null);
+        if (isSplitCompound && HoistLeftSideOperandsOrNull(node.Left, lhs, leftSideHoistIndex) is { } hoistedLhs) {
+            lhs = hoistedLhs;
+            rhs = ConvertAssignedValue(node, lhs, csRight, setMethodName, out kind);
         }
-        var kind = node.Kind().ConvertToken();
-
-            
-        var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
-        var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
-            
-        var typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
-
-        // Split out compound operator if type conversion needed on result
-        if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
-                
-            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, lhs, typeConvertedRhs);
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: rhsTypeInfo.ConvertedType, forceTargetType: lhsTypeInfo.Type);
-            if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
-                kind = SyntaxKind.SimpleAssignmentExpression;
-                typeConvertedRhs = typeConvertedNonCompoundRhs;
-            }
-        } else if (setMethodName != null && node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
-            // ExponentiateAssignmentStatement evaluates to Math.Pow invocation which might need casting back to lhsType
-            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: _semanticModel.Compilation.GetTypeByMetadataName("System.Double"), forceTargetType: lhsTypeInfo.Type);
-            kind = SyntaxKind.SimpleAssignmentExpression;
-            typeConvertedRhs = typeConvertedNonCompoundRhs;
-        }
-
-        rhs = typeConvertedRhs;
 
         if (setMethodName != null) {
             if (lhs is InvocationExpressionSyntax ies) {
@@ -320,7 +301,7 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
                 } else if (exprToReplace is IdentifierNameSyntax) {
                     exprToReplace = SyntaxFactory.IdentifierName(setMethodName).WithTriviaFrom(exprToReplace);
                 }
-                var newArgList = ies.ArgumentList.AddArguments(SyntaxFactory.Argument(rhs));
+                var newArgList = CommonConversions.AddSetterValueArgument(ies.ArgumentList, setterProperty, rhs);
                 var newLhs = ies.WithExpression(exprToReplace).WithArgumentList(newArgList);
                 var postAssign = GetPostAssignmentStatements(node);
                 return postAssign.Insert(0, SyntaxFactory.ExpressionStatement(newLhs));
@@ -334,6 +315,312 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
             return SyntaxFactory.List(_perScopeState.WithWriteBacksBefore(rhs, "ret", () => GetResultTypeSyntax(node.Right), AssignTo).Concat(postAssignment));
         }
         return postAssignment.Insert(0, AssignTo(rhs));
+    }
+
+    /// <summary>
+    /// VB evaluates the receiver and arguments of a compound assignment's left side once, then the right side.
+    /// Split into lhs = lhs op rhs, C# would evaluate them twice, so any that may have side effects (or be changed by the right side) are evaluated into locals first, in VB's order.
+    /// Once one is, any before it is too unless it's a local or parameter, since evaluating the later one may change e.g. the field the earlier one reads.
+    /// </summary>
+    /// <remarks>
+    /// A member of a structure (or of a type parameter, which may be one) is changed in its storage, so that storage is broken down the same way rather than copied:
+    /// an array element is referred to again through its array and indices in locals, which works whatever the array's runtime type (a ref to an element of a covariant array throws),
+    /// and in async methods and iterators. Only storage that can't be broken down is a ref local, and not in a statement with an Await, since one can't be held across it.
+    /// </remarks>
+    /// <param name="hoistIndex">Where among the statement's hoisted locals these go: before any the right side needs</param>
+    /// <returns>Null where the left side can be evaluated twice, e.g. a local, a field of Me, or an array element with local or constant indices</returns>
+    private ExpressionSyntax HoistLeftSideOperandsOrNull(VBSyntax.ExpressionSyntax vbLeft, ExpressionSyntax csLeft, int hoistIndex)
+    {
+        var operands = new List<LeftSideOperand>();
+        if (!TryCollectOperands(_semanticModel.GetOperation(vbLeft), csLeft, operands)) return null;
+
+        var lastToHoist = operands.FindLastIndex(o => o.IsStorage || !IsEvaluatedTheSameTwice(o.Operation) && o.Expression is not LiteralExpressionSyntax);
+        if (lastToHoist < 0) return null;
+        var toHoist = operands.Take(lastToHoist + 1)
+            .Where((o, i) => i == lastToHoist || o.IsStorage || !IsStableReference(o.Operation) || IsWrittenByAny(o.Operation, operands.Skip(i + 1), vbLeft))
+            .ToArray();
+        if (toHoist.Any(o => o.IsStorage) && vbLeft.Parent.DescendantNodes().OfType<VBSyntax.AwaitExpressionSyntax>().Any()) return null;
+
+        var replacements = new Dictionary<SyntaxNode, ExpressionSyntax>();
+        foreach (var operand in toHoist) {
+            var declaration = operand.IsStorage
+                ? new AdditionalDeclaration("receiver", SyntaxFactory.RefExpression(operand.Expression), SyntaxFactory.RefType(ValidSyntaxFactory.VarType))
+                : new AdditionalDeclaration(operand.NameBase, operand.Expression, null);
+            _perScopeState.HoistAt(hoistIndex++, declaration);
+            replacements.Add(operand.Expression, operand.IsStorage
+                ? RefLocalReferences.Mark(declaration.IdentifierName, CommonConversions.GetTypeSyntax(operand.Operation.Type))
+                : declaration.IdentifierName);
+        }
+        return csLeft.ReplaceNodes(replacements.Keys, (original, _) => replacements[original]);
+    }
+
+    /// <param name="IsStorage">Storage of a structure that can only be referred to again by reference</param>
+    private record LeftSideOperand(IOperation Operation, ExpressionSyntax Expression, string NameBase, bool IsStorage = false);
+
+    /// <summary>
+    /// The operands VB evaluates to find the storage <paramref name="operation"/> refers to, in VB's order, each paired with the C# expression it became
+    /// </summary>
+    /// <returns>False where the C# doesn't have the shape the VB does</returns>
+    private bool TryCollectOperands(IOperation operation, ExpressionSyntax csExpression, List<LeftSideOperand> operands)
+    {
+        var cs = csExpression.SkipIntoParens();
+        switch (operation) {
+            case IArrayElementReferenceOperation element when cs is ElementAccessExpressionSyntax elementAccess && elementAccess.ArgumentList.Arguments.Count == element.Indices.Length:
+                operands.Add(new LeftSideOperand(element.ArrayReference, elementAccess.Expression, "receiver"));
+                operands.AddRange(element.Indices.Select((index, i) => new LeftSideOperand(index, elementAccess.ArgumentList.Arguments[i].Expression, "index")));
+                return true;
+            case IFieldReferenceOperation { Field.IsStatic: false } field when cs is MemberAccessExpressionSyntax memberAccess:
+                return TryCollectReceiverOperands(field.Instance, memberAccess.Expression, operands);
+            case IPropertyReferenceOperation property:
+                var (csReceiver, csArguments) = cs switch {
+                    ElementAccessExpressionSyntax elementAccess => (elementAccess.Expression, elementAccess.ArgumentList.Arguments),
+                    InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax method } invocation => (method.Expression, invocation.ArgumentList.Arguments),
+                    InvocationExpressionSyntax invocation => (null, invocation.ArgumentList.Arguments),
+                    MemberAccessExpressionSyntax memberAccess => (memberAccess.Expression, default(SeparatedSyntaxList<ArgumentSyntax>)),
+                    _ => (null, default)
+                };
+                // A Shared property's arguments are evaluated all the same, without a receiver (VB doesn't evaluate the instance expression, and C# refers to the type)
+                if (csReceiver != null && !property.Property.IsStatic && !TryCollectReceiverOperands(property.Instance, csReceiver, operands)) return false;
+                // VB evaluates the arguments in parameter order, whatever order named ones are written in
+                foreach (var argument in property.Arguments) {
+                    var csArgument = csArguments.Select((a, i) => (Argument: a, Position: i))
+                        .FirstOrDefault(a => string.Equals(a.Argument.NameColon?.Name.Identifier.ValueText ?? (a.Position < property.Property.Parameters.Length ? property.Property.Parameters[a.Position].Name : null),
+                            argument.Parameter?.Name, StringComparison.OrdinalIgnoreCase)).Argument;
+                    if (csArgument != null) operands.Add(new LeftSideOperand(argument.Value, csArgument.Expression, "index"));
+                }
+                return true;
+            case IDynamicMemberReferenceOperation lateBoundMember when cs is MemberAccessExpressionSyntax memberAccess:
+                // A late-bound member is accessed through a cast to dynamic: the receiver is what's cast
+                var csInstance = memberAccess.Expression.SkipIntoParens() is CastExpressionSyntax { Type: IdentifierNameSyntax { Identifier.ValueText: "dynamic" } } dynamicCast
+                    ? dynamicCast.Expression
+                    : memberAccess.Expression;
+                operands.Add(new LeftSideOperand(lateBoundMember.Instance, csInstance, "receiver"));
+                return true;
+            default:
+                // Nothing to evaluate again, e.g. a local or a Shared member (VB doesn't evaluate the instance expression of one, and C# refers to the type instead)
+                return true;
+        }
+    }
+
+    /// <summary>
+    /// An object is referred to by its value; a structure's storage (or a type parameter's, which may be one) is broken down further, so it's changed in place rather than in a copy.
+    /// A structure that isn't in storage (e.g. a property's or function's value) is a copy in VB too, so it's referred to by its value as well.
+    /// Only storage reached through a ref-returning property (from C#) can't be referred to again but by reference.
+    /// </summary>
+    private bool TryCollectReceiverOperands(IOperation instance, ExpressionSyntax csInstance, List<LeftSideOperand> operands)
+    {
+        switch (instance) {
+            case null or ILocalReferenceOperation or IParameterReferenceOperation or IInstanceReferenceOperation:
+                return true;
+            case { Type.IsReferenceType: false } and (IArrayElementReferenceOperation or IFieldReferenceOperation):
+                return TryCollectOperands(instance, csInstance, operands);
+            case IPropertyReferenceOperation { Property.ReturnsByRef: true, Type.IsReferenceType: false }:
+                operands.Add(new LeftSideOperand(instance, csInstance, "receiver", IsStorage: true));
+                return true;
+            default:
+                operands.Add(new LeftSideOperand(instance, csInstance, "receiver"));
+                return true;
+        }
+    }
+
+    /// <summary>
+    /// A later operand can change a local or parameter by passing it ByRef, or through a lambda that captures it.
+    /// That lambda may have been created earlier and be called by anything the later operand calls, so where it calls anything, any lambda in the method counts,
+    /// as does a query, whose clauses are lambdas. A call can also change a Static local by calling the method again.
+    /// </summary>
+    private bool IsWrittenByAny(IOperation operand, IEnumerable<LeftSideOperand> laterOperands, VBSyntax.ExpressionSyntax vbLeft)
+    {
+        var symbol = operand switch {
+            ILocalReferenceOperation local => (ISymbol)local.Local,
+            IParameterReferenceOperation parameter => parameter.Parameter,
+            _ => null
+        };
+        if (symbol == null) return false;
+        var laterOperations = laterOperands.Select(o => o.Operation).ToArray();
+        return laterOperations.SelectMany(o => o.DescendantsAndSelf()).Any(o =>
+                   o is IArgumentOperation { Parameter.RefKind: not RefKind.None } argument && RefersTo(argument.Value, symbol) ||
+                   o is IAnonymousFunctionOperation lambda && lambda.Descendants().Any(d => RefersTo(d, symbol)))
+               || laterOperations.Any(o => !IsEvaluatedTheSameTwice(o)) && (symbol is ILocalSymbol { IsStatic: true } || IsCapturedByAnyLambdaInMethod(symbol, vbLeft));
+
+        static bool RefersTo(IOperation operation, ISymbol symbol) =>
+            operation is ILocalReferenceOperation local && SymbolEqualityComparer.Default.Equals(local.Local, symbol) ||
+            operation is IParameterReferenceOperation parameter && SymbolEqualityComparer.Default.Equals(parameter.Parameter, symbol);
+    }
+
+    private bool IsCapturedByAnyLambdaInMethod(ISymbol symbol, VBSyntax.ExpressionSyntax vbNode)
+    {
+        var method = (SyntaxNode)vbNode.FirstAncestorOrSelf<VBSyntax.MethodBlockBaseSyntax>() ?? vbNode.SyntaxTree.GetRoot();
+        return method.DescendantNodes().Where(n => n is VBSyntax.LambdaExpressionSyntax or VBSyntax.QueryExpressionSyntax)
+            .SelectMany(lambda => lambda.DescendantNodes().OfType<VBSyntax.IdentifierNameSyntax>())
+            .Any(name => string.Equals(name.Identifier.ValueText, symbol.Name, StringComparison.OrdinalIgnoreCase)
+                         && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(name).Symbol, symbol));
+    }
+
+    /// <summary>
+    /// Refers to the same object however much else is evaluated in between, unless something changes the local or parameter (see <see cref="IsWrittenByAny"/>)
+    /// </summary>
+    private static bool IsStableReference(IOperation operation) =>
+        operation is null or ILiteralOperation or IInstanceReferenceOperation or ILocalReferenceOperation or IParameterReferenceOperation || operation.ConstantValue.HasValue;
+
+    /// <summary>
+    /// Constants, Me, locals and parameters, fields of those, and intrinsic operators on them give the same value when evaluated again with no side effects.
+    /// </summary>
+    private static bool IsEvaluatedTheSameTwice(IOperation operation) => operation switch {
+        null or ILiteralOperation or IInstanceReferenceOperation or ILocalReferenceOperation or IParameterReferenceOperation => true,
+        { ConstantValue.HasValue: true } => true,
+        IFieldReferenceOperation field => IsEvaluatedTheSameTwice(field.Instance),
+        IConversionOperation { OperatorMethod: null } conversion => IsEvaluatedTheSameTwice(conversion.Operand),
+        IParenthesizedOperation parenthesized => IsEvaluatedTheSameTwice(parenthesized.Operand),
+        IBinaryOperation { OperatorMethod: null } binary => IsEvaluatedTheSameTwice(binary.LeftOperand) && IsEvaluatedTheSameTwice(binary.RightOperand),
+        IUnaryOperation { OperatorMethod: null } unary => IsEvaluatedTheSameTwice(unary.Operand),
+        _ => false
+    };
+
+    /// <summary>
+    /// The value to assign, and the C# assignment's kind: a compound assignment may need splitting into lhs = lhs op rhs
+    /// </summary>
+    private ExpressionSyntax ConvertAssignedValue(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax rhs, string setMethodName, out SyntaxKind kind)
+    {
+        kind = node.Kind().ConvertToken();
+
+        var lhsTypeInfo = _semanticModel.GetTypeInfo(node.Left);
+        var rhsTypeInfo = _semanticModel.GetTypeInfo(node.Right);
+
+        var typeConvertedRhs = node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)
+            ? CommonConversions.TypeConversionAnalyzer.ConvertToPow(node.Left, lhs, node.Right, rhs, liftedResultType: lhsTypeInfo.Type.IsNullable() ? lhsTypeInfo.Type : null)
+            : node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement) && CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Right, rhs) is { } concatenated
+                ? concatenated
+                : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        if (GetLateBoundOperatorOrNull(node, lhsTypeInfo, rhsTypeInfo) is { } lateBoundOperator) {
+            var lateBound = lateBoundOperator.Invoke(_extraUsingDirectives, lhs, rhs);
+            var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+            kind = SyntaxKind.SimpleAssignmentExpression;
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, lateBound, forceSourceType: objectType, forceTargetType: lhsTypeInfo.Type);
+        }
+        return ConvertNonLateBoundCompoundRhs(node, lhs, typeConvertedRhs, lhsTypeInfo, rhsTypeInfo, setMethodName, ref kind);
+    }
+
+    /// <summary>
+    /// A C# compound operator casts its result back to the left side's type, so it's only split out where the conversion back differs, or for a setter call, which doesn't cast.
+    /// </summary>
+    private ExpressionSyntax ConvertNonLateBoundCompoundRhs(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ExpressionSyntax typeConvertedRhs, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo, string setMethodName, ref SyntaxKind kind)
+    {
+        var isShift = node.IsKind(VBasic.SyntaxKind.LeftShiftAssignmentStatement, VBasic.SyntaxKind.RightShiftAssignmentStatement);
+        var shiftedType = isShift ? CommonConversions.TypeConversionAnalyzer.GetVbShiftedType(lhsTypeInfo.Type) : null;
+        if (isShift) {
+            typeConvertedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(shiftedType, node.Right, typeConvertedRhs);
+        }
+
+        // Split out compound operator if type conversion needed on result
+        if (TypeConversionAnalyzer.GetNonCompoundOrNull(kind) is {} nonCompound) {
+                
+            // The right operand is converted to the operator's type, except a shift count, which is always Integer, and a Nullable concatenated, which stays as it is (C# concatenates its value or nothing)
+            var nonCompoundResultType = shiftedType
+                ?? (node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement) ? _semanticModel.Compilation.GetSpecialType(SpecialType.System_String) : rhsTypeInfo.ConvertedType);
+            // Unlike a C# compound operator, a setter call doesn't cast the promoted int back
+            var csNonCompoundResultType = setMethodName == null ? nonCompoundResultType : CommonConversions.TypeConversionAnalyzer.GetCSharpOperatorResultType(nonCompoundResultType);
+            var nonCompoundLhs = shiftedType != null && !SymbolEqualityComparer.Default.Equals(shiftedType, lhsTypeInfo.Type)
+                ? CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: shiftedType)
+                : GetOperatorLeftOperand(node, lhs, lhsTypeInfo.Type, nonCompoundResultType);
+            // The simplifier removes these parentheses where the right side doesn't need them, e.g. unlike a conditional
+            var nonCompoundRhs = SyntaxFactory.BinaryExpression(nonCompound, nonCompoundLhs, typeConvertedRhs.AddParens());
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, nonCompoundRhs, forceSourceType: csNonCompoundResultType, forceTargetType: lhsTypeInfo.Type);
+            if (nonCompoundRhs != typeConvertedNonCompoundRhs || setMethodName != null) {
+                kind = SyntaxKind.SimpleAssignmentExpression;
+                typeConvertedRhs = typeConvertedNonCompoundRhs;
+            }
+        } else if (node.IsKind(VBasic.SyntaxKind.ExponentiateAssignmentStatement)) {
+            // Math.Pow gives a Double, which might need converting back to the left side's type. A Nullable left side's is converted within the lifted operator.
+            var powType = lhsTypeInfo.Type.IsNullable() ? lhsTypeInfo.Type : rhsTypeInfo.ConvertedType;
+            var typeConvertedNonCompoundRhs = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, typeConvertedRhs, forceSourceType: powType, forceTargetType: lhsTypeInfo.Type);
+            kind = SyntaxKind.SimpleAssignmentExpression;
+            typeConvertedRhs = typeConvertedNonCompoundRhs;
+        }
+
+        return typeConvertedRhs;
+    }
+
+    /// <summary>
+    /// VB converts the left operand to the operator's type, as for x = x op y, e.g. a Single to Long for \, which C#'s / would otherwise divide fractionally.
+    /// An enum is left as it is for + or - of an integer its underlying type holds, which C# has on enums, but not for other operators (e.g. *), which C# doesn't (CS0019).
+    /// </summary>
+    private ExpressionSyntax GetOperatorLeftOperand(VBSyntax.AssignmentStatementSyntax node, ExpressionSyntax lhs, ITypeSymbol lhsType, ITypeSymbol operandType)
+    {
+        if (operandType == null || SymbolEqualityComparer.Default.Equals(operandType, lhsType) || IsEnumPlusOrMinusInteger(node, lhsType)) return lhs;
+        // & converts a Nullable's Nothing to an empty string, rather than taking its value and throwing as CStr does
+        if (node.IsKind(VBasic.SyntaxKind.ConcatenateAssignmentStatement) && lhsType.IsNullable()) {
+            var objectType = _semanticModel.Compilation.GetSpecialType(SpecialType.System_Object);
+            var boxed = ValidSyntaxFactory.CastExpression(CommonConversions.GetTypeSyntax(objectType), lhs.AddParens());
+            return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, boxed, forceSourceType: objectType, forceTargetType: operandType);
+        }
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: operandType);
+    }
+
+    private bool IsEnumPlusOrMinusInteger(VBSyntax.AssignmentStatementSyntax node, ITypeSymbol lhsType)
+    {
+        if ((lhsType.GetNullableUnderlyingType() ?? lhsType) is not INamedTypeSymbol { EnumUnderlyingType: { } underlyingType }
+            || !node.IsKind(VBasic.SyntaxKind.AddAssignmentStatement, VBasic.SyntaxKind.SubtractAssignmentStatement)
+            || _semanticModel.GetTypeInfo(node.Right) is not { Type: { } rhsType, ConvertedType: { } operandType }) return false;
+        var rhsValueType = rhsType.GetNullableUnderlyingType() ?? rhsType;
+        // The right operand is converted to the operator's type, e.g. Decimal for a ULong enum plus an Integer
+        var operandValueType = operandType.GetNullableUnderlyingType() ?? operandType;
+        if (!rhsValueType.IsIntegralType() || rhsValueType.IsEnumType() || !operandValueType.IsIntegralType()) return false;
+        // C# converts an integer type that widens implicitly, and an int constant that fits
+        return _semanticModel.Compilation.ClassifyCommonConversion(operandValueType, underlyingType).IsImplicit
+            || operandValueType.SpecialType == SpecialType.System_Int32 && _semanticModel.GetConstantValue(node.Right) is { HasValue: true, Value: { } value }
+               && FitsIn(System.Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture), underlyingType.SpecialType);
+    }
+
+    private static bool FitsIn(decimal value, SpecialType integralType) => integralType switch {
+        SpecialType.System_Byte => value is >= byte.MinValue and <= byte.MaxValue,
+        SpecialType.System_SByte => value is >= sbyte.MinValue and <= sbyte.MaxValue,
+        SpecialType.System_Int16 => value is >= short.MinValue and <= short.MaxValue,
+        SpecialType.System_UInt16 => value is >= ushort.MinValue and <= ushort.MaxValue,
+        SpecialType.System_Int32 => value is >= int.MinValue and <= int.MaxValue,
+        SpecialType.System_UInt32 => value is >= uint.MinValue and <= uint.MaxValue,
+        SpecialType.System_Int64 => value is >= long.MinValue and <= long.MaxValue,
+        SpecialType.System_UInt64 => value is >= ulong.MinValue and <= ulong.MaxValue,
+        _ => false
+    };
+
+    /// <summary>
+    /// With an Object operand, VB binds the operator at runtime (like Operators.LeftShiftObject for b &lt;&lt; o), which C# has no compound operator for.
+    /// Keyed on the VB statement, since e.g. &amp;= and += both become C#'s +=, and /= and \= both become /=.
+    /// </summary>
+    /// <summary>
+    /// VB binds the operator late where its operands are Object, but a constant Nothing is just Nothing whatever its type (e.g. DirectCast(Nothing, Object)),
+    /// so the operator is bound to the other operand's type. The bound operation says which: it operates on Object only when bound late.
+    /// </summary>
+    /// <remarks>
+    /// The one exception is / of an Object Nothing into an integer: it gives the same Double, and the late-bound result's conversion back keeps VB's overflow check
+    /// (dividing by zero gives Infinity, which VB can't convert), which the typed path's cast doesn't
+    /// </remarks>
+    private bool IsBoundLate(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo) =>
+        (lhsTypeInfo.Type?.SpecialType == SpecialType.System_Object || rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object) && _semanticModel.GetOperation(node) switch {
+            IExpressionStatementOperation { Operation: ICompoundAssignmentOperation compound } => IsOnObject(compound),
+            ICompoundAssignmentOperation compound => IsOnObject(compound),
+            _ => lhsTypeInfo.Type?.SpecialType == SpecialType.System_Object || rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
+        } || node.IsKind(VBasic.SyntaxKind.DivideAssignmentStatement) && rhsTypeInfo.Type?.SpecialType == SpecialType.System_Object
+             && (lhsTypeInfo.Type.IsIntegralType() || lhsTypeInfo.Type.IsEnumType());
+
+    private static bool IsOnObject(ICompoundAssignmentOperation compound) => compound.OperatorMethod == null && compound.Value.Type?.SpecialType == SpecialType.System_Object;
+
+    private KnownMethod? GetLateBoundOperatorOrNull(VBSyntax.AssignmentStatementSyntax node, TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
+    {
+        if (!IsBoundLate(node, lhsTypeInfo, rhsTypeInfo)) return null;
+        string methodName = node.Kind() switch {
+            VBasic.SyntaxKind.AddAssignmentStatement => "AddObject",
+            VBasic.SyntaxKind.SubtractAssignmentStatement => "SubtractObject",
+            VBasic.SyntaxKind.MultiplyAssignmentStatement => "MultiplyObject",
+            VBasic.SyntaxKind.DivideAssignmentStatement => "DivideObject",
+            VBasic.SyntaxKind.IntegerDivideAssignmentStatement => "IntDivideObject",
+            VBasic.SyntaxKind.ExponentiateAssignmentStatement => "ExponentObject",
+            VBasic.SyntaxKind.ConcatenateAssignmentStatement => "ConcatenateObject",
+            VBasic.SyntaxKind.LeftShiftAssignmentStatement => "LeftShiftObject",
+            VBasic.SyntaxKind.RightShiftAssignmentStatement => "RightShiftObject",
+            _ => null
+        };
+        return methodName == null ? null : new KnownMethod("Microsoft.VisualBasic.CompilerServices", "Operators", methodName);
     }
 
     private async Task<SyntaxList<StatementSyntax>> ConvertMidAssignmentAsync(VBSyntax.AssignmentStatementSyntax node, VBSyntax.MidExpressionSyntax mes)
@@ -746,29 +1033,55 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         var csToValue = await stmt.ToValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
         csToValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(stmt.ToValue, csToValue?.SkipIntoParens(), forceTargetType: controlVarType);
 
-        // In Visual Basic, the To expression is only evaluated once, but in C# will be evaluated every loop.
-        // If it could evaluate differently or has side effects, it must be extracted as a variable
-        if (!_semanticModel.GetConstantValue(stmt.ToValue).HasValue) {
-            var loopToVariableName = GetUniqueVariableNameInScope(node, "loopTo");
-            var toVariableId = ValidSyntaxFactory.IdentifierName(loopToVariableName);
-
-            var loopToAssignment = CommonConversions.CreateVariableDeclarator(loopToVariableName, csToValue);
-            if (initializers.Any()) {
-                var loopEndDeclaration = SyntaxFactory.LocalDeclarationStatement(
-                    CommonConversions.CreateVariableDeclarationAndAssignment(loopToVariableName, csToValue));
-                // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
-                preLoopStatements.Add(loopEndDeclaration);
-            } else {
-                declaration = declaration == null
-                    ? SyntaxFactory.VariableDeclaration(controlVarTypeSyntax,
-                        SyntaxFactory.SingletonSeparatedList(loopToAssignment))
-                    : declaration.AddVariables(loopToAssignment).WithType(controlVarTypeSyntax);
+        // In Visual Basic, the From, To and Step expressions are evaluated once, in that order, before the control variable is assigned, but in C# To and Step are evaluated for every iteration.
+        // Any that isn't a constant is extracted as a variable: in the loop's declaration where it has the control variable's type, else before the loop.
+        // Then From goes ahead of them where it must be evaluated first, as a variable where they read the control variable or it's declared by the loop.
+        var csStepValue = await ConvertStepValueAsync(stmt, controlVarType);
+        var toNeedsVariable = !_semanticModel.GetConstantValue(stmt.ToValue).HasValue;
+        var stepNeedsVariable = csStepValue != null && !_semanticModel.GetConstantValue(stmt.StepClause.StepValue).HasValue
+            && !(IsBareOrCheaplyConverted(stmt.StepClause.StepValue, csStepValue, GetCsStepType(controlVarType)) && IsLocalUnchangedByLoop(stmt.StepClause.StepValue, node));
+        var fitsDeclaration = declaration != null && !initializers.Any() && (!stepNeedsVariable || SymbolEqualityComparer.Default.Equals(GetCsStepType(controlVarType), controlVarType));
+        var extracted = new[] { toNeedsVariable ? stmt.ToValue : null, stepNeedsVariable ? stmt.StepClause.StepValue : null }.Where(e => e != null).ToArray();
+        if (!fitsDeclaration && extracted.Any() && !_semanticModel.GetConstantValue(stmt.FromValue).HasValue) {
+            // To and Step may read an outside control variable if they name it, or if it's e.g. a field or captured local that what they call could read
+            var readsControlVariable = initializers.Any() && (GetUnaliasedLocalOrNull((VBSyntax.ExpressionSyntax)stmt.ControlVariable) == null || extracted.Any(e => RefersTo(e, controlVarSymbol)));
+            var mustBeEvaluatedFirst = !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(stmt.FromValue))
+                || extracted.Any(e => !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(e))) && !IsUnchangedBy(stmt.FromValue, extracted);
+            // Assigned ahead of To and Step, it would keep From's value where they throw, which VB doesn't assign, so only where nothing can see that:
+            // the exception leaves the method unless the loop is within a Try or the method has On Error, and then the variable must be read outside the loop
+            readsControlVariable |= mustBeEvaluatedFirst && initializers.Any() && extracted.Any(MayThrow) && IsSeenAfterAnException(node, controlVarSymbol);
+            if (initializers.Any() && mustBeEvaluatedFirst && !readsControlVariable) {
+                preLoopStatements.AddRange(initializers.Select(SyntaxFactory.ExpressionStatement));
+                initializers.Clear();
+            } else if (readsControlVariable || mustBeEvaluatedFirst) {
+                var loopFromVariableName = GetUniqueVariableNameInScope(node, "loopFrom");
+                var loopFrom = ValidSyntaxFactory.IdentifierName(loopFromVariableName);
+                if (initializers.Any()) {
+                    var assignment = (AssignmentExpressionSyntax)initializers[0];
+                    preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, assignment.Right)));
+                    initializers[0] = assignment.WithRight(loopFrom);
+                } else {
+                    var fromVariable = declaration.Variables[0];
+                    preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(loopFromVariableName, fromVariable.Initializer.Value)));
+                    declaration = declaration.WithVariables(SyntaxFactory.SingletonSeparatedList(fromVariable.WithInitializer(SyntaxFactory.EqualsValueClause(loopFrom))));
+                }
             }
-
-            csToValue = toVariableId;
         }
+        ExpressionSyntax ExtractVariable(string nameBase, ExpressionSyntax value)
+        {
+            var variableName = GetUniqueVariableNameInScope(node, nameBase);
+            if (fitsDeclaration) {
+                declaration = declaration.AddVariables(CommonConversions.CreateVariableDeclarator(variableName, value)).WithType(controlVarTypeSyntax);
+            } else {
+                // Does not do anything about porting newline trivia upwards to maintain spacing above the loop
+                preLoopStatements.Add(SyntaxFactory.LocalDeclarationStatement(CommonConversions.CreateVariableDeclarationAndAssignment(variableName, value)));
+            }
+            return ValidSyntaxFactory.IdentifierName(variableName);
+        }
+        if (toNeedsVariable) csToValue = ExtractVariable("loopTo", csToValue);
+        if (stepNeedsVariable) csStepValue = ExtractVariable("loopStep", csStepValue);
 
-        var (csCondition, csStep) = await ConvertConditionAndStepClauseAsync(stmt, id, csToValue, controlVarType);
+        var (csCondition, csStep) = ConvertConditionAndStepClause(stmt, id, csToValue, csStepValue);
 
         var block = SyntaxFactory.Block(await ConvertStatementsAsync(node.Statements));
         var forStatementSyntax = SyntaxFactory.ForStatement(
@@ -785,13 +1098,95 @@ internal class MethodBodyExecutableStatementVisitor : VBasic.VisualBasicSyntaxVi
         return await CommonConversions.SplitVariableDeclarationsAsync(v, _localsToInlineInLoop, preferExplicitType);
     }
 
-    private async Task<(ExpressionSyntax, ExpressionSyntax)> ConvertConditionAndStepClauseAsync(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue, ITypeSymbol controlVarType)
+    /// <summary>
+    /// A local or ByVal parameter that the loop doesn't write (directly, ByRef or in a lambda), and that no lambda captures, has the same value at every iteration.
+    /// A ByRef parameter may be changed through what it refers to, e.g. a field the loop sets.
+    /// </summary>
+    private bool IsLocalUnchangedByLoop(VBSyntax.ExpressionSyntax vbValue, VBSyntax.ForBlockSyntax loop)
+    {
+        var symbol = GetUnaliasedLocalOrNull(vbValue);
+        if (symbol == null || SymbolEqualityComparer.Default.Equals(symbol, _semanticModel.GetSymbolInfo(loop.ForStatement.ControlVariable).Symbol)) return false;
+        if (!loop.Statements.Any()) return true;
+        var dataFlow = _semanticModel.AnalyzeDataFlow(loop.Statements.First(), loop.Statements.Last());
+        return dataFlow.Succeeded && !dataFlow.WrittenInside.Contains(symbol, SymbolEqualityComparer.Default);
+    }
+
+    /// <summary>
+    /// Converting to the step's C# type can't throw and is cheap for an enum to its underlying type or a widening numeric conversion, so then it's as good as the bare name
+    /// </summary>
+    private bool IsBareOrCheaplyConverted(VBSyntax.ExpressionSyntax vbStep, ExpressionSyntax csStep, ITypeSymbol csStepType)
+    {
+        var unparenthesized = csStep.SkipIntoParens();
+        if (unparenthesized is IdentifierNameSyntax) return true;
+        if (unparenthesized is not CastExpressionSyntax { Expression: var castOperand } || castOperand.SkipIntoParens() is not IdentifierNameSyntax) return false;
+        var stepType = _semanticModel.GetTypeInfo(vbStep).Type;
+        if (stepType == null || csStepType == null) return false;
+        if (stepType is INamedTypeSymbol { EnumUnderlyingType: { } underlyingType }) return SymbolEqualityComparer.Default.Equals(underlyingType, csStepType);
+        var conversion = _semanticModel.Compilation.ClassifyCommonConversion(stepType, csStepType);
+        return stepType.IsNumericType() && conversion.IsImplicit && conversion.IsNumeric;
+    }
+
+    /// <summary>
+    /// A Nullable converted to a value type throws for Nothing, as may anything with side effects
+    /// </summary>
+    private bool MayThrow(VBSyntax.ExpressionSyntax vbValue) =>
+        !IsEvaluatedTheSameTwice(_semanticModel.GetOperation(vbValue))
+        || _semanticModel.GetTypeInfo(vbValue) is { Type: var type, ConvertedType: var convertedType } && type.IsNullable() && !convertedType.IsNullable();
+
+    private bool IsSeenAfterAnException(VBSyntax.ForBlockSyntax loop, ISymbol symbol)
+    {
+        var method = loop.Ancestors().FirstOrDefault(a => a is VBSyntax.MethodBlockBaseSyntax or VBSyntax.LambdaExpressionSyntax);
+        var isHandled = loop.Ancestors().TakeWhile(a => a != method).Any(a => a is VBSyntax.TryBlockSyntax)
+                        || method != null && method.DescendantNodes().Any(n => n is VBSyntax.OnErrorGoToStatementSyntax or VBSyntax.OnErrorResumeNextStatementSyntax);
+        if (!isHandled) return false;
+        // A function's return variable is read when it returns
+        if (symbol is ILocalSymbol { IsFunctionValue: true }) return true;
+        return _semanticModel.AnalyzeDataFlow(loop) is not { Succeeded: true } dataFlow || dataFlow.ReadOutside.Contains(symbol, SymbolEqualityComparer.Default);
+    }
+
+    /// <summary>
+    /// From keeps its value while To and Step are evaluated if it's a local or ByVal parameter that they don't write (directly or ByRef) and no lambda captures
+    /// </summary>
+    private bool IsUnchangedBy(VBSyntax.ExpressionSyntax from, IEnumerable<VBSyntax.ExpressionSyntax> others)
+    {
+        var symbol = GetUnaliasedLocalOrNull(from);
+        return symbol != null && others.All(e => _semanticModel.AnalyzeDataFlow(e) is { Succeeded: true } dataFlow && !dataFlow.WrittenInside.Contains(symbol, SymbolEqualityComparer.Default));
+    }
+
+    /// <summary>
+    /// A local (not Static) or ByVal parameter that no lambda captures: only code that names it can change it
+    /// </summary>
+    private ISymbol GetUnaliasedLocalOrNull(VBSyntax.ExpressionSyntax vbValue)
+    {
+        var symbol = _semanticModel.GetOperation(vbValue) switch {
+            ILocalReferenceOperation local when !local.Local.IsStatic => (ISymbol)local.Local,
+            IParameterReferenceOperation { Parameter.RefKind: RefKind.None } parameter => parameter.Parameter,
+            _ => null
+        };
+        return symbol == null || IsCapturedByAnyLambdaInMethod(symbol, vbValue) ? null : symbol;
+    }
+
+    private bool RefersTo(VBSyntax.ExpressionSyntax vbExpression, ISymbol symbol) =>
+        vbExpression.DescendantNodesAndSelf().OfType<VBSyntax.IdentifierNameSyntax>()
+            .Any(name => string.Equals(name.Identifier.ValueText, symbol.Name, StringComparison.OrdinalIgnoreCase) && SymbolEqualityComparer.Default.Equals(_semanticModel.GetSymbolInfo(name).Symbol, symbol));
+
+    /// <summary>
+    /// The step is added to the control variable: for an enum, that's an integer of its underlying type
+    /// </summary>
+    private static ITypeSymbol GetCsStepType(ITypeSymbol controlVarType) =>
+        controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
+
+    private async Task<ExpressionSyntax> ConvertStepValueAsync(VBSyntax.ForStatementSyntax stmt, ITypeSymbol controlVarType)
     {
         var vbStepValue = stmt.StepClause?.StepValue;
-        var csStepValue = await (stmt.StepClause?.StepValue).AcceptAsync<ExpressionSyntax>(_expressionVisitor);
-        // For an enum, you need to add on an integer for example:
-        var forceStepType = controlVarType is INamedTypeSymbol nt && nt.IsEnumType() ? nt.EnumUnderlyingType : controlVarType;
-        csStepValue = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: forceStepType);
+        var csStepType = GetCsStepType(controlVarType);
+        var csStepValue = await vbStepValue.AcceptAsync<ExpressionSyntax>(_expressionVisitor);
+        return CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(vbStepValue, csStepValue?.SkipIntoParens(), forceTargetType: csStepType);
+    }
+
+    private (ExpressionSyntax, ExpressionSyntax) ConvertConditionAndStepClause(VBSyntax.ForStatementSyntax stmt, ExpressionSyntax id, ExpressionSyntax csToValue, ExpressionSyntax csStepValue)
+    {
+        var vbStepValue = stmt.StepClause?.StepValue;
 
         var nonNegativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.LessThanOrEqualExpression, id, csToValue);
         var negativeCondition = SyntaxFactory.BinaryExpression(SyntaxKind.GreaterThanOrEqualExpression, id, csToValue);

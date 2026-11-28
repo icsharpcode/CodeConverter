@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System.Runtime.CompilerServices;
 using ICSharpCode.CodeConverter.CSharp;
 
 namespace ICSharpCode.CodeConverter.Common;
@@ -19,7 +20,10 @@ internal class NameGenerator
     {
         // Need to check not just the symbols this node has access to, but whether there are any nested blocks which have access to this node and contain a conflicting name
         var scopeStarts = GetScopeStarts(node);
-        return GenerateUniqueVariableNameInScope(semanticModel, generatedNames, variableNameBase, scopeStarts);
+        var namesInBlock = GetNamesDeclaredInContainingBlock(node);
+        string uniqueName = GenerateUniqueName(variableNameBase, string.Empty, n => !namesInBlock.Contains(n) && IsNameFreeInScope(semanticModel, generatedNames, scopeStarts, n));
+        generatedNames.Add(uniqueName);
+        return uniqueName;
     }
 
     /// <summary>
@@ -34,20 +38,21 @@ internal class NameGenerator
         return uniqueName;
     }
 
+    /// <summary>
+    /// For a local (or pattern variable) declared in the C# block that holds the node's statement, without reserving the name
+    /// </summary>
+    public bool IsLocalNameFreeInScope(SemanticModel semanticModel, VBasic.VisualBasicSyntaxNode node, string name) =>
+        !GetNamesDeclaredInContainingBlock(node).Contains(name) && !GetScopeStarts(node).Any(scopeStart => semanticModel.LookupSymbols(scopeStart, name: name).Any());
+
+    /// <summary>
+    /// For a name declared in a scope of its own (e.g. a query range variable), which a name in a sibling nested scope doesn't conflict with, unlike a local's
+    /// </summary>
     public bool IsNameFreeInScope(SemanticModel semanticModel, HashSet<string> generatedNames, VBasic.VisualBasicSyntaxNode node, string name) =>
         IsNameFreeInScope(semanticModel, generatedNames, GetScopeStarts(node), name);
 
     public string GenerateUniqueVariableName(HashSet<string> generatedNames, string variableNameBase)
     {
         string uniqueName = GenerateUniqueName(variableNameBase, string.Empty, n => !generatedNames.Contains(n));
-        generatedNames.Add(uniqueName);
-        return uniqueName;
-    }
-
-    private string GenerateUniqueVariableNameInScope(SemanticModel semanticModel, HashSet<string> generatedNames,
-        string variableNameBase, List<int> scopeStarts)
-    {
-        string uniqueName = GenerateUniqueName(variableNameBase, string.Empty, n => IsNameFreeInScope(semanticModel, generatedNames, scopeStarts, n));
         generatedNames.Add(uniqueName);
         return uniqueName;
     }
@@ -80,4 +85,42 @@ internal class NameGenerator
             .OfType<VBSyntax.StatementSyntax>().Select(n => n.SpanStart).ToList();
     }
 
-}
+    /// <summary>
+    /// A generated local is declared before the statement, in the method body block that contains it, and a C# local can't share a name with any local
+    /// (or lambda parameter, or query range variable) in a scope nested in its own, even one declared before it, e.g. a For Each variable in an earlier loop (CS0136).
+    /// Those names are found once per block, rather than looking each name up at every statement in it, which grows with the square of the block's size.
+    /// A type member's name (e.g. a Static local's field) is outside any method body, so it isn't affected.
+    /// </summary>
+    private static IReadOnlyCollection<string> GetNamesDeclaredInContainingBlock(VBasic.VisualBasicSyntaxNode node)
+    {
+        var statement = GetExecutableStatementOrSelf(node.GetAncestorOrThis<VBSyntax.StatementSyntax>());
+        return statement is VBSyntax.ExecutableStatementSyntax { Parent: { } block }
+            ? NamesDeclaredPerBlock.GetValue(block, GetNamesDeclaredWithin)
+            : Array.Empty<string>();
+    }
+
+    /// <summary>
+    /// A block's header (e.g. If, ElseIf, Loop Until, Case Is, Catch When, For Each) isn't a statement of its own in C#: a name declared in it is in scope in the block's body,
+    /// so it's the names of the block it heads, and the block that contains that, which matter.
+    /// Part blocks such as ElseIf, Case and Catch aren't statements, so it's the executable block they're part of.
+    /// </summary>
+    private static VBSyntax.StatementSyntax GetExecutableStatementOrSelf(VBSyntax.StatementSyntax statement)
+    {
+        if (statement is VBSyntax.ExecutableStatementSyntax or null) return statement;
+        for (var node = statement.Parent; node is not (null or VBSyntax.DeclarationStatementSyntax or VBSyntax.LambdaExpressionSyntax); node = node.Parent) {
+            if (node is VBSyntax.ExecutableStatementSyntax executable) return executable;
+        }
+        return statement;
+    }
+
+    private static readonly ConditionalWeakTable<SyntaxNode, HashSet<string>> NamesDeclaredPerBlock = new();
+
+    private static HashSet<string> GetNamesDeclaredWithin(SyntaxNode block) =>
+        new(block.DescendantNodes().Select(n => n switch {
+            VBSyntax.ModifiedIdentifierSyntax declared => declared.Identifier.ValueText,
+            VBSyntax.ForStatementSyntax { ControlVariable: VBSyntax.IdentifierNameSyntax inferred } => inferred.Identifier.ValueText,
+            VBSyntax.ForEachStatementSyntax { ControlVariable: VBSyntax.IdentifierNameSyntax inferred } => inferred.Identifier.ValueText,
+            VBSyntax.CatchStatementSyntax { IdentifierName: { } caught } => caught.Identifier.ValueText,
+            _ => null
+        }).Where(name => name != null), StringComparer.OrdinalIgnoreCase);
+}

@@ -57,7 +57,7 @@ internal partial class TestClass
     public async Task NonDefaultTypedArrayDeclarationStatementAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Dim o As Object() = {""a""}", @"{
-    object[] o = new[] { ""a"" };
+    object[] o = new object[] { ""a"" };
 }");
     }
 
@@ -526,6 +526,25 @@ public partial class SplitArrayDeclarations
         int i_Test;
         int[] i_Tab;
         int[,] bearb;
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ArrayBoundOfAnOperatorResultIsIncreasedWithoutExtraParenthesesAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class C
+    Sub M(bt As Byte, i As Integer)
+        Dim a(bt + bt) As Integer
+        Dim b(i * 2) As Integer
+    End Sub
+End Class", @"
+internal partial class C
+{
+    public void M(byte bt, int i)
+    {
+        var a = new int[(byte)(bt + bt) + 1];
+        var b = new int[i * 2 + 1];
     }
 }");
     }

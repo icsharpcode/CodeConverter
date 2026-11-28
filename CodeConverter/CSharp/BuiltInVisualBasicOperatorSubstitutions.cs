@@ -111,10 +111,7 @@ internal static class VbOperatorConversion
         private async Task<ExpressionSyntax> ConvertToPowOperatorAsync(VBSyntax.BinaryExpressionSyntax node)
         {
             var (lhs, rhs) = await AcceptSidesAsync(node);
-            lhs = ConvertTo(node.Left, lhs, SpecialType.System_Double);
-            rhs = ConvertTo(node.Right, rhs, SpecialType.System_Double);
-            return new KnownMethod(nameof(System), nameof(Math), nameof(Math.Pow))
-                .Invoke(_visualBasicEqualityComparison.ExtraUsingDirectives, lhs, rhs);
+            return _typeConversionAnalyzer.ConvertToPow(node.Left, lhs, node.Right, rhs);
         }
 
         private ExpressionSyntax ConvertTo(VBSyntax.ExpressionSyntax vbNode, ExpressionSyntax csNode, SpecialType targetType)

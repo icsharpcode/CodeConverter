@@ -563,7 +563,6 @@ public partial class Issue396ComparisonOperatorForStringsAsync
     End Sub
 End Class",
             @"using System;
-using System.IO;
 
 public partial class EnumTests
 {
@@ -575,11 +574,9 @@ public partial class EnumTests
 
     public void TestEnumConcat()
     {
-        Console.Write(RankEnum.First + RankEnum.Second);
+        Console.Write(((sbyte)RankEnum.First).ToString() + ((sbyte)RankEnum.Second).ToString());
     }
-}
-1 target compilation errors:
-CS0019: Operator '+' cannot be applied to operands of type 'EnumTests.RankEnum' and 'EnumTests.RankEnum'");
+}");
     }
 
     [Fact]

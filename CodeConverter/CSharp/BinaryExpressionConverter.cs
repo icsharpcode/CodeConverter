@@ -100,17 +100,28 @@ internal class BinaryExpressionConverter
         var rhsTypeIgnoringNullable = rhsTypeInfo.Type.GetNullableUnderlyingType() ?? rhsTypeInfo.Type;
         omitConversion |= lhsTypeIgnoringNullable != null && rhsTypeIgnoringNullable != null &&
                           lhsTypeIgnoringNullable.IsEnumType() && SymbolEqualityComparer.Default.Equals(lhsTypeIgnoringNullable, rhsTypeIgnoringNullable)
-                          && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression)
+                          && !node.IsKind(VBasic.SyntaxKind.AddExpression, VBasic.SyntaxKind.SubtractExpression, VBasic.SyntaxKind.MultiplyExpression, VBasic.SyntaxKind.DivideExpression, VBasic.SyntaxKind.IntegerDivideExpression, VBasic.SyntaxKind.ModuloExpression, VBasic.SyntaxKind.ConcatenateExpression)
                           && forceLhsTargetType == null;
-        lhs = omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType);
-        rhs = omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs);
+        var isConcatenation = node.IsKind(VBasic.SyntaxKind.ConcatenateExpression);
+        // Where the other operand is a String, C#'s + gives an empty string for a Nullable's null as VB does, so only an enum's or a Date's string differs
+        lhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Left, lhs, isLeftOperand: !omitConversion) : null)
+              ?? (omitConversion ? lhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Left, lhs, forceTargetType: forceLhsTargetType));
+        rhs = (isConcatenation ? CommonConversions.TypeConversionAnalyzer.ConvertConcatenatedNullableOrNull(node.Right, rhs) : null)
+              ?? (omitConversion || omitRightConversion ? rhs : CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Right, rhs));
+        var isShiftMaskedToNothing = false;
+        if (node.IsKind(VBasic.SyntaxKind.LeftShiftExpression, VBasic.SyntaxKind.RightShiftExpression)) {
+            var maskedRhs = CommonConversions.TypeConversionAnalyzer.MaskShiftCountIfNeeded(_semanticModel.GetTypeInfo(node).Type, node.Right, rhs);
+            isShiftMaskedToNothing = maskedRhs != rhs && maskedRhs is CSSyntax.LiteralExpressionSyntax { Token.Value: 0 };
+            rhs = maskedRhs;
+        }
 
         var kind = VBasic.VisualBasicExtensions.Kind(node).ConvertToken();
         var op = CS.SyntaxFactory.Token(CSharpUtil.GetExpressionOperatorTokenKind(kind));
 
         var csBinExp = CS.SyntaxFactory.BinaryExpression(kind, lhs, op, rhs);
-        var exp = _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
-        return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) ? exp : exp.AddParens();
+        var exp = isShiftMaskedToNothing ? lhs : _visualBasicNullableTypesConverter.WithBinaryExpressionLogicForNullableTypes(node, lhsTypeInfo, rhsTypeInfo, csBinExp, lhs, rhs);
+        exp = CommonConversions.TypeConversionAnalyzer.CastPromotedOperatorResultIfNeeded(node, exp);
+        return node.Parent.IsKind(VBasic.SyntaxKind.SimpleArgument) || exp is CSSyntax.CheckedExpressionSyntax ? exp : exp.AddParens();
     }
 
     private async Task<CSSyntax.ExpressionSyntax> RewriteBinaryOperatorOrNullAsync(VBSyntax.BinaryExpressionSyntax node) =>

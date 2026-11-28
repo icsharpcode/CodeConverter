@@ -1415,6 +1415,161 @@ internal partial class TestClass
     }
 
     [Fact]
+    public async Task Issue1211_CollectionInitializerWithUserDefinedWideningToElementTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Key
+    Public Shared Widening Operator CType(s As String) As Key
+        Return New Key()
+    End Operator
+End Class
+
+Public Class TestClass
+    Public Sub MyMethod(keys As Key())
+    End Sub
+
+    Public Sub Test()
+        MyMethod({""foo"", ""bar"", ""baz""})
+    End Sub
+End Class", @"
+public partial class Key
+{
+    public static implicit operator Key(string s)
+    {
+        return new Key();
+    }
+}
+
+public partial class TestClass
+{
+    public void MyMethod(Key[] keys)
+    {
+    }
+
+    public void Test()
+    {
+        MyMethod(new Key[] { ""foo"", ""bar"", ""baz"" });
+    }
+}");
+    }
+
+    [Fact]
+    public async Task Issue1211_ConversionInsideItemDoesNotForceExplicitArrayTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Key
+    Public Shared Widening Operator CType(s As String) As Key
+        Return New Key()
+    End Operator
+End Class
+
+Public Class TestClass
+    Public Function G(k As Key) As String
+        Return """"
+    End Function
+
+    Public Sub Test()
+        Dim a As String() = {G(""a""), ""b""}
+    End Sub
+End Class", @"
+public partial class Key
+{
+    public static implicit operator Key(string s)
+    {
+        return new Key();
+    }
+}
+
+public partial class TestClass
+{
+    public string G(Key k)
+    {
+        return """";
+    }
+
+    public void Test()
+    {
+        string[] a = new[] { G(""a""), ""b"" };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task Issue1211_MixedAndMultidimensionalItemsGetExplicitArrayTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Public Class Key
+    Public Shared Widening Operator CType(s As String) As Key
+        Return New Key()
+    End Operator
+End Class
+
+Public Class TestClass
+    Public Sub Test()
+        Dim mixed As Key() = {New Key(), ""a""}
+        Dim grid As Key(,) = {{""a""}, {""b""}}
+    End Sub
+End Class", @"
+public partial class Key
+{
+    public static implicit operator Key(string s)
+    {
+        return new Key();
+    }
+}
+
+public partial class TestClass
+{
+    public void Test()
+    {
+        Key[] mixed = new Key[] { new Key(), ""a"" };
+        Key[,] grid = new Key[,] { { ""a"" }, { ""b"" } };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ArrayInitializerItemsNotOfTargetElementTypeGetExplicitArrayTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(x As Integer)
+        Dim a As Object() = {1, 2}
+        Dim b As Object() = {1, ""a""}
+        Dim c As Double() = {1, 2.5}
+        Dim d As Integer() = {x, 2}
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(int x)
+    {
+        object[] a = new object[] { 1, 2 };
+        object[] b = new object[] { 1, ""a"" };
+        double[] c = new double[] { 1d, 2.5d };
+        int[] d = new[] { x, 2 };
+    }
+}");
+    }
+
+    [Fact]
+    public async Task ArrayInitializerOfSmallIntegerOperatorResultsIsCastToElementTypeAsync()
+    {
+        await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
+    Private Sub TestMethod(b1 As Byte, s1 As Short)
+        Dim a As Byte() = {b1 And b1, b1}
+        Dim b As Short() = {s1 << 1}
+        Dim c As Short() = {-s1}
+    End Sub
+End Class", @"
+internal partial class TestClass
+{
+    private void TestMethod(byte b1, short s1)
+    {
+        byte[] a = new[] { (byte)(b1 & b1), b1 };
+        short[] b = new[] { (short)(s1 << 1) };
+        short[] c = new[] { (short)-s1 };
+    }
+}");
+    }
+
+    [Fact]
     public async Task DelegateExpressionAsync()
     {
         await TestConversionVisualBasicToCSharpAsync(@"Class TestClass
@@ -1818,7 +1973,7 @@ public partial class TargetTypeTestClass
 
     private static void Main()
     {
-        Action[] actions = new[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
+        Action[] actions = new Action[] { new Action(() => Debug.Print(1.ToString())), new Action(() => Debug.Print(2.ToString())) };
         var objects = new List<object>() { new Action(() => Debug.Print(3.ToString())), new Action(() => Debug.Print(4.ToString())) };
     }
 }");
@@ -2455,7 +2610,7 @@ End Sub",
 {
     var widened = ((long)x, s);
     var literals = (1d, 2L, (byte)3);
-    var shortArithmetic = ((short)(s * s), s * s);
+    var shortArithmetic = ((short)(s * s), (int)(short)(s * s));
     var stringAndChar = (""a"", 'b');
     var nothings = ((string)null, default(int));
 }");
@@ -2957,7 +3112,7 @@ public partial class Compound
     public void TypeCast(int someInt)
     {
         var col = Color.FromArgb((int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f), (int)Math.Round(someInt * 255.0f));
-        float[] arry = new float[(int)Math.Round(7d / someInt + 1)];
+        float[] arry = new float[(int)Math.Round(7d / someInt) + 1];
     }
 }");
     }

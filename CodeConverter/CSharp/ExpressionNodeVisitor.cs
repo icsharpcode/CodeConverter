@@ -1,4 +1,4 @@
-using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
+﻿using ICSharpCode.CodeConverter.CSharp.ByRefArguments;
 using ICSharpCode.CodeConverter.CSharp.Queries;
 using ICSharpCode.CodeConverter.Util.FromRoslyn;
 using Microsoft.CodeAnalysis.CSharp;
@@ -401,18 +401,23 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         CS.SyntaxKind csTokenKind = CSharpUtil.GetExpressionOperatorTokenKind(kind);
 
         if (kind == CS.SyntaxKind.LogicalNotExpression && _semanticModel.GetTypeInfo(node.Operand).ConvertedType is { } t) {
-            if (t.IsNumericType() || t.IsEnumType()) {
+            var underlyingType = t.GetNullableUnderlyingType() ?? t;
+            if (underlyingType.IsNumericType() || underlyingType.IsEnumType()) {
+                kind = CS.SyntaxKind.BitwiseNotExpression;
                 csTokenKind = CS.SyntaxKind.TildeToken;
+                // VB converts e.g. a Double operand to Long first
+                expr = CommonConversions.TypeConversionAnalyzer.AddExplicitConversion(node.Operand, expr);
             } else if (await NegateAndSimplifyOrNullAsync(node, expr, t) is { } simpleNegation) {
                 return simpleNegation;
             }
         }
 
-        return CS.SyntaxFactory.PrefixUnaryExpression(
+        var csUnary = CS.SyntaxFactory.PrefixUnaryExpression(
             kind,
             CS.SyntaxFactory.Token(csTokenKind),
             expr.AddParens()
         );
+        return CommonConversions.TypeConversionAnalyzer.CastPromotedOperatorResultIfNeeded(node, csUnary);
     }
 
     private async Task<ExpressionSyntax> NegateAndSimplifyOrNullAsync(VBSyntax.UnaryExpressionSyntax node, ExpressionSyntax expr, ITypeSymbol operandConvertedType)
@@ -499,8 +504,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     attributes.Insert(0,
                         CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalDateTimeAttributes)));
                 }
-            } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword)) || HasRefParametersAfterThisOne()) {
-                var defaultExpression = await node.Default.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor);
+            } else if (node.Modifiers.Any(m => m.IsKind(VBasic.SyntaxKind.ByRefKeyword)) || HasRefParametersAfterThisOne() || vbSymbol is IParameterSymbol p && NeedsDefaultAsAttributes(p)) {
+                var defaultExpression = await ConvertDefaultValueAsync(node.Default.Value, vbSymbol, requiresExactType: true);
                 var arg = CommonConversions.CreateAttributeArgumentList(CS.SyntaxFactory.AttributeArgument(defaultExpression));
                 _extraUsingDirectives.Add("System.Runtime.InteropServices");
                 _extraUsingDirectives.Add("System.Runtime.CompilerServices");
@@ -508,7 +513,8 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("Optional")),
                 };
                 if (!node.Default.Value.IsKind(VBasic.SyntaxKind.NothingLiteralExpression)) {
-                    optionalAttributes.Add(CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
+                    optionalAttributes.Add(GetDecimalConstantAttributeOrNull(vbSymbol)
+                        ?? CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DefaultParameterValue"), arg));
                 }
                 attributes.Insert(0,
                     CS.SyntaxFactory.AttributeList(CS.SyntaxFactory.SeparatedList(optionalAttributes)));
@@ -520,8 +526,7 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
                     // Set null here; FixCharDefaultsForStringParams (DeclarationNodeVisitor) adds the null-coalesce assignment.
                     @default = CS.SyntaxFactory.EqualsValueClause(ValidSyntaxFactory.NullExpression);
                 } else {
-                    @default = CS.SyntaxFactory.EqualsValueClause(
-                        await node.Default.Value.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor));
+                    @default = CS.SyntaxFactory.EqualsValueClause(await ConvertDefaultValueAsync(node.Default.Value, vbSymbol));
                 }
             }
         }
@@ -562,6 +567,41 @@ internal partial class ExpressionNodeVisitor : VBasic.VisualBasicSyntaxVisitor<T
         }
         return syntaxParamType;
     }
+
+    /// <summary>
+    /// C# only allows null as the default value of an Object parameter, and none for a ref parameter or (as a literal) a DateTime one: those are given as attributes.
+    /// C# treats a parameter with them as required, which can't follow one written as <c>= value</c> (CS1737), so the method's other defaults follow suit.
+    /// </summary>
+    private static bool NeedsDefaultAsAttributes(IParameterSymbol parameter) =>
+        parameter.ContainingSymbol.GetParameters().Any(p => p.HasExplicitDefaultValue && (
+            p.RefKind != RefKind.None
+            || p.Type.SpecialType == SpecialType.System_Object && p.GetValidExplicitDefaultValueOrNull() != null
+            || p.Type.SpecialType == SpecialType.System_DateTime && p.GetValidExplicitDefaultValueOrNull() != null));
+
+    /// <summary>
+    /// An attribute argument can't be a decimal, so as C# does for a decimal default, the value is given in parts to DecimalConstant.
+    /// That includes an Object parameter's Decimal default, as VB does. The value is the one VB converted the constant to, e.g. 0.1F gives 0.100000001490116 and True gives -1.
+    /// </summary>
+    private AttributeSyntax GetDecimalConstantAttributeOrNull(ISymbol parameter) =>
+        (parameter as IParameterSymbol)?.GetValidExplicitDefaultValueOrNull() is decimal value
+            ? CS.SyntaxFactory.Attribute(ValidSyntaxFactory.IdentifierName("DecimalConstant"),
+                CommonConversions.CreateAttributeArgumentList(GetDecimalConstantArguments(value).Select(CS.SyntaxFactory.AttributeArgument).ToArray()))
+            : null;
+
+    private static IEnumerable<ExpressionSyntax> GetDecimalConstantArguments(decimal value)
+    {
+        var bits = decimal.GetBits(value);
+        var scale = (byte)((bits[3] >> 16) & 0xFF);
+        var sign = (byte)(bits[3] < 0 ? 1 : 0);
+        return new ExpressionSyntax[] { CommonConversions.Literal(scale), CommonConversions.Literal(sign),
+            CommonConversions.Literal((uint)bits[2]), CommonConversions.Literal((uint)bits[1]), CommonConversions.Literal((uint)bits[0]) };
+    }
+
+    /// <inheritdoc cref="DeclaredConstantConverter"/>
+    /// <param name="requiresExactType">For [DefaultParameterValue], whose argument is an Object, so C# won't convert it to the parameter's type</param>
+    private async Task<ExpressionSyntax> ConvertDefaultValueAsync(VBSyntax.ExpressionSyntax vbValue, ISymbol parameter, bool requiresExactType = false) =>
+        CommonConversions.TypeConversionAnalyzer.ConvertDeclaredConstant(vbValue, await vbValue.AcceptAsync<ExpressionSyntax>(TriviaConvertingExpressionVisitor),
+            (parameter as IParameterSymbol)?.Type, requiresExactType, parameter as IParameterSymbol);
 
     public override async Task<CSharpSyntaxNode> VisitAttribute(VBSyntax.AttributeSyntax node)
     {
